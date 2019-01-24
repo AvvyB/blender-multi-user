@@ -1,0 +1,6 @@
+[submodule "libs/bsyncio"]
+	path = libs/bsyncio
+	url = git@gitlab.com:slumber/bsyncio.git
+[submodule "libs/esper"]
+	path = libs/esper
+	url = git@github.com:benmoran56/esper.git
