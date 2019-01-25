@@ -14,7 +14,7 @@ class NetworkSystem(esper.Processor):
     def __init__(self):
         super().__init__()
 
-
+    # TODO: Use zmq_poll..
     def process(self):
         # This will iterate over every Entity that has BOTH of these components:
         for ent, (net_interface, user) in self.world.get_components(net_components.NetworkInterface,net_components.User):
