@@ -13,6 +13,8 @@ class NetworkSystem(esper.Processor):
 
     def __init__(self):
         super().__init__()
+        # Initialize poll set
+        
 
     # TODO: Use zmq_poll..
     def process(self):
@@ -22,4 +24,17 @@ class NetworkSystem(esper.Processor):
                 net_interface.socket.send(b"Waiting server response")
 
             if user.role is net_components.Role.SERVER:
-                net_interface.socket.recv(b"Waiting server response")
+                print("Server loops")
+                try:
+                    socks = dict(net_interface.poller.poll())
+                    print("test")
+                except KeyboardInterrupt:
+                    break
+                if net_interface.socket in socks:
+                    message = net_interface.socket.recv()
+
+                print("test")
+                    # process task
+
+                
+                

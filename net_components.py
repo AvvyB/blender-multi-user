@@ -24,8 +24,10 @@ class NetworkInterface:
         self.host = host
         self.context = context
         self.socket = context.socket(socket_type)
-        
+        self.poller = zmq.Poller()
+       
         #TODO: Is this right to it here?
+        self.poller.register(self.socket, zmq.POLLIN)
         self.socket.bind("{}://{}:{}".format(protocol,host,port))
 
 class Property:

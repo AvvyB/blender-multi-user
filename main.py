@@ -35,6 +35,8 @@ def main():
 
     world.add_component(
         session, net_components.NetworkInterface(context=instance_context))
+    world.add_component(
+        session, net_components.User(role=instance_role))
 
     # A dummy main loop:
     try:
@@ -42,7 +44,6 @@ def main():
             # Call world.process() to run all Processors.
             world.process()
             time.sleep(1)
-
     except KeyboardInterrupt:
         return
 
