@@ -1,14 +1,18 @@
 import zmq
+from enum import Enum, auto
 
 class Role(Enum):
-    NONE = 1
-    SERVER = 2
-    CLIENT = 3
+    NONE = 'NONE'
+    SERVER = 'SERVER'
+    CLIENT = 'CLIENT'
+
+    def __str__(self):
+        return self.value
 
 class Replication(Enum):
-    NONE = 1
-    REPLICATED = 2
-    REPNOTIFY = 3
+    NONE = auto()
+    REPLICATED = auto()
+    REPNOTIFY = auto()
 
 class User:
     def __init__(self, name="default", ip="localhost",role=Role.NONE):
@@ -16,14 +20,13 @@ class User:
         self.role = role
 
 class NetworkInterface:
-     def __init__(self, host="localhost",context=None, socket_type=zmq.REP,protocol='tcp',port=5555):
+     def __init__(self, host="127.0.0.1",context=None, socket_type=zmq.REP,protocol='tcp',port=5555):
         self.host = host
         self.context = context
-        self.socket_type = socket_type
         self.socket = context.socket(socket_type)
         
         #TODO: Is this right to it here?
-        self.socket.bind("{}://{}:{}" % (protocol,host,port))
+        self.socket.bind("{}://{}:{}".format(protocol,host,port))
 
 class Property:
     def __init__(self, property=None, replication=Replication.NONE):
