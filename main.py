@@ -5,50 +5,58 @@ import zmq
 import sys
 import argparse
 import time
+from zmq.asyncio import Context, ZMQEventLoop
 import asyncio
+
+Url = 'tcp://127.0.0.1:5555'
+Ctx = Context()
+
+
+@asyncio.coroutine
+def server():
+    print("Getting ready for hello world client.  Ctrl-C to exit.\n")
+    socket = Ctx.socket(zmq.REP)
+    socket.bind(Url)
+    while True:
+        #  Wait for next request from client
+        message = yield from socket.recv()
+        print("Received request: {}".format(message))
+        #  Do some "work"
+        yield from asyncio.sleep(1)
+        #  Send reply back to client
+        message = message.decode('utf-8')
+        message = '{}, world'.format(message)
+        message = message.encode('utf-8')
+        print("Sending reply: {}".format(message))
+        yield from socket.send(message)
 
 
 # TODO:  Implement a manager class for each aspect (ex: Network_Manager)
 # TODO: Is it right to implement server-client as ESC ?...
-@asyncio.coroutine
 def main():
-    # Argument parsing
-    parser = argparse.ArgumentParser(
-        description='Launch an instance of collaboration system')
-    parser.add_argument('-r', choices=list(net_components.Role),
-                        type=net_components.Role, help='role for the instance ')
-
-    args = parser.parse_args()
-
-    instance_role = args.r
-    instance_context = zmq.Context()
-
-    print("Starting a {} instance \n".format(instance_role))
-
-    # Create a World instance to hold everything:
-    world = esper.World()
-
-    # Instantiate a Processor (or more), and add them to the world:
-    network_system = net_systems.NetworkSystem()
-    world.add_processor(network_system)
-
-    # Instanciate a session entity
-    session = world.create_entity()
-
-    world.add_component(
-        session, net_components.NetworkInterface(context=instance_context))
-    world.add_component(
-        session, net_components.User(role=instance_role))
-
-
-    # A dummy main loop:
+    args = sys.argv[1:]
+    if len(args) != 0:
+        sys.exit(__doc__)
     try:
-        while True:
-            # Call world.process() to run all Processors.
-            world.process()
-            time.sleep(1)
+        loop =  asyncio.get_event_loop() 
+        loop.run_until_complete(server())
     except KeyboardInterrupt:
-        return
+        print('\nFinished (interrupted)')
+        sys.exit(0)
+
+    #  Socket to talk to server
+    print("Connecting to hello world server...")
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5555")
+
+    #  Do 10 requests, waiting each time for a response
+    for request in range(10):
+        print("Sending request %s ..." % request)
+        socket.send(b"Hello")
+
+        #  Get the reply.
+        message = socket.recv()
+        print("Received reply %s [ %s ]" % (request, message))
 
 
 if __name__ == '__main__':

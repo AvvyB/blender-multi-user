@@ -1,5 +1,9 @@
 # Realtime Collaborative Framework experiments
 
+## Idea
+
+![basic](img/basic.png)
+
 ## Dependencies
 
 | Dependency | Version | Needed |
