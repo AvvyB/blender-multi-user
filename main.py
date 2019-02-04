@@ -5,10 +5,12 @@ import zmq
 import sys
 import argparse
 import time
+import asyncio
 
 
 # TODO:  Implement a manager class for each aspect (ex: Network_Manager)
 # TODO: Is it right to implement server-client as ESC ?...
+@asyncio.coroutine
 def main():
     # Argument parsing
     parser = argparse.ArgumentParser(
@@ -37,6 +39,7 @@ def main():
         session, net_components.NetworkInterface(context=instance_context))
     world.add_component(
         session, net_components.User(role=instance_role))
+
 
     # A dummy main loop:
     try:

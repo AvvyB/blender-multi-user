@@ -1,4 +1,6 @@
 import zmq
+# from zmq.asyncio import Context, ZMQEventLoop
+# import asyncio
 from enum import Enum, auto
 
 class Role(Enum):
@@ -20,7 +22,7 @@ class User:
         self.role = role
 
 class NetworkInterface:
-     def __init__(self, host="127.0.0.1",context=None, socket_type=zmq.REP,protocol='tcp',port=5555):
+     def __init__(self, host="*",context=None, socket_type=zmq.REQ,protocol='tcp',port=5555):
         self.host = host
         self.context = context
         self.socket = context.socket(socket_type)
@@ -28,7 +30,8 @@ class NetworkInterface:
        
         #TODO: Is this right to it here?
         self.poller.register(self.socket, zmq.POLLIN)
-        self.socket.bind("{}://{}:{}".format(protocol,host,port))
+        print("{}://{}:{}".format(protocol,host,port))
+        self.socket.bind("tcp://*:5555")
 
 class Property:
     def __init__(self, property=None, replication=Replication.NONE):
