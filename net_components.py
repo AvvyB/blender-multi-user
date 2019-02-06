@@ -22,14 +22,12 @@ class User:
         self.role = role
 
 class NetworkInterface:
-     def __init__(self, host="*",context=None, socket_type=zmq.REQ,protocol='tcp',port=5555):
+     def __init__(self, host="*",context=None, socket_type=zmq.REP,protocol='tcp',port=5555):
         self.host = host
         self.context = context
         self.socket = context.socket(socket_type)
-        self.poller = zmq.Poller()
        
         #TODO: Is this right to it here?
-        self.poller.register(self.socket, zmq.POLLIN)
         print("{}://{}:{}".format(protocol,host,port))
         self.socket.bind("tcp://*:5555")
 
