@@ -21,8 +21,10 @@ bl_info = {
     "category" : "Collaboration"
 }
 
+from .libs.bsyncio import bsyncio
+
 def register():
-    ...
+    bsyncio.register()
 
 def unregister():
-    ...
+    bsyncio.unregister()
