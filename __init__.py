@@ -28,6 +28,7 @@ import bpy
 
 def register():
     bpy.types.Scene.message = bpy.props.StringProperty(default="Hi")
+
     bsyncio.register()
     net_operators.register()
     net_ui.register()

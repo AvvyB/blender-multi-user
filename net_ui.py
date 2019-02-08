@@ -15,21 +15,37 @@ class SessionPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        global session
-
+        
         scene = context.scene
         # Create a simple row.
         row = layout.row()
 
-        if not session:
-            row.operator("session.join")
-            row.operator("session.host")
-        else:
+        if net_operators.session.is_running:
             row.operator("session.close")
+            row = layout.row()
+
+            row = layout.row(align=True)
+            row.prop(scene,"message",text="")
+            row.operator("session.send").message = scene.message
+            row = layout.row()
+            # Debug area 
+
+            row.label(text="Debug")
+
+            row = layout.row()
+            area_msg = row.box()
+            if len(net_operators.session.msg) > 0:
+                for msg in net_operators.session.msg:
+                    area_msg.label(text=str(msg))
+            else:
+                area_msg.label(text="Empty")
+        else:
+            row.operator("session.join")
+            row.operator("session.create")
         
-        # row.operator("session.send").message = bpy.scene.message
-        # row.prop(scene,"message")
+       
     
+        
 
 classes = (
     SessionPanel,
