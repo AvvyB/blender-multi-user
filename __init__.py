@@ -22,9 +22,18 @@ bl_info = {
 }
 
 from .libs.bsyncio import bsyncio
+from . import net_operators
+from . import net_ui
+import bpy
 
 def register():
+    bpy.types.Scene.message = bpy.props.StringProperty(default="Hi")
     bsyncio.register()
+    net_operators.register()
+    net_ui.register()
 
 def unregister():
+    del bpy.types.Scene.message
     bsyncio.unregister()
+    net_operators.unregister()
+    net_ui.unregister()
