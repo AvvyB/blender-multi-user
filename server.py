@@ -31,9 +31,8 @@ def main():
             break
             
         if state_request in socks:
-            msg = state_request.recv_multipart()
-            print(msg[0].decode('ascii'))
-            print(msg[1].decode())
+            msg = state_request.recv_multipart(zmq.NOBLOCK)
+            print("{}:{}".format(msg[0].decode('ascii'),msg[1].decode()))
             publisher.send(b'Server update')
             
         # publisher.send_string('test')

@@ -40,7 +40,7 @@ def main():
             break
 
         if updates in socks:
-            message = updates.recv_multipart()
+            message = updates.recv_multipart(zmq.NOBLOCK)
             print(message)
         
         # Send update
