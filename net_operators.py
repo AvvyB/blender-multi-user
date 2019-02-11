@@ -173,8 +173,12 @@ class session_stop(bpy.types.Operator):
         
         if server :
             server.stop()
+            del server
+            server = None
         if client:
             client.stop()
+            del client
+            client = None
             bpy.ops.asyncio.stop()
         else:
             logger.info("No server/client running.")

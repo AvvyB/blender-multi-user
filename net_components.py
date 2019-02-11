@@ -149,11 +149,11 @@ class Client():
 
     def stop(self):
         logger.info("Stopping client")
+        self.poller.unregister(self.pull_sock)
         self.is_running = False
-        self.task.cancel()
         self.push_sock.close()
         self.pull_sock.close()
-        self.context.term()
+        self.task.cancel()
 
 
 class Server():
@@ -205,7 +205,8 @@ class Server():
 
     def stop(self):
         logger.info("Stopping server")
-        self.task.cancel()
+        self.poller.unregister(self.pull_sock)
         self.pub_sock.close()
         self.pull_sock.close()
-        self.context.term()
+
+        self.task.cancel()

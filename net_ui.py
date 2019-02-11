@@ -30,8 +30,6 @@ class SessionPanel(bpy.types.Panel):
             row = layout.row()
             # Debug area 
 
-            row.label(text="Debug")
-
             row = layout.row()
             area_msg = row.box()
             if len(net_operators.client.store) > 0:
