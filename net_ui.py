@@ -48,7 +48,7 @@ class SessionPanel(bpy.types.Panel):
         
 
 classes = (
-    SessionPanel,
+    # SessionPanel,
 )
 
 

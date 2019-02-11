@@ -1,8 +1,13 @@
 import bpy
 from . import net_components
+import time
 
 session = None
+client = None
+server = None
+context = None
 
+# SESSION Operators
 
 class join(bpy.types.Operator):
     bl_idname = "session.join"
@@ -81,18 +86,66 @@ class close(bpy.types.Operator):
         bpy.ops.asyncio.stop()
         return {"FINISHED"}
 
+# CLIENT-SERVER 
+
+class client_connect(bpy.types.Operator):
+    bl_idname = "client.connect"
+    bl_label = "connect"
+    bl_description = "connect to a net server"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client
+
+        client = net_components.Client()
+        
+        time.sleep(1)
+
+        bpy.ops.asyncio.loop()
+        
+
+        return {"FINISHED"}
+
+class server_connect(bpy.types.Operator):
+    bl_idname = "server.run"
+    bl_label = "connect"
+    bl_description = "connect to a net server"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global server
+        
+        server = net_components.Server()
+        
+        time.sleep(1)
+        
+        bpy.ops.asyncio.loop()
+        
+
+        return {"FINISHED"}
 
 classes = (
     join,
     create,
     close,
     send,
+    client_connect,
+    server_connect,
 )
 
 
 def register():
     global session
-    session = net_components.Session()
+    # session = net_components.Session()
+    
 
     from bpy.utils import register_class
     for cls in classes:
