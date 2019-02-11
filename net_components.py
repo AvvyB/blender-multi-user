@@ -91,39 +91,6 @@ class Session():
         self.is_running = False
 
 
-class Client_poller():
-    def __init__(self, id):
-
-        self.id = id
-        self.listen = asyncio.ensure_future(self.listen())
-        logger.info("client initiated {}".format(self.id))
-
-    async def listen(self):
-        context = zmq.Context()
-        logger.info("...context  initiated {}".format(self.id))
-        socket = context.socket(zmq.DEALER)
-        identity = self.id
-        socket.identity = identity.encode('ascii')
-        logger.info("...socket  initiated {}".format(self.id))
-        logger.info("client {} started".format(self.id))
-        poll = zmq.Poller()
-        poll.register(socket, zmq.POLLIN)
-
-        await asyncio.sleep(1)
-
-        while True:
-            await asyncio.sleep(0.016)
-            sockets = dict(poll.poll(1))
-
-            if socket in sockets:
-                msg = socket.recv(zmq.NOBLOCK)
-                logger.info("{} received:{}".format(self.id, msg))
-
-    def stop(self):
-        logger.info("Stopping client {}".format(self.id))
-        self.listen.cancel()
-
-
 class Client():
     def __init__(self, context=zmq.Context(), id="default"):
 
@@ -169,10 +136,10 @@ class Client():
 
             if self.pull_sock in socks:
                 message = self.pull_sock.recv_multipart(zmq.NOBLOCK)
-                print(message)
+                logger.info("{}:{}".format(message[0].decode('ascii'), umsgpack.unpackb(message[1])))
 
     def send_msg(self, msg):
-        self.push_sock.send_multipart(msg.encode())
+        self.push_sock.send(umsgpack.packb(msg))
 
     def stop(self):
         logger.info("Stopping client")
@@ -224,7 +191,7 @@ class Server():
 
             if self.pull_sock in socks:
                 msg = self.pull_sock.recv_multipart(zmq.NOBLOCK)
-                print("{}:{}".format(msg[0].decode('ascii'), msg[1].decode()))
+                #print("{}:{}".format(msg[0].decode('ascii'), umsgpack.packb(msg[1])))
 
                 # Update all clients
                 self.pub_sock.send_multipart(msg)
