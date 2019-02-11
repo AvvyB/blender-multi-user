@@ -147,8 +147,10 @@ class session_create(bpy.types.Operator):
         global server
         global client
 
+        username = str(context.scene.session_settings.username)
+
         server = net_components.Server()
-        client = net_components.Client()
+        client = net_components.Client(id=username)
 
         time.sleep(1)
 
@@ -186,11 +188,18 @@ class session_stop(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class session_settings(bpy.types.PropertyGroup):
+    username = bpy.props.StringProperty(name="Username",default="DefaultUser")
+    ip = bpy.props.StringProperty(name="localhost")
+    port = bpy.props.IntProperty(name="5555")
+
+# TODO: Rename to match official convention
 classes = (
     session_join,
     session_send,
     session_stop,
     session_create,
+    session_settings,
 )
 
 
@@ -199,11 +208,14 @@ def register():
     for cls in classes:
         register_class(cls)
 
+    bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
 
-def unregister():
+def unregister():    
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+    
+    del bpy.types.Scene.session_settings
 
 
 if __name__ == "__main__":

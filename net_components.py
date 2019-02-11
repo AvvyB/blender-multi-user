@@ -103,7 +103,6 @@ class Client():
         self.id = id
         self.bind_ports()
         # Main client loop registration
-        self.is_running = False
         self.task = asyncio.ensure_future(self.main())
 
         self.store = []
@@ -128,7 +127,7 @@ class Client():
 
     async def main(self):
         logger.info("{} client launched".format(id))
-        self.is_running = True
+
        # Prepare our context and publisher socket
         while True:
             # TODO: find a better way
@@ -150,7 +149,6 @@ class Client():
     def stop(self):
         logger.info("Stopping client")
         self.poller.unregister(self.pull_sock)
-        self.is_running = False
         self.push_sock.close()
         self.pull_sock.close()
         self.task.cancel()

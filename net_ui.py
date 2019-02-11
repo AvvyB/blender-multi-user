@@ -11,7 +11,7 @@ class SessionPanel(bpy.types.Panel):
     bl_context = "scene"
 
     # def draw_header(self, context):
-    #     self.layout.prop(context.scene, "use_gravity", text="")
+    #     self.layout.prop(context.scene.session_settings, "username", text="")
 
     def draw(self, context):
         layout = self.layout
@@ -38,12 +38,15 @@ class SessionPanel(bpy.types.Panel):
             else:
                 area_msg.label(text="Empty")
         else:
+            row = layout.row()
+            row.prop(scene.session_settings,"username",text="")
+            row = layout.row()
             row.operator("session.join")
             row.operator("session.create")
         
        
     
-        
+
 
 classes = (
     SessionPanel,
