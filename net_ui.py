@@ -20,8 +20,8 @@ class SessionPanel(bpy.types.Panel):
         # Create a simple row.
         row = layout.row()
 
-        if net_operators.session.is_running:
-            row.operator("session.close")
+        if net_operators.client:
+            row.operator("session.stop")
             row = layout.row()
 
             row = layout.row(align=True)
@@ -34,9 +34,9 @@ class SessionPanel(bpy.types.Panel):
 
             row = layout.row()
             area_msg = row.box()
-            if len(net_operators.session.msg) > 0:
-                for msg in net_operators.session.msg:
-                    area_msg.label(text=str(msg))
+            if len(net_operators.client.store) > 0:
+                for (id,msg) in net_operators.client.store:
+                    area_msg.label(text="{}:{}".format(id,msg))
             else:
                 area_msg.label(text="Empty")
         else:
@@ -48,7 +48,7 @@ class SessionPanel(bpy.types.Panel):
         
 
 classes = (
-    # SessionPanel,
+    SessionPanel,
 )
 
 

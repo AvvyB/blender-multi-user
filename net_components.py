@@ -91,6 +91,7 @@ class Session():
         self.is_running = False
 
 
+
 class Client():
     def __init__(self, context=zmq.Context(), id="default"):
 
@@ -98,12 +99,14 @@ class Client():
         self.pull_sock = None
         self.push_sock = None
         self.poller = None
-
+        
         self.id = id
         self.bind_ports()
         # Main client loop registration
+        self.is_running = False
         self.task = asyncio.ensure_future(self.main())
 
+        self.store = []
         logger.info("{} client initialized".format(id))
 
     def bind_ports(self):
@@ -125,6 +128,7 @@ class Client():
 
     async def main(self):
         logger.info("{} client launched".format(id))
+        self.is_running = True
        # Prepare our context and publisher socket
         while True:
             # TODO: find a better way
@@ -137,12 +141,15 @@ class Client():
             if self.pull_sock in socks:
                 message = self.pull_sock.recv_multipart(zmq.NOBLOCK)
                 logger.info("{}:{}".format(message[0].decode('ascii'), umsgpack.unpackb(message[1])))
+                # Store message
+                self.store.append([message[0].decode('ascii'), umsgpack.unpackb(message[1])])
 
     def send_msg(self, msg):
         self.push_sock.send(umsgpack.packb(msg))
 
     def stop(self):
         logger.info("Stopping client")
+        self.is_running = False
         self.task.cancel()
         self.push_sock.close()
         self.pull_sock.close()

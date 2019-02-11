@@ -93,9 +93,9 @@ class close(bpy.types.Operator):
 # CLIENT-SERVER
 
 
-class client_connect(bpy.types.Operator):
-    bl_idname = "client.connect"
-    bl_label = "connect"
+class session_join(bpy.types.Operator):
+    bl_idname = "session.join"
+    bl_label = "join"
     bl_description = "connect to a net server"
     bl_options = {"REGISTER"}
 
@@ -107,7 +107,6 @@ class client_connect(bpy.types.Operator):
         global client
 
         client = net_components.Client()
-
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -115,10 +114,10 @@ class client_connect(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class client_send(bpy.types.Operator):
-    bl_idname = "client.send"
-    bl_label = "connect"
-    bl_description = "connect to a net server"
+class session_send(bpy.types.Operator):
+    bl_idname = "session.send"
+    bl_label = "send"
+    bl_description = "broadcast a message to connected clients"
     bl_options = {"REGISTER"}
 
     message: bpy.props.StringProperty(default="Hi")
@@ -134,32 +133,10 @@ class client_send(bpy.types.Operator):
 
         return {"FINISHED"}
 
-
-class client_stop(bpy.types.Operator):
-    bl_idname = "client.stop"
-    bl_label = "connect"
-    bl_description = "connect to a net server"
-    bl_options = {"REGISTER"}
-
-    message: bpy.props.StringProperty(default="Hi")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        global client
-
-        client.stop()
-        bpy.ops.asyncio.stop()
-
-        return {"FINISHED"}
-
-
-class server_run(bpy.types.Operator):
-    bl_idname = "server.run"
-    bl_label = "connect"
-    bl_description = "connect to a net server"
+class session_create(bpy.types.Operator):
+    bl_idname = "session.create"
+    bl_label = "create"
+    bl_description = "create to a net session"
     bl_options = {"REGISTER"}
 
     @classmethod
@@ -180,10 +157,10 @@ class server_run(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class server_stop(bpy.types.Operator):
-    bl_idname = "server.stop"
-    bl_label = "connect"
-    bl_description = "connect to a net server"
+class session_stop(bpy.types.Operator):
+    bl_idname = "session.stop"
+    bl_label = "close"
+    bl_description = "stop net service"
     bl_options = {"REGISTER"}
 
     @classmethod
@@ -194,34 +171,26 @@ class server_stop(bpy.types.Operator):
         global server
         global client
         
-        if server and client:
-            client.stop()
+        if server :
             server.stop()
-
+        if client:
+            client.stop()
             bpy.ops.asyncio.stop()
         else:
-            logger.info("Server is not running")
+            logger.info("No server/client running.")
 
         return {"FINISHED"}
 
 
 classes = (
-    # join,
-    # create,
-    # close,
-    # send,
-    client_connect,
-    client_send,
-    client_stop,
-    server_run,
-    server_stop,
+    session_join,
+    session_send,
+    session_stop,
+    session_create,
 )
 
 
 def register():
-    global session
-    # session = net_components.Session()
-
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
