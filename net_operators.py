@@ -91,7 +91,10 @@ class close(bpy.types.Operator):
         return {"FINISHED"}
 
 # CLIENT-SERVER
+def refresh_window():
+    import bpy
 
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 class session_join(bpy.types.Operator):
     bl_idname = "session.join"
@@ -106,7 +109,8 @@ class session_join(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        client = net_components.Client()
+        username = str(context.scene.session_settings.username)
+        client = net_components.Client(id=username  ,recv_callback=refresh_window)
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -150,7 +154,7 @@ class session_create(bpy.types.Operator):
         username = str(context.scene.session_settings.username)
 
         server = net_components.Server()
-        client = net_components.Client(id=username)
+        client = net_components.Client(id=username,recv_callback=refresh_window)
 
         time.sleep(1)
 

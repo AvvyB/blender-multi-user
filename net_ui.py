@@ -37,6 +37,7 @@ class SessionPanel(bpy.types.Panel):
                     area_msg.label(text="{}:{}".format(id,msg))
             else:
                 area_msg.label(text="Empty")
+            
         else:
             row = layout.row()
             row.prop(scene.session_settings,"username",text="")
@@ -45,7 +46,7 @@ class SessionPanel(bpy.types.Panel):
             row.operator("session.create")
         
        
-    
+
 
 
 classes = (

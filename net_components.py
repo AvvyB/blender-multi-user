@@ -91,16 +91,16 @@ class Session():
         self.is_running = False
 
 
-
 class Client():
-    def __init__(self, context=zmq.Context(), id="default"):
+    def __init__(self, context=zmq.Context(), id="default", recv_callback=None):
 
         self.context = context
         self.pull_sock = None
         self.push_sock = None
         self.poller = None
-        
+
         self.id = id
+        self.recv_callback = recv_callback
         self.bind_ports()
         # Main client loop registration
         self.task = asyncio.ensure_future(self.main())
@@ -139,9 +139,14 @@ class Client():
 
             if self.pull_sock in socks:
                 message = self.pull_sock.recv_multipart(zmq.NOBLOCK)
-                logger.info("{}:{}".format(message[0].decode('ascii'), umsgpack.unpackb(message[1])))
+                logger.info("{}:{}".format(message[0].decode(
+                    'ascii'), umsgpack.unpackb(message[1])))
                 # Store message
-                self.store.append([message[0].decode('ascii'), umsgpack.unpackb(message[1])])
+                self.store.append(
+                    [message[0].decode('ascii'), umsgpack.unpackb(message[1])])
+
+                if self.recv_callback:
+                    self.recv_callback()
 
     def send_msg(self, msg):
         self.push_sock.send(umsgpack.packb(msg))
