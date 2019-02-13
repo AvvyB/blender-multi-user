@@ -5,90 +5,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-session = None
 client = None
 server = None
 context = None
-
-# SESSION Operators
-
-
-class join(bpy.types.Operator):
-    bl_idname = "session.join"
-    bl_label = "join"
-    bl_description = "Connect to a net session"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        # global session
-
-        if session.join():
-            bpy.ops.asyncio.loop()
-        else:
-            print('fail to create session, avorting loop')
-        return {"FINISHED"}
-
-
-class create(bpy.types.Operator):
-    bl_idname = "session.create"
-    bl_label = "create"
-    bl_description = "create to a net session"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        global session
-
-        if session.create():
-            bpy.ops.asyncio.loop()
-        else:
-            print('fail to create session, avorting loop')
-
-        return {"FINISHED"}
-
-
-class send(bpy.types.Operator):
-    bl_idname = "session.send"
-    bl_label = "Send"
-    bl_description = "Connect to a net session"
-    bl_options = {"REGISTER"}
-
-    message: bpy.props.StringProperty(default="Hi")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        global session
-
-        session.send(self.message)
-        return {"FINISHED"}
-
-
-class close(bpy.types.Operator):
-    bl_idname = "session.close"
-    bl_label = "Close session"
-    bl_description = "Connect to a net session"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        global session
-
-        session.close()
-        bpy.ops.asyncio.stop()
-        return {"FINISHED"}
 
 # CLIENT-SERVER
 def refresh_window():
