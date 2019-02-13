@@ -32,8 +32,8 @@ class SessionPanel(bpy.types.Panel):
 
             row = layout.row()
             area_msg = row.box()
-            if len(net_operators.client.store) > 0:
-                for (id,msg) in net_operators.client.store:
+            if len(net_operators.client.message_store) > 0:
+                for (id,msg) in net_operators.client.message_store:
                     area_msg.label(text="{}:{}".format(id,msg))
             else:
                 area_msg.label(text="Empty")

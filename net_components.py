@@ -10,11 +10,11 @@ import strut
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-class RCFMessage():
+class RCFMessage(object):
     """
     Message is formatted on wire as 2 frames:
     frame 0: key (0MQ string) // property path
-    frame 2: body (blob)
+    frame 2: body (blob) // Could be any data 
 
     """
     key = None # key (string)
@@ -72,7 +72,7 @@ class Client():
         self.task = asyncio.ensure_future(self.main())
 
         self.property_map = {}
-        self.store = []
+        self.message_store = []
         logger.info("{} client initialized".format(id))
 
     def bind_ports(self):
@@ -109,7 +109,7 @@ class Client():
                 logger.info("{}:{}".format(message[0].decode(
                     'ascii'), umsgpack.unpackb(message[1])))
                 # Store message
-                self.store.append(
+                self.message_store.append(
                     [message[0].decode('ascii'), umsgpack.unpackb(message[1])])
 
                 if self.recv_callback:
