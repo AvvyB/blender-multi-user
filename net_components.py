@@ -10,6 +10,7 @@ import strut
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+# TODO: Add message time and author stamp for reliabilty
 class RCFMessage(object):
     """
     Message is formatted on wire as 2 frames:

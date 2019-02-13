@@ -116,7 +116,7 @@ class session_settings(bpy.types.PropertyGroup):
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
 
-# TODO: Rename to match official convention
+# TODO: Rename to match official blender convention
 classes = (
     session_join,
     session_send,
