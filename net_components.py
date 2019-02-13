@@ -5,14 +5,61 @@ from .libs import umsgpack
 from .libs import kvsimple
 import time
 import random
-
+import strut
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+class RCFMessage():
+    """
+    Message is formatted on wire as 2 frames:
+    frame 0: key (0MQ string) // property path
+    frame 2: body (blob)
+
+    """
+    key = None # key (string)
+    body = None # blob
+
+    def __init__(self, key=None, body=None):
+        self.key = key
+        self.body = body
+
+    def store(self, dikt):
+        """Store me in a dict if I have anything to store"""
+        # this seems weird to check, but it's what the C example does
+        # this currently erasing old value 
+        if self.key is not None and self.body is not None:
+            dikt[self.key] = self
+
+    def send(self, socket):
+        """Send key-value message to socket; any empty frames are sent as such."""
+        key = '' if self.key is None else self.key)
+        body = '' if self.body is None else self.body
+        socket.send_multipart([ key, body ])
+
+    @classmethod
+    def recv(cls, socket):
+        """Reads key-value message from socket, returns new kvmsg instance."""
+        key, body = socket.recv_multipart()
+        key = key if key else None
+        body = body if body else None
+        return cls(key=key, body=body)
+
+    def dump(self):
+        if self.body is None:
+            size = 0
+            data='NULL'
+        else:
+            size = len(self.body)
+            data=repr(self.body)
+        print("[key:{key}][size:{size}] {data}".format(
+            key=self.key,
+            size=size,
+            data=data,
+        ))
+
 class Client():
     def __init__(self, context=zmq.Context(), id="default", recv_callback=None):
-
         self.context = context
         self.pull_sock = None
         self.push_sock = None
@@ -24,6 +71,7 @@ class Client():
         # Main client loop registration
         self.task = asyncio.ensure_future(self.main())
 
+        self.property_map = {}
         self.store = []
         logger.info("{} client initialized".format(id))
 
