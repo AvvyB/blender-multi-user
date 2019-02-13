@@ -4,7 +4,7 @@ from . import net_operators
 
 class SessionPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
-    bl_label = "Net Session"
+    bl_label = "RFC Session"
     bl_idname = "SCENE_PT_layout"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
