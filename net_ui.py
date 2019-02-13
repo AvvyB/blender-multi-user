@@ -25,16 +25,16 @@ class SessionPanel(bpy.types.Panel):
             row = layout.row()
 
             row = layout.row(align=True)
-            row.prop(scene,"message",text="")
-            row.operator("session.send").message = scene.message
+
+            row.operator("session.send")
             row = layout.row()
             # Debug area 
 
             row = layout.row()
             area_msg = row.box()
-            if len(net_operators.client.message_store) > 0:
-                for (id,msg) in net_operators.client.message_store:
-                    area_msg.label(text="{}:{}".format(id,msg))
+            if len(net_operators.client.property_map) > 0:
+                for key,value in net_operators.client.property_map.items():
+                    area_msg.label(text="{}:{}".format(key,value))
             else:
                 area_msg.label(text="Empty")
             

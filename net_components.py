@@ -9,9 +9,8 @@ import struct
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+
 # TODO: Add message time and author stamp for reliabilty
-
-
 class RCFMessage(object):
     """
     Message is formatted on wire as 2 frames:
@@ -35,16 +34,17 @@ class RCFMessage(object):
 
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
-        key = '' if self.key is None else self.key
-        body = '' if self.body is None else self.body
+        key = '' if self.key is None else self.key.encode()
+        body = '' if self.body is None else umsgpack.packb(self.body)
         socket.send_multipart([key, body])
 
     @classmethod
     def recv(cls, socket):
         """Reads key-value message from socket, returns new kvmsg instance."""
-        key, body = socket.recv_multipart()
-        key = key if key else None
-        body = body if body else None
+        key, body = socket.recv_multipart(zmq.NOBLOCK)
+        key =  key.decode() if key else None
+        body = umsgpack.unpackb(body) if body else None
+ 
         return cls(key=key, body=body)
 
     def dump(self):
@@ -75,7 +75,7 @@ class Client():
         self.task = asyncio.ensure_future(self.main())
 
         self.property_map = {}
-        self.message_store = []
+        
         logger.info("{} client initialized".format(id))
 
     def bind_ports(self):
@@ -114,27 +114,18 @@ class Client():
                 break
 
             if self.pull_sock in socks:
-                update = self.pull_sock.recv_multipart(zmq.NOBLOCK)
+                rcfmsg = RCFMessage.recv(self.pull_sock)
 
-                print(update)
+                rcfmsg.store(self.property_map)
+                rcfmsg.dump()
                 
-                # TODO: Proper routing throught different socket / sub ?
-                if update[1].decode() == 'chat':
-                    # Store message
-                    self.message_store.append(
-                        [update[0].decode('ascii'), umsgpack.unpackb(update[2])])
-                if update[1].decode() == 'chat':
-                    pass
+                for f in self.recv_callback:
+                    f(rcfmsg)
 
-                if self.recv_callback:
-                    self.recv_callback()
-
-    def send_msg(self, msg):
-        self.req_sock.send_multipart([b"chat",umsgpack.packb(msg)])
-
-    def send_update(self, msg):
-
-        self.push_sock.send_multipart()
+    def push_update(self, key, body):
+        rcfmsg = RCFMessage(key,body)
+        rcfmsg.send(self.push_sock)
+        # self.push_sock.send_multipart()
 
     def stop(self):
         logger.info("Stopping client")
@@ -199,7 +190,10 @@ class Server():
                 self.pub_sock.send_multipart(msg)
 
             if self.collector_sock in socks:
-                pass
+                msg = self.collector_sock.recv_multipart(zmq.NOBLOCK)
+
+                # Update all clients
+                self.pub_sock.send_multipart(msg)
 
     def stop(self):
         logger.info("Stopping server")

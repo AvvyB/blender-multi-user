@@ -2,6 +2,7 @@ import bpy
 from . import net_components
 import time
 import logging
+import mathutils
 
 logger = logging.getLogger(__name__)
 
@@ -9,11 +10,27 @@ client = None
 server = None
 context = None
 
+
 # CLIENT-SERVER
-def refresh_window():
+def refresh_window(msg):
     import bpy
 
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+def patch_scene(msg):
+    path = msg.key.split('/')
+
+    attribute = getattr(getattr(bpy.data,path[0])[path[1]],path[2])
+    print(type(attribute))
+    if type(attribute) == mathutils.Vector:
+        attribute = array2vector(msg.body)
+
+def vector2array(v):
+    return [v.x,v.y,v.z]
+
+def array2vector(a):
+    print(mathutils.Vector((a[0],a[1],a[2])))
+    return mathutils.Vector((a[0],a[1],a[2]))
 
 class session_join(bpy.types.Operator):
     bl_idname = "session.join"
@@ -29,7 +46,9 @@ class session_join(bpy.types.Operator):
         global client
 
         username = str(context.scene.session_settings.username)
-        client = net_components.Client(id=username  ,recv_callback=refresh_window)
+        callbacks=[refresh_window,patch_scene]
+
+        client = net_components.Client(id=username  ,recv_callback=callbacks)
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -52,7 +71,10 @@ class session_send(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        client.send_msg(self.message)
+        key = "objects/Cube/location"
+        value = vector2array(bpy.data.objects['Cube'].location)
+
+        client.push_update(key,value)
 
         return {"FINISHED"}
 
@@ -71,9 +93,10 @@ class session_create(bpy.types.Operator):
         global client
 
         username = str(context.scene.session_settings.username)
+        callbacks=[refresh_window,patch_scene]
 
         server = net_components.Server()
-        client = net_components.Client(id=username,recv_callback=refresh_window)
+        client = net_components.Client(id=username,recv_callback=callbacks)
 
         time.sleep(1)
 
