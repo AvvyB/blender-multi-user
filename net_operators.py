@@ -10,6 +10,66 @@ client = None
 server = None
 context = None
 
+NATIVE_TYPES = (
+    bpy.types.IntProperty,
+    bpy.types.FloatProperty,
+    bpy.types.BoolProperty,
+    bpy.types.StringProperty,
+)
+
+VECTOR_TYPES = (
+    'Vector'
+)
+
+# TODO: Less ugly method
+def from_bpy(value):
+    print(' casting from bpy')
+    value_type = type(value)
+    value_casted = None
+
+    if value_type is mathutils.Vector:
+        value_casted =  [value.x,value.y,value.z]
+    elif value_type is bpy.props.collection:
+        pass # TODO: Collection replication
+    elif value_type is mathutils.Euler:
+        value_casted =  [value.x,value.y,value.z]
+    elif value_type is NATIVE_TYPES:
+        value_casted = value
+    
+    return value_casted.__class__.__name__,value_casted
+
+def to_bpy(store_item):
+    """
+    Get bpy value from store
+    """
+    value_type = store_item.type
+    value_casted = None
+    store_value = store_item.body
+
+    if value_type == 'Vector':
+        value_casted = mathutils.Vector((store_value[0],store_value[1],store_value[2]))
+
+    return value_casted
+
+def resolve_bpy_path(path):
+    """
+    Get bpy property value from path
+    """
+    path = path.split('/')
+
+    obj = None
+    attribute = None
+    logger.info("resolving {}".format(path))
+    try:
+        obj = getattr(bpy.data,path[0])[path[1]]
+        attribute = getattr(obj,path[2])
+        logger.info("done {} : {}".format(obj,attribute))
+    except AttributeError:
+        print(" Attribute not found")
+
+    return obj, attribute
+
+
 
 # CLIENT-SERVER
 def refresh_window(msg):
@@ -18,16 +78,19 @@ def refresh_window(msg):
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 def patch_scene(msg):
-    path = msg.key.split('/')
-    value = None
-    object = getattr(bpy.data,path[0])[path[1]]
-    attribute = getattr(getattr(bpy.data,path[0])[path[1]],path[2])
-    print("attribute: {}".format(attribute))
-    if type(attribute) == mathutils.Vector:
-        #attribute = array2vector(msg.body)
-        value = array2vector(msg.body)
 
-    setattr(object,path[2],value)
+    value = None
+
+    obj, attr = resolve_bpy_path(msg.key)
+    value  = to_bpy(attr)
+    print("attribute: {} , value: {}".format(attr, value))
+   
+    try:
+        setattr(obj,attr,value)
+    except:
+        pass
+
+
 def vector2array(v):
     return [v.x,v.y,v.z]
 
@@ -53,7 +116,7 @@ class session_join(bpy.types.Operator):
 
         client = net_components.Client(id=username  ,recv_callback=callbacks)
         time.sleep(1)
-    
+
         bpy.ops.asyncio.loop()
 
         return {"FINISHED"}
@@ -62,10 +125,10 @@ class session_join(bpy.types.Operator):
 class session_send(bpy.types.Operator):
     bl_idname = "session.send"
     bl_label = "send"
-    bl_description = "broadcast a message to connected clients"
+    bl_description = "broadcast a property to connected clients"
     bl_options = {"REGISTER"}
 
-    message: bpy.props.StringProperty(default="Hi")
+    property_path: bpy.props.StringProperty(default="None")
 
     @classmethod
     def poll(cls, context):
@@ -74,10 +137,13 @@ class session_send(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        key = "objects/Cube/location"
-        value = vector2array(bpy.data.objects['Cube'].location)
+        obj, attr = resolve_bpy_path(self.property_path)
 
-        client.push_update(key,value)
+        if obj and attr:
+            key = self.property_path
+            value_type, value = from_bpy(attr)
+            
+            client.push_update(key,value_type,value)
 
         return {"FINISHED"}
 
@@ -121,7 +187,7 @@ class session_stop(bpy.types.Operator):
     def execute(self, context):
         global server
         global client
-        
+
         if server :
             server.stop()
             del server
@@ -141,6 +207,7 @@ class session_settings(bpy.types.PropertyGroup):
     username = bpy.props.StringProperty(name="Username",default="DefaultUser")
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
+    buffer = bpy.props.StringProperty(name="None")
 
 # TODO: Rename to match official blender convention
 classes = (
@@ -159,11 +226,11 @@ def register():
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
 
-def unregister():    
+def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-    
+
     del bpy.types.Scene.session_settings
 
 

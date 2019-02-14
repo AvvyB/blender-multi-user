@@ -26,7 +26,8 @@ class SessionPanel(bpy.types.Panel):
 
             row = layout.row(align=True)
 
-            row.operator("session.send")
+            row.prop(scene.session_settings,"buffer", text="")
+            row.operator("session.send").property_path = scene.session_settings.buffer
             row = layout.row()
             # Debug area 
 
@@ -34,7 +35,7 @@ class SessionPanel(bpy.types.Panel):
             area_msg = row.box()
             if len(net_operators.client.property_map) > 0:
                 for key,value in net_operators.client.property_map.items():
-                    area_msg.label(text="{}:{}".format(key,value))
+                    area_msg.label(text="{}".format(key))
             else:
                 area_msg.label(text="Empty")
             
