@@ -23,7 +23,7 @@ VECTOR_TYPES = (
 
 # TODO: Less ugly method
 def from_bpy(value):
-    print(' casting from bpy')
+    logger.debug(' casting from bpy')
     value_type = type(value)
     value_casted = None
 
@@ -59,16 +59,28 @@ def resolve_bpy_path(path):
 
     obj = None
     attribute = path[2]
-    logger.info("resolving {}".format(path))
+    logger.debug("resolving {}".format(path))
     
     try:
         obj = getattr(bpy.data,path[0])[path[1]]
         attribute = getattr(obj,path[2])
-        logger.info("done {} : {}".format(obj,attribute))
+        logger.debug("done {} : {}".format(obj,attribute))
     except AttributeError:
-        print(" Attribute not found")
+        logger.debug(" Attribute not found")
 
     return obj, attribute
+
+def observer(scene):
+    global client
+    for key,values in client.property_map.items():
+        # if values.id == client.id:
+        obj, attr = resolve_bpy_path(key)
+
+        if attr != to_bpy(client.property_map[key]):
+            value_type, value = from_bpy(attr)
+            client.push_update(key,value_type,value)
+    
+
 
 # CLIENT-SERVER
 def refresh_window(msg):
@@ -77,25 +89,30 @@ def refresh_window(msg):
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 def patch_scene(msg):
-    value = None
+    global client
 
-    obj, attr = resolve_bpy_path(msg.key)
-    attr_name = msg.key.split('/')[2] 
+    if msg.id != client.id:
+        value = None
 
-    value  = to_bpy(msg)
-    print("Updating scene:\n object: {} attribute: {} , value: {}".format(obj, attr_name, value))
-   
-    try:
-        setattr(obj,attr_name,value)
-    except:
-        pass
+        obj, attr = resolve_bpy_path(msg.key)
+        attr_name = msg.key.split('/')[2] 
 
+        value  = to_bpy(msg)
+        
+        logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(obj, attr_name, value))
+    
+        try:
+            setattr(obj,attr_name,value)
+        except:
+            pass
+    else:
+        logger.debug('no need to update scene on our own')
 
 def vector2array(v):
     return [v.x,v.y,v.z]
 
 def array2vector(a):
-    print(mathutils.Vector((a[0],a[1],a[2])))
+    logger.debug(mathutils.Vector((a[0],a[1],a[2])))
     return mathutils.Vector((a[0],a[1],a[2]))
 
 class session_join(bpy.types.Operator):
@@ -112,9 +129,9 @@ class session_join(bpy.types.Operator):
         global client
 
         username = str(context.scene.session_settings.username)
-        callbacks=[refresh_window,patch_scene]
+        callbacks=[patch_scene]
 
-        client = net_components.Client(id=username  ,recv_callback=callbacks)
+        client = net_components.Client(id=username,recv_callback=callbacks)
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -162,7 +179,7 @@ class session_create(bpy.types.Operator):
         global client
 
         username = str(context.scene.session_settings.username)
-        callbacks=[refresh_window,patch_scene]
+        callbacks=[patch_scene]
 
         server = net_components.Server()
         client = net_components.Client(id=username,recv_callback=callbacks)
@@ -198,7 +215,7 @@ class session_stop(bpy.types.Operator):
             client = None
             bpy.ops.asyncio.stop()
         else:
-            logger.info("No server/client running.")
+            logger.debug("No server/client running.")
 
         return {"FINISHED"}
 
@@ -225,6 +242,7 @@ def register():
         register_class(cls)
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
+    bpy.app.handlers.depsgraph_update_post.append(observer)
 
 def unregister():
     from bpy.utils import unregister_class

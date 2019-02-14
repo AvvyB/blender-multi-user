@@ -35,7 +35,7 @@ class SessionPanel(bpy.types.Panel):
             area_msg = row.box()
             if len(net_operators.client.property_map) > 0:  
                 for key,values in net_operators.client.property_map.items():
-                    area_msg.label(text="{} ({})".format(key, values.mtype))
+                    area_msg.label(text="{} ({}) - ".format(key, values.mtype, values.id.decode()))
             else:
                 area_msg.label(text="Empty")
             
