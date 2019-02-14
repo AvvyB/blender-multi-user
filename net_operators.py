@@ -19,12 +19,15 @@ def refresh_window(msg):
 
 def patch_scene(msg):
     path = msg.key.split('/')
-
+    value = None
+    object = getattr(bpy.data,path[0])[path[1]]
     attribute = getattr(getattr(bpy.data,path[0])[path[1]],path[2])
-    print(type(attribute))
+    print("attribute: {}".format(attribute))
     if type(attribute) == mathutils.Vector:
-        attribute = array2vector(msg.body)
+        #attribute = array2vector(msg.body)
+        value = array2vector(msg.body)
 
+    setattr(object,path[2],value)
 def vector2array(v):
     return [v.x,v.y,v.z]
 
@@ -50,7 +53,7 @@ class session_join(bpy.types.Operator):
 
         client = net_components.Client(id=username  ,recv_callback=callbacks)
         time.sleep(1)
-
+    
         bpy.ops.asyncio.loop()
 
         return {"FINISHED"}
