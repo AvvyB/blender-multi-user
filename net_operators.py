@@ -36,13 +36,13 @@ def from_bpy(value):
     elif value_type is NATIVE_TYPES:
         value_casted = value
     
-    return value_casted.__class__.__name__,value_casted
+    return str(value.__class__.__name__),value_casted
 
 def to_bpy(store_item):
     """
     Get bpy value from store
     """
-    value_type = store_item.type
+    value_type = store_item.mtype
     value_casted = None
     store_value = store_item.body
 
@@ -58,8 +58,9 @@ def resolve_bpy_path(path):
     path = path.split('/')
 
     obj = None
-    attribute = None
+    attribute = path[2]
     logger.info("resolving {}".format(path))
+    
     try:
         obj = getattr(bpy.data,path[0])[path[1]]
         attribute = getattr(obj,path[2])
@@ -69,8 +70,6 @@ def resolve_bpy_path(path):
 
     return obj, attribute
 
-
-
 # CLIENT-SERVER
 def refresh_window(msg):
     import bpy
@@ -78,15 +77,16 @@ def refresh_window(msg):
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 def patch_scene(msg):
-
     value = None
 
     obj, attr = resolve_bpy_path(msg.key)
-    value  = to_bpy(attr)
-    print("attribute: {} , value: {}".format(attr, value))
+    attr_name = msg.key.split('/')[2] 
+
+    value  = to_bpy(msg)
+    print("Updating scene:\n object: {} attribute: {} , value: {}".format(obj, attr_name, value))
    
     try:
-        setattr(obj,attr,value)
+        setattr(obj,attr_name,value)
     except:
         pass
 

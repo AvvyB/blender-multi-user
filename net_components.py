@@ -15,17 +15,17 @@ class RCFMessage(object):
     """
     Message is formatted on wire as 2 frames:
     frame 0: key (0MQ string) // property path
-    frame 1: type (0MQ string) // property path
+    frame 1: mtype (0MQ string) // property path
     frame 2: body (blob) // Could be any data 
 
     """
     key = None  # key (string)
-    type = None # data type (string)
+    mtype = None # data mtype (string)
     body = None  # data blob
 
-    def __init__(self, key=None, type=None, body=None):
+    def __init__(self, key=None, mtype=None, body=None):
         self.key = key
-        self.type = type
+        self.mtype = mtype
         self.body = body
 
     def store(self, dikt):
@@ -38,19 +38,19 @@ class RCFMessage(object):
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
         key = '' if self.key is None else self.key.encode()
-        type = '' if self.type is None else self.type.encode()
+        mtype = '' if self.mtype is None else self.mtype.encode()
         body = '' if self.body is None else umsgpack.packb(self.body)
-        socket.send_multipart([key, body])
+        socket.send_multipart([key,mtype, body])
 
     @classmethod
     def recv(cls, socket):
         """Reads key-value message from socket, returns new kvmsg instance."""
-        key,type, body = socket.recv_multipart(zmq.NOBLOCK)
+        key,mtype, body = socket.recv_multipart(zmq.NOBLOCK)
         key =  key.decode() if key else None
-        body =  body.decode() if body else None
+        mtype =  mtype.decode() if body else None
         body = umsgpack.unpackb(body) if body else None
  
-        return cls(key=key, body=body)
+        return cls(key=key,mtype=mtype, body=body)
 
     def dump(self):
         if self.body is None:
@@ -59,10 +59,10 @@ class RCFMessage(object):
         else:
             size = len(self.body)
             data = repr(self.body)
-        print("[key:{key}][size:{size}][type:{type}] {data}".format(
+        print("[key:{key}][size:{size}][mtype:{mtype}] {data}".format(
             key=self.key,
             size=size,
-            type=self.type,
+            mtype=self.mtype,
             data=data,
         ))
 
@@ -128,8 +128,8 @@ class Client():
                 for f in self.recv_callback:
                     f(rcfmsg)
 
-    def push_update(self, key,type,body):
-        rcfmsg = RCFMessage(key,body)
+    def push_update(self, key,mtype,body):
+        rcfmsg = RCFMessage(key,mtype,body)
         rcfmsg.send(self.push_sock)
         # self.push_sock.send_multipart()
 
