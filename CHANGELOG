@@ -4,3 +4,14 @@ All notable changes to this project will be documented in this file.
 ## [v0.0.1]
 ### Added
 - Functionnal chat test 
+
+## [v0.0.2]
+### Added
+- Property map shared between clients
+- Callbacks to push modifications to the blender scene
+- Observer Pattern for live property monitoring
+- ID to identify properties owner (For primitive right managment) 
+
+### Removed
+- Chat mecanism ( Will come back after the complete modularity refactoring)
+- Unused files and sub-modules
