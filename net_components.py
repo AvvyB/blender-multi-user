@@ -130,7 +130,7 @@ class Client():
                 for f in self.recv_callback:
                     f(rcfmsg)
             else:
-                await asyncio.sleep(0.016)
+                await asyncio.sleep(0.001)
 
     def push_update(self, key, mtype, body):
         rcfmsg = RCFMessage(key, self.id, mtype, body)

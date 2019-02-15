@@ -83,7 +83,7 @@ def observer():
                 client.push_update(key,value_type,value)
     except:
         pass
-    return 0.16
+    return 0.016
 
 
 # CLIENT-SERVER
