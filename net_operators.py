@@ -70,16 +70,21 @@ def resolve_bpy_path(path):
 
     return obj, attribute
 
-def observer(scene):
+def observer():
     global client
-    for key,values in client.property_map.items():
-        # if values.id == client.id:
-        obj, attr = resolve_bpy_path(key)
 
-        if attr != to_bpy(client.property_map[key]):
-            value_type, value = from_bpy(attr)
-            client.push_update(key,value_type,value)
-    
+    try:
+        for key,values in client.property_map.items():
+            # if values.id == client.id:
+            obj, attr = resolve_bpy_path(key)
+
+            if attr != to_bpy(client.property_map[key]):
+                value_type, value = from_bpy(attr)
+                client.push_update(key,value_type,value)
+    except:
+        pass
+        
+    return 0.16
 
 
 # CLIENT-SERVER
@@ -135,6 +140,7 @@ class session_join(bpy.types.Operator):
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
+        bpy.app.timers.register(observer)
 
         return {"FINISHED"}
 
@@ -184,10 +190,10 @@ class session_create(bpy.types.Operator):
         server = net_components.Server()
         client = net_components.Client(id=username,recv_callback=callbacks)
 
-        time.sleep(1)
+        # time.sleep(0.1)
 
         bpy.ops.asyncio.loop()
-
+        bpy.app.timers.register(observer)
         return {"FINISHED"}
 
 
@@ -242,8 +248,8 @@ def register():
         register_class(cls)
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
-    bpy.app.handlers.depsgraph_update_post.append(observer)
-
+    # bpy.app.handlers.depsgraph_update_post.append(observer)
+    
 def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
