@@ -4,40 +4,52 @@ from . import net_operators
 
 class SessionPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
-    bl_label = "RFC Session"
+    bl_label = "bl network"
     bl_idname = "SCENE_PT_layout"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
 
-    # def draw_header(self, context):
-    #     self.layout.prop(context.scene.session_settings, "username", text="")
+    def draw_header(self, context):
+        net_settings = context.scene.session_settings
+
+        if net_settings.is_running:
+            self.layout.label(text="",icon='HIDE_OFF')
+        else:
+            self.layout.label(text="",icon='HIDE_ON')
+            # self.layout.label(text="Offline")
 
     def draw(self, context):
         layout = self.layout
         
+        net_settings = context.scene.session_settings
         scene = context.scene
         # Create a simple row.
         row = layout.row()
 
         if net_operators.client:
-            row.operator("session.stop")
-            row = layout.row()
-
+            row.label(text="Net frequency:")
+            row.prop(net_settings,"update_frequency",text="")
             row = layout.row(align=True)
-
-            row.prop(scene.session_settings,"buffer", text="")
-            row.operator("session.send").property_path = scene.session_settings.buffer
+            row.prop(net_settings,"buffer", text="")
+            row.operator("session.add_prop", text="",icon="ADD").property_path = net_settings.buffer
             row = layout.row()
             # Debug area 
 
-            row = layout.row()
+            row = layout.row()  
             area_msg = row.box()
             if len(net_operators.client.property_map) > 0:  
                 for key,values in net_operators.client.property_map.items():
-                    area_msg.label(text="{} ({}) - ".format(key, values.mtype, values.id.decode()))
+                    item_box = area_msg.box()
+                    detail_item_box = item_box.row()
+                    # detail_item_box = item_box.row()
+                    detail_item_box.label(text="{} ({}) ".format(key, values.mtype, values.id.decode()))
+                    detail_item_box.operator("session.remove_prop",text="",icon="X").property_path = key
             else:
                 area_msg.label(text="Empty")
+            
+            row = layout.row()
+            row.operator("session.stop")
             
         else:
             row = layout.row()
@@ -46,9 +58,6 @@ class SessionPanel(bpy.types.Panel):
             row.operator("session.join")
             row.operator("session.create")
         
-       
-
-
 
 classes = (
     SessionPanel,

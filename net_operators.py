@@ -150,7 +150,7 @@ def observer():
                 client.push_update(key,value_type,value)
     except:
         pass
-    return 0.016
+    return bpy.context.scene.session_settings.update_frequency
 
 
 # CLIENT-SERVER
@@ -216,11 +216,12 @@ class session_join(bpy.types.Operator):
         bpy.ops.asyncio.loop()
         bpy.app.timers.register(observer)
 
+        net_settings.is_running = True
         return {"FINISHED"}
 
-class session_send(bpy.types.Operator):
-    bl_idname = "session.send"
-    bl_label = "send"
+class session_add_property(bpy.types.Operator):
+    bl_idname = "session.add_prop"
+    bl_label = "add"
     bl_description = "broadcast a property to connected clients"
     bl_options = {"REGISTER"}
 
@@ -243,6 +244,28 @@ class session_send(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class session_remove_property(bpy.types.Operator):
+    bl_idname = "session.remove_prop"
+    bl_label = "remove"
+    bl_description = "broadcast a property to connected clients"
+    bl_options = {"REGISTER"}
+
+    property_path: bpy.props.StringProperty(default="None")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client
+
+        try:
+            del client.property_map[self.property_path]
+
+            return {"FINISHED"}
+        except:
+            return {"CANCELED"}
+
 class session_create(bpy.types.Operator):
     bl_idname = "session.create"
     bl_label = "create"
@@ -257,21 +280,11 @@ class session_create(bpy.types.Operator):
         global server
         global client
         
-        # net_settings = context.scene.session_settings
-        
-        # if net_settings.username == "DefaultUser":
-        #     net_settings.username = "{}_{}".format(net_settings.username,randomStringDigits())
-
-        # username = str(context.scene.session_settings.username)
-        
         server = net_components.Server()
         time.sleep(0.1)
 
         bpy.ops.session.join()
-        # client = net_components.Client(id=username,on_recv=recv_callbacks,on_post_init=post_init_callbacks)
-
     
-        bpy.ops.asyncio.loop()
         bpy.app.timers.register(observer)
         return {"FINISHED"}
 
@@ -290,6 +303,8 @@ class session_stop(bpy.types.Operator):
         global server
         global client
 
+        net_settings = context.scene.session_settings
+
         if server :
             server.stop()
             del server
@@ -299,6 +314,9 @@ class session_stop(bpy.types.Operator):
             del client
             client = None
             bpy.ops.asyncio.stop()
+
+            bpy.app.timers.unregister(observer)
+            net_settings.is_running = False
         else:
             logger.debug("No server/client running.")
 
@@ -310,14 +328,18 @@ class session_settings(bpy.types.PropertyGroup):
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
     buffer = bpy.props.StringProperty(name="None")
+    is_running = bpy.props.BoolProperty(name="is_running",default=False)
+    update_frequency = bpy.props.FloatProperty(name="update_frequency", default=0.016)
+
 
 # TODO: Rename to match official blender convention
 classes = (
     session_join,
-    session_send,
+    session_add_property,
     session_stop,
     session_create,
     session_settings,
+    session_remove_property,
 )
 
 
@@ -327,8 +349,6 @@ def register():
         register_class(cls)
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
-    
-    # bpy.app.handlers.depsgraph_update_post.append(observer)
     
 def unregister():
     from bpy.utils import unregister_class
