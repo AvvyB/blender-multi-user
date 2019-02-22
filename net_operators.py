@@ -21,6 +21,64 @@ VECTOR_TYPES = (
     'Vector'
 )
 
+class VectorTypeTranslation(net_components.RCFTranslation):
+    def set(self,data):
+        """
+            local program > rcf 
+
+        """
+        return [data.x,data.y,data.z]
+
+    def get(self,data):
+        """
+        rcf > local program
+        """
+        return mathutils.Vector((data[0],data[1],data[2]))
+
+
+def match_supported_types(value):
+    type_factory = None
+
+    if isinstance(value,bool):
+        print("float")
+    elif isinstance(value,mathutils.Vector):
+        print("vector")
+        type_factory = VectorTypeTranslation()
+    elif isinstance(value,mathutils.Euler):
+        print("Euler")
+    elif type(value) in NATIVE_TYPES:
+        print("native")
+    else:
+        raise NotImplementedError
+    
+    return type_factory
+
+# class RNAFractory(net_components.RCFMsgFactory):
+#     def __init__(self,data):
+#         self.load = match_type():
+
+#     def load(self,data):
+#         logger.debug(' casting from bpy')
+#         value_type = type(data)
+#         rna_value = None
+
+#         if value_type is mathutils.Vector or mathutils.Euler:
+#             rna_value =  [data.x,data.y,data.z]
+#         elif value_type is bpy.props.collection:
+#             pass # TODO: Collection replication
+#         elif value_type in NATIVE_TYPES:
+#             rna_value = data
+        
+#         return rna_value
+
+#     def unload(self,data):
+#         rcf_value = None
+
+#         if value_type == 'Vector':
+#             value_casted = mathutils.Vector((data[0],data[1],data[2]))
+        
+#         return rcf_value
+
 # TODO: Less ugly method
 def from_bpy(value):
     logger.debug(' casting from bpy')
@@ -55,6 +113,8 @@ def resolve_bpy_path(path):
     """
     Get bpy property value from path
     """
+
+    t = time.perf_counter()
     path = path.split('/')
 
     obj = None
@@ -102,9 +162,8 @@ def patch_scene(msg):
         attr_name = msg.key.split('/')[2] 
 
         value  = to_bpy(msg)
-        
+        # print(msg.get)
         logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(obj, attr_name, value))
-    
         try:
             setattr(obj,attr_name,value)
         except:

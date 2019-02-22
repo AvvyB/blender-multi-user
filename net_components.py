@@ -9,6 +9,41 @@ import struct
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+class RCFTranslation():
+    def get(self,data):
+        """
+            local program > rcf 
+
+        """
+        raise NotImplementedError
+
+    def set(self,data):
+        """
+        rcf > local program
+        """
+        raise NotImplementedError
+
+class RCFMsgFactory():
+    """
+    Abstract basic data bridge
+    """
+    def __init__(self):
+        pass
+        raise NotImplementedError
+
+    def load(self, data):
+        """
+        local program > rcf 
+
+        """
+        raise NotImplementedError
+
+    def unload(self,data):
+        """
+        rcf > local program
+        """
+        raise NotImplementedError
+
 
 # TODO: Add message time and author stamp for reliabilty
 class RCFMessage(object):
@@ -25,25 +60,30 @@ class RCFMessage(object):
     mtype = None  # data mtype (string)
     body = None  # data blob
 
-    def __init__(self, key=None, id=None, mtype=None, body=None):
+    def __init__(self, key=None, id=None, mtype=None, body=None, factory=None):
         self.key = key
         self.mtype = mtype
         self.body = body
         self.id = id
-
+        self.factory = factory
+    
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this seems weird to check, but it's what the C example does
         # this currently erasing old value
         if self.key is not None and self.body is not None:
-            dikt[self.key] = self
+            if self.key in dikt:
+                dikt[self.key] = self
+                
 
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
         key = '' if self.key is None else self.key.encode()
         mtype = '' if self.mtype is None else self.mtype.encode()
         body = '' if self.body is None else umsgpack.packb(self.body)
-        socket.send_multipart([key, self.id, mtype, body])
+        factory = '' if self.factory is None else umsgpack.packb(self.factory)
+
+        socket.send_multipart([key, self.id, mtype, body,factory])
 
     @classmethod
     def recv(cls, socket):
@@ -72,7 +112,10 @@ class RCFMessage(object):
 
 
 class Client():
-    def __init__(self, context=zmq.Context(), id="default", recv_callback=None):
+    def __init__(self, context=zmq.Context(), id="default", recv_callback=None,is_admin=False):
+        self.is_admin = is_admin
+
+        #0MQ vars
         self.context = context
         self.pull_sock = None
         self.req_sock = None
@@ -116,7 +159,23 @@ class Client():
     async def main(self):
         logger.info("{} client launched".format(id))
 
-       # Prepare our context and publisher socket
+        # Late join
+        logger.info("{} send snapshot request".format(id))
+        self.req_snapshot.send(b"SNAPSHOT_REQUEST")
+        while True:
+            try:
+                rcfmsg_snapshot = RCFMessage.recv(snapshot)
+            except:
+                return 
+
+            if rcfmsg_snapshot.key == "SNAPSHOT_END":
+                logger.info("snapshot complete")
+                break 
+            else:
+                logger.info("received : {}".format(rcfmsg_snapshot.key))
+                rcfmsg_snapshot.store(self.property_map)
+
+        # Prepare our context and publisher socket
         while True:
             # TODO: find a better way
             socks = dict(self.poller.poll(1))
@@ -125,7 +184,6 @@ class Client():
                 rcfmsg = RCFMessage.recv(self.pull_sock)
 
                 rcfmsg.store(self.property_map)
-                # rcfmsg.dump()
 
                 for f in self.recv_callback:
                     f(rcfmsg)
@@ -136,6 +194,10 @@ class Client():
         rcfmsg = RCFMessage(key, self.id, mtype, body)
         rcfmsg.send(self.push_sock)
         # self.push_sock.send_multipart()
+
+    def req_snapshot(self):
+        # Sync
+        pass
 
     def stop(self):
         logger.debug("Stopping client")
@@ -155,10 +217,12 @@ class Server():
         self.collector_sock = None
         self.poller = None
 
+        self.property_map = {}
         self.id = id
         self.bind_ports()
         # Main client loop registration
         self.task = asyncio.ensure_future(self.main())
+        
 
         logger.info("{} client initialized".format(id))
 
@@ -192,12 +256,31 @@ class Server():
             socks = dict(self.poller.poll(1))
 
             if self.request_sock in socks:
-                msg = self.request_sock.recv_multipart(zmq.DONTWAIT)
-                # Update all clients
-                self.pub_sock.send_multipart(msg)
+                msg = self.request_sock.recv_multipart()
+            
+                identity = msg[0]
+                request = msg[1]
+                if request == b"SNAPSHOT_REQUEST":
+                    pass
+                else:
+                    logger.info("Bad snapshot request")
+                    break
+                                
+                for k,v in self.property_map.items():
+                    logger.info("Sending {} snapshot to {}".format(k,identity))
+                    self.request_sock.send(identity,zmq.SNDMORE)
+                    v.send(self.request_sock)
+
+                logger.info("done".format(k,identity))
+                
+                msg_end_snapshot = RCFMessage(key="SNAPSHOT_END")
+                self.request_sock.send(identity,zmq.SNDMORE)
+                msg_end_snapshot.send(self.request_sock)
+
             elif self.collector_sock in socks:
                 msg = self.collector_sock.recv_multipart(zmq.DONTWAIT)
                 # Update all clients
+
                 self.pub_sock.send_multipart(msg)
             else:
                 await asyncio.sleep(0.016)
