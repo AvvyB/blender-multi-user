@@ -3,6 +3,8 @@ from . import net_components
 import time
 import logging
 import mathutils
+import random
+import string
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,12 @@ VECTOR_TYPES = (
     'Vector'
 )
 
+
+def randomStringDigits(stringLength=6):
+    """Generate a random string of letters and digits """
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+
 class VectorTypeTranslation(net_components.RCFTranslation):
     def set(self,data):
         """
@@ -34,7 +42,6 @@ class VectorTypeTranslation(net_components.RCFTranslation):
         rcf > local program
         """
         return mathutils.Vector((data[0],data[1],data[2]))
-
 
 def match_supported_types(value):
     type_factory = None
@@ -147,7 +154,7 @@ def observer():
 
 
 # CLIENT-SERVER
-def refresh_window(msg):
+def refresh_window():
     import bpy
 
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -178,6 +185,10 @@ def array2vector(a):
     logger.debug(mathutils.Vector((a[0],a[1],a[2])))
     return mathutils.Vector((a[0],a[1],a[2]))
 
+
+recv_callbacks=[patch_scene]
+post_init_callbacks=[refresh_window]
+
 class session_join(bpy.types.Operator):
     bl_idname = "session.join"
     bl_label = "join"
@@ -191,17 +202,21 @@ class session_join(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        username = str(context.scene.session_settings.username)
-        callbacks=[patch_scene]
+        net_settings = context.scene.session_settings
+        
+        if net_settings.username == "DefaultUser":
+            net_settings.username = "{}_{}".format(net_settings.username,randomStringDigits())
 
-        client = net_components.Client(id=username,recv_callback=callbacks)
+        username = str(context.scene.session_settings.username)
+        
+
+        client = net_components.Client(id=username,on_recv=recv_callbacks,on_post_init=post_init_callbacks)
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
         bpy.app.timers.register(observer)
 
         return {"FINISHED"}
-
 
 class session_send(bpy.types.Operator):
     bl_idname = "session.send"
@@ -241,15 +256,21 @@ class session_create(bpy.types.Operator):
     def execute(self, context):
         global server
         global client
+        
+        # net_settings = context.scene.session_settings
+        
+        # if net_settings.username == "DefaultUser":
+        #     net_settings.username = "{}_{}".format(net_settings.username,randomStringDigits())
 
-        username = str(context.scene.session_settings.username)
-        callbacks=[patch_scene]
-
+        # username = str(context.scene.session_settings.username)
+        
         server = net_components.Server()
-        client = net_components.Client(id=username,recv_callback=callbacks)
+        time.sleep(0.1)
 
-        # time.sleep(0.1)
+        bpy.ops.session.join()
+        # client = net_components.Client(id=username,on_recv=recv_callbacks,on_post_init=post_init_callbacks)
 
+    
         bpy.ops.asyncio.loop()
         bpy.app.timers.register(observer)
         return {"FINISHED"}
@@ -306,6 +327,7 @@ def register():
         register_class(cls)
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
+    
     # bpy.app.handlers.depsgraph_update_post.append(observer)
     
 def unregister():
