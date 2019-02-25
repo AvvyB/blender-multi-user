@@ -23,68 +23,50 @@ VECTOR_TYPES = (
     'Vector'
 )
 
+def on_scene_evalutation(scene):
+    # TODO: viewer representation
+    # TODO: Live update only selected object
+    # TODO: Scene representation
+    pass
 
 def randomStringDigits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
+
 class VectorTypeTranslation(net_components.RCFTranslation):
-    def set(self,data):
+    def set(self, data):
         """
             local program > rcf 
 
         """
-        return [data.x,data.y,data.z]
+        return [data.x, data.y, data.z]
 
-    def get(self,data):
+    def get(self, data):
         """
         rcf > local program
         """
-        return mathutils.Vector((data[0],data[1],data[2]))
+        return mathutils.Vector((data[0], data[1], data[2]))
+
 
 def match_supported_types(value):
     type_factory = None
 
-    if isinstance(value,bool):
+    if isinstance(value, bool):
         print("float")
-    elif isinstance(value,mathutils.Vector):
+    elif isinstance(value, mathutils.Vector):
         print("vector")
         type_factory = VectorTypeTranslation()
-    elif isinstance(value,mathutils.Euler):
+    elif isinstance(value, mathutils.Euler):
         print("Euler")
     elif type(value) in NATIVE_TYPES:
         print("native")
     else:
         raise NotImplementedError
-    
+
     return type_factory
 
-# class RNAFractory(net_components.RCFMsgFactory):
-#     def __init__(self,data):
-#         self.load = match_type():
-
-#     def load(self,data):
-#         logger.debug(' casting from bpy')
-#         value_type = type(data)
-#         rna_value = None
-
-#         if value_type is mathutils.Vector or mathutils.Euler:
-#             rna_value =  [data.x,data.y,data.z]
-#         elif value_type is bpy.props.collection:
-#             pass # TODO: Collection replication
-#         elif value_type in NATIVE_TYPES:
-#             rna_value = data
-        
-#         return rna_value
-
-#     def unload(self,data):
-#         rcf_value = None
-
-#         if value_type == 'Vector':
-#             value_casted = mathutils.Vector((data[0],data[1],data[2]))
-        
-#         return rcf_value
 
 # TODO: Less ugly method
 def from_bpy(value):
@@ -93,15 +75,16 @@ def from_bpy(value):
     value_casted = None
 
     if value_type is mathutils.Vector:
-        value_casted =  [value.x,value.y,value.z]
+        value_casted = [value.x, value.y, value.z]
     elif value_type is bpy.props.collection:
-        pass # TODO: Collection replication
+        pass  # TODO: Collection replication
     elif value_type is mathutils.Euler:
-        value_casted =  [value.x,value.y,value.z]
+        value_casted = [value.x, value.y, value.z]
     elif value_type is NATIVE_TYPES:
         value_casted = value
-    
-    return str(value.__class__.__name__),value_casted
+
+    return str(value.__class__.__name__), value_casted
+
 
 def to_bpy(store_item):
     """
@@ -112,9 +95,11 @@ def to_bpy(store_item):
     store_value = store_item.body
 
     if value_type == 'Vector':
-        value_casted = mathutils.Vector((store_value[0],store_value[1],store_value[2]))
+        value_casted = mathutils.Vector(
+            (store_value[0], store_value[1], store_value[2]))
 
     return value_casted
+
 
 def resolve_bpy_path(path):
     """
@@ -127,27 +112,28 @@ def resolve_bpy_path(path):
     obj = None
     attribute = path[2]
     logger.debug("resolving {}".format(path))
-    
+
     try:
-        obj = getattr(bpy.data,path[0])[path[1]]
-        attribute = getattr(obj,path[2])
-        logger.debug("done {} : {}".format(obj,attribute))
+        obj = getattr(bpy.data, path[0])[path[1]]
+        attribute = getattr(obj, path[2])
+        logger.debug("done {} : {}".format(obj, attribute))
     except AttributeError:
         logger.debug(" Attribute not found")
 
     return obj, attribute
 
+
 def observer():
     global client
 
     try:
-        for key,values in client.property_map.items():
+        for key, values in client.property_map.items():
             # if values.id == client.id:
             obj, attr = resolve_bpy_path(key)
 
             if attr != to_bpy(client.property_map[key]):
                 value_type, value = from_bpy(attr)
-                client.push_update(key,value_type,value)
+                client.push_update(key, value_type, value)
     except:
         pass
     return bpy.context.scene.session_settings.update_frequency
@@ -159,6 +145,7 @@ def refresh_window():
 
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+
 def patch_scene(msg):
     global client
 
@@ -166,28 +153,32 @@ def patch_scene(msg):
         value = None
 
         obj, attr = resolve_bpy_path(msg.key)
-        attr_name = msg.key.split('/')[2] 
+        attr_name = msg.key.split('/')[2]
 
-        value  = to_bpy(msg)
+        value = to_bpy(msg)
         # print(msg.get)
-        logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(obj, attr_name, value))
+        logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
+            obj, attr_name, value))
         try:
-            setattr(obj,attr_name,value)
+            setattr(obj, attr_name, value)
         except:
             pass
     else:
         logger.debug('no need to update scene on our own')
 
+
 def vector2array(v):
-    return [v.x,v.y,v.z]
+    return [v.x, v.y, v.z]
+
 
 def array2vector(a):
-    logger.debug(mathutils.Vector((a[0],a[1],a[2])))
-    return mathutils.Vector((a[0],a[1],a[2]))
+    logger.debug(mathutils.Vector((a[0], a[1], a[2])))
+    return mathutils.Vector((a[0], a[1], a[2]))
 
 
-recv_callbacks=[patch_scene]
-post_init_callbacks=[refresh_window]
+recv_callbacks = [patch_scene]
+post_init_callbacks = [refresh_window]
+
 
 class session_join(bpy.types.Operator):
     bl_idname = "session.join"
@@ -203,14 +194,15 @@ class session_join(bpy.types.Operator):
         global client
 
         net_settings = context.scene.session_settings
-        
+
         if net_settings.username == "DefaultUser":
-            net_settings.username = "{}_{}".format(net_settings.username,randomStringDigits())
+            net_settings.username = "{}_{}".format(
+                net_settings.username, randomStringDigits())
 
         username = str(context.scene.session_settings.username)
-        
 
-        client = net_components.Client(id=username,on_recv=recv_callbacks,on_post_init=post_init_callbacks)
+        client = net_components.Client(
+            id=username, on_recv=recv_callbacks, on_post_init=post_init_callbacks)
         time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -218,6 +210,7 @@ class session_join(bpy.types.Operator):
 
         net_settings.is_running = True
         return {"FINISHED"}
+
 
 class session_add_property(bpy.types.Operator):
     bl_idname = "session.add_prop"
@@ -239,10 +232,11 @@ class session_add_property(bpy.types.Operator):
         if obj and attr:
             key = self.property_path
             value_type, value = from_bpy(attr)
-            
-            client.push_update(key,value_type,value)
+
+            client.push_update(key, value_type, value)
 
         return {"FINISHED"}
+
 
 class session_remove_property(bpy.types.Operator):
     bl_idname = "session.remove_prop"
@@ -266,6 +260,7 @@ class session_remove_property(bpy.types.Operator):
         except:
             return {"CANCELED"}
 
+
 class session_create(bpy.types.Operator):
     bl_idname = "session.create"
     bl_label = "create"
@@ -279,12 +274,12 @@ class session_create(bpy.types.Operator):
     def execute(self, context):
         global server
         global client
-        
+
         server = net_components.Server()
         time.sleep(0.1)
 
         bpy.ops.session.join()
-    
+
         bpy.app.timers.register(observer)
         return {"FINISHED"}
 
@@ -305,7 +300,7 @@ class session_stop(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
 
-        if server :
+        if server:
             server.stop()
             del server
             server = None
@@ -324,12 +319,13 @@ class session_stop(bpy.types.Operator):
 
 
 class session_settings(bpy.types.PropertyGroup):
-    username = bpy.props.StringProperty(name="Username",default="user")
+    username = bpy.props.StringProperty(name="Username", default="user")
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
     buffer = bpy.props.StringProperty(name="None")
-    is_running = bpy.props.BoolProperty(name="is_running",default=False)
-    update_frequency = bpy.props.FloatProperty(name="update_frequency", default=0.008)
+    is_running = bpy.props.BoolProperty(name="is_running", default=False)
+    update_frequency = bpy.props.FloatProperty(
+        name="update_frequency", default=0.008)
 
 
 # TODO: Rename to match official blender convention
@@ -348,14 +344,19 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    bpy.types.Scene.session_settings = bpy.props.PointerProperty(type=session_settings)
+    bpy.types.Scene.session_settings = bpy.props.PointerProperty(
+        type=session_settings)
     
+    bpy.app.handlers.depsgraph_update_post.append(on_scene_evalutation)
+
+
 def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
+    bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
 
 
 if __name__ == "__main__":
