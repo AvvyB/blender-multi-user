@@ -324,12 +324,12 @@ class session_stop(bpy.types.Operator):
 
 
 class session_settings(bpy.types.PropertyGroup):
-    username = bpy.props.StringProperty(name="Username",default="DefaultUser")
+    username = bpy.props.StringProperty(name="Username",default="user")
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running",default=False)
-    update_frequency = bpy.props.FloatProperty(name="update_frequency", default=0.016)
+    update_frequency = bpy.props.FloatProperty(name="update_frequency", default=0.008)
 
 
 # TODO: Rename to match official blender convention

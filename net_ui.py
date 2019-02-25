@@ -56,6 +56,7 @@ class SessionPanel(bpy.types.Panel):
             row.prop(scene.session_settings,"username",text="")
             row = layout.row()
             row.operator("session.join")
+            row = layout.row()
             row.operator("session.create")
         
 
