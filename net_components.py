@@ -206,10 +206,6 @@ class Client():
         rcfmsg.send(self.push_sock)
         # self.push_sock.send_multipart()
 
-    def req_snapshot(self):
-        # Sync
-        pass
-
     def stop(self):
         logger.debug("Stopping client")
         self.poller.unregister(self.pull_sock)
