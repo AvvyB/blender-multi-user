@@ -5,50 +5,82 @@ from .libs import umsgpack
 import time
 import random
 import struct
+import collections
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-class RCFTranslation():
-    def get(self, data):
-        """
-            local program > rcf 
-
-        """
-        raise NotImplementedError
-
-    def set(self, data):
-        """
-        rcf > local program
-        """
-        raise NotImplementedError
-
-
-class RCFMsgFactory():
+class RCFFactory(object):
     """
-    Abstract basic data bridge
+    Abstract layer used to bridge external and inter
     """
-
-    def __init__(self):
+    def init(self, data):
+        """
+        set the RCFMessage pointer to local data
+        """
+        #Setup data accessor
+        # data.get = load_getter(data)
+        # data.set = load_setter(data)
         pass
-        raise NotImplementedError
+        # TODO: Setup local pointer
+        
+        pass
 
-    def load(self, data):
+    def load_getter(self, data):
         """
         local program > rcf 
 
         """
-        raise NotImplementedError
+        pass
 
-    def unload(self, data):
+    def load_setter(self, data):
         """
         rcf > local program
         """
-        raise NotImplementedError
+        pass
 
+    def apply(self,data):
+        pass
 
-# TODO: Add message time and author stamp for reliabilty
+    def diff(self, data):
+        """
+        Verify data integrity 
+        """
+        pass
+
+class RCFStore(collections.MutableMapping,dict):
+    def __init__(self, custom_factory=RCFFactory()):
+        super().__init__() 
+        self.factory = custom_factory
+        print("Init a store")
+        
+    def __getitem__(self,key):
+        # if self[key]:
+            # Get dict data from external
+            # print("getting item from store")
+        return dict.__getitem__(self,key)
+
+    def __setitem__(self, key, value):
+        #test
+        # TODO: test with try - except KeyError
+        if key in self:
+            # Set dict data from external
+            dict.__setitem__(self,key,value)
+        else:
+            print("need init")
+            self.factory.init(value.body)
+            dict.__setitem__(self,key,value)
+           
+    def __delitem__(self, key):
+        dict.__delitem__(self,key)
+    def __iter__(self):
+        return dict.__iter__(self)
+    def __len__(self):
+        return dict.__len__(self)
+    def __contains__(self, x):
+        return dict.__contains__(self,x)
+
 class RCFMessage(object):
     """
     Message is formatted on wire as 2 frames:
@@ -63,17 +95,16 @@ class RCFMessage(object):
     mtype = None  # data mtype (string)
     body = None  # data blob
 
-    def __init__(self, key=None, id=None, mtype=None, body=None, factory=None):
+    def __init__(self, key=None, id=None, mtype=None, body=None, pointer=None):
         self.key = key
         self.mtype = mtype
         self.body = body
         self.id = id
-
-        self.factory = factory
-
+        self.pointer = pointer
+        self.load = None
+        self.unload = None
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
-        # this seems weird to check, but it's what the C example does
         # this currently erasing old value
         if self.key is not None and self.body is not None:
             dikt[self.key] = self
@@ -115,9 +146,8 @@ class RCFMessage(object):
             data=data,
         ))
 
-
 class Client():
-    def __init__(self, context=zmq.Context(), id="default", on_recv=None, on_post_init=None, is_admin=False):
+    def __init__(self, context=zmq.Context(), id="default", on_recv=None, on_post_init=None, is_admin=False, factory=RCFFactory()):
         self.is_admin = is_admin
 
         # 0MQ vars
@@ -134,7 +164,7 @@ class Client():
         # Main client loop registration
         self.task = asyncio.ensure_future(self.main())
 
-        self.property_map = {}
+        self.property_map = RCFStore()
 
         logger.info("{} client initialized".format(id))
 
@@ -186,6 +216,7 @@ class Client():
 
         for f in self.on_post_init:
             f()
+
         logger.info("{} client running".format(id))
 
         # Main loop
@@ -195,8 +226,10 @@ class Client():
 
             if self.pull_sock in socks:
                 rcfmsg = RCFMessage.recv(self.pull_sock)
-
+                
+                # if rcfmsg.pointer:
                 rcfmsg.store(self.property_map)
+
 
                 for f in self.on_recv:
                     f(rcfmsg)
@@ -226,7 +259,7 @@ class Server():
         self.collector_sock = None
         self.poller = None
 
-        self.property_map = {}
+        self.property_map =  RCFStore()
         self.id = id
         self.bind_ports()
         # Main client loop registration
@@ -261,16 +294,16 @@ class Server():
         logger.info("{} server launched".format(id))
 
         while True:
-            # TODO: Listener on anoter process linked with PAIR/PAIR ?
+            # Non blocking poller 
             socks = dict(self.poller.poll(1))
 
-            # Snapshot system for late join
+            # Snapshot system for late join (Server - Client)
             if self.request_sock in socks:
                 msg = self.request_sock.recv_multipart(zmq.DONTWAIT)
 
                 identity = msg[0]
                 request = msg[1]
-                print("reveived snapshot request from {}".format(identity.decode()))
+
                 if request == b"SNAPSHOT_REQUEST":
                     pass
                 else:
@@ -287,13 +320,15 @@ class Server():
                 self.request_sock.send(identity, zmq.SNDMORE)
                 msg_end_snapshot.send(self.request_sock)
                 logger.info("done")
+
+            # Regular update routing (Clients / Client)
             elif self.collector_sock in socks:
                 msg = RCFMessage.recv(self.collector_sock)
                 # Update all clients
                 msg.store(self.property_map)
                 msg.send(self.pub_sock)
             else:
-                await asyncio.sleep(0.016)
+                await asyncio.sleep(0.001)
 
     def stop(self):
         logger.debug("Stopping server")

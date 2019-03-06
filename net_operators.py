@@ -19,9 +19,10 @@ NATIVE_TYPES = (
     bpy.types.StringProperty,
 )
 
-VECTOR_TYPES = (
-    'Vector'
-)
+class RNAFactory(net_components.RCFFactory):
+    def load_getter(self,data):
+        get,set = match_supported_types(data)
+
 
 def on_scene_evalutation(scene):
     # TODO: viewer representation
@@ -33,21 +34,6 @@ def randomStringDigits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
-
-
-class VectorTypeTranslation(net_components.RCFTranslation):
-    def set(self, data):
-        """
-            local program > rcf 
-
-        """
-        return [data.x, data.y, data.z]
-
-    def get(self, data):
-        """
-        rcf > local program
-        """
-        return mathutils.Vector((data[0], data[1], data[2]))
 
 
 def match_supported_types(value):
@@ -178,6 +164,7 @@ def array2vector(a):
 
 recv_callbacks = [patch_scene]
 post_init_callbacks = [refresh_window]
+
 
 
 class session_join(bpy.types.Operator):
@@ -319,7 +306,7 @@ class session_stop(bpy.types.Operator):
 
 
 class session_settings(bpy.types.PropertyGroup):
-    username = bpy.props.StringProperty(name="Username", default="user")
+    username = bpy.props.StringProperty(name="Username", default="user_{}".format(randomStringDigits()))
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
     buffer = bpy.props.StringProperty(name="None")
