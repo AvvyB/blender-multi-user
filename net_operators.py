@@ -203,7 +203,7 @@ class session_join(bpy.types.Operator):
 
         client = net_components.Client(
             id=username, on_recv=recv_callbacks, on_post_init=post_init_callbacks)
-        time.sleep(1)
+        # time.sleep(1)
 
         bpy.ops.asyncio.loop()
         bpy.app.timers.register(observer)
@@ -347,7 +347,7 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     
-    bpy.app.handlers.depsgraph_update_post.append(on_scene_evalutation)
+    # bpy.app.handlers.depsgraph_update_post.append(on_scene_evalutation)
 
 
 def unregister():
@@ -355,9 +355,11 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
+    # bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
+
     del bpy.types.Scene.session_settings
-    bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
 
 
 if __name__ == "__main__":
     register()
+    
