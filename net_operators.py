@@ -5,6 +5,8 @@ import logging
 import mathutils
 import random
 import string
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +21,10 @@ NATIVE_TYPES = (
     bpy.types.StringProperty,
 )
 
+
 class RNAFactory(net_components.RCFFactory):
-    def load_getter(self,data):
-        get,set = match_supported_types(data)
+    def load_getter(self, data):
+        get, set = match_supported_types(data)
 
 
 def on_scene_evalutation(scene):
@@ -29,6 +32,7 @@ def on_scene_evalutation(scene):
     # TODO: Live update only selected object
     # TODO: Scene representation
     pass
+
 
 def randomStringDigits(stringLength=6):
     """Generate a random string of letters and digits """
@@ -153,18 +157,8 @@ def patch_scene(msg):
         logger.debug('no need to update scene on our own')
 
 
-def vector2array(v):
-    return [v.x, v.y, v.z]
-
-
-def array2vector(a):
-    logger.debug(mathutils.Vector((a[0], a[1], a[2])))
-    return mathutils.Vector((a[0], a[1], a[2]))
-
-
 recv_callbacks = [patch_scene]
 post_init_callbacks = [refresh_window]
-
 
 
 class session_join(bpy.types.Operator):
@@ -306,13 +300,27 @@ class session_stop(bpy.types.Operator):
 
 
 class session_settings(bpy.types.PropertyGroup):
-    username = bpy.props.StringProperty(name="Username", default="user_{}".format(randomStringDigits()))
+    username = bpy.props.StringProperty(
+        name="Username", default="user_{}".format(randomStringDigits()))
     ip = bpy.props.StringProperty(name="localhost")
     port = bpy.props.IntProperty(name="5555")
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
+
+
+camera_coords = [(-1, 1, 0), (1, 1, 0), (1, 1, 0),
+                 (1, -1, 0), (1, -1, 0), (-1, -1, 0),
+                 (-1, -1, 0), (-1, 1, 0)]
+shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+batch = batch_for_shader(shader, 'LINES', {"pos": camera_coords})
+
+
+def draw_client():
+    shader.bind()
+    shader.uniform_float("color", (1, 1, 0, 1))
+    batch.draw(shader)
 
 
 # TODO: Rename to match official blender convention
@@ -333,7 +341,9 @@ def register():
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
-    
+
+    bpy.types.SpaceView3D.draw_handler_add(
+        draw_client, (), 'WINDOW', 'POST_VIEW')
     # bpy.app.handlers.depsgraph_update_post.append(on_scene_evalutation)
 
 
@@ -342,6 +352,7 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
+    # bpy.types.SpaceView3D.draw_handler_remove(draw_client, (),'WINDOW')
     # bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
 
     del bpy.types.Scene.session_settings
@@ -349,4 +360,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-    

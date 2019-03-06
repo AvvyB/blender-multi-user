@@ -249,7 +249,6 @@ class Client():
         self.pull_sock.close()
         self.task.cancel()
 
-
 class Server():
     def __init__(self, context=zmq.Context(), id="admin"):
         self.context = context
