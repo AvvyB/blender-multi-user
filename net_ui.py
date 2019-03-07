@@ -1,6 +1,73 @@
 import bpy
 from . import net_components
 from . import net_operators
+import gpu
+from gpu_extras.batch import batch_for_shader
+
+class DrawClient(bpy.types.Operator):
+    bl_idname = "session.draw"
+    bl_label = "DrawClient"
+    bl_description = "Description that shows in blender tooltips"
+    bl_options = {"REGISTER"}
+
+    coords = (
+    (-1, -1, -1), (+1, -1, -1),
+    (-1, +1, -1), (+1, +1, -1),
+    (-1, -1, +1), (+1, -1, +1),
+    (-1, +1, +1), (+1, +1, +1))
+
+    indices = (
+        (0, 1), (0, 2), (1, 3), (2, 3),
+        (4, 5), (4, 6), (5, 7), (6, 7),
+        (0, 4), (1, 5), (2, 6), (3, 7))
+    def __init__(self):
+        super().__init__()
+
+        self.shader = None
+        self.batch = None 
+        self.draw_handle = None
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def invoke(self, context,event):
+        self.create_batch()
+
+        self.register_handlers()
+
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def register_handlers(self):
+        self.draw_handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback, (), 'WINDOW', 'POST_VIEW')
+
+    def unregister_handlers(self):
+        bpy.types.SpaceView3D.draw_handler_remove(self.draw_handle,"WINDOW")
+
+    def create_batch(self):
+        self.shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        self.batch = batch_for_shader(self.shader, 'LINES', {"pos": self.coords}, indices=self.indices)
+
+    def draw_callback(self):
+        self.shader.bind()
+        self.shader.uniform_float("color", (1, 0, 0, 1))
+        self.batch.draw(self.shader)
+
+    def modal(self, context, event):
+        if context.area:
+            context.area.tag_redraw()
+        
+        if event.type in {"ESC"}:
+            self.unregister_handlers()
+            return {"CANCELLED"}
+
+        return {"PASS_THROUGH"}
+
+    def finish(self):
+        self.unregister_handlers()
+        return {"FINISHED"}
+
 
 class SessionPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -58,9 +125,11 @@ class SessionPanel(bpy.types.Panel):
             row.operator("session.join")
             row = layout.row()
             row.operator("session.create")
-        
 
+        row = layout.row()
+        row.operator("session.draw")
 classes = (
+    DrawClient,
     SessionPanel,
 )
 

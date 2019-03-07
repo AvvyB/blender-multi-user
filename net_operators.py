@@ -310,18 +310,6 @@ class session_settings(bpy.types.PropertyGroup):
         name="update_frequency", default=0.008)
 
 
-camera_coords = [(-1, 1, 0), (1, 1, 0), (1, 1, 0),
-                 (1, -1, 0), (1, -1, 0), (-1, -1, 0),
-                 (-1, -1, 0), (-1, 1, 0)]
-shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-batch = batch_for_shader(shader, 'LINES', {"pos": camera_coords})
-
-
-def draw_client():
-    shader.bind()
-    shader.uniform_float("color", (1, 1, 0, 1))
-    batch.draw(shader)
-
 
 # TODO: Rename to match official blender convention
 classes = (
@@ -342,8 +330,6 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
 
-    bpy.types.SpaceView3D.draw_handler_add(
-        draw_client, (), 'WINDOW', 'POST_VIEW')
     # bpy.app.handlers.depsgraph_update_post.append(on_scene_evalutation)
 
 
@@ -352,9 +338,11 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    # bpy.types.SpaceView3D.draw_handler_remove(draw_client, (),'WINDOW')
-    # bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
+   
 
+
+    # bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
+    
     del bpy.types.Scene.session_settings
 
 
