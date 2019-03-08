@@ -3,6 +3,20 @@ from . import net_components
 from . import net_operators
 import gpu
 from gpu_extras.batch import batch_for_shader
+from bpy_extras import view3d_utils
+
+def view3d_find():
+    for area in bpy.context.window.screen.areas:
+        if area.type == 'VIEW_3D':
+            v3d = area.spaces[0]
+            rv3d = v3d.region_3d
+            for region in area.regions:
+                if region.type == 'WINDOW':
+                    return area, region, rv3d
+    return None, None, None
+
+
+
 
 class DrawClient(bpy.types.Operator):
     bl_idname = "session.draw"
@@ -10,28 +24,42 @@ class DrawClient(bpy.types.Operator):
     bl_description = "Description that shows in blender tooltips"
     bl_options = {"REGISTER"}
 
-    coords = (
-    (-1, -1, -1), (+1, -1, -1),
-    (-1, +1, -1), (+1, +1, -1),
-    (-1, -1, +1), (+1, -1, +1),
-    (-1, +1, +1), (+1, +1, +1))
-
-    indices = (
-        (0, 1), (0, 2), (1, 3), (2, 3),
-        (4, 5), (4, 6), (5, 7), (6, 7),
-        (0, 4), (1, 5), (2, 6), (3, 7))
+    position = bpy.props.FloatVectorProperty(default=(0,0,0))
     def __init__(self):
         super().__init__()
 
         self.shader = None
         self.batch = None 
         self.draw_handle = None
+        self.coords = None
+        self.indices = None
 
     @classmethod
     def poll(cls, context):
         return True
 
     def invoke(self, context,event):
+        area, region, rv3d = view3d_find()
+        width = region.width
+        height = region.height
+
+        v1 = view3d_utils.region_2d_to_location_3d(region,rv3d,(0,0),(0,0,rv3d.view_distance))
+        v3 = view3d_utils.region_2d_to_location_3d(region,rv3d,(0,height),(0,0,rv3d.view_distance))
+        v2 = view3d_utils.region_2d_to_location_3d(region,rv3d,(width,height),(0,0,rv3d.view_distance))
+        v4 = view3d_utils.region_2d_to_location_3d(region,rv3d,(width,0),(0,0,rv3d.view_distance))
+
+        # v1 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(0,0))
+        # v3 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(0,height))
+        # v2 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(width,height))
+        # v4 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(width,0))
+
+        self.coords = (v1, v2, v3, v4)
+
+
+        self.indices = (
+             (1, 3), (2, 1), (3, 0),(2,0)
+        )
+
         self.create_batch()
 
         self.register_handlers()
