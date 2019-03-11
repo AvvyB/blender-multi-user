@@ -19,26 +19,28 @@ class RCFFactory(object):
         """
         set the RCFMessage pointer to local data
         """
+        print("Default setter")
         #Setup data accessor
-        # data.get = load_getter(data)
-        # data.set = load_setter(data)
-        pass
+        data.get = self.load_getter(data)
+        data.set = self.load_setter(data)
+
         # TODO: Setup local pointer
-        
-        pass
+  
 
     def load_getter(self, data):
         """
         local program > rcf 
 
         """
-        pass
+        print("Default getter")
+        return None
 
     def load_setter(self, data):
         """
         rcf > local program
         """
-        pass
+        print("Default setter")
+        return None
 
     def apply(self,data):
         pass
@@ -53,7 +55,7 @@ class RCFStore(collections.MutableMapping,dict):
     def __init__(self, custom_factory=RCFFactory()):
         super().__init__() 
         self.factory = custom_factory
-        print("Init a store")
+        print("name {}".format(custom_factory.__class__.__name__))
         
     def __getitem__(self,key):
         # if self[key]:
@@ -64,13 +66,14 @@ class RCFStore(collections.MutableMapping,dict):
     def __setitem__(self, key, value):
         #test
         # TODO: test with try - except KeyError
-        if key in self:
-            # Set dict data from external
-            dict.__setitem__(self,key,value)
-        else:
-            print("need init")
-            self.factory.init(value.body)
-            dict.__setitem__(self,key,value)
+        # if key in self:
+        #     # Set dict data from external
+        #     dict.__setitem__(self,key,value)
+        # else:
+        #     print("{}".format(value))
+        #     self.factory.init(value)
+
+        dict.__setitem__(self,key,value)
            
     def __delitem__(self, key):
         dict.__delitem__(self,key)
@@ -101,8 +104,8 @@ class RCFMessage(object):
         self.body = body
         self.id = id
         self.pointer = pointer
-        self.load = None
-        self.unload = None
+        self.get = None
+        self.set = None
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
@@ -147,7 +150,15 @@ class RCFMessage(object):
         ))
 
 class Client():
-    def __init__(self, context=zmq.Context(), id="default", on_recv=None, on_post_init=None, is_admin=False, factory=RCFFactory()):
+    def __init__(
+        self, 
+        context=zmq.Context(), 
+        id="default", 
+        on_recv=None, 
+        on_post_init=None, 
+        is_admin=False, 
+        factory=None):
+
         self.is_admin = is_admin
 
         # 0MQ vars
@@ -164,7 +175,7 @@ class Client():
         # Main client loop registration
         self.task = asyncio.ensure_future(self.main())
 
-        self.property_map = RCFStore()
+        self.property_map = RCFStore(custom_factory=factory)
 
         logger.info("{} client initialized".format(id))
 

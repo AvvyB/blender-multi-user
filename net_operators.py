@@ -1,5 +1,6 @@
 import bpy
 from . import net_components
+from . import rna_translation
 import time
 import logging
 import mathutils
@@ -20,11 +21,6 @@ NATIVE_TYPES = (
     bpy.types.BoolProperty,
     bpy.types.StringProperty,
 )
-
-
-class RNAFactory(net_components.RCFFactory):
-    def load_getter(self, data):
-        get, set = match_supported_types(data)
 
 
 def on_scene_evalutation(scene):
@@ -182,8 +178,13 @@ class session_join(bpy.types.Operator):
 
         username = str(context.scene.session_settings.username)
 
+        client_factory = rna_translation.RNAFactory()
+        print("{}".format(client_factory.__class__.__name__))
         client = net_components.Client(
-            id=username, on_recv=recv_callbacks, on_post_init=post_init_callbacks)
+            id=username, 
+            on_recv=recv_callbacks, 
+            on_post_init=post_init_callbacks,
+            factory=client_factory)
         # time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -310,7 +311,6 @@ class session_settings(bpy.types.PropertyGroup):
         name="update_frequency", default=0.008)
 
 
-
 # TODO: Rename to match official blender convention
 classes = (
     session_join,
@@ -334,15 +334,25 @@ def register():
 
 
 def unregister():
+
+    global server
+    global client
+
+    if server:
+        server.stop()
+        del server
+        server = None
+    if client:
+        client.stop()
+        del client
+        client = None
+
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
 
-   
-
-
     # bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
-    
+
     del bpy.types.Scene.session_settings
 
 
