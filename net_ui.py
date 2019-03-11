@@ -1,6 +1,7 @@
 import bpy
 from . import net_components
 from . import net_operators
+import mathutils
 import gpu
 from gpu_extras.batch import batch_for_shader
 from bpy_extras import view3d_utils
@@ -13,10 +14,14 @@ def view3d_find():
             for region in area.regions:
                 if region.type == 'WINDOW':
                     return area, region, rv3d
+                    
+                    break
     return None, None, None
 
-
-
+def get_target(region, rv3d,coord):
+    view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+    ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+    return  ray_origin +view_vector
 
 class DrawClient(bpy.types.Operator):
     bl_idname = "session.draw"
@@ -42,17 +47,15 @@ class DrawClient(bpy.types.Operator):
         area, region, rv3d = view3d_find()
         width = region.width
         height = region.height
+        depth = mathutils.Vector((rv3d.view_distance,rv3d.view_distance,rv3d.view_distance))
+        vec = view3d_utils.region_2d_to_vector_3d(region, rv3d, (0,0))
+        
+        v1 = get_target(region,rv3d,(0,0))
+        v3 = get_target(region,rv3d,(0,height))
+        v2 = get_target(region,rv3d,(width,height))
+        v4 = get_target(region,rv3d,(width,0))
 
-        v1 = view3d_utils.region_2d_to_location_3d(region,rv3d,(0,0),(0,0,rv3d.view_distance))
-        v3 = view3d_utils.region_2d_to_location_3d(region,rv3d,(0,height),(0,0,rv3d.view_distance))
-        v2 = view3d_utils.region_2d_to_location_3d(region,rv3d,(width,height),(0,0,rv3d.view_distance))
-        v4 = view3d_utils.region_2d_to_location_3d(region,rv3d,(width,0),(0,0,rv3d.view_distance))
-
-        # v1 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(0,0))
-        # v3 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(0,height))
-        # v2 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(width,height))
-        # v4 = view3d_utils.region_2d_to_vector_3d(region,rv3d,(width,0))
-
+        print("{}".format(rv3d.view_distance))
         self.coords = (v1, v2, v3, v4)
 
 
@@ -72,6 +75,7 @@ class DrawClient(bpy.types.Operator):
 
     def unregister_handlers(self):
         bpy.types.SpaceView3D.draw_handler_remove(self.draw_handle,"WINDOW")
+        self.draw_handle = None
 
     def create_batch(self):
         self.shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
@@ -86,9 +90,12 @@ class DrawClient(bpy.types.Operator):
         if context.area:
             context.area.tag_redraw()
         
+        
         if event.type in {"ESC"}:
             self.unregister_handlers()
             return {"CANCELLED"}
+        # if self.draw_handle:
+        #     self.finish()
 
         return {"PASS_THROUGH"}
 
