@@ -23,6 +23,22 @@ def get_target(region, rv3d,coord):
     ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
     return  ray_origin +view_vector
 
+def get_client_view_rect():
+    area, region, rv3d = view3d_find()
+
+    width = region.width
+    height = region.height
+
+    v1 = get_target(region,rv3d,(0,0))
+    v3 = get_target(region,rv3d,(0,height))
+    v2 = get_target(region,rv3d,(width,height))
+    v4 = get_target(region,rv3d,(width,0))
+
+    coords = (v1, v2, v3, v4)
+    indices = (
+            (1, 3), (2, 1), (3, 0),(2,0)
+    )
+
 class DrawClient(bpy.types.Operator):
     bl_idname = "session.draw"
     bl_label = "DrawClient"
@@ -36,6 +52,7 @@ class DrawClient(bpy.types.Operator):
         self.shader = None
         self.batch = None 
         self.draw_handle = None
+        self.draw_event = None
         self.coords = None
         self.indices = None
 
@@ -44,6 +61,11 @@ class DrawClient(bpy.types.Operator):
         return True
 
     def invoke(self, context,event):
+        try:
+            self.unregister_handlers()
+        except:
+            pass
+
         area, region, rv3d = view3d_find()
         width = region.width
         height = region.height
@@ -65,17 +87,21 @@ class DrawClient(bpy.types.Operator):
 
         self.create_batch()
 
-        self.register_handlers()
+        self.register_handlers(context)
 
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
 
-    def register_handlers(self):
+    def register_handlers(self,context):
         self.draw_handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback, (), 'WINDOW', 'POST_VIEW')
+        self.draw_event = context.window_manager.event_timer_add(0.1, window=context.window)
 
-    def unregister_handlers(self):
+    def unregister_handlers(self,context):
+        context.window_manager.event_timer_remove(self.draw_event)
         bpy.types.SpaceView3D.draw_handler_remove(self.draw_handle,"WINDOW")
+
         self.draw_handle = None
+        self.draw_event = None
 
     def create_batch(self):
         self.shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
@@ -92,7 +118,7 @@ class DrawClient(bpy.types.Operator):
         
         
         if event.type in {"ESC"}:
-            self.unregister_handlers()
+            self.unregister_handlers(context)
             return {"CANCELLED"}
         # if self.draw_handle:
         #     self.finish()

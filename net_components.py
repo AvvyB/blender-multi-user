@@ -1,6 +1,7 @@
 import zmq
 import asyncio
 import logging
+from .libs.esper import esper
 from .libs import umsgpack
 import time
 import random
@@ -55,24 +56,11 @@ class RCFStore(collections.MutableMapping,dict):
     def __init__(self, custom_factory=RCFFactory()):
         super().__init__() 
         self.factory = custom_factory
-        print("name {}".format(custom_factory.__class__.__name__))
         
     def __getitem__(self,key):
-        # if self[key]:
-            # Get dict data from external
-            # print("getting item from store")
         return dict.__getitem__(self,key)
 
     def __setitem__(self, key, value):
-        #test
-        # TODO: test with try - except KeyError
-        # if key in self:
-        #     # Set dict data from external
-        #     dict.__setitem__(self,key,value)
-        # else:
-        #     print("{}".format(value))
-        #     self.factory.init(value)
-
         dict.__setitem__(self,key,value)
            
     def __delitem__(self, key):
@@ -106,10 +94,11 @@ class RCFMessage(object):
         self.pointer = pointer
         self.get = None
         self.set = None
+        
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
-        if self.key is not None and self.body is not None:
+        if self.key is not None:
             dikt[self.key] = self
 
     def send(self, socket):
@@ -227,8 +216,12 @@ class Client():
 
         for f in self.on_post_init:
             f()
-
+        
         logger.info("{} client running".format(id))
+
+        self.push_update("net/clients/{}".format(self.id.decode()),"client",None)
+    
+
 
         # Main loop
         while True:

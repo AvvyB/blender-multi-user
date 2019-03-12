@@ -92,7 +92,6 @@ def resolve_bpy_path(path):
     Get bpy property value from path
     """
 
-    t = time.perf_counter()
     path = path.split('/')
 
     obj = None
@@ -112,27 +111,32 @@ def resolve_bpy_path(path):
 def observer():
     global client
 
-    try:
-        for key, values in client.property_map.items():
-            # if values.id == client.id:
-            obj, attr = resolve_bpy_path(key)
+   
+    for key, values in client.property_map.items():
+        if client.id in key:
+            #client position update 
+            pass
+        else:
+            try:
+                obj, attr = resolve_bpy_path(key)
 
-            if attr != to_bpy(client.property_map[key]):
-                value_type, value = from_bpy(attr)
-                client.push_update(key, value_type, value)
-    except:
-        pass
+                if attr != to_bpy(client.property_map[key]):
+                    value_type, value = from_bpy(attr)
+                    client.push_update(key, value_type, value)
+            except:
+                pass
+
     return bpy.context.scene.session_settings.update_frequency
 
-
-# CLIENT-SERVER
 def refresh_window():
     import bpy
 
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+def init_scene(msg):
+    pass
 
-def patch_scene(msg):
+def update_scene(msg):
     global client
 
     if msg.id != client.id:
@@ -152,8 +156,13 @@ def patch_scene(msg):
     else:
         logger.debug('no need to update scene on our own')
 
+def update_ui(msg):
+    """
+    Update collaborative UI elements
+    """
+    pass
 
-recv_callbacks = [patch_scene]
+recv_callbacks = [update_scene,update_ui]
 post_init_callbacks = [refresh_window]
 
 
@@ -189,6 +198,7 @@ class session_join(bpy.types.Operator):
 
         bpy.ops.asyncio.loop()
         bpy.app.timers.register(observer)
+
 
         net_settings.is_running = True
         return {"FINISHED"}
