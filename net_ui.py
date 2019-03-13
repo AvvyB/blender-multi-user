@@ -61,8 +61,8 @@ class SessionPanel(bpy.types.Panel):
             row.operator("session.create")
 
         row = layout.row()
-        row.operator("session.draw")
-        row.operator("session.update_client")
+        # row.operator("session.draw")
+        # row.operator("session.update_client")
 classes = (
     SessionPanel,
 )
