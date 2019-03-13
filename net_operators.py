@@ -20,7 +20,7 @@ server = None
 context = None
 
 
-COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)]
+COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),(0, 0.5, 1, 1),(0.5, 0, 1, 1)]
 NATIVE_TYPES = (
     bpy.types.IntProperty,
     bpy.types.FloatProperty,
@@ -522,19 +522,19 @@ class session_draw_clients(bpy.types.Operator):
         global client
         index = 0
         for key, values in client.property_map.items():
+            if values.mtype == "client":
+                if values.id != client.id:
 
-            if values.mtype == "client" and values.id != client.id:
+                    indices = (
+                        (1, 3), (2, 1), (3, 0), (2, 0)
+                    )
 
-                indices = (
-                    (1, 3), (2, 1), (3, 0), (2, 0)
-                )
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos": values.body}, indices=indices)
 
-                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                batch = batch_for_shader(
-                    shader, 'LINES', {"pos": values.body}, indices=indices)
-
-                self.draw_items.append(
-                    (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
+                    self.draw_items.append(
+                        (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
 
                 index += 1
 
