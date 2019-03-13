@@ -1,5 +1,6 @@
 import bpy
 from . import net_components
+from . import net_ui
 from . import rna_translation
 import time
 import logging
@@ -22,6 +23,248 @@ NATIVE_TYPES = (
     bpy.types.StringProperty,
 )
 
+import mathutils
+import gpu
+from gpu_extras.batch import batch_for_shader
+from bpy_extras import view3d_utils
+
+def view3d_find():
+    for area in bpy.context.window.screen.areas:
+        if area.type == 'VIEW_3D':
+            v3d = area.spaces[0]
+            rv3d = v3d.region_3d
+            for region in area.regions:
+                if region.type == 'WINDOW':
+                    return area, region, rv3d
+                    
+                    break
+  
+    return None, None, None
+
+def get_target(region, rv3d,coord):
+    view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+    ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+    target = ray_origin +view_vector
+    return  [target.x,target.y,target.z]
+
+def get_client_view_rect():
+    area, region, rv3d = view3d_find()
+
+    v1 = [0,0,0]
+    v2 = [0,0,0]
+    v3 = [0,0,0]
+    v4 = [0,0,0]
+
+    
+    width = region.width
+    height = region.height
+
+    v1 = get_target(region,rv3d,(0,0))
+    v3 = get_target(region,rv3d,(0,height))
+    v2 = get_target(region,rv3d,(width,height))
+    v4 = get_target(region,rv3d,(width,0))
+
+    coords = (v1, v2, v3, v4)
+    indices = (
+            (1, 3), (2, 1), (3, 0),(2,0)
+    )
+    return coords
+
+def get_client_view_rect():
+    area, region, rv3d = view3d_find()
+
+    v1 = [0,0,0]
+    v2 = [0,0,0]
+    v3 = [0,0,0]
+    v4 = [0,0,0]
+
+    
+    width = region.width
+    height = region.height
+
+    v1 = get_target(region,rv3d,(0,0))
+    v3 = get_target(region,rv3d,(0,height))
+    v2 = get_target(region,rv3d,(width,height))
+    v4 = get_target(region,rv3d,(width,0))
+
+    coords = (v1, v2, v3, v4)
+    indices = (
+            (1, 3), (2, 1), (3, 0),(2,0)
+    )
+    return coords
+
+class UpdateClientView(bpy.types.Operator):
+    bl_idname = "session.update_client"
+    bl_label = "update client"
+    bl_description = "Description that shows in blender tooltips"
+    bl_options = {"REGISTER"}
+
+    def __init__(self):
+        super().__init__()
+
+        self.coords = None
+        self.update_event = None
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def invoke(self, context,event):
+        self.coords =  get_client_view_rect()
+
+        context.window_manager.modal_handler_add(self)
+        self.register_handlers(context)
+
+        return {"RUNNING_MODAL"}
+
+    
+    def modal(self, context, event):
+        if context.area:
+            context.area.tag_redraw()
+
+        if event.type in {"TIMER"}:
+            current_coords = get_client_view_rect()
+            # Update local view
+            if current_coords  != self.coords:
+                global client
+
+                self.coords= current_coords
+                key = "net/clients/{}".format(client.id.decode())
+                
+                client.push_update(key, 'client', current_coords)
+                print("update")
+    
+
+        if event.type in {"ESC"}:
+                self.unregister_handlers(context)
+                return {"CANCELLED"}
+
+
+        return {"PASS_THROUGH"}
+
+    def register_handlers(self,context):
+        self.update_event = context.window_manager.event_timer_add(0.1, window=context.window)
+
+    def unregister_handlers(self,context):
+        context.window_manager.event_timer_remove(self.draw_event)
+    
+    def finish(self):
+        self.unregister_handlers()
+        return {"FINISHED"}
+
+class DrawClient(bpy.types.Operator):
+    bl_idname = "session.draw"
+    bl_label = "draw clients"
+    bl_description = "Description that shows in blender tooltips"
+    bl_options = {"REGISTER"}
+
+    position = bpy.props.FloatVectorProperty(default=(0,0,0))
+    def __init__(self):
+        super().__init__()
+
+        self.shader = None
+        self.batch = None 
+        self.draw_handle = None
+        self.draw_event = None
+        self.coords = None
+        
+
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def refresh_view(self, context):
+        global client
+
+        try:
+            self.unregister_handlers()
+        except:
+            pass
+
+        try:
+            key = "net/clients/{}".format(client.id.decode())
+            client.property_map[key]
+            current_view = get_client_view_rect()
+            
+            client.push_update(key, 'client', current_view)
+            print(current_view)
+        except:
+            pass
+            #client position update 
+        # area, region, rv3d = view3d_find()
+        # width = region.width
+        # height = region.height
+        # depth = mathutils.Vector((rv3d.view_distance,rv3d.view_distance,rv3d.view_distance))
+        # vec = view3d_utils.region_2d_to_vector_3d(region, rv3d, (0,0))
+        
+        # v1 = get_target(region,rv3d,(0,0))
+        # v3 = get_target(region,rv3d,(0,height))
+        # v2 = get_target(region,rv3d,(width,height))
+        # v4 = get_target(region,rv3d,(width,0))
+
+        self.coords =  get_client_view_rect()
+
+
+        
+
+    def invoke(self, context,event):
+        self.refresh_view(context)
+        self.create_batch()
+        self.register_handlers(context)
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def register_handlers(self,context):
+        self.draw_handle = bpy.types.SpaceView3D.draw_handler_add(self.draw_callback, (), 'WINDOW', 'POST_VIEW')
+        self.draw_event = context.window_manager.event_timer_add(0.1, window=context.window)
+
+    def unregister_handlers(self,context):
+        context.window_manager.event_timer_remove(self.draw_event)
+        bpy.types.SpaceView3D.draw_handler_remove(self.draw_handle,"WINDOW")
+
+        self.draw_handle = None
+        self.draw_event = None
+
+    def create_batch(self, coords):
+        indices = (
+            (1, 3), (2, 1), (3, 0),(2,0)
+        )
+
+        self.shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        self.batch = batch_for_shader(self.shader, 'LINES', {"pos": coords}, indices=indices)
+
+    def draw_callback(self):
+        self.shader.bind()
+        self.shader.uniform_float("color", (1, 0, 0, 1))
+        self.batch.draw(self.shader)
+
+    def modal(self, context, event):
+        if context.area:
+            context.area.tag_redraw()
+        
+        if event.type in {"TIMER"}:
+            # Update local view
+            if get_client_view_rect() != self.coords:
+                print("update")
+                self.unregister_handlers(context)
+                self.refresh_view(context)
+                self.create_batch()
+                self.register_handlers(context)
+            
+            
+        
+        if event.type in {"ESC"}:
+            self.unregister_handlers(context)
+            return {"CANCELLED"}
+        # if self.draw_handle:µ
+        #     self.finish()
+
+        return {"PASS_THROUGH"}
+
+    def finish(self):
+        self.unregister_handlers()
+        return {"FINISHED"}
 
 def on_scene_evalutation(scene):
     # TODO: viewer representation
@@ -113,7 +356,11 @@ def observer():
 
    
     for key, values in client.property_map.items():
-        if client.id in key:
+        if client.id.decode() in key:
+            # current_view = get_client_view_rect()
+            
+            # client.push_update(key, 'client', current_view)
+            # print(current_view)
             #client position update 
             pass
         else:
@@ -329,6 +576,8 @@ classes = (
     session_create,
     session_settings,
     session_remove_property,
+    DrawClient,
+    UpdateClientView,
 )
 
 
