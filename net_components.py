@@ -220,6 +220,7 @@ class Client():
         logger.info("{} client running".format(id))
 
         self.push_update("net/clients/{}".format(self.id.decode()),"client",None)
+        self.push_update("net/objects/{}".format(self.id.decode()),"client_object",None)
     
 
 

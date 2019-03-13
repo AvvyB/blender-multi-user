@@ -102,64 +102,6 @@ def get_client_2d(coords):
     return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
 
 
-class UpdateClientView(bpy.types.Operator):
-    bl_idname = "session.update_client"
-    bl_label = "update client"
-    bl_description = "Description that shows in blender tooltips"
-    bl_options = {"REGISTER"}
-
-    def __init__(self):
-        super().__init__()
-
-        self.coords = None
-        self.update_event = None
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def invoke(self, context, event):
-        self.coords = get_client_view_rect()
-
-        context.window_manager.modal_handler_add(self)
-        self.register_handlers(context)
-
-        return {"RUNNING_MODAL"}
-
-    def modal(self, context, event):
-        if context.area:
-            context.area.tag_redraw()
-
-        if event.type in {"TIMER"}:
-            current_coords = get_client_view_rect()
-            # Update local view
-            if current_coords != self.coords:
-                global client
-
-                self.coords = current_coords
-                key = "net/clients/{}".format(client.id.decode())
-
-                client.push_update(key, 'client', current_coords)
-                print("update")
-
-        if event.type in {"ESC"}:
-            self.unregister_handlers(context)
-            return {"CANCELLED"}
-
-        return {"PASS_THROUGH"}
-
-    def register_handlers(self, context):
-        self.update_event = context.window_manager.event_timer_add(
-            0.1, window=context.window)
-
-    def unregister_handlers(self, context):
-        context.window_manager.event_timer_remove(self.draw_event)
-
-    def finish(self):
-        self.unregister_handlers()
-        return {"FINISHED"}
-
-
 def on_scene_evalutation(scene):
     # TODO: viewer representation
     # TODO: Live update only selected object
@@ -277,6 +219,8 @@ def update_scene(msg):
 
     if msg.id != client.id:
         if msg.mtype == 'client' and msg.id is not client.id:
+            refresh_window()
+        elif msg.mtype == 'object':
             refresh_window()
         else:
             value = None
@@ -464,6 +408,7 @@ class session_settings(bpy.types.PropertyGroup):
     hide_properties = bpy.props.BoolProperty(name="hide_properties", default=True)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
+    active_object = bpy.props.PointerProperty(name="active_object",type=bpy.types.Object)
 
 
 
@@ -483,6 +428,7 @@ class session_draw_clients(bpy.types.Operator):
         self.draw2d_handle = None
         self.draw_event = None
         self.coords = None
+        self.active_object = None
 
     @classmethod
     def poll(cls, context):
@@ -537,6 +483,19 @@ class session_draw_clients(bpy.types.Operator):
                         (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
 
                 index += 1
+            if values.mtype == "object":
+                indices = (
+                (0, 1), (1, 2), (2, 3), (0, 3),
+                (4, 5), (5, 6), (6, 7), (4, 7),
+                (0, 4), (1, 5), (2, 6), (3, 7)
+                )
+
+                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                batch = batch_for_shader(
+                    shader, 'LINES', {"pos": values.body}, indices=indices)
+
+                self.draw_items.append(
+                    (shader, batch, (None,None), COLOR_TABLE[index]))
 
     def draw3d_callback(self):
 
@@ -548,16 +507,16 @@ class session_draw_clients(bpy.types.Operator):
 
     def draw2d_callback(self):
         for shader, batch, font, color in self.draw_items:
-            coords = get_client_2d(font[0])
+                try:
+                    coords = get_client_2d(font[0])
 
-            try:
-                blf.position(0, coords[0], coords[1]+10, 0)
-                blf.size(0, 10, 72)
-                blf.color(0, color[0], color[1], color[2], color[3])
-                blf.draw(0,  font[1])
+                    blf.position(0, coords[0], coords[1]+10, 0)
+                    blf.size(0, 10, 72)
+                    blf.color(0, color[0], color[1], color[2], color[3])
+                    blf.draw(0,  font[1])
 
-            except:
-                pass
+                except:
+                    pass
 
     def modal(self, context, event):
         if context.area:
@@ -568,14 +527,31 @@ class session_draw_clients(bpy.types.Operator):
 
         if event.type in {"TIMER"}:
             global client
+            session = context.scene.session_settings
+
             if client:
                 # Local view update
                 current_coords = get_client_view_rect()
                 if current_coords != self.coords:
                     self.coords = current_coords
                     key = "net/clients/{}".format(client.id.decode())
-
+    
                     client.push_update(key, 'client', current_coords)
+                
+                # Active object bounding box 
+                if len(context.selected_objects) > 0:
+                    if session.active_object is not context.selected_objects[0] or session.active_object.is_modified:
+                        session.active_object = context.selected_objects[0]
+
+                        ob = session.active_object
+                        
+                        bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+
+                        coords= [(point.x,point.y,point.z) for point in bbox_corners]
+             
+                        
+                        key = "net/objects/{}".format(client.id.decode())
+                        client.push_update(key, 'object', coords)
 
                 # Draw clients
                 if len(client.property_map) > 0:
