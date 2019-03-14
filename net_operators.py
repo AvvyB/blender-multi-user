@@ -211,8 +211,14 @@ def refresh_window():
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 
-def init_scene(msg):
-    pass
+def init_scene():
+    global client
+
+    for object in bpy.context.scene.objects:
+        key = "objects/{}/location".format(object.name)
+        value_type, value = from_bpy(object.location)
+
+        client.push_update(key, value_type, value)
 
 
 def update_scene(msg):
@@ -358,6 +364,8 @@ class session_create(bpy.types.Operator):
         time.sleep(0.1)
 
         bpy.ops.session.join()
+
+        init_scene()
 
         bpy.app.timers.register(observer)
         return {"FINISHED"}
