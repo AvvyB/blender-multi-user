@@ -7,3 +7,6 @@
 [submodule "libs/pyzmq"]
 	path = libs/pyzmq
 	url = https://github.com/zeromq/pyzmq.git
+[submodule "libs/zmq"]
+	path = libs/zmq
+	url = git@gitlab.com:slumber/zmq_package.git
