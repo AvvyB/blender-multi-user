@@ -10,9 +10,14 @@ bl_info = {
 
 from .libs.bsyncio import bsyncio
 
+
+import bpy
+import os
+import sys
+
+
 from . import net_operators
 from . import net_ui
-import bpy
 
 def register():
     bsyncio.register()

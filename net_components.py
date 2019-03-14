@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from .libs.esper import esper
-from .libs.pyzmq import zmq
+from .libs import zmq
 from .libs import umsgpack
 import time
 import random
