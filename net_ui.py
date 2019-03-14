@@ -120,7 +120,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
                     item_box = area_msg.box()
                     detail_item_box = item_box.row()
                     # detail_item_box = item_box.row()
-                    detail_item_box.label(text="{} ({}) ".format(key, values.mtype, values.id.decode()))
+                    detail_item_box.label(text="{} ({}) {} ".format(key, values.mtype, values.id.decode()))
                     detail_item_box.operator("session.remove_prop",text="",icon="X").property_path = key
             else:
                 area_msg.label(text="Empty")

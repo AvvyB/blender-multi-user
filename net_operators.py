@@ -470,42 +470,43 @@ class session_draw_clients(bpy.types.Operator):
         index = 0
         index_object = 0
         for key, values in client.property_map.items():
-            if values.mtype == "object":
-                if values.id != client.id:
-                    indices = (
-                    (0, 1), (1, 2), (2, 3), (0, 3),
-                    (4, 5), (5, 6), (6, 7), (4, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7)
-                    )
+            if values.body is not None:
+                if values.mtype == "object":
+                    if values.id != client.id:
+                        indices = (
+                        (0, 1), (1, 2), (2, 3), (0, 3),
+                        (4, 5), (5, 6), (6, 7), (4, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7)
+                        )
 
-                    ob = bpy.data.objects[values.body]
-                    
-                    bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+                        ob = bpy.data.objects[values.body]
+                        
+                        bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-                    coords= [(point.x,point.y,point.z) for point in bbox_corners]
+                        coords= [(point.x,point.y,point.z) for point in bbox_corners]
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": coords}, indices=indices)
+                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                        batch = batch_for_shader(
+                            shader, 'LINES', {"pos": coords}, indices=indices)
 
-                    self.draw_items.append(
-                        (shader, batch, (None,None), COLOR_TABLE[index_object]))
+                        self.draw_items.append(
+                            (shader, batch, (None,None), COLOR_TABLE[index_object]))
 
-                index_object+=1
+                    index_object+=1
 
-            if values.mtype == "client":
-                if values.id != client.id:
-                    indices = (
-                        (1, 3), (2, 1), (3, 0), (2, 0)
-                    )
+                if values.mtype == "client":
+                    if values.id != client.id:
+                        indices = (
+                            (1, 3), (2, 1), (3, 0), (2, 0)
+                        )
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": values.body}, indices=indices)
+                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                        batch = batch_for_shader(
+                            shader, 'LINES', {"pos": values.body}, indices=indices)
 
-                    self.draw_items.append(
-                        (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
-                index+=1
+                        self.draw_items.append(
+                            (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
+                    index+=1
             
 
     def draw3d_callback(self):
@@ -528,6 +529,17 @@ class session_draw_clients(bpy.types.Operator):
 
                 except:
                     pass
+    def is_object_selected(self,obj):
+        #TODO: function to find occurence
+        global client
+
+        for k,v in client.property_map.items():
+            if v.mtype == 'object':
+                if client.id != v.id:
+                    if obj.name in v.body:
+                        return True
+
+        return False
 
     def modal(self, context, event):
         if context.area:
@@ -550,27 +562,24 @@ class session_draw_clients(bpy.types.Operator):
     
                     client.push_update(key, 'client', current_coords)
                 
-                # Active object bounding box 
-                if len(context.selected_objects) > 0:
-                    for object in context.scene.objects:
-                            # TODO: fix 
-                            try:
-                                #TODO: function to find occurence
-                                for k,v in client.property_map.items():
-                                    if v.mtype == 'object':
-                                        if client.id.decode() not in k:
-                                            if object.name in v.body:
-                                                object.hide_select = True
-                                                break
-                                
-                                object.hide_select = False
-                            except:
-                                pass
+                # Hide selected objects
+                for object in context.scene.objects:
+                    if self.is_object_selected(object):
+                        object.hide_select = True
+                    else:                      
+                        object.hide_select = False
 
+                # Active object bounding box 
+
+                if len(context.selected_objects) > 0:                          
                     if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated :
                         session.active_object = context.selected_objects[0]
                         key = "net/objects/{}".format(client.id.decode())
                         client.push_update(key, 'object', session.active_object.name)
+                elif len(context.selected_objects) == 0 and  session.active_object:
+                    session.active_object = None
+                    key = "net/objects/{}".format(client.id.decode())
+                    client.push_update(key, 'object', None)
 
                 # Draw clients
                 if len(client.property_map) > 0:
