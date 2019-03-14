@@ -20,12 +20,13 @@ server = None
 context = None
 
 
-COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),(0, 0.5, 1, 1),(0.5, 0, 1, 1)]
+COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
+               (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
 NATIVE_TYPES = (
-    bpy.types.IntProperty,
-    bpy.types.FloatProperty,
-    bpy.types.BoolProperty,
-    bpy.types.StringProperty,
+    int,
+    float,
+    bool,
+    string,
 )
 
 
@@ -145,7 +146,7 @@ def from_bpy(value):
         pass  # TODO: Collection replication
     elif value_type is mathutils.Euler:
         value_casted = [value.x, value.y, value.z]
-    elif value_type is NATIVE_TYPES:
+    elif value_type in NATIVE_TYPES:
         value_casted = value
 
     return str(value.__class__.__name__), value_casted
@@ -405,11 +406,12 @@ class session_settings(bpy.types.PropertyGroup):
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
     hide_users = bpy.props.BoolProperty(name="is_running", default=False)
     hide_settings = bpy.props.BoolProperty(name="hide_settings", default=False)
-    hide_properties = bpy.props.BoolProperty(name="hide_properties", default=True)
+    hide_properties = bpy.props.BoolProperty(
+        name="hide_properties", default=True)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
-    active_object = bpy.props.PointerProperty(name="active_object",type=bpy.types.Object)
-
+    active_object = bpy.props.PointerProperty(
+        name="active_object", type=bpy.types.Object)
 
 
 class session_draw_clients(bpy.types.Operator):
@@ -474,25 +476,26 @@ class session_draw_clients(bpy.types.Operator):
                 if values.mtype == "object":
                     if values.id != client.id:
                         indices = (
-                        (0, 1), (1, 2), (2, 3), (0, 3),
-                        (4, 5), (5, 6), (6, 7), (4, 7),
-                        (0, 4), (1, 5), (2, 6), (3, 7)
+                            (0, 1), (1, 2), (2, 3), (0, 3),
+                            (4, 5), (5, 6), (6, 7), (4, 7),
+                            (0, 4), (1, 5), (2, 6), (3, 7)
                         )
 
                         ob = bpy.data.objects[values.body]
-                        
+
                         bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-                        coords= [(point.x,point.y,point.z) for point in bbox_corners]
+                        coords = [(point.x, point.y, point.z)
+                                  for point in bbox_corners]
 
                         shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
                         batch = batch_for_shader(
                             shader, 'LINES', {"pos": coords}, indices=indices)
 
                         self.draw_items.append(
-                            (shader, batch, (None,None), COLOR_TABLE[index_object]))
+                            (shader, batch, (None, None), COLOR_TABLE[index_object]))
 
-                    index_object+=1
+                    index_object += 1
 
                 if values.mtype == "client":
                     if values.id != client.id:
@@ -506,8 +509,7 @@ class session_draw_clients(bpy.types.Operator):
 
                         self.draw_items.append(
                             (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
-                    index+=1
-            
+                    index += 1
 
     def draw3d_callback(self):
 
@@ -519,21 +521,22 @@ class session_draw_clients(bpy.types.Operator):
 
     def draw2d_callback(self):
         for shader, batch, font, color in self.draw_items:
-                try:
-                    coords = get_client_2d(font[0])
+            try:
+                coords = get_client_2d(font[0])
 
-                    blf.position(0, coords[0], coords[1]+10, 0)
-                    blf.size(0, 10, 72)
-                    blf.color(0, color[0], color[1], color[2], color[3])
-                    blf.draw(0,  font[1])
+                blf.position(0, coords[0], coords[1]+10, 0)
+                blf.size(0, 10, 72)
+                blf.color(0, color[0], color[1], color[2], color[3])
+                blf.draw(0,  font[1])
 
-                except:
-                    pass
-    def is_object_selected(self,obj):
-        #TODO: function to find occurence
+            except:
+                pass
+
+    def is_object_selected(self, obj):
+        # TODO: function to find occurence
         global client
 
-        for k,v in client.property_map.items():
+        for k, v in client.property_map.items():
             if v.mtype == 'object':
                 if client.id != v.id:
                     if obj.name in v.body:
@@ -559,24 +562,24 @@ class session_draw_clients(bpy.types.Operator):
                 if current_coords != self.coords:
                     self.coords = current_coords
                     key = "net/clients/{}".format(client.id.decode())
-    
+
                     client.push_update(key, 'client', current_coords)
-                
+
                 # Hide selected objects
                 for object in context.scene.objects:
                     if self.is_object_selected(object):
                         object.hide_select = True
-                    else:                      
+                    else:
                         object.hide_select = False
 
-                # Active object bounding box 
-
-                if len(context.selected_objects) > 0:                          
-                    if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated :
+                # Active object bounding box
+                if len(context.selected_objects) > 0:
+                    if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
                         session.active_object = context.selected_objects[0]
                         key = "net/objects/{}".format(client.id.decode())
-                        client.push_update(key, 'object', session.active_object.name)
-                elif len(context.selected_objects) == 0 and  session.active_object:
+                        client.push_update(
+                            key, 'object', session.active_object.name)
+                elif len(context.selected_objects) == 0 and session.active_object:
                     session.active_object = None
                     key = "net/objects/{}".format(client.id.decode())
                     client.push_update(key, 'object', None)
@@ -595,6 +598,32 @@ class session_draw_clients(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class session_snapview(bpy.types.Operator):
+    bl_idname = "session.snapview"
+    bl_label = "draw clients"
+    bl_description = "Description that shows in blender tooltips"
+    bl_options = {"REGISTER"}
+
+    target_client = bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client
+
+        area, region, rv3d = view3d_find()
+
+        for k,v in client.property_map.items():
+            if v.mtype == 'client' and v.id.decode() == self.target_client:
+                rv3d.view_location = v.body[1]
+                rv3d.view_distance = 10.0
+                return {"FINISHED"}
+
+        return {"CANCELLED"}
+
+        pass
 # TODO: Rename to match official blender convention
 classes = (
     session_join,
@@ -604,6 +633,7 @@ classes = (
     session_settings,
     session_remove_property,
     session_draw_clients,
+    session_snapview,
 )
 
 

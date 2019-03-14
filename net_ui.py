@@ -80,6 +80,9 @@ class SessionUsersPanel(bpy.types.Panel):
                             info = "(self)"
                         # detail_item_box = item_box.row()
                         detail_item_box.label(text="{} {}".format(values.id.decode(),info))
+
+                        if net_operators.client.id.decode() not in key:
+                            detail_item_box.operator("session.snapview",text="",icon='VIEW_CAMERA').target_client = values.id.decode()
                         row = layout.row()
             else:
                 row.label(text="Empty")
