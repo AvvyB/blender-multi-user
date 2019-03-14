@@ -230,29 +230,23 @@ def update_scene(msg):
     global client
 
     if msg.id != client.id:
-        if msg.mtype == 'client':
-            refresh_window()
-        elif msg.mtype == 'object':
-            refresh_window()
-        else:
+        try:
+            value = None
+            if bpy.context.scene.session_settings.active_object:
+                if bpy.context.scene.session_settings.active_object.name in msg.key:
+                    raise ValueError()
             
-            try:
-                value = None
-                if bpy.context.scene.session_settings.active_object:
-                    if bpy.context.scene.session_settings.active_object.name in msg.key:
-                        raise ValueError()
-               
-                obj, attr = resolve_bpy_path(msg.key)
-                attr_name = msg.key.split('/')[2]
+            obj, attr = resolve_bpy_path(msg.key)
+            attr_name = msg.key.split('/')[2]
 
-                value = to_bpy(msg)
-                # print(msg.get)
-                logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
-                    obj, attr_name, value))
-                
-                setattr(obj, attr_name, value)
-            except:
-                pass
+            value = to_bpy(msg)
+            # print(msg.get)
+            logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
+                obj, attr_name, value))
+            
+            setattr(obj, attr_name, value)
+        except:
+            pass
     else:
         logger.debug('no need to update scene on our own')
 
