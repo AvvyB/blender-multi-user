@@ -268,8 +268,6 @@ recv_callbacks = [update_scene, update_ui]
 post_init_callbacks = [refresh_window]
 
 
-
-
 class session_join(bpy.types.Operator):
     bl_idname = "session.join"
     bl_label = "join"
@@ -458,7 +456,7 @@ class session_draw_clients(bpy.types.Operator):
 
     def invoke(self, context, event):
         #
-        self.coords = get_client_view_rect()
+        self.coords = None
         self.create_batch()
         self.register_handlers(context)
         context.window_manager.modal_handler_add(self)
