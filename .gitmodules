@@ -4,3 +4,6 @@
 [submodule "libs/esper"]
 	path = libs/esper
 	url = https://github.com/benmoran56/esper.git
+[submodule "libs/pyzmq"]
+	path = libs/pyzmq
+	url = https://github.com/zeromq/pyzmq.git
