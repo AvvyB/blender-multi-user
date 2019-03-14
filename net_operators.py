@@ -592,10 +592,7 @@ class session_draw_clients(bpy.types.Operator):
                         key = "net/objects/{}".format(client.id.decode())
                         client.push_update(
                             key, 'object', session.active_object.name)
-                        # for k,v in client.property_map.items():
-                        #     if session.active_object.name in k:
-                        #         print("{}:{} > {} ".format(k,v.id.decode(), client.id.decode()))
-                        #         v.id = client.id
+                            
                 elif len(context.selected_objects) == 0 and session.active_object:
                     session.active_object = None
                     key = "net/objects/{}".format(client.id.decode())
