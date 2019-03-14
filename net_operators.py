@@ -140,12 +140,12 @@ def from_bpy(value):
     value_type = type(value)
     value_casted = None
 
-    if value_type is mathutils.Vector:
+    if value_type is mathutils.Vector or value_type is mathutils.Euler:
         value_casted = [value.x, value.y, value.z]
     elif value_type is bpy.props.collection:
         pass  # TODO: Collection replication
-    elif value_type is mathutils.Euler:
-        value_casted = [value.x, value.y, value.z]
+    # elif value_type is mathutils.Euler:
+    #     value_casted = [value.x, value.y, value.z]
     elif value_type in NATIVE_TYPES:
         value_casted = value
 
@@ -160,9 +160,10 @@ def to_bpy(store_item):
     value_casted = None
     store_value = store_item.body
 
-    if value_type == 'Vector':
+    if value_type == 'Vector' or 'Euler':
         value_casted = mathutils.Vector(
             (store_value[0], store_value[1], store_value[2]))
+   
 
     return value_casted
 
@@ -215,11 +216,14 @@ def init_scene():
     global client
 
     for object in bpy.context.scene.objects:
-        key = "objects/{}/location".format(object.name)
-        value_type, value = from_bpy(object.location)
+        for attr in dir(object):
+            try:
+                key = "objects/{}/{}".format(object.name,attr)
+                value_type, value = from_bpy(getattr(object,attr))
 
-        client.push_update(key, value_type, value)
-
+                client.push_update(key, value_type, value)
+            except:
+                pass
 
 def update_scene(msg):
     global client
