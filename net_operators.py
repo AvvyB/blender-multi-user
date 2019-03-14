@@ -513,9 +513,9 @@ class session_draw_clients(bpy.types.Operator):
                             shader, 'LINES', {"pos": coords}, indices=indices)
 
                         self.draw_items.append(
-                            (shader, batch, (None, None), COLOR_TABLE[index_object]))
+                            (shader, batch, (None, None), COLOR_TABLE[index-1]))
 
-                    index_object += 1
+                    # index_object += 1
 
                 if values.mtype == "client":
                     if values.id != client.id:
