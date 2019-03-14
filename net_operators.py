@@ -136,7 +136,7 @@ def match_supported_types(value):
 
 # TODO: Less ugly method
 def from_bpy(value):
-    logger.debug(' casting from bpy')
+    # logger.debug(' casting from bpy')
     value_type = type(value)
     value_casted = None
 
@@ -176,14 +176,15 @@ def resolve_bpy_path(path):
 
     obj = None
     attribute = path[2]
-    logger.debug("resolving {}".format(path))
+    # logger.debug("resolving {}".format(path))
 
     try:
         obj = getattr(bpy.data, path[0])[path[1]]
         attribute = getattr(obj, path[2])
-        logger.debug("done {} : {}".format(obj, attribute))
+        # logger.debug("done {} : {}".format(obj, attribute))
     except AttributeError:
-        logger.debug(" Attribute not found")
+        pass
+        # logger.debug(" Attribute not found")
 
     return obj, attribute
 
@@ -241,14 +242,15 @@ def update_scene(msg):
 
             value = to_bpy(msg)
             # print(msg.get)
-            logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
-                obj, attr_name, value))
+            # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
+                # obj, attr_name, value))
             
             setattr(obj, attr_name, value)
         except:
             pass
     else:
-        logger.debug('no need to update scene on our own')
+        pass
+        # logger.debug('no need to update scene on our own')
 
 
 def update_ui(msg):
@@ -463,7 +465,7 @@ class session_draw_clients(bpy.types.Operator):
             self.draw2d_callback, (), 'WINDOW', 'POST_PIXEL')
 
         self.draw_event = context.window_manager.event_timer_add(
-            0.01, window=context.window)
+            0.008, window=context.window)
 
     def unregister_handlers(self, context):
         if self.draw_event and self.draw3d_handle and self.draw2d_handle:

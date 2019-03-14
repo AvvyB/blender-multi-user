@@ -10,7 +10,7 @@ import struct
 import collections
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class RCFFactory(object):
@@ -240,7 +240,7 @@ class Client():
                 for f in self.on_recv:
                     f(rcfmsg)
             else:
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0.0001)
 
     def push_update(self, key, mtype, body):
         rcfmsg = RCFMessage(key, self.id, mtype, body)
@@ -333,7 +333,7 @@ class Server():
                 msg.store(self.property_map)
                 msg.send(self.pub_sock)
             else:
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0.0001)
 
     def stop(self):
         logger.debug("Stopping server")
