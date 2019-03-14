@@ -192,7 +192,7 @@ def observer():
     global client
 
     if client:
-        for key, values in client.property_map.items():
+        for key, values in client.property_map.items():                    
             try:
                 obj, attr = resolve_bpy_path(key)
 
@@ -220,7 +220,8 @@ def init_scene():
                 key = "objects/{}/{}".format(object.name, attr)
                 value_type, value = from_bpy(getattr(object, attr))
 
-                client.push_update(key, value_type, value)
+                if value:
+                    client.push_update(key, value_type, value)
             except:
                 pass
 
@@ -229,21 +230,26 @@ def update_scene(msg):
     global client
 
     if msg.id != client.id:
-        if msg.mtype == 'client' and msg.id is not client.id:
+        if msg.mtype == 'client':
             refresh_window()
         elif msg.mtype == 'object':
             refresh_window()
         else:
-            value = None
-
-            obj, attr = resolve_bpy_path(msg.key)
-            attr_name = msg.key.split('/')[2]
-
-            value = to_bpy(msg)
-            # print(msg.get)
-            logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
-                obj, attr_name, value))
+            
             try:
+                value = None
+                if bpy.context.scene.session_settings.active_object:
+                    if bpy.context.scene.session_settings.active_object.name in msg.key:
+                        raise ValueError()
+               
+                obj, attr = resolve_bpy_path(msg.key)
+                attr_name = msg.key.split('/')[2]
+
+                value = to_bpy(msg)
+                # print(msg.get)
+                logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
+                    obj, attr_name, value))
+                
                 setattr(obj, attr_name, value)
             except:
                 pass
@@ -261,8 +267,7 @@ def update_ui(msg):
 recv_callbacks = [update_scene, update_ui]
 post_init_callbacks = [refresh_window]
 
-# Catch operator execution
-#C.window_manager.operators['MESH_OT_primitive_plane_add'].bl_idname
+
 
 
 class session_join(bpy.types.Operator):
@@ -372,7 +377,7 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        # init_scene()
+        init_scene()
 
         bpy.app.timers.register(observer)
         return {"FINISHED"}
@@ -593,6 +598,10 @@ class session_draw_clients(bpy.types.Operator):
                         key = "net/objects/{}".format(client.id.decode())
                         client.push_update(
                             key, 'object', session.active_object.name)
+                        # for k,v in client.property_map.items():
+                        #     if session.active_object.name in k:
+                        #         print("{}:{} > {} ".format(k,v.id.decode(), client.id.decode()))
+                        #         v.id = client.id
                 elif len(context.selected_objects) == 0 and session.active_object:
                     session.active_object = None
                     key = "net/objects/{}".format(client.id.decode())
@@ -632,7 +641,7 @@ class session_snapview(bpy.types.Operator):
         for k, v in client.property_map.items():
             if v.mtype == 'client' and v.id.decode() == self.target_client:
                 rv3d.view_location = v.body[1]
-                rv3d.view_distance = 10.0
+                rv3d.view_distance = 30.0
                 return {"FINISHED"}
 
         return {"CANCELLED"}
