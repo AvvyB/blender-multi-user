@@ -163,7 +163,6 @@ def to_bpy(store_item):
     if value_type == 'Vector' or 'Euler':
         value_casted = mathutils.Vector(
             (store_value[0], store_value[1], store_value[2]))
-   
 
     return value_casted
 
@@ -218,12 +217,13 @@ def init_scene():
     for object in bpy.context.scene.objects:
         for attr in dir(object):
             try:
-                key = "objects/{}/{}".format(object.name,attr)
-                value_type, value = from_bpy(getattr(object,attr))
+                key = "objects/{}/{}".format(object.name, attr)
+                value_type, value = from_bpy(getattr(object, attr))
 
                 client.push_update(key, value_type, value)
             except:
                 pass
+
 
 def update_scene(msg):
     global client
@@ -260,6 +260,9 @@ def update_ui(msg):
 
 recv_callbacks = [update_scene, update_ui]
 post_init_callbacks = [refresh_window]
+
+# Catch operator execution
+#C.window_manager.operators['MESH_OT_primitive_plane_add'].bl_idname
 
 
 class session_join(bpy.types.Operator):
@@ -369,7 +372,7 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        init_scene()
+        # init_scene()
 
         bpy.app.timers.register(observer)
         return {"FINISHED"}
@@ -568,7 +571,6 @@ class session_draw_clients(bpy.types.Operator):
             session = context.scene.session_settings
 
             if client:
-
                 # Local view update
                 current_coords = get_client_view_rect()
                 if current_coords != self.coords:
@@ -627,7 +629,7 @@ class session_snapview(bpy.types.Operator):
 
         area, region, rv3d = view3d_find()
 
-        for k,v in client.property_map.items():
+        for k, v in client.property_map.items():
             if v.mtype == 'client' and v.id.decode() == self.target_client:
                 rv3d.view_location = v.body[1]
                 rv3d.view_distance = 10.0
@@ -636,6 +638,8 @@ class session_snapview(bpy.types.Operator):
         return {"CANCELLED"}
 
         pass
+
+
 # TODO: Rename to match official blender convention
 classes = (
     session_join,

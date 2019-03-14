@@ -19,11 +19,11 @@ class SessionSettingsPanel(bpy.types.Panel):
         #     self.layout.label(text="",icon='HIDE_OFF')
         # else:
         #     self.layout.label(text="",icon='HIDE_ON')
-            # self.layout.label(text="Offline")
+        # self.layout.label(text="Offline")
 
     def draw(self, context):
         layout = self.layout
-        
+
         net_settings = context.scene.session_settings
         scene = context.scene
         # Create a simple row.
@@ -31,22 +31,22 @@ class SessionSettingsPanel(bpy.types.Panel):
 
         if net_operators.client:
             row.label(text="Net frequency:")
-            row.prop(net_settings,"update_frequency",text="")
+            row.prop(net_settings, "update_frequency", text="")
             row = layout.row()
-           
 
             row = layout.row()
-            row.operator("session.stop", text="exit session")
-            
+            row.operator("session.stop", icon='QUIT', text="Exit")
+
         else:
             row = layout.row()
-            row.prop(scene.session_settings,"username",text="username:")
+            row.prop(scene.session_settings, "username", text="username:")
             row = layout.row()
             row.operator("session.join")
             row = layout.row()
             row.operator("session.create")
 
         row = layout.row()
+
 
 class SessionUsersPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -62,15 +62,15 @@ class SessionUsersPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        
+
         net_settings = context.scene.session_settings
         scene = context.scene
         # Create a simple row.
         row = layout.row()
 
         if net_operators.client:
-            if len(net_operators.client.property_map) > 0:  
-                for key,values in net_operators.client.property_map.items():
+            if len(net_operators.client.property_map) > 0:
+                for key, values in net_operators.client.property_map.items():
                     if 'client' in key:
                         info = ""
                         item_box = row.box()
@@ -79,17 +79,18 @@ class SessionUsersPanel(bpy.types.Panel):
                         if values.id == net_operators.client.id:
                             info = "(self)"
                         # detail_item_box = item_box.row()
-                        detail_item_box.label(text="{} {}".format(values.id.decode(),info))
+                        detail_item_box.label(
+                            text="{} {}".format(values.id.decode(), info))
 
                         if net_operators.client.id.decode() not in key:
-                            detail_item_box.operator("session.snapview",text="",icon='VIEW_CAMERA').target_client = values.id.decode()
+                            detail_item_box.operator(
+                                "session.snapview", text="", icon='VIEW_CAMERA').target_client = values.id.decode()
                         row = layout.row()
             else:
                 row.label(text="Empty")
-            
+
             row = layout.row()
 
-            
 
 class SessionPropertiesPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -101,11 +102,11 @@ class SessionPropertiesPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-         return net_operators.client
+        return net_operators.client
 
     def draw(self, context):
         layout = self.layout
-        
+
         net_settings = context.scene.session_settings
         scene = context.scene
         # Create a simple row.
@@ -113,20 +114,24 @@ class SessionPropertiesPanel(bpy.types.Panel):
 
         if net_operators.client:
             row = layout.row(align=True)
-            row.prop(net_settings,"buffer", text="")
-            row.operator("session.add_prop", text="",icon="ADD").property_path = net_settings.buffer
+            row.prop(net_settings, "buffer", text="")
+            row.operator("session.add_prop", text="",
+                         icon="ADD").property_path = net_settings.buffer
             row = layout.row()
-            # Property area 
+            # Property area
             area_msg = row.box()
-            if len(net_operators.client.property_map) > 0:  
-                for key,values in net_operators.client.property_map.items():
+            if len(net_operators.client.property_map) > 0:
+                for key, values in net_operators.client.property_map.items():
                     item_box = area_msg.box()
                     detail_item_box = item_box.row()
                     # detail_item_box = item_box.row()
-                    detail_item_box.label(text="{} ({}) {} ".format(key, values.mtype, values.id.decode()))
-                    detail_item_box.operator("session.remove_prop",text="",icon="X").property_path = key
+                    detail_item_box.label(text="{} ({}) {} ".format(
+                        key, values.mtype, values.id.decode()))
+                    detail_item_box.operator(
+                        "session.remove_prop", text="", icon="X").property_path = key
             else:
                 area_msg.label(text="Empty")
+
 
 classes = (
     SessionSettingsPanel,
