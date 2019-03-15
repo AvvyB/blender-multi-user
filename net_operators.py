@@ -291,7 +291,8 @@ class session_join(bpy.types.Operator):
             id=username,
             on_recv=recv_callbacks,
             on_post_init=post_init_callbacks,
-            factory=client_factory)
+            factory=client_factory,
+            address=net_settings.ip)
         # time.sleep(1)
 
         bpy.ops.asyncio.loop()
@@ -426,7 +427,13 @@ class session_settings(bpy.types.PropertyGroup):
         name="update_frequency", default=0.008)
     active_object = bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
-
+    session_mode= bpy.props.EnumProperty(
+                    name='session_mode',
+                    description='session mode',
+                    items={
+                    ('HOST', 'hosting', 'host a session'),
+                    ('CONNECT', 'connexion', 'connect to a session')},
+                    default='HOST')
 
 class session_draw_clients(bpy.types.Operator):
     bl_idname = "session.draw"

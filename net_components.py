@@ -12,6 +12,8 @@ import collections
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+CONNECT_TIMEOUT = 2 
+WAITING_TIME = 0.001
 
 class RCFFactory(object):
     """
@@ -147,7 +149,8 @@ class Client():
         on_recv=None, 
         on_post_init=None, 
         is_admin=False, 
-        factory=None):
+        factory=None,
+        address="localhost"):
 
         self.is_admin = is_admin
 
@@ -160,8 +163,10 @@ class Client():
         self.id = id.encode()
         self.on_recv = on_recv
         self.on_post_init = on_post_init
-        self.bind_ports()
+        
+        self.address = address
 
+        self.bind_ports()
         # Main client loop registration
         self.task = asyncio.ensure_future(self.main())
 
@@ -173,7 +178,7 @@ class Client():
         # pull socket: get update FROM server
         self.pull_sock = self.context.socket(zmq.SUB)
         self.pull_sock.linger = 0
-        self.pull_sock.connect("tcp://localhost:5555")
+        self.pull_sock.connect("tcp://{}:5555".format(self.address))
         self.pull_sock.setsockopt_string(zmq.SUBSCRIBE, '')
 
         # request socket: send request/message over all peers throught the server
@@ -181,13 +186,13 @@ class Client():
         self.req_sock.setsockopt(zmq.IDENTITY, self.id)
         # self.req_sock.setsockopt(zmq.SNDHWM, 60)
         self.req_sock.linger = 0
-        self.req_sock.connect("tcp://localhost:5556")
+        self.req_sock.connect("tcp://{}:5556".format(self.address))
 
         # push update socket
         self.push_sock = self.context.socket(zmq.PUSH)
         self.push_sock.setsockopt(zmq.IDENTITY, self.id)
         self.push_sock.linger = 0
-        self.push_sock.connect("tcp://localhost:5557")
+        self.push_sock.connect("tcp://{}:5557".format(self.address))
         self.push_sock.setsockopt(zmq.SNDHWM, 60)
 
         # Sockets aggregator, not really used for now
@@ -202,6 +207,7 @@ class Client():
         # Late join mecanism
         logger.info("{} send snapshot request".format(id))
         self.req_sock.send(b"SNAPSHOT_REQUEST")
+
         while True:
             try:
                 rcfmsg_snapshot = RCFMessage.recv(self.req_sock)

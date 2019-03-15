@@ -13,13 +13,12 @@ class SessionSettingsPanel(bpy.types.Panel):
 
     def draw_header(self, context):
         pass
-        # net_settings = context.scene.session_settings
+        net_settings = context.scene.session_settings
 
-        # if net_settings.is_running:
-        #     self.layout.label(text="",icon='HIDE_OFF')
-        # else:
-        #     self.layout.label(text="",icon='HIDE_ON')
-        # self.layout.label(text="Offline")
+        if net_settings.is_running:
+            self.layout.label(text="",icon='HIDE_OFF')
+        else:
+            self.layout.label(text="",icon='HIDE_ON')
 
     def draw(self, context):
         layout = self.layout
@@ -40,10 +39,21 @@ class SessionSettingsPanel(bpy.types.Panel):
         else:
             row = layout.row()
             row.prop(scene.session_settings, "username", text="username:")
+
             row = layout.row()
-            row.operator("session.join")
+            row.prop(scene.session_settings, "session_mode", expand=True)
             row = layout.row()
-            row.operator("session.create")
+           
+            if scene.session_settings.session_mode == 'HOST':
+                row.operator("session.create",text="HOST")
+            else:
+
+                row.prop(net_settings,"ip",text="server ip")
+
+                row = layout.row()
+                row.operator("session.join",text="CONNECT")
+   
+            
 
         row = layout.row()
 
