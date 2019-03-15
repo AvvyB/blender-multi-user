@@ -13,12 +13,12 @@ class SessionSettingsPanel(bpy.types.Panel):
 
     def draw_header(self, context):
         pass
-        net_settings = context.scene.session_settings
+        # net_settings = context.scene.session_settings
 
-        if net_settings.is_running:
-            self.layout.label(text="",icon='HIDE_OFF')
-        else:
-            self.layout.label(text="",icon='HIDE_ON')
+        # if net_settings.is_running:
+        #     self.layout.label(text="",icon='HIDE_OFF')
+        # else:
+        #     self.layout.label(text="",icon='HIDE_ON')
 
     def draw(self, context):
         layout = self.layout
@@ -28,15 +28,7 @@ class SessionSettingsPanel(bpy.types.Panel):
         # Create a simple row.
         row = layout.row()
 
-        if net_operators.client:
-            row.label(text="Net frequency:")
-            row.prop(net_settings, "update_frequency", text="")
-            row = layout.row()
-
-            row = layout.row()
-            row.operator("session.stop", icon='QUIT', text="Exit")
-
-        else:
+        if net_operators.client is None:
             row = layout.row()
             row.prop(scene.session_settings, "username", text="username:")
 
@@ -53,6 +45,19 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = layout.row()
                 row.operator("session.join",text="CONNECT")
    
+        else:
+            
+            if net_operators.client.status is  net_components.RCFStatus.CONNECTED: 
+                row.label(text="Net frequency:")
+                row.prop(net_settings, "update_frequency", text="")
+                row = layout.row()
+                row.operator("session.stop", icon='QUIT', text="Exit")
+            elif net_operators.client.status is net_components.RCFStatus.CONNECTING:
+                row.label(text="connecting...")
+                row = layout.row()
+                row.operator("session.stop", icon='QUIT', text="CANCEL")
+                
+            
             
 
         row = layout.row()
@@ -68,7 +73,9 @@ class SessionUsersPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return net_operators.client
+        if net_operators.client:
+            return net_operators.client.status ==  net_components.RCFStatus.CONNECTED
+        return False
 
     def draw(self, context):
         layout = self.layout
@@ -112,7 +119,9 @@ class SessionPropertiesPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return net_operators.client
+        if net_operators.client:
+            return net_operators.client.status ==  net_components.RCFStatus.CONNECTED
+        return False
 
     def draw(self, context):
         layout = self.layout

@@ -8,12 +8,18 @@ import time
 import random
 import struct
 import collections
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 CONNECT_TIMEOUT = 2 
 WAITING_TIME = 0.001
+
+class RCFStatus(Enum):
+    IDLE = 1
+    CONNECTING = 2
+    CONNECTED = 3
 
 class RCFFactory(object):
     """
@@ -152,6 +158,7 @@ class Client():
         factory=None,
         address="localhost"):
 
+        self.status = RCFStatus.IDLE
         self.is_admin = is_admin
 
         # 0MQ vars
@@ -202,6 +209,7 @@ class Client():
         time.sleep(0.1)
 
     async def main(self):
+        self.status = RCFStatus.CONNECTING
         logger.info("{} client syncing".format(id))
 
         # Late join mecanism
@@ -230,7 +238,7 @@ class Client():
         self.push_update("net/objects/{}".format(self.id.decode()),"client_object",None)
     
 
-
+        self.status = RCFStatus.CONNECTED
         # Main loop
         while True:
             # TODO: find a better way
@@ -348,3 +356,5 @@ class Server():
         self.request_sock.close()
         self.collector_sock.close()
         self.task.cancel()
+
+        self.status= RCFStatus.IDLE
