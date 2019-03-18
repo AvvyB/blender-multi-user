@@ -27,7 +27,6 @@ class SessionSettingsPanel(bpy.types.Panel):
         scene = context.scene
         # Create a simple row.
         row = layout.row()
-
         if net_operators.client is None:
             row = layout.row()
             row.prop(scene.session_settings, "username", text="username:")

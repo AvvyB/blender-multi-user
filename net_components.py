@@ -109,6 +109,7 @@ class RCFMessage(object):
         # this currently erasing old value
         if self.key is not None:
             dikt[self.key] = self
+        
 
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""

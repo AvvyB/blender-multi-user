@@ -19,7 +19,10 @@ client = None
 server = None
 context = None
 
+SUPPORTED_DATABLOCKS = ['objects']
 
+REPLICATED_PROPERTIES = ['matrix_world']
+# 'actions','armatures','cameras','collections','curves','grease_pencils','images','materials','materials',,'scenes','textures'
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
 NATIVE_TYPES = (
@@ -142,6 +145,10 @@ def from_bpy(value):
 
     if value_type is mathutils.Vector or value_type is mathutils.Euler:
         value_casted = [value.x, value.y, value.z]
+    elif isinstance(value,mathutils.Matrix):
+        value_casted = []
+        for r in value.row:
+            value_casted.extend([r[0], r[1], r[2],r[3]])
     elif value_type is bpy.props.collection:
         pass  # TODO: Collection replication
     # elif value_type is mathutils.Euler:
@@ -163,7 +170,13 @@ def to_bpy(store_item):
     if value_type == 'Vector' or 'Euler':
         value_casted = mathutils.Vector(
             (store_value[0], store_value[1], store_value[2]))
-
+    if value_type == 'Matrix':
+        mat = mathutils.Matrix()
+        mat[0] = mathutils.Vector((store_value[0], store_value[1], store_value[2], store_value[3]))
+        mat[1] = mathutils.Vector((store_value[4], store_value[5], store_value[6], store_value[7]))
+        mat[2] = mathutils.Vector((store_value[8], store_value[9], store_value[10], store_value[11]))
+        mat[3] = mathutils.Vector((store_value[12], store_value[13], store_value[14], store_value[15]))
+        value_casted = mat
     return value_casted
 
 
@@ -189,11 +202,11 @@ def resolve_bpy_path(path):
     return obj, attribute
 
 
-def observer():
+def observer(scene):
     global client
-
+    
     if client:
-        for key, values in client.property_map.items():                    
+        for key, values in client.property_map.items():
             try:
                 obj, attr = resolve_bpy_path(key)
 
@@ -206,9 +219,16 @@ def observer():
     return bpy.context.scene.session_settings.update_frequency
 
 
+def mark_objects_for_update(scene):
+    for item in dir(bpy.data):
+        if item in SUPPORTED_DATABLOCKS:
+            for datablock in getattr(bpy.data,item):
+                if bpy.context.object.is_evaluated:
+                    print("EVALUATED: {}:{}".format(item,datablock.name))
+                
+ 
 def refresh_window():
     import bpy
-
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 
@@ -217,14 +237,15 @@ def init_scene():
 
     for object in bpy.context.scene.objects:
         for attr in dir(object):
-            try:
-                key = "objects/{}/{}".format(object.name, attr)
-                value_type, value = from_bpy(getattr(object, attr))
+            if attr in REPLICATED_PROPERTIES:
+                try:
+                    key = "objects/{}/{}".format(object.name, attr)
+                    value_type, value = from_bpy(getattr(object, attr))
 
-                if value:
-                    client.push_update(key, value_type, value)
-            except:
-                pass
+                    if value:
+                        client.push_update(key, value_type, value)
+                except:
+                    pass
 
 
 def update_scene(msg):
@@ -236,15 +257,15 @@ def update_scene(msg):
             if bpy.context.scene.session_settings.active_object:
                 if bpy.context.scene.session_settings.active_object.name in msg.key:
                     raise ValueError()
-            
+
             obj, attr = resolve_bpy_path(msg.key)
             attr_name = msg.key.split('/')[2]
 
             value = to_bpy(msg)
             # print(msg.get)
             # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
-                # obj, attr_name, value))
-            
+            # obj, attr_name, value))
+
             setattr(obj, attr_name, value)
         except:
             pass
@@ -296,7 +317,7 @@ class session_join(bpy.types.Operator):
         # time.sleep(1)
 
         bpy.ops.asyncio.loop()
-        bpy.app.timers.register(observer)
+        # bpy.app.timers.register(observer)
 
         net_settings.is_running = True
 
@@ -394,7 +415,7 @@ class session_stop(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
 
-        bpy.app.timers.unregister(observer)
+        # bpy.app.timers.unregister(observer)
 
         if server:
             server.stop()
@@ -427,13 +448,14 @@ class session_settings(bpy.types.PropertyGroup):
         name="update_frequency", default=0.008)
     active_object = bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
-    session_mode= bpy.props.EnumProperty(
-                    name='session_mode',
-                    description='session mode',
-                    items={
-                    ('HOST', 'hosting', 'host a session'),
-                    ('CONNECT', 'connexion', 'connect to a session')},
-                    default='HOST')
+    session_mode = bpy.props.EnumProperty(
+        name='session_mode',
+        description='session mode',
+        items={
+            ('HOST', 'hosting', 'host a session'),
+            ('CONNECT', 'connexion', 'connect to a session')},
+        default='HOST')
+
 
 class session_draw_clients(bpy.types.Operator):
     bl_idname = "session.draw"
@@ -599,7 +621,7 @@ class session_draw_clients(bpy.types.Operator):
                         key = "net/objects/{}".format(client.id.decode())
                         client.push_update(
                             key, 'object', session.active_object.name)
-                            
+
                 elif len(context.selected_objects) == 0 and session.active_object:
                     session.active_object = None
                     key = "net/objects/{}".format(client.id.decode())
@@ -668,14 +690,18 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
 
-    # bpy.app.handlers.depsgraph_update_post.append(on_scene_evalutation)
+    bpy.app.handlers.depsgraph_update_post.append(observer)
 
 
 def unregister():
-
+    try:
+        bpy.app.handlers.depsgraph_update_post.remove(observer)
+    except:
+        pass
     global server
     global client
-
+        # bpy.app.handlers.depsgraph_update_post.remove(observer)
+    # bpy.app.handlers.depsgraph_update_post.remove(mark_objects_for_update)
     if server:
         server.stop()
         del server
@@ -689,7 +715,7 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    # bpy.app.handlers.depsgraph_update_post.remove(on_scene_evalutation)
+    
 
     del bpy.types.Scene.session_settings
 
