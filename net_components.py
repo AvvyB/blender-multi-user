@@ -107,8 +107,10 @@ class RCFMessage(object):
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
-        if self.key is not None:
+        if self.key is not None and self.body is not None:
             dikt[self.key] = self
+        elif self.key in dikt:
+            del dikt[self.key]
         
 
     def send(self, socket):
