@@ -56,10 +56,8 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = layout.row()
                 row.operator("session.stop", icon='QUIT', text="CANCEL")
                 
-            
-            
-
         row = layout.row()
+        row.operator("session.load_data")
 
 
 class SessionUsersPanel(bpy.types.Panel):
@@ -83,7 +81,6 @@ class SessionUsersPanel(bpy.types.Panel):
         scene = context.scene
         # Create a simple row.
         row = layout.row()
-
         if net_operators.client:
             if len(net_operators.client.property_map) > 0:
                 for key, values in net_operators.client.property_map.items():
@@ -106,6 +103,7 @@ class SessionUsersPanel(bpy.types.Panel):
                 row.label(text="Empty")
 
             row = layout.row()
+            
 
 
 class SessionPropertiesPanel(bpy.types.Panel):

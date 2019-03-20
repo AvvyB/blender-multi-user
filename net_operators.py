@@ -204,7 +204,7 @@ def resolve_bpy_path(path):
 
 def observer(scene):
     global client
-    
+
     if client:
         for key, values in client.property_map.items():
             try:
@@ -286,6 +286,7 @@ post_init_callbacks = [refresh_window]
 
 
 class session_join(bpy.types.Operator):
+    
     bl_idname = "session.join"
     bl_label = "join"
     bl_description = "connect to a net server"
@@ -321,7 +322,7 @@ class session_join(bpy.types.Operator):
 
         net_settings.is_running = True
 
-        bpy.ops.session.draw('INVOKE_DEFAULT')
+        # bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
 
 
@@ -668,6 +669,30 @@ class session_snapview(bpy.types.Operator):
 
         pass
 
+class load_data(bpy.types.Operator):
+    bl_idname = "session.load_data"
+    bl_label = "Get bpy data"
+    bl_description = "Description that shows in blender tooltips"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def explore(self, root, depth):
+            if depth  
+            try:
+                for item in root.bl_rna.properties:
+                        print(item.name)
+                        self.explore(item)
+            except:
+                pass
+    def execute(self, context):
+        self.explore(bpy.data)
+                # for datablock in getattr(bpy.data,item):
+                #     print(": {}:{}".format(item,datablock.name))
+        return {"FINISHED"}
+
 
 # TODO: Rename to match official blender convention
 classes = (
@@ -679,6 +704,7 @@ classes = (
     session_remove_property,
     session_draw_clients,
     session_snapview,
+    load_data,
 )
 
 
@@ -690,7 +716,7 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
 
-    bpy.app.handlers.depsgraph_update_post.append(observer)
+    # bpy.app.handlers.depsgraph_update_post.append(observer)
 
 
 def unregister():

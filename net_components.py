@@ -62,6 +62,7 @@ class RCFFactory(object):
         pass
 
 class RCFStore(collections.MutableMapping,dict):
+    
     def __init__(self, custom_factory=RCFFactory()):
         super().__init__() 
         self.factory = custom_factory
