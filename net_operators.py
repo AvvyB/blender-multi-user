@@ -679,14 +679,12 @@ class load_data(bpy.types.Operator):
     def poll(cls, context):
         return True
 
-    def explore(self, root, depth):
-            if depth  
-            try:
-                for item in root.bl_rna.properties:
-                        print(item.name)
-                        self.explore(item)
-            except:
-                pass
+    def explore(self, root):
+        for item in root.bl_rna.properties:
+            if item.name not in ['RNA']:
+                print(item.name)
+                # self.explore(item)
+            
     def execute(self, context):
         self.explore(bpy.data)
                 # for datablock in getattr(bpy.data,item):
