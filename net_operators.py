@@ -185,37 +185,30 @@ def resolve_bpy_path(path):
     """
     Get bpy property value from path
     """
-
     path = path.split('/')
-
-    obj = None
-    attribute = path[2]
-    # logger.debug("resolving {}".format(path))
+    item = None
 
     try:
-        obj = getattr(bpy.data, path[0])[path[1]]
-        attribute = getattr(obj, path[2])
-        # logger.debug("done {} : {}".format(obj, attribute))
+        item = getattr(bpy.data, path[0])[path[1]]
+
     except AttributeError:
         pass
-        # logger.debug(" Attribute not found")
 
-    return obj, attribute
-
+    return item
 
 def observer(scene):
     global client
+    pass
+    # if client:
+    #     for key, values in client.property_map.items():
+    #         try:
+    #             obj, attr = resolve_bpy_path(key)
 
-    if client:
-        for key, values in client.property_map.items():
-            try:
-                obj, attr = resolve_bpy_path(key)
-
-                if attr != to_bpy(client.property_map[key]):
-                    value_type, value = from_bpy(attr)
-                    client.push_update(key, value_type, value)
-            except:
-                pass
+    #             if attr != to_bpy(client.property_map[key]):
+    #                 value_type, value = from_bpy(attr)
+    #                 client.push_update(key, value_type, value)
+    #         except:
+    #             pass
 
     return bpy.context.scene.session_settings.update_frequency
 
@@ -235,41 +228,31 @@ def refresh_window():
 
 def init_scene():
     global client
-
-    for object in bpy.context.scene.objects:
-        for attr in dir(object):
-            if attr in REPLICATED_PROPERTIES:
-                try:
-                    key = "objects/{}/{}".format(object.name, attr)
-                    value_type, value = from_bpy(getattr(object, attr))
-
-                    if value:
-                        client.push_update(key, value_type, value)
-                except:
-                    pass
-
+    
 
 def update_scene(msg):
     global client
 
     if msg.id != client.id:
-        try:
-            value = None
-            if bpy.context.scene.session_settings.active_object:
-                if bpy.context.scene.session_settings.active_object.name in msg.key:
-                    raise ValueError()
+        # try:
+        value = None
+        if bpy.context.scene.session_settings.active_object:
+            if bpy.context.scene.session_settings.active_object.name in msg.key:
+                raise ValueError()
 
-            obj, attr = resolve_bpy_path(msg.key)
-            attr_name = msg.key.split('/')[2]
+        item =  resolve_bpy_path(msg.key)
+        
+        if item:
+            loader = dump_anything.Loader()
+            loader.load(item, msg.body)
+        
+        # print(msg.get)
+        # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
+        # obj, attr_name, value))
 
-            value = to_bpy(msg)
-            # print(msg.get)
-            # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
-            # obj, attr_name, value))
-
-            setattr(obj, attr_name, value)
-        except:
-            pass
+        # setattr(obj, attr_name, value)
+        # except:
+        #     pass
     else:
         pass
         # logger.debug('no need to update scene on our own')
@@ -342,13 +325,21 @@ class session_add_property(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        obj, attr = resolve_bpy_path(self.property_path)
+        item = resolve_bpy_path(self.property_path)
 
-        if obj and attr:
+        print(item)
+
+        if item :
             key = self.property_path
-            value_type, value = from_bpy(attr)
 
-            client.push_update(key, value_type, value)
+            dumper = dump_anything.Dumper()
+            dumper.type_subset = dumper.match_subset_all
+            dumper.depth = 3
+
+            data = dumper.dump(item)
+            data_type = item.__class__.__name__
+
+            client.push_update(key, data_type, data)
 
         return {"FINISHED"}
 
@@ -395,7 +386,7 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        init_scene()
+        # init_scene()
 
         bpy.app.timers.register(observer)
         return {"FINISHED"}
@@ -692,15 +683,18 @@ class load_data(bpy.types.Operator):
 
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
-        dumper.depth = 4
+        dumper.depth = 3
 
         c = dumper.dump(obj)
-        bpy.data.meshes.remove(obj)
+        # bpy.data.meshes.remove(obj)
+        import json
+        with open('test.json', 'w+') as outfile:
+            json.dump(c, outfile, indent=4)
 
-        newo = bpy.data.meshes.new(c["name"])
-        print(c)
-        loader = dump_anything.Loader()
-        loader.load(c, newo)
+        # newo = bpy.data.meshes.new(c["name"])
+        # print(c)
+        # loader = dump_anything.Loader()
+        # loader.load(c, newo)
         # bpy.data.collections['Collection'].objects.link(newo)
         # self.explore(bpy.data.objects)
                 # for datablock in getattr(bpy.data,item):
