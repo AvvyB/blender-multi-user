@@ -3,6 +3,7 @@ import bpy
 from . import net_components
 from . import net_ui
 from . import rna_translation
+from .libs import dump_anything
 import time
 import logging
 import mathutils
@@ -673,20 +674,35 @@ class load_data(bpy.types.Operator):
     bl_idname = "session.load_data"
     bl_label = "Get bpy data"
     bl_description = "Description that shows in blender tooltips"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER","UNDO"}
 
     @classmethod
     def poll(cls, context):
         return True
-
+ 
     def explore(self, root):
         for item in root.bl_rna.properties:
             if item.name not in ['RNA']:
-                print(item.name)
+                
+                print((item.name))
                 # self.explore(item)
             
     def execute(self, context):
-        self.explore(bpy.data)
+        obj = bpy.data.meshes['Cube']
+
+        dumper = dump_anything.Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = 4
+
+        c = dumper.dump(obj)
+        bpy.data.meshes.remove(obj)
+
+        newo = bpy.data.meshes.new(c["name"])
+        print(c)
+        loader = dump_anything.Loader()
+        loader.load(c, newo)
+        # bpy.data.collections['Collection'].objects.link(newo)
+        # self.explore(bpy.data.objects)
                 # for datablock in getattr(bpy.data,item):
                 #     print(": {}:{}".format(item,datablock.name))
         return {"FINISHED"}
@@ -705,6 +721,16 @@ classes = (
     load_data,
 )
 
+def depsgraph_update(scene):
+    for c in bpy.context.depsgraph.updates.items():
+        # print(c[1].id)
+        if c[1].is_updated_geometry:
+            pass
+        if c[1].is_updated_transform:
+            pass
+
+            # print(dumper.dump(c[1]))
+
 
 def register():
     from bpy.utils import register_class
@@ -714,6 +740,7 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
 
+    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
     # bpy.app.handlers.depsgraph_update_post.append(observer)
 
 
@@ -724,8 +751,11 @@ def unregister():
         pass
     global server
     global client
-        # bpy.app.handlers.depsgraph_update_post.remove(observer)
+
+    # bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+    # bpy.app.handlers.depsgraph_update_post.remove(observer)
     # bpy.app.handlers.depsgraph_update_post.remove(mark_objects_for_update)
+
     if server:
         server.stop()
         del server
