@@ -216,7 +216,6 @@ def update_scene(msg):
                 if msg.mtype == 'Mesh':
                     load_mesh(item, msg.body)
                     
-                print("LOADED")
         # print(msg.get)
         # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
         # obj, attr_name, value))
@@ -632,47 +631,6 @@ class session_snapview(bpy.types.Operator):
 
         pass
 
-class load_data(bpy.types.Operator):
-    bl_idname = "session.load_data"
-    bl_label = "Get bpy data"
-    bl_description = "Description that shows in blender tooltips"
-    bl_options = {"REGISTER","UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
- 
-    def explore(self, root):
-        for item in root.bl_rna.properties:
-            if item.name not in ['RNA']:
-                
-                print((item.name))
-                # self.explore(item)
-            
-    def execute(self, context):
-        obj = bpy.data.meshes['Cube']
-
-        dumper = dump_anything.Dumper()
-        dumper.type_subset = dumper.match_subset_all
-        dumper.depth = 3
-
-        c = dumper.dump(obj)
-        # bpy.data.meshes.remove(obj)
-        import json
-        with open('test.json', 'w+') as outfile:
-            json.dump(c, outfile, indent=4)
-
-        # newo = bpy.data.meshes.new(c["name"])
-        # print(c)
-        # loader = dump_anything.Loader()
-        # loader.load(c, newo)
-        # bpy.data.collections['Collection'].objects.link(newo)
-        # self.explore(bpy.data.objects)
-                # for datablock in getattr(bpy.data,item):
-                #     print(": {}:{}".format(item,datablock.name))
-        return {"FINISHED"}
-
-
 # TODO: Rename to match official blender convention
 classes = (
     session_join,
@@ -683,7 +641,6 @@ classes = (
     session_remove_property,
     session_draw_clients,
     session_snapview,
-    load_data,
 )
 
 def depsgraph_update(scene):

@@ -57,7 +57,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row.operator("session.stop", icon='QUIT', text="CANCEL")
                 
         row = layout.row()
-        row.operator("session.load_data")
+        
 
 
 class SessionUsersPanel(bpy.types.Panel):
