@@ -1,0 +1,184 @@
+{
+    "active_material": "Material",
+    "active_material_index": 0,
+    "active_shape_key_index": 0,
+    "data": "Cube",
+    "delta_location": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "delta_scale": [
+        1.0,
+        1.0,
+        1.0
+    ],
+    "dimensions": [
+        2.0,
+        2.0,
+        2.0
+    ],
+    "display_bounds_type": "BOX",
+    "display_type": "TEXTURED",
+    "empty_display_size": 1.0,
+    "empty_display_type": "ARROWS",
+    "empty_image_depth": "DEFAULT",
+    "empty_image_side": "DOUBLE_SIDED",
+    "hide_render": false,
+    "hide_select": false,
+    "hide_viewport": false,
+    "instance_faces_scale": 1.0,
+    "instance_type": "NONE",
+    "is_evaluated": false,
+    "is_from_instancer": false,
+    "is_from_set": false,
+    "is_instancer": false,
+    "is_library_indirect": false,
+    "location": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "lock_rotation_w": false,
+    "lock_rotations_4d": false,
+    "matrix_basis": [
+        [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ]
+    ],
+    "matrix_local": [
+        [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ]
+    ],
+    "matrix_parent_inverse": [
+        [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ]
+    ],
+    "matrix_world": [
+        [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ]
+    ],
+    "mode": "OBJECT",
+    "name": "Cube",
+    "name_full": "Cube",
+    "original": "Cube",
+    "parent_bone": "",
+    "parent_type": "OBJECT",
+    "pass_index": 0,
+    "rotation_mode": "XYZ",
+    "scale": [
+        1.0,
+        1.0,
+        1.0
+    ],
+    "show_all_edges": false,
+    "show_axis": false,
+    "show_bounds": false,
+    "show_empty_image_orthographic": true,
+    "show_empty_image_perspective": true,
+    "show_in_front": false,
+    "show_instancer_for_render": true,
+    "show_instancer_for_viewport": true,
+    "show_name": false,
+    "show_only_shape_key": false,
+    "show_texture_space": false,
+    "show_transparent": false,
+    "show_wire": false,
+    "tag": false,
+    "track_axis": "POS_Y",
+    "type": "MESH",
+    "up_axis": "Z",
+    "use_dynamic_topology_sculpting": false,
+    "use_fake_user": false,
+    "use_instance_faces_scale": false,
+    "use_instance_vertices_rotation": false,
+    "use_shape_key_edit_mode": false,
+    "users": 1
+}

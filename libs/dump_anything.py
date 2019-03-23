@@ -226,6 +226,7 @@ class Loader:
             if filter_function(any):
                 load_function(any, dump)
                 return
+            
 
     def _load_identity(self, element, dump):
         element.write(dump)
@@ -298,6 +299,7 @@ class Loader:
             return # TODO error handling
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
+            print(k)
             if not hasattr(default.read(), k):
                 continue # TODO error handling
             self._load_any(default.extend(k), v)

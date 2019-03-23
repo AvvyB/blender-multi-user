@@ -120,67 +120,6 @@ def randomStringDigits(stringLength=6):
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
 
-def match_supported_types(value):
-    type_factory = None
-
-    if isinstance(value, bool):
-        print("float")
-    elif isinstance(value, mathutils.Vector):
-        print("vector")
-        type_factory = VectorTypeTranslation()
-    elif isinstance(value, mathutils.Euler):
-        print("Euler")
-    elif type(value) in NATIVE_TYPES:
-        print("native")
-    else:
-        raise NotImplementedError
-
-    return type_factory
-
-
-# TODO: Less ugly method
-def from_bpy(value):
-    # logger.debug(' casting from bpy')
-    value_type = type(value)
-    value_casted = None
-
-    if value_type is mathutils.Vector or value_type is mathutils.Euler:
-        value_casted = [value.x, value.y, value.z]
-    elif isinstance(value,mathutils.Matrix):
-        value_casted = []
-        for r in value.row:
-            value_casted.extend([r[0], r[1], r[2],r[3]])
-    elif value_type is bpy.props.collection:
-        pass  # TODO: Collection replication
-    # elif value_type is mathutils.Euler:
-    #     value_casted = [value.x, value.y, value.z]
-    elif value_type in NATIVE_TYPES:
-        value_casted = value
-
-    return str(value.__class__.__name__), value_casted
-
-
-def to_bpy(store_item):
-    """
-    Get bpy value from store
-    """
-    value_type = store_item.mtype
-    value_casted = None
-    store_value = store_item.body
-
-    if value_type == 'Vector' or 'Euler':
-        value_casted = mathutils.Vector(
-            (store_value[0], store_value[1], store_value[2]))
-    if value_type == 'Matrix':
-        mat = mathutils.Matrix()
-        mat[0] = mathutils.Vector((store_value[0], store_value[1], store_value[2], store_value[3]))
-        mat[1] = mathutils.Vector((store_value[4], store_value[5], store_value[6], store_value[7]))
-        mat[2] = mathutils.Vector((store_value[8], store_value[9], store_value[10], store_value[11]))
-        mat[3] = mathutils.Vector((store_value[12], store_value[13], store_value[14], store_value[15]))
-        value_casted = mat
-    return value_casted
-
-
 def resolve_bpy_path(path):
     """
     Get bpy property value from path
@@ -229,6 +168,33 @@ def refresh_window():
 def init_scene():
     global client
     
+def load_mesh(target,data):
+    import bmesh
+    
+    mesh_buffer = bmesh.new()
+    
+    for i in data["vertices"]:
+        mesh_buffer.verts.new(data["vertices"][i]["co"])
+
+    mesh_buffer.verts.ensure_lookup_table()
+
+    for i in data["edges"]:
+        verts = mesh_buffer.verts
+        v1 = data["edges"][i]["vertices"][0]
+        v2 = data["edges"][i]["vertices"][1]
+        mesh_buffer.edges.new([verts[v1],verts[v2]])
+    
+    for p in data["polygons"]:
+        verts = []
+        for v in data["polygons"][p]["vertices"]:
+            verts.append(mesh_buffer.verts[v])
+        
+
+        if len(verts) > 0:
+            mesh_buffer.faces.new(verts)
+
+
+    mesh_buffer.to_mesh(target)
 
 def update_scene(msg):
     global client
@@ -240,19 +206,24 @@ def update_scene(msg):
             if bpy.context.scene.session_settings.active_object.name in msg.key:
                 raise ValueError()
 
-        item =  resolve_bpy_path(msg.key)
-        
-        if item:
-            loader = dump_anything.Loader()
-            loader.load(item, msg.body)
-        
+        if msg.mtype == 'Mesh' or 'Object':
+            item =  resolve_bpy_path(msg.key)
+            
+            if item:
+                loader = dump_anything.Loader()
+                loader.load(item,msg.body)
+
+                if msg.mtype == 'Mesh':
+                    load_mesh(item, msg.body)
+                    
+                print("LOADED")
         # print(msg.get)
         # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
         # obj, attr_name, value))
 
         # setattr(obj, attr_name, value)
         # except:
-        #     pass
+        #     passñ
     else:
         pass
         # logger.debug('no need to update scene on our own')
@@ -334,7 +305,7 @@ class session_add_property(bpy.types.Operator):
 
             dumper = dump_anything.Dumper()
             dumper.type_subset = dumper.match_subset_all
-            dumper.depth = 3
+            dumper.depth = 4
 
             data = dumper.dump(item)
             data_type = item.__class__.__name__
