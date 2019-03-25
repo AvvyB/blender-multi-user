@@ -23,7 +23,7 @@ context = None
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects', 'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures']
-
+SUPPORTED_TYPES = ['Mesh','Object', 'Material', 'Texture', 'Light', 'Camera', 'Action', 'Armature']
 # UTILITY FUNCTIONS
 
 def clean_scene(elements=SUPPORTED_DATABLOCKS):
@@ -122,7 +122,7 @@ def resolve_bpy_path(path):
     try:
         item = getattr(bpy.data, path[0])[path[1]]
 
-    except AttributeError:
+    except:
         pass
 
     return item
@@ -141,7 +141,7 @@ def init_scene():
         pass
 
 
-def load_mesh(target, data):
+def load_mesh(target=None, data=None, create=False):
     import bmesh
 
     # TODO: handle error
@@ -166,34 +166,35 @@ def load_mesh(target, data):
         if len(verts) > 0:
             mesh_buffer.faces.new(verts)
 
-    if not target:
+    if target is None and create:
         target = bpy.data.meshes.new(data["name"])
 
     mesh_buffer.to_mesh(target)
 
-def load_object(target,data):
-    pass
+    # Load other meshes metadata
+    dump_anything.load(target, data)
+
+def load_object(target=None, data=None, create=False):
+    bpy.data.objects.new()
 
 def update_scene(msg):
     global client
 
     if msg.id != client.id:
-        # try:
-        value = None
-        if bpy.context.scene.session_settings.active_object:
-            if bpy.context.scene.session_settings.active_object.name in msg.key:
+        net_vars = bpy.context.scene.session_settings
+
+        if net_vars.active_object:
+            if net_vars.active_object.name in msg.key:
                 raise ValueError()
 
-        if msg.mtype in SUPPORTED_DATABLOCKS:
-            item = resolve_bpy_path(msg.key)
-
-            if item is None:
+        if msg.mtype in SUPPORTED_TYPES:
+            target = resolve_bpy_path(msg.key)
+           
+            if msg.mtype == 'Object':
                 pass
-            loader = dump_anything.Loader()
-            loader.load(item, msg.body)
 
             if msg.mtype == 'Mesh':
-                load_mesh(item, msg.body)
+                load_mesh(target=target, data=msg.body,create=net_vars.load_data)
 
 
 recv_callbacks = [update_scene]

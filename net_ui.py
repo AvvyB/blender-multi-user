@@ -1,6 +1,6 @@
 import bpy
-from . import net_components
-from . import net_operators
+
+from . import net_components, net_operators
 
 
 class SessionSettingsPanel(bpy.types.Panel):
@@ -11,21 +11,12 @@ class SessionSettingsPanel(bpy.types.Panel):
     bl_region_type = 'WINDOW'
     bl_context = "scene"
 
-    def draw_header(self, context):
-        pass
-        # net_settings = context.scene.session_settings
-
-        # if net_settings.is_running:
-        #     self.layout.label(text="",icon='HIDE_OFF')
-        # else:
-        #     self.layout.label(text="",icon='HIDE_ON')
-
     def draw(self, context):
         layout = self.layout
 
         net_settings = context.scene.session_settings
         scene = context.scene
-        # Create a simple row.
+
         row = layout.row()
         if net_operators.client is None:
             row = layout.row()
@@ -34,22 +25,22 @@ class SessionSettingsPanel(bpy.types.Panel):
             row = layout.row()
             row.prop(scene.session_settings, "session_mode", expand=True)
             row = layout.row()
-           
+
             if scene.session_settings.session_mode == 'HOST':
-                row.operator("session.create",text="HOST")
+                row.operator("session.create", text="HOST")
             else:
                 box = row.box()
-                box.prop(net_settings,"ip",text="server ip")
+                box.prop(net_settings, "ip", text="server ip")
                 box = box.row()
                 box.label(text="load data:")
-                box.prop(net_settings,"load_data",text="")
-        
+                box.prop(net_settings, "load_data", text="")
+
                 row = layout.row()
-                row.operator("session.join",text="CONNECT")
-   
+                row.operator("session.join", text="CONNECT")
+
         else:
-            
-            if net_operators.client.status is  net_components.RCFStatus.CONNECTED: 
+
+            if net_operators.client.status is net_components.RCFStatus.CONNECTED:
                 row.label(text="Net frequency:")
                 row.prop(net_settings, "update_frequency", text="")
                 row = layout.row()
@@ -58,9 +49,8 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row.label(text="connecting...")
                 row = layout.row()
                 row.operator("session.stop", icon='QUIT', text="CANCEL")
-                
+
         row = layout.row()
-        
 
 
 class SessionUsersPanel(bpy.types.Panel):
@@ -74,7 +64,7 @@ class SessionUsersPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if net_operators.client:
-            return net_operators.client.status ==  net_components.RCFStatus.CONNECTED
+            return net_operators.client.status == net_components.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -106,7 +96,6 @@ class SessionUsersPanel(bpy.types.Panel):
                 row.label(text="Empty")
 
             row = layout.row()
-            
 
 
 class SessionPropertiesPanel(bpy.types.Panel):
@@ -120,7 +109,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if net_operators.client:
-            return net_operators.client.status ==  net_components.RCFStatus.CONNECTED
+            return net_operators.client.status == net_components.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -134,10 +123,11 @@ class SessionPropertiesPanel(bpy.types.Panel):
         if net_operators.client:
             row = layout.row(align=True)
             row.prop(net_settings, "buffer", text="")
-            row.prop(net_settings,"add_property_depth",text="")
-            row.operator("session.add_prop", text="",
-                         icon="ADD").property_path = net_settings.buffer
-           
+            row.prop(net_settings, "add_property_depth", text="")
+            add = row.operator("session.add_prop", text="",
+                         icon="ADD")
+            add.property_path = net_settings.buffer
+            add.depth = net_settings.add_property_depth
             row = layout.row()
             # Property area
             area_msg = row.box()
