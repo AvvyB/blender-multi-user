@@ -20,18 +20,9 @@ client = None
 server = None
 context = None
 
-SUPPORTED_DATABLOCKS = ['objects']
-
-REPLICATED_PROPERTIES = ['matrix_world']
-# 'actions','armatures','cameras','collections','curves','grease_pencils','images','materials','materials',,'scenes','textures'
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
-NATIVE_TYPES = (
-    int,
-    float,
-    bool,
-    string,
-)
+
 
 
 def view3d_find():
@@ -154,7 +145,7 @@ def observer(scene):
 
 def mark_objects_for_update(scene):
     for item in dir(bpy.data):
-        if item in SUPPORTED_DATABLOCKS:
+        # if item in SUPPORTED_DATABLOCKS:
             for datablock in getattr(bpy.data,item):
                 if bpy.context.object.is_evaluated:
                     print("EVALUATED: {}:{}".format(item,datablock.name))
