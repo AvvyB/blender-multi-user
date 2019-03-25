@@ -1,18 +1,18 @@
-from bpy_extras import view3d_utils
-import bpy
-from . import net_components
-from . import net_ui
-from . import rna_translation
-from .libs import dump_anything
-import time
 import logging
-import mathutils
 import random
 import string
+import time
+
 import bgl
 import blf
+import bpy
 import gpu
+import mathutils
+from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+
+from . import net_components, net_ui, rna_translation
+from .libs import dump_anything
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,15 @@ context = None
 
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
+SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects', 'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures']
 
+# UTILITY FUNCTIONS
+
+def clean_scene(elements=SUPPORTED_DATABLOCKS):
+    for datablock in elements:
+        datablock_ref = getattr(bpy.data, datablock)
+        for item in datablock_ref:
+            datablock_ref.remove(item)
 
 
 def view3d_find():
@@ -98,13 +106,6 @@ def get_client_2d(coords):
     return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
 
 
-def on_scene_evalutation(scene):
-    # TODO: viewer representation
-    # TODO: Live update only selected object
-    # TODO: Scene representation
-    pass
-
-
 def randomStringDigits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
@@ -126,31 +127,7 @@ def resolve_bpy_path(path):
 
     return item
 
-def observer(scene):
-    global client
-    pass
-    # if client:
-    #     for key, values in client.property_map.items():
-    #         try:
-    #             obj, attr = resolve_bpy_path(key)
 
-    #             if attr != to_bpy(client.property_map[key]):
-    #                 value_type, value = from_bpy(attr)
-    #                 client.push_update(key, value_type, value)
-    #         except:
-    #             pass
-
-    return bpy.context.scene.session_settings.update_frequency
-
-
-def mark_objects_for_update(scene):
-    for item in dir(bpy.data):
-        # if item in SUPPORTED_DATABLOCKS:
-            for datablock in getattr(bpy.data,item):
-                if bpy.context.object.is_evaluated:
-                    print("EVALUATED: {}:{}".format(item,datablock.name))
-                
- 
 def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -158,12 +135,18 @@ def refresh_window():
 
 def init_scene():
     global client
-    
-def load_mesh(target,data):
+
+
+    for mesh in bpy.data.meshes:
+        pass
+
+
+def load_mesh(target, data):
     import bmesh
-    
+
+    # TODO: handle error
     mesh_buffer = bmesh.new()
-    
+
     for i in data["vertices"]:
         mesh_buffer.verts.new(data["vertices"][i]["co"])
 
@@ -173,19 +156,23 @@ def load_mesh(target,data):
         verts = mesh_buffer.verts
         v1 = data["edges"][i]["vertices"][0]
         v2 = data["edges"][i]["vertices"][1]
-        mesh_buffer.edges.new([verts[v1],verts[v2]])
-    
+        mesh_buffer.edges.new([verts[v1], verts[v2]])
+
     for p in data["polygons"]:
         verts = []
         for v in data["polygons"][p]["vertices"]:
             verts.append(mesh_buffer.verts[v])
-        
 
         if len(verts) > 0:
             mesh_buffer.faces.new(verts)
 
+    if not target:
+        target = bpy.data.meshes.new(data["name"])
 
     mesh_buffer.to_mesh(target)
+
+def load_object(target,data):
+    pass
 
 def update_scene(msg):
     global client
@@ -197,41 +184,26 @@ def update_scene(msg):
             if bpy.context.scene.session_settings.active_object.name in msg.key:
                 raise ValueError()
 
-        if msg.mtype == 'Mesh' or 'Object':
-            item =  resolve_bpy_path(msg.key)
-            
-            if item:
-                loader = dump_anything.Loader()
-                loader.load(item,msg.body)
+        if msg.mtype in SUPPORTED_DATABLOCKS:
+            item = resolve_bpy_path(msg.key)
 
-                if msg.mtype == 'Mesh':
-                    load_mesh(item, msg.body)
-                    
-        # print(msg.get)
-        # logger.debug("Updating scene:\n object: {} attribute: {} , value: {}".format(
-        # obj, attr_name, value))
+            if item is None:
+                pass
+            loader = dump_anything.Loader()
+            loader.load(item, msg.body)
 
-        # setattr(obj, attr_name, value)
-        # except:
-        #     passñ
-    else:
-        pass
-        # logger.debug('no need to update scene on our own')
+            if msg.mtype == 'Mesh':
+                load_mesh(item, msg.body)
 
 
-def update_ui(msg):
-    """
-    Update collaborative UI elements
-    """
-    pass
-
-
-recv_callbacks = [update_scene, update_ui]
+recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
 
+# OPERATORS
+
 class session_join(bpy.types.Operator):
-    
+
     bl_idname = "session.join"
     bl_label = "join"
     bl_description = "connect to a net server"
@@ -245,25 +217,27 @@ class session_join(bpy.types.Operator):
         global client
 
         net_settings = context.scene.session_settings
+        # Scene setup
+        if net_settings.session_mode == "CONNECT":
+            clean_scene()
 
+        # Session setup
         if net_settings.username == "DefaultUser":
             net_settings.username = "{}_{}".format(
                 net_settings.username, randomStringDigits())
 
         username = str(context.scene.session_settings.username)
-
         client_factory = rna_translation.RNAFactory()
-        print("{}".format(client_factory.__class__.__name__))
-        client = net_components.Client(
+
+        client = net_components.RCFClient(
             id=username,
             on_recv=recv_callbacks,
             on_post_init=post_init_callbacks,
             factory=client_factory,
-            address=net_settings.ip)
-        # time.sleep(1)
+            address=net_settings.ip,
+            is_admin=net_settings.session_mode == "HOST")
 
         bpy.ops.asyncio.loop()
-        # bpy.app.timers.register(observer)
 
         net_settings.is_running = True
 
@@ -278,7 +252,8 @@ class session_add_property(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     property_path: bpy.props.StringProperty(default="None")
-
+    depth: bpy.props.IntProperty(default=1)
+    
     @classmethod
     def poll(cls, context):
         return True
@@ -290,12 +265,12 @@ class session_add_property(bpy.types.Operator):
 
         print(item)
 
-        if item :
+        if item:
             key = self.property_path
 
             dumper = dump_anything.Dumper()
             dumper.type_subset = dumper.match_subset_all
-            dumper.depth = 4
+            dumper.depth = self.depth
 
             data = dumper.dump(item)
             data_type = item.__class__.__name__
@@ -342,14 +317,13 @@ class session_create(bpy.types.Operator):
         global server
         global client
 
-        server = net_components.Server()
+        server = net_components.RCFServer()
         time.sleep(0.1)
 
         bpy.ops.session.join()
 
-        # init_scene()
+        init_scene()
 
-        bpy.app.timers.register(observer)
         return {"FINISHED"}
 
 
@@ -368,8 +342,6 @@ class session_stop(bpy.types.Operator):
         global client
 
         net_settings = context.scene.session_settings
-
-        # bpy.app.timers.unregister(observer)
 
         if server:
             server.stop()
@@ -390,14 +362,13 @@ class session_stop(bpy.types.Operator):
 class session_settings(bpy.types.PropertyGroup):
     username = bpy.props.StringProperty(
         name="Username", default="user_{}".format(randomStringDigits()))
-    ip = bpy.props.StringProperty(name="localhost")
+    ip = bpy.props.StringProperty(name="ip")
     port = bpy.props.IntProperty(name="5555")
+
+    add_property_depth = bpy.props.IntProperty(name="add_property_depth",default=1)
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
-    hide_users = bpy.props.BoolProperty(name="is_running", default=False)
-    hide_settings = bpy.props.BoolProperty(name="hide_settings", default=False)
-    hide_properties = bpy.props.BoolProperty(
-        name="hide_properties", default=True)
+    load_data = bpy.props.BoolProperty(name="load_data", default=True)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
     active_object = bpy.props.PointerProperty(
@@ -622,6 +593,7 @@ class session_snapview(bpy.types.Operator):
 
         pass
 
+
 # TODO: Rename to match official blender convention
 classes = (
     session_join,
@@ -633,6 +605,7 @@ classes = (
     session_draw_clients,
     session_snapview,
 )
+
 
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
@@ -653,21 +626,10 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
 
-    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
-    # bpy.app.handlers.depsgraph_update_post.append(observer)
-
 
 def unregister():
-    try:
-        bpy.app.handlers.depsgraph_update_post.remove(observer)
-    except:
-        pass
     global server
     global client
-
-    # bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-    # bpy.app.handlers.depsgraph_update_post.remove(observer)
-    # bpy.app.handlers.depsgraph_update_post.remove(mark_objects_for_update)
 
     if server:
         server.stop()
@@ -681,8 +643,6 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-
-    
 
     del bpy.types.Scene.session_settings
 

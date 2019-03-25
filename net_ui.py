@@ -38,9 +38,12 @@ class SessionSettingsPanel(bpy.types.Panel):
             if scene.session_settings.session_mode == 'HOST':
                 row.operator("session.create",text="HOST")
             else:
-
-                row.prop(net_settings,"ip",text="server ip")
-
+                box = row.box()
+                box.prop(net_settings,"ip",text="server ip")
+                box = box.row()
+                box.label(text="load data:")
+                box.prop(net_settings,"load_data",text="")
+        
                 row = layout.row()
                 row.operator("session.join",text="CONNECT")
    
@@ -131,8 +134,10 @@ class SessionPropertiesPanel(bpy.types.Panel):
         if net_operators.client:
             row = layout.row(align=True)
             row.prop(net_settings, "buffer", text="")
+            row.prop(net_settings,"add_property_depth",text="")
             row.operator("session.add_prop", text="",
                          icon="ADD").property_path = net_settings.buffer
+           
             row = layout.row()
             # Property area
             area_msg = row.box()
