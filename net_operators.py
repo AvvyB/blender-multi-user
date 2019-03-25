@@ -22,9 +22,12 @@ context = None
 
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
-SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects', 'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures']
-SUPPORTED_TYPES = ['Collection','Mesh','Object', 'Material', 'Texture', 'Light', 'Camera', 'Action', 'Armature']
+SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
+                        'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures']
+SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
+                   'Texture', 'Light', 'Camera', 'Action', 'Armature']
 # UTILITY FUNCTIONS
+
 
 def clean_scene(elements=SUPPORTED_DATABLOCKS):
     for datablock in elements:
@@ -136,7 +139,6 @@ def refresh_window():
 def init_scene():
     global client
 
-
     for mesh in bpy.data.meshes:
         pass
 
@@ -180,83 +182,84 @@ def load_object(target=None, data=None, create=False):
         if target is None and create:
             mesh = bpy.data.meshes[data["data"]]
             if mesh:
-                target = bpy.data.objects.new(data["name"],mesh)
+                target = bpy.data.objects.new(data["name"], mesh)
             else:
-                print("Missing meshes")    
-        
+                print("Missing meshes")
+
         # Load other meshes metadata
         dump_anything.load(target, data)
 
     except:
         print("Object loading error")
-    
+
+
 def load_collection(target=None, data=None, create=False):
     try:
         if target is None and create:
             target = bpy.data.collections.new(data["name"])
-        
+
         # Load other meshes metadata
         # dump_anything.load(target, data)
-        
+
         # load objects into collection
         for object in data["objects"]:
             target.objects.link(bpy.data.objects[object])
     except:
         print("Collection loading error")
 
+
+# TODO: Cleanup
 def load_material(target=None, data=None, create=False):
     try:
         if target is None and create:
             target = bpy.data.materials.new(data["name"])
-        
-          
+
         # Load other meshes metadata
         dump_anything.load(target, data)
 
         # load nodes
         for node in data["node_tree"]["nodes"]:
-            print("load {}".format(node))
-
-            index = target.node_tree.nodes.find(node) 
+            index = target.node_tree.nodes.find(node)
 
             if index is -1:
                 node_type = data["node_tree"]["nodes"][node]["bl_idname"]
-                print("Create node {}".format(node_type))
+
                 target.node_tree.nodes.new(type=node_type)
-            
-            print("properties")
-            dump_anything.load(target.node_tree.nodes[index],data["node_tree"]["nodes"][node])
+
+            dump_anything.load(
+                target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
 
             for input in data["node_tree"]["nodes"][node]["inputs"]:
-                
+
                 try:
-                    target.node_tree.nodes[index].inputs[input].default_value = data["node_tree"]["nodes"][node]["inputs"][input]["default_value"]
-                    # dump_anything.load(target.node_tree.nodes[index].inputs[input],)
+                    target.node_tree.nodes[index].inputs[input].default_value = data[
+                        "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
                 except:
                     pass
+
         # Load nodes links
-        
         target.node_tree.links.clear()
 
         for link in data["node_tree"]["links"]:
             current_link = data["node_tree"]["links"][link]
+            print(target.node_tree.nodes[current_link['to_node']['name']])
+            input_socket = target.node_tree.nodes[current_link['to_node']
+                                                  ['name']].inputs[current_link['to_socket']['name']]
+            output_socket = target.node_tree.nodes[current_link['from_node']
+                                                   ['name']].outputs[current_link['from_socket']['name']]
 
-            input = ...
-            output = ...
-            
-            link_index = target.node_tree.links.new(node) 
+            target.node_tree.links.new(input_socket, output_socket)
             print(data["node_tree"]["links"][link])
-
-            
 
     except:
         print("Material loading error")
 
-def load_default(target=None, data=None, create=False,type=None):
+
+def load_default(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
-            getattr(bpy.data,type).new(data["name"])
-      
+            getattr(bpy.data, type).new(data["name"])
+
         # Load other meshes metadata
         dump_anything.load(target, data)
     except:
@@ -275,18 +278,22 @@ def update_scene(msg):
 
         if msg.mtype in SUPPORTED_TYPES:
             target = resolve_bpy_path(msg.key)
-           
+
             if msg.mtype == 'Object':
-                load_object(target=target, data=msg.body,create=net_vars.load_data)
+                load_object(target=target, data=msg.body,
+                            create=net_vars.load_data)
             if msg.mtype == 'Mesh':
-                load_mesh(target=target, data=msg.body,create=net_vars.load_data)
+                load_mesh(target=target, data=msg.body,
+                          create=net_vars.load_data)
             if msg.mtype == 'Collection':
-                load_collection(target=target, data=msg.body,create=net_vars.load_data)
+                load_collection(target=target, data=msg.body,
+                                create=net_vars.load_data)
             if msg.mtype == 'Material':
-                load_material(target=target, data=msg.body,create=net_vars.load_data)
+                load_material(target=target, data=msg.body,
+                              create=net_vars.load_data)
             else:
-                load_default(target=target, data=msg.body,create=net_vars.load_data,type=msg.mtype)
-            
+                load_default(target=target, data=msg.body,
+                             create=net_vars.load_data, type=msg.mtype)
 
 
 recv_callbacks = [update_scene]
@@ -346,7 +353,7 @@ class session_add_property(bpy.types.Operator):
 
     property_path: bpy.props.StringProperty(default="None")
     depth: bpy.props.IntProperty(default=1)
-    
+
     @classmethod
     def poll(cls, context):
         return True
@@ -458,7 +465,8 @@ class session_settings(bpy.types.PropertyGroup):
     ip = bpy.props.StringProperty(name="ip")
     port = bpy.props.IntProperty(name="5555")
 
-    add_property_depth = bpy.props.IntProperty(name="add_property_depth",default=1)
+    add_property_depth = bpy.props.IntProperty(
+        name="add_property_depth", default=1)
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
     load_data = bpy.props.BoolProperty(name="load_data", default=True)
