@@ -277,6 +277,12 @@ class Loader:
             pointer.write(bpy.data.textures.get(dump))
         elif isinstance(rna_property_type, T.ColorRamp):
             self._load_default(pointer, dump)
+        elif isinstance(rna_property_type, T.Object):
+            pointer.write(bpy.data.objects.get(dump))
+        elif isinstance(rna_property_type, T.Mesh):
+            pointer.write(bpy.data.meshes.get(dump))
+        elif isinstance(rna_property_type, T.Material):
+            pointer.write(bpy.data.materials.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))
@@ -299,10 +305,12 @@ class Loader:
             return # TODO error handling
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
-            print(k)
             if not hasattr(default.read(), k):
                 continue # TODO error handling
-            self._load_any(default.extend(k), v)
+            try:
+                self._load_any(default.extend(k), v)
+            except:
+                pass
 
     @property
     def match_subset_all(self):

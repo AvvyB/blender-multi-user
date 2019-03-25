@@ -30,10 +30,14 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row.operator("session.create", text="HOST")
             else:
                 box = row.box()
-                box.prop(net_settings, "ip", text="server ip")
-                box = box.row()
-                box.label(text="load data:")
-                box.prop(net_settings, "load_data", text="")
+                row = box.row()
+                row.prop(net_settings, "ip", text="server ip")
+                row = box.row()
+                row.label(text="load data:")
+                row.prop(net_settings, "load_data", text="")
+                row = box.row()
+                row.label(text="clear scene:")
+                row.prop(net_settings, "clear_scene", text="")
 
                 row = layout.row()
                 row.operator("session.join", text="CONNECT")

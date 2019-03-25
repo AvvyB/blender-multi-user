@@ -23,7 +23,7 @@ context = None
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects', 'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures']
-SUPPORTED_TYPES = ['Mesh','Object', 'Material', 'Texture', 'Light', 'Camera', 'Action', 'Armature']
+SUPPORTED_TYPES = ['Collection','Mesh','Object', 'Material', 'Texture', 'Light', 'Camera', 'Action', 'Armature']
 # UTILITY FUNCTIONS
 
 def clean_scene(elements=SUPPORTED_DATABLOCKS):
@@ -174,8 +174,94 @@ def load_mesh(target=None, data=None, create=False):
     # Load other meshes metadata
     dump_anything.load(target, data)
 
+
 def load_object(target=None, data=None, create=False):
-    bpy.data.objects.new()
+    try:
+        if target is None and create:
+            mesh = bpy.data.meshes[data["data"]]
+            if mesh:
+                target = bpy.data.objects.new(data["name"],mesh)
+            else:
+                print("Missing meshes")    
+        
+        # Load other meshes metadata
+        dump_anything.load(target, data)
+
+    except:
+        print("Object loading error")
+    
+def load_collection(target=None, data=None, create=False):
+    try:
+        if target is None and create:
+            target = bpy.data.collections.new(data["name"])
+        
+        # Load other meshes metadata
+        # dump_anything.load(target, data)
+        
+        # load objects into collection
+        for object in data["objects"]:
+            target.objects.link(bpy.data.objects[object])
+    except:
+        print("Collection loading error")
+
+def load_material(target=None, data=None, create=False):
+    try:
+        if target is None and create:
+            target = bpy.data.materials.new(data["name"])
+        
+          
+        # Load other meshes metadata
+        dump_anything.load(target, data)
+
+        # load nodes
+        for node in data["node_tree"]["nodes"]:
+            print("load {}".format(node))
+
+            index = target.node_tree.nodes.find(node) 
+
+            if index is -1:
+                node_type = data["node_tree"]["nodes"][node]["bl_idname"]
+                print("Create node {}".format(node_type))
+                target.node_tree.nodes.new(type=node_type)
+            
+            print("properties")
+            dump_anything.load(target.node_tree.nodes[index],data["node_tree"]["nodes"][node])
+
+            for input in data["node_tree"]["nodes"][node]["inputs"]:
+                
+                try:
+                    target.node_tree.nodes[index].inputs[input].default_value = data["node_tree"]["nodes"][node]["inputs"][input]["default_value"]
+                    # dump_anything.load(target.node_tree.nodes[index].inputs[input],)
+                except:
+                    pass
+        # Load nodes links
+        
+        target.node_tree.links.clear()
+
+        for link in data["node_tree"]["links"]:
+            current_link = data["node_tree"]["links"][link]
+
+            input = ...
+            output = ...
+            
+            link_index = target.node_tree.links.new(node) 
+            print(data["node_tree"]["links"][link])
+
+            
+
+    except:
+        print("Material loading error")
+
+def load_default(target=None, data=None, create=False,type=None):
+    try:
+        if target is None and create:
+            getattr(bpy.data,type).new(data["name"])
+      
+        # Load other meshes metadata
+        dump_anything.load(target, data)
+    except:
+        print("default loading error")
+
 
 def update_scene(msg):
     global client
@@ -191,10 +277,16 @@ def update_scene(msg):
             target = resolve_bpy_path(msg.key)
            
             if msg.mtype == 'Object':
-                pass
-
+                load_object(target=target, data=msg.body,create=net_vars.load_data)
             if msg.mtype == 'Mesh':
                 load_mesh(target=target, data=msg.body,create=net_vars.load_data)
+            if msg.mtype == 'Collection':
+                load_collection(target=target, data=msg.body,create=net_vars.load_data)
+            if msg.mtype == 'Material':
+                load_material(target=target, data=msg.body,create=net_vars.load_data)
+            else:
+                load_default(target=target, data=msg.body,create=net_vars.load_data,type=msg.mtype)
+            
 
 
 recv_callbacks = [update_scene]
@@ -219,7 +311,7 @@ class session_join(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
         # Scene setup
-        if net_settings.session_mode == "CONNECT":
+        if net_settings.session_mode == "CONNECT" and net_settings.clear_scene:
             clean_scene()
 
         # Session setup
@@ -370,6 +462,7 @@ class session_settings(bpy.types.PropertyGroup):
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
     load_data = bpy.props.BoolProperty(name="load_data", default=True)
+    clear_scene = bpy.props.BoolProperty(name="clear_scene", default=True)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
     active_object = bpy.props.PointerProperty(
