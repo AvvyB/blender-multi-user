@@ -2,6 +2,7 @@ import logging
 import random
 import string
 import time
+import asyncio
 
 import bgl
 import blf
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 client = None
 server = None
 context = None
+
 
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
@@ -208,7 +210,6 @@ def load_collection(target=None, data=None, create=False):
         print("Collection loading error")
 
 
-# TODO: Cleanup
 def load_material(target=None, data=None, create=False):
     try:
         if target is None and create:
@@ -254,6 +255,17 @@ def load_material(target=None, data=None, create=False):
     except:
         print("Material loading error")
 
+def load_gpencil(target=None, data=None, create=False):
+    try:
+        if target is None and create:
+            getattr(bpy.data, type).new(data["name"])
+
+        for layer in data["layers"]:
+            print(layer)
+        # Load other meshes metadata
+        dump_anything.load(target, data)
+    except:
+        print("default loading error")
 
 def load_default(target=None, data=None, create=False, type=None):
     try:
@@ -291,6 +303,9 @@ def update_scene(msg):
             if msg.mtype == 'Material':
                 load_material(target=target, data=msg.body,
                               create=net_vars.load_data)
+            if msg.mtype == 'GreasePencil':
+                load_gpencil(target=target, data=msg.body,
+                              create=net_vars.load_data)
             else:
                 load_default(target=target, data=msg.body,
                              create=net_vars.load_data, type=msg.mtype)
@@ -300,8 +315,24 @@ recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
 
-# OPERATORS
+async def dump(property_path,depth):
+    global client
+    item = resolve_bpy_path(property_path)
 
+    if item:
+        key = property_path
+
+        dumper = dump_anything.Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = depth
+
+        data = dumper.dump(item)
+        data_type = item.__class__.__name__
+
+        client.push_update(key, data_type, data)
+
+        
+# OPERATORS
 class session_join(bpy.types.Operator):
 
     bl_idname = "session.join"
@@ -366,16 +397,17 @@ class session_add_property(bpy.types.Operator):
         print(item)
 
         if item:
-            key = self.property_path
+            asyncio.ensure_future(dump(self.property_path, self.depth))
+            # key = self.property_path
 
-            dumper = dump_anything.Dumper()
-            dumper.type_subset = dumper.match_subset_all
-            dumper.depth = self.depth
+            # dumper = dump_anything.Dumper()
+            # dumper.type_subset = dumper.match_subset_all
+            # dumper.depth = self.depth
 
-            data = dumper.dump(item)
-            data_type = item.__class__.__name__
+            # data = dumper.dump(item)
+            # data_type = item.__class__.__name__
 
-            client.push_update(key, data_type, data)
+            # client.push_update(key, data_type, data)
 
         return {"FINISHED"}
 
