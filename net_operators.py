@@ -25,9 +25,9 @@ context = None
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
-                        'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures']
+                        'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures','grease_pencils']
 SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
-                   'Texture', 'Light', 'Camera', 'Action', 'Armature']
+                   'Texture', 'Light', 'Camera', 'Action', 'Armature','GreasePencil']
 # UTILITY FUNCTIONS
 
 
@@ -258,14 +258,16 @@ def load_material(target=None, data=None, create=False):
 def load_gpencil(target=None, data=None, create=False):
     try:
         if target is None and create:
-            getattr(bpy.data, type).new(data["name"])
+            bpy.data.grease_pencils.new(data["name"])
 
-        for layer in data["layers"]:
-            print(layer)
+        if "layers" in data.keys():
+            for layer in data["layers"]:
+                print(layer)
         # Load other meshes metadata
         dump_anything.load(target, data)
     except:
         print("default loading error")
+
 
 def load_default(target=None, data=None, create=False, type=None):
     try:
@@ -314,24 +316,7 @@ def update_scene(msg):
 recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
-
-async def dump(property_path,depth):
-    global client
-    item = resolve_bpy_path(property_path)
-
-    if item:
-        key = property_path
-
-        dumper = dump_anything.Dumper()
-        dumper.type_subset = dumper.match_subset_all
-        dumper.depth = depth
-
-        data = dumper.dump(item)
-        data_type = item.__class__.__name__
-
-        client.push_update(key, data_type, data)
-
-        
+     
 # OPERATORS
 class session_join(bpy.types.Operator):
 
@@ -397,17 +382,16 @@ class session_add_property(bpy.types.Operator):
         print(item)
 
         if item:
-            asyncio.ensure_future(dump(self.property_path, self.depth))
-            # key = self.property_path
+            key = self.property_path
 
-            # dumper = dump_anything.Dumper()
-            # dumper.type_subset = dumper.match_subset_all
-            # dumper.depth = self.depth
+            dumper = dump_anything.Dumper()
+            dumper.type_subset = dumper.match_subset_all
+            dumper.depth = self.depth
 
-            # data = dumper.dump(item)
-            # data_type = item.__class__.__name__
+            data = dumper.dump(item)
+            data_type = item.__class__.__name__
 
-            # client.push_update(key, data_type, data)
+            client.push_update(key, data_type, data)
 
         return {"FINISHED"}
 
