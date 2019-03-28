@@ -108,10 +108,10 @@ class RCFMessage(object):
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
-        if self.key is not None and self.body is not None:
+        if self.key is not None :
             dikt[self.key] = self
-        elif self.key in dikt:
-            del dikt[self.key]
+        # elif self.key in dikt:
+        #     del dikt[self.key]
 
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
@@ -243,9 +243,9 @@ class RCFClient():
         logger.info("{} client running".format(id))
 
         self.push_update(
-            "net/clients/{}".format(self.id.decode()), "client", self.id)
+            "net/clients/{}".format(self.id.decode()), "client", [(0,0,0),(0,0,0),(0,0,0),(0,0,0)])
         self.push_update(
-            "net/objects/{}".format(self.id.decode()), "client_object", "None")
+            "net/objects/{}".format(self.id.decode()), "client_object", None)
 
         self.tick_task = asyncio.ensure_future(self.tick())
 

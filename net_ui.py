@@ -95,7 +95,7 @@ class SessionUsersPanel(bpy.types.Panel):
                             info = "(self)"
                         # detail_item_box = item_box.row()
                         detail_item_box.label(
-                            text="{} {}".format(values.id.decode(), info))
+                            text="{} - {} -{}".format(values.id.decode(),values.body, info))
 
                         if net_operators.client.id.decode() not in key:
                             detail_item_box.operator(
@@ -145,6 +145,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
                     item_box = area_msg.box()
                     detail_item_box = item_box.row()
                     # detail_item_box = item_box.row()
+        
                     detail_item_box.label(text="{} ({}) {} ".format(
                         key, values.mtype, values.id.decode()))
                     detail_item_box.operator(

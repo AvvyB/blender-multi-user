@@ -154,6 +154,26 @@ def dump_datablock(datablock,depth):
 
         client.push_update(key, datablock_type, data)
 
+def dump_datablock_attibute(datablock,attributes):
+    if datablock:
+        print("sending {}".format(datablock.name))
+
+        dumper = dump_anything.Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = 1
+
+        datablock_type = datablock.bl_rna.name
+        key = "{}/{}".format(datablock_type,datablock.name)
+
+        data = {}
+        for attr in attributes:
+            try:
+                data[attr] = dumper.dump(getattr(datablock,attr))
+            except:
+                pass
+
+        client.push_update(key, datablock_type, data)
+
 def init_scene():
     for cam in bpy.data.cameras:
         dump_datablock(cam,1)
@@ -230,7 +250,7 @@ def load_object(target=None, data=None, create=False):
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
     except:
-        print("Object {} loading error ".format(data))
+        print("Object {} loading error ".format(data["name"]))
 
 
 def load_collection(target=None, data=None, create=False):
@@ -360,33 +380,33 @@ def update_scene(msg):
             if net_vars.active_object.name in msg.key:
                 raise ValueError()
 
-        
-        target = resolve_bpy_path(msg.key)
-        
-        if msg.mtype == 'Object':
-            load_object(target=target, data=msg.body,
-                        create=net_vars.load_data)
-        elif msg.mtype == 'Mesh':
-            load_mesh(target=target, data=msg.body,
-                        create=net_vars.load_data)
-        elif msg.mtype == 'Collection':
-            load_collection(target=target, data=msg.body,
+        if 'net' not in msg.key:
+            target = resolve_bpy_path(msg.key)
+            
+            if msg.mtype == 'Object':
+                load_object(target=target, data=msg.body,
                             create=net_vars.load_data)
-        elif msg.mtype == 'Material':
-            load_material(target=target, data=msg.body,
+            elif msg.mtype == 'Mesh':
+                load_mesh(target=target, data=msg.body,
                             create=net_vars.load_data)
-        elif msg.mtype == 'GreasePencil':
-            load_gpencil(target=target, data=msg.body,
-                            create=net_vars.load_data)
-        elif msg.mtype == 'Scene':
-            load_scene(target=target, data=msg.body,
-                            create=net_vars.load_data)
-        elif  'Light' in msg.mtype:
-            load_light(target=target, data=msg.body,
-                            create=net_vars.load_data)
-        else:
-            load_default(target=target, data=msg.body,
-                            create=net_vars.load_data, type=msg.mtype)
+            elif msg.mtype == 'Collection':
+                load_collection(target=target, data=msg.body,
+                                create=net_vars.load_data)
+            elif msg.mtype == 'Material':
+                load_material(target=target, data=msg.body,
+                                create=net_vars.load_data)
+            elif msg.mtype == 'GreasePencil':
+                load_gpencil(target=target, data=msg.body,
+                                create=net_vars.load_data)
+            elif msg.mtype == 'Scene':
+                load_scene(target=target, data=msg.body,
+                                create=net_vars.load_data)
+            elif  'Light' in msg.mtype:
+                load_light(target=target, data=msg.body,
+                                create=net_vars.load_data)
+            else:
+                load_default(target=target, data=msg.body,
+                                create=net_vars.load_data, type=msg.mtype)
 
 
 recv_callbacks = [update_scene]
@@ -433,7 +453,7 @@ class session_join(bpy.types.Operator):
 
         net_settings.is_running = True
 
-        # bpy.ops.session.draw('INVOKE_DEFAULT')
+        bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
 
 
@@ -637,16 +657,18 @@ class session_draw_clients(bpy.types.Operator):
         index_object = 0
         for key, values in client.property_map.items():
             if values.body is not None:
-                if values.mtype == "object":
-                    if values.id != client.id:
+                if values.mtype == "client_object":
+                    if values.id != client.id and values.body is not None:
                         indices = (
                             (0, 1), (1, 2), (2, 3), (0, 3),
                             (4, 5), (5, 6), (6, 7), (4, 7),
                             (0, 4), (1, 5), (2, 6), (3, 7)
                         )
 
-                        ob = bpy.data.objects[values.body]
-
+                        if values.body in bpy.data.objects.keys():
+                            ob = bpy.data.objects[values.body]
+                        else:
+                            return
                         bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
                         coords = [(point.x, point.y, point.z)
@@ -701,7 +723,7 @@ class session_draw_clients(bpy.types.Operator):
         global client
 
         for k, v in client.property_map.items():
-            if v.mtype == 'object':
+            if v.mtype == 'client_object':
                 if client.id != v.id:
                     if obj.name in v.body:
                         return True
@@ -741,12 +763,12 @@ class session_draw_clients(bpy.types.Operator):
                         session.active_object = context.selected_objects[0]
                         key = "net/objects/{}".format(client.id.decode())
                         client.push_update(
-                            key, 'object', session.active_object.name)
+                            key, 'client_object', session.active_object.name)
 
                 elif len(context.selected_objects) == 0 and session.active_object:
                     session.active_object = None
                     key = "net/objects/{}".format(client.id.decode())
-                    client.push_update(key, 'object', None)
+                    client.push_update(key, 'client_object', None)
 
                 # Draw clients
                 if len(client.property_map) > 0:
@@ -805,13 +827,27 @@ classes = (
 
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
-        # print(c[1].id)
-        if c[1].is_updated_geometry:
-            pass
-        if c[1].is_updated_transform:
-            pass
+        global client
 
-            # print(dumper.dump(c[1]))
+        if client.status == net_components.RCFStatus.CONNECTED:
+            if c[1].is_updated_geometry:
+                print("GEOMETRY UPDATE")
+            elif c[1].is_updated_transform:
+                print("TRANFORM UPDATE")
+                dump_datablock_attibute(bpy.data.objects[c[1].id.name],['matrix_world'])
+            else:
+                if c[1].id.name in bpy.data.objects.keys():
+                    found = False
+                    for k in client.property_map.keys():
+                        if  c[1].id.name in k:
+                            found = True
+                            break
+
+                    if not found:                        
+                        dump_datablock(bpy.data.objects[c[1].id.name].data,4)
+                        dump_datablock(bpy.data.objects[c[1].id.name],1)
+                        dump_datablock(bpy.data.scenes[0],4)
+
 
 
 def register():
@@ -821,11 +857,17 @@ def register():
 
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
 
 
 def unregister():
     global server
     global client
+
+    try:
+        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+    except:
+        pass
 
     if server:
         server.stop()
@@ -841,7 +883,7 @@ def unregister():
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
-
+    
 
 if __name__ == "__main__":
     register()
