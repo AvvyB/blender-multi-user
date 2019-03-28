@@ -3,6 +3,7 @@ import random
 import string
 import time
 import asyncio
+import queue
 
 import bgl
 import blf
@@ -21,6 +22,7 @@ client = None
 server = None
 context = None
 
+TASKS  =  []
 
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
@@ -278,7 +280,8 @@ def load_scene(target=None, data=None, create=False):
 
         #Load master collection
         for object in data["collection"]["objects"]:
-             target.collection.objects.link(bpy.data.objects[object])
+            if object not in target.collection.objects.keys():
+                target.collection.objects.link(bpy.data.objects[object])
 
         # load collections 
         # TODO: Recursive link
@@ -383,6 +386,11 @@ def update_scene(msg):
         if 'net' not in msg.key:
             target = resolve_bpy_path(msg.key)
             
+            try:
+                if msg.body["name"] in TASKS:
+                    TASKS.remove(msg.body["name"])
+            except:
+                pass
             if msg.mtype == 'Object':
                 load_object(target=target, data=msg.body,
                             create=net_vars.load_data)
@@ -824,6 +832,15 @@ classes = (
     session_snapview,
 )
 
+def update_loop():
+    for t in TASKS:
+        dump_datablock(bpy.data.objects[t].data,4)
+        dump_datablock(bpy.data.objects[t],1)
+        dump_datablock(bpy.data.scenes[0],4)
+
+    return 0.5
+
+        
 
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
@@ -831,22 +848,26 @@ def depsgraph_update(scene):
 
         if client.status == net_components.RCFStatus.CONNECTED:
             if c[1].is_updated_geometry:
-                print("GEOMETRY UPDATE")
+                pass
             elif c[1].is_updated_transform:
                 print("TRANFORM UPDATE")
                 dump_datablock_attibute(bpy.data.objects[c[1].id.name],['matrix_world'])
             else:
-                if c[1].id.name in bpy.data.objects.keys():
+                data_name = c[1].id.name
+                if data_name in bpy.data.objects.keys():
                     found = False
                     for k in client.property_map.keys():
-                        if  c[1].id.name in k:
+                        if  data_name in k:
                             found = True
                             break
 
-                    if not found:                        
-                        dump_datablock(bpy.data.objects[c[1].id.name].data,4)
-                        dump_datablock(bpy.data.objects[c[1].id.name],1)
-                        dump_datablock(bpy.data.scenes[0],4)
+                    if not found:
+                        client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage("Object/{}".format(data_name), "Object", None)
+                        dump_datablock(bpy.data.objects[data_name].data,4)
+                        dump_datablock(bpy.data.objects[data_name],1)
+                        dump_datablock(bpy.data.scenes[0],4)                
+                        time.sleep(0.5)
+                        # dump_datablock(bpy.data.scenes[0],4)
 
 
 
@@ -858,7 +879,7 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
-
+    bpy.app.timers.register(update_loop)
 
 def unregister():
     global server
@@ -866,6 +887,7 @@ def unregister():
 
     try:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+        bpy.app.timers.unregister(update_loop)
     except:
         pass
 
@@ -882,6 +904,7 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
+    
     del bpy.types.Scene.session_settings
     
 
