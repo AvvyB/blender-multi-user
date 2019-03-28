@@ -230,7 +230,10 @@ class RCFClient():
                     break
                 else:
                     logger.info("received : {}".format(rcfmsg_snapshot.key))
+
                     rcfmsg_snapshot.store(self.property_map)
+                    for f in self.on_recv:
+                        f(rcfmsg)
             except:
                 await asyncio.sleep(0.001)
 

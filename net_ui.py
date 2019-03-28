@@ -27,6 +27,11 @@ class SessionSettingsPanel(bpy.types.Panel):
             row = layout.row()
 
             if scene.session_settings.session_mode == 'HOST':
+                box = row.box()
+                row = box.row()
+                row.label(text="init scene:")
+                row.prop(net_settings, "init_scene", text="")
+                row = layout.row()
                 row.operator("session.create", text="HOST")
             else:
                 box = row.box()

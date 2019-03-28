@@ -28,6 +28,9 @@ SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures','grease_pencils']
 SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
                    'Texture', 'Light', 'Camera', 'Action', 'Armature','GreasePencil']
+
+CORRESPONDANCE = {'Collection':'collections', 'Mesh':'meshes', 'Object':'objects', 'Material':'materials',
+                   'Texture':'textures', 'Light':'lights', 'Camera':'cameras', 'Action':'actions', 'Armature':'armatures','GreasePencil':'grease_pencils'}
 # UTILITY FUNCTIONS
 
 
@@ -125,7 +128,7 @@ def resolve_bpy_path(path):
     item = None
 
     try:
-        item = getattr(bpy.data, path[0])[path[1]]
+        item = getattr(bpy.data, CORRESPONDANCE[path[0]])[path[1]]
 
     except:
         pass
@@ -137,12 +140,27 @@ def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+def dump_datablock(datablock,depth):
+    if datablock:
+        print("sending {}".format(datablock.name))
+
+        dumper = dump_anything.Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = depth
+
+        datablock_type = datablock.__class__.__name__
+        key = "{}/{}".format(datablock_type,datablock.name)
+        data = dumper.dump(datablock)
+
+        client.push_update(key, datablock_type, data)
 
 def init_scene():
     global client
 
-    for mesh in bpy.data.meshes:
-        pass
+    for mat in bpy.data.materials:
+        dump_datablock(mat,7)
+    # for mesh in bpy.data.meshes:
+    #     dump_datablock_from_path("meshes/{}".format(mat.name),7)
 
 
 def load_mesh(target=None, data=None, create=False):
@@ -209,6 +227,19 @@ def load_collection(target=None, data=None, create=False):
     except:
         print("Collection loading error")
 
+def load_scene(target=None, data=None, create=False):
+    try:
+        if target is None and create:
+            target = bpy.data.scenes.new(data["name"])
+
+        # Load other meshes metadata
+        # dump_anything.load(target, data)
+
+        # load collections
+        for collection in data["collection"]["children"]:
+            pass
+    except:
+        print("Collection loading error")
 
 def load_material(target=None, data=None, create=False):
     try:
@@ -254,6 +285,7 @@ def load_material(target=None, data=None, create=False):
 
     except:
         print("Material loading error")
+
 
 def load_gpencil(target=None, data=None, create=False):
     try:
@@ -438,7 +470,8 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        init_scene()
+        if context.scene.session_settings.init_scene:
+            init_scene()
 
         return {"FINISHED"}
 
@@ -486,6 +519,7 @@ class session_settings(bpy.types.PropertyGroup):
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
     load_data = bpy.props.BoolProperty(name="load_data", default=True)
+    init_scene =  bpy.props.BoolProperty(name="load_data", default=True)
     clear_scene = bpy.props.BoolProperty(name="clear_scene", default=True)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
