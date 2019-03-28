@@ -233,7 +233,7 @@ class RCFClient():
 
                     rcfmsg_snapshot.store(self.property_map)
                     for f in self.on_recv:
-                        f(rcfmsg)
+                        f(rcfmsg_snapshot)
             except:
                 await asyncio.sleep(0.001)
 

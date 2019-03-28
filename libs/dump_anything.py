@@ -209,7 +209,6 @@ class BlenderAPIElement:
 
 
 class Loader:
-
     def __init__(self):
         self.type_subset = self.match_subset_all
         self.occlude_read_only = True

@@ -27,10 +27,10 @@ COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures','grease_pencils']
 SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
-                   'Texture', 'Light', 'Camera', 'Action', 'Armature','GreasePencil']
+                   'Texture', 'Light', 'Camera', 'Action', 'Armature','GreasePencil','Scene']
 
 CORRESPONDANCE = {'Collection':'collections', 'Mesh':'meshes', 'Object':'objects', 'Material':'materials',
-                   'Texture':'textures', 'Light':'lights', 'Camera':'cameras', 'Action':'actions', 'Armature':'armatures','GreasePencil':'grease_pencils'}
+                   'Texture':'textures','Scene':'scenes', 'Light':'lights', 'Camera':'cameras', 'Action':'actions', 'Armature':'armatures','GreasePencil':'grease_pencils'}
 # UTILITY FUNCTIONS
 
 
@@ -148,19 +148,27 @@ def dump_datablock(datablock,depth):
         dumper.type_subset = dumper.match_subset_all
         dumper.depth = depth
 
-        datablock_type = datablock.__class__.__name__
+        datablock_type = datablock.bl_rna.name
         key = "{}/{}".format(datablock_type,datablock.name)
         data = dumper.dump(datablock)
 
         client.push_update(key, datablock_type, data)
 
 def init_scene():
-    global client
-
+    for cam in bpy.data.cameras:
+        dump_datablock(cam,1)
+    for light in bpy.data.lights:
+        dump_datablock(light,1)
     for mat in bpy.data.materials:
         dump_datablock(mat,7)
-    # for mesh in bpy.data.meshes:
-    #     dump_datablock_from_path("meshes/{}".format(mat.name),7)
+    for mesh in bpy.data.meshes:
+        dump_datablock(mesh,6)
+    for object in bpy.data.objects:
+        dump_datablock(object,1)
+    for collection in bpy.data.collections:
+        dump_datablock(collection,4)
+    for scene in bpy.data.scenes:
+        dump_datablock(scene,4)
 
 
 def load_mesh(target=None, data=None, create=False):
@@ -200,17 +208,29 @@ def load_mesh(target=None, data=None, create=False):
 def load_object(target=None, data=None, create=False):
     try:
         if target is None and create:
-            mesh = bpy.data.meshes[data["data"]]
-            if mesh:
-                target = bpy.data.objects.new(data["name"], mesh)
-            else:
-                print("Missing meshes")
+            pointer = None
+
+            # Object specific constructor...
+            if data["data"] in bpy.data.meshes.keys():
+                pointer = bpy.data.meshes[data["data"]]
+            elif data["data"] in bpy.data.lights.keys():
+                pointer = bpy.data.lights[data["data"]]
+            elif data["data"] in bpy.data.cameras.keys():
+                pointer = bpy.data.cameras[data["data"]]
+            elif data["data"] in bpy.data.curves.keys():
+                pointer = bpy.data.curves[data["data"]]
+            elif data["data"] in bpy.data.grease_pencils.keys():
+                pointer = bpy.data.grease_pencils[data["data"]]
+            
+            target = bpy.data.objects.new(data["name"], pointer)
 
         # Load other meshes metadata
         dump_anything.load(target, data)
+        import mathutils
+        target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
     except:
-        print("Object loading error")
+        print("Object {} loading error ".format(data))
 
 
 def load_collection(target=None, data=None, create=False):
@@ -227,6 +247,7 @@ def load_collection(target=None, data=None, create=False):
     except:
         print("Collection loading error")
 
+
 def load_scene(target=None, data=None, create=False):
     try:
         if target is None and create:
@@ -235,11 +256,18 @@ def load_scene(target=None, data=None, create=False):
         # Load other meshes metadata
         # dump_anything.load(target, data)
 
-        # load collections
+        #Load master collection
+        for object in data["collection"]["objects"]:
+             target.collection.objects.link(bpy.data.objects[object])
+
+        # load collections 
+        # TODO: Recursive link
         for collection in data["collection"]["children"]:
-            pass
+            if collection not in target.collection.children.keys():
+                target.collection.children.link(bpy.data.collections[collection])
     except:
         print("Collection loading error")
+
 
 def load_material(target=None, data=None, create=False):
     try:
@@ -300,11 +328,21 @@ def load_gpencil(target=None, data=None, create=False):
     except:
         print("default loading error")
 
+def load_light(target=None, data=None, create=False, type=None):
+    try:
+        if target is None and create:
+            bpy.data.lights.new(data["name"],data["type"])
+
+        # Load other meshes metadata
+        dump_anything.load(target, data)
+    except:
+        print("light loading error")
+
 
 def load_default(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
-            getattr(bpy.data, type).new(data["name"])
+            getattr(bpy.data, CORRESPONDANCE[type]).new(data["name"])
 
         # Load other meshes metadata
         dump_anything.load(target, data)
@@ -322,27 +360,33 @@ def update_scene(msg):
             if net_vars.active_object.name in msg.key:
                 raise ValueError()
 
-        if msg.mtype in SUPPORTED_TYPES:
-            target = resolve_bpy_path(msg.key)
-
-            if msg.mtype == 'Object':
-                load_object(target=target, data=msg.body,
+        
+        target = resolve_bpy_path(msg.key)
+        
+        if msg.mtype == 'Object':
+            load_object(target=target, data=msg.body,
+                        create=net_vars.load_data)
+        elif msg.mtype == 'Mesh':
+            load_mesh(target=target, data=msg.body,
+                        create=net_vars.load_data)
+        elif msg.mtype == 'Collection':
+            load_collection(target=target, data=msg.body,
                             create=net_vars.load_data)
-            if msg.mtype == 'Mesh':
-                load_mesh(target=target, data=msg.body,
-                          create=net_vars.load_data)
-            if msg.mtype == 'Collection':
-                load_collection(target=target, data=msg.body,
-                                create=net_vars.load_data)
-            if msg.mtype == 'Material':
-                load_material(target=target, data=msg.body,
-                              create=net_vars.load_data)
-            if msg.mtype == 'GreasePencil':
-                load_gpencil(target=target, data=msg.body,
-                              create=net_vars.load_data)
-            else:
-                load_default(target=target, data=msg.body,
-                             create=net_vars.load_data, type=msg.mtype)
+        elif msg.mtype == 'Material':
+            load_material(target=target, data=msg.body,
+                            create=net_vars.load_data)
+        elif msg.mtype == 'GreasePencil':
+            load_gpencil(target=target, data=msg.body,
+                            create=net_vars.load_data)
+        elif msg.mtype == 'Scene':
+            load_scene(target=target, data=msg.body,
+                            create=net_vars.load_data)
+        elif  'Light' in msg.mtype:
+            load_light(target=target, data=msg.body,
+                            create=net_vars.load_data)
+        else:
+            load_default(target=target, data=msg.body,
+                            create=net_vars.load_data, type=msg.mtype)
 
 
 recv_callbacks = [update_scene]
