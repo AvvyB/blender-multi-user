@@ -156,13 +156,13 @@ def dump_datablock(datablock,depth):
 
         client.push_update(key, datablock_type, data)
 
-def dump_datablock_attibute(datablock,attributes):
+def dump_datablock_attibute(datablock,attributes,depth=1):
     if datablock:
         print("sending {}".format(datablock.name))
 
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
-        dumper.depth = 1
+        dumper.depth = depth
 
         datablock_type = datablock.bl_rna.name
         key = "{}/{}".format(datablock_type,datablock.name)
@@ -176,6 +176,10 @@ def dump_datablock_attibute(datablock,attributes):
 
         client.push_update(key, datablock_type, data)
 
+def upload_mesh(mesh):
+    if mesh.bl_rna.name == 'Mesh':
+        dump_datablock_attibute(mesh,['name','polygons','edges','vertices'],6)
+
 def init_scene():
     for cam in bpy.data.cameras:
         dump_datablock(cam,1)
@@ -184,14 +188,13 @@ def init_scene():
     for mat in bpy.data.materials:
         dump_datablock(mat,7)
     for mesh in bpy.data.meshes:
-        dump_datablock(mesh,6)
+        upload_mesh(mesh)
     for object in bpy.data.objects:
         dump_datablock(object,1)
     for collection in bpy.data.collections:
         dump_datablock(collection,4)
     for scene in bpy.data.scenes:
         dump_datablock(scene,4)
-
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
@@ -350,6 +353,7 @@ def load_gpencil(target=None, data=None, create=False):
         dump_anything.load(target, data)
     except:
         print("default loading error")
+
 
 def load_light(target=None, data=None, create=False, type=None):
     try:
@@ -840,35 +844,33 @@ def update_loop():
 
     return 0.5
 
-        
-
+    
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
         global client
+        if client:
+            if client.status == net_components.RCFStatus.CONNECTED:
+                if c[1].is_updated_geometry:
+                    print("GEOMETRY UPDATE")
+                elif c[1].is_updated_transform:
+                    print("TRANFORM UPDATE")
+                    dump_datablock_attibute(bpy.data.objects[c[1].id.name],['matrix_world'])
+                else:
+                    data_name = c[1].id.name
+                    if data_name in bpy.data.objects.keys():
+                        found = False
+                        for k in client.property_map.keys():
+                            if  data_name in k:
+                                found = True
+                                break
 
-        if client.status == net_components.RCFStatus.CONNECTED:
-            if c[1].is_updated_geometry:
-                pass
-            elif c[1].is_updated_transform:
-                print("TRANFORM UPDATE")
-                dump_datablock_attibute(bpy.data.objects[c[1].id.name],['matrix_world'])
-            else:
-                data_name = c[1].id.name
-                if data_name in bpy.data.objects.keys():
-                    found = False
-                    for k in client.property_map.keys():
-                        if  data_name in k:
-                            found = True
-                            break
-
-                    if not found:
-                        client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage("Object/{}".format(data_name), "Object", None)
-                        dump_datablock(bpy.data.objects[data_name].data,4)
-                        dump_datablock(bpy.data.objects[data_name],1)
-                        dump_datablock(bpy.data.scenes[0],4)                
-                        time.sleep(0.5)
-                        # dump_datablock(bpy.data.scenes[0],4)
-
+                        if not found:
+                            client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage("Object/{}".format(data_name), "Object", None)
+                            upload_mesh(bpy.data.objects[data_name].data)
+                            dump_datablock(bpy.data.objects[data_name],1)
+                            dump_datablock(bpy.data.scenes[0],4)                
+                            
+                            # dump_datablock(bpy.data.scenes[0],4)
 
 
 def register():
