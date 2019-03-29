@@ -22,8 +22,25 @@ client = None
 server = None
 context = None
 
-TASKS  =  []
+update_list  =  {}
 
+def add_update(type,item):
+    try:
+        if item not in update_list[type]:
+            update_list[type].append(item)
+    except KeyError:
+        update_list[type] = []
+
+def get_update(type):
+    try:
+        update = None
+        
+        if update_list[type]:
+            update =  update_list[type].pop()
+    except KeyError:
+        update_list[type] = []
+
+    return update
 COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
                (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
@@ -493,6 +510,7 @@ class session_join(bpy.types.Operator):
 
         # REGISTER Updaters
         bpy.app.timers.register(tick)
+        bpy.app.timers.register(object_tick)
 
         bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
@@ -608,6 +626,7 @@ class session_stop(bpy.types.Operator):
             bpy.ops.asyncio.stop()
             net_settings.is_running = False
             bpy.app.timers.unregister(tick)
+            bpy.app.timers.unregister(object_tick)
         else:
             logger.debug("No server/client running.")
 
@@ -878,6 +897,23 @@ classes = (
     session_snapview,
 )
 
+def mesh_tick():
+
+    return 2
+
+def object_tick():
+
+    obj = get_update("Object")
+
+    if obj:
+        dump_datablock_attibute(bpy.data.objects[obj],['matrix_world'])
+
+    return 0.1
+
+def material_tick():
+    
+    return 2
+
 
 def tick():
     upload_client_position()
@@ -895,7 +931,8 @@ def depsgraph_update(scene):
                 if c[1].is_updated_geometry:
                     pass
                 elif c[1].is_updated_transform:
-                    dump_datablock_attibute(bpy.data.objects[c[1].id.name],['matrix_world'])
+                    if c[1].id.name == scene.session_settings.active_object.name:
+                        add_update(c[1].id.bl_rna.name,c[1].id.name)
                 else:
                     if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name == 'Shader Nodetree':
                         print(c[1].id.bl_rna.name)
