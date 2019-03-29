@@ -243,9 +243,9 @@ class RCFClient():
         logger.info("{} client running".format(id))
 
         self.push_update(
-            "net/clients/{}".format(self.id.decode()), "client", [(0,0,0),(0,0,0),(0,0,0),(0,0,0)])
+            "net/clients/{}".format(self.id.decode()), "client", None)
         self.push_update(
-            "net/objects/{}".format(self.id.decode()), "client_object", None)
+            "net/objects/{}".format(self.id.decode()), "clientObject", None)
 
         self.tick_task = asyncio.ensure_future(self.tick())
 

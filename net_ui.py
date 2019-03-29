@@ -19,8 +19,15 @@ class SessionSettingsPanel(bpy.types.Panel):
 
         row = layout.row()
         if net_operators.client is None:
+            
             row = layout.row()
-            row.prop(scene.session_settings, "username", text="username:")
+            box = row.box()
+            row = box.row()
+            row.label(text="User infos")
+            row = box.row()
+            row.prop(scene.session_settings, "username", text="id")
+            row = box.row()
+            row.prop(scene.session_settings, "client_color", text="color") 
 
             row = layout.row()
             row.prop(scene.session_settings, "session_mode", expand=True)

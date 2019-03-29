@@ -44,7 +44,7 @@ def clean_scene(elements=SUPPORTED_DATABLOCKS):
 
 
 def view3d_find():
-    for area in bpy.context.window.screen.areas:
+    for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
             v3d = area.spaces[0]
             rv3d = v3d.region_3d
@@ -52,15 +52,17 @@ def view3d_find():
                 if region.type == 'WINDOW':
                     return area, region, rv3d
 
-                    break
-
     return None, None, None
 
 
 def get_target(region, rv3d, coord):
-    view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
-    ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
-    target = ray_origin + view_vector
+    target = [0,0,0]
+
+    if coord and region and rv3d:
+        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+        target = ray_origin + view_vector
+
     return [target.x, target.y, target.z]
 
 
@@ -72,54 +74,41 @@ def get_client_view_rect():
     v3 = [0, 0, 0]
     v4 = [0, 0, 0]
 
-    width = region.width
-    height = region.height
+    if area and region and rv3d:
+        width = region.width
+        height = region.height
 
-    v1 = get_target(region, rv3d, (0, 0))
-    v3 = get_target(region, rv3d, (0, height))
-    v2 = get_target(region, rv3d, (width, height))
-    v4 = get_target(region, rv3d, (width, 0))
-
-    coords = (v1, v2, v3, v4)
-    indices = (
-        (1, 3), (2, 1), (3, 0), (2, 0)
-    )
-    return coords
-
-
-def get_client_view_rect():
-    area, region, rv3d = view3d_find()
-
-    v1 = [0, 0, 0]
-    v2 = [0, 0, 0]
-    v3 = [0, 0, 0]
-    v4 = [0, 0, 0]
-
-    width = region.width
-    height = region.height
-
-    v1 = get_target(region, rv3d, (0, 0))
-    v3 = get_target(region, rv3d, (0, height))
-    v2 = get_target(region, rv3d, (width, height))
-    v4 = get_target(region, rv3d, (width, 0))
+        v1 = get_target(region, rv3d, (0, 0))
+        v3 = get_target(region, rv3d, (0, height))
+        v2 = get_target(region, rv3d, (width, height))
+        v4 = get_target(region, rv3d, (width, 0))
 
     coords = (v1, v2, v3, v4)
     indices = (
         (1, 3), (2, 1), (3, 0), (2, 0)
     )
+    
     return coords
 
-
+        
 def get_client_2d(coords):
     area, region, rv3d = view3d_find()
-
-    return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
+    if area and region and rv3d:
+        return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
+    else:
+        return None
 
 
 def randomStringDigits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+
+def randomColor():
+    r = random.random()
+    v = random.random()
+    b = random.random()
+    return [r,v,b]
 
 
 def resolve_bpy_path(path):
@@ -158,8 +147,6 @@ def dump_datablock(datablock,depth):
 
 def dump_datablock_attibute(datablock,attributes,depth=1):
     if datablock:
-        print("sending {}".format(datablock.name))
-
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
         dumper.depth = depth
@@ -180,6 +167,31 @@ def upload_mesh(mesh):
     if mesh.bl_rna.name == 'Mesh':
         dump_datablock_attibute(mesh,['name','polygons','edges','vertices'],6)
 
+def upload_material(mesh):
+    if mesh.bl_rna.name == 'Material':
+        dump_datablock_attibute(mesh,['name','node_tree'],7)
+
+def upload_client_position():
+    global client
+
+    if client:
+        key = "net/clients/{}".format(client.id.decode())
+
+        try:
+            current_coords = get_client_view_rect()
+            data = client.property_map[key].body
+            if data is None:
+                data = {}
+                data['location'] = current_coords
+                color =  bpy.context.scene.session_settings.client_color
+                data['color'] = (color.r,color.g,color.b,1)
+                client.push_update(key, 'client', data)
+            elif current_coords[0] != data['location'][0]:
+                data['location'] = current_coords
+                client.push_update(key, 'client', data)
+        except:
+            pass
+
 def init_scene():
     for cam in bpy.data.cameras:
         dump_datablock(cam,1)
@@ -195,6 +207,7 @@ def init_scene():
         dump_datablock(collection,4)
     for scene in bpy.data.scenes:
         dump_datablock(scene,4)
+
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
@@ -383,18 +396,13 @@ def update_scene(msg):
     if msg.id != client.id:
         net_vars = bpy.context.scene.session_settings
 
-        if net_vars.active_object:
-            if net_vars.active_object.name in msg.key:
-                raise ValueError()
+        # if net_vars.active_object:
+        #     if net_vars.active_object.name in msg.key:
+        #         raise ValueError()
 
         if 'net' not in msg.key:
             target = resolve_bpy_path(msg.key)
-            
-            try:
-                if msg.body["name"] in TASKS:
-                    TASKS.remove(msg.body["name"])
-            except:
-                pass
+        
             if msg.mtype == 'Object':
                 load_object(target=target, data=msg.body,
                             create=net_vars.load_data)
@@ -416,9 +424,27 @@ def update_scene(msg):
             elif  'Light' in msg.mtype:
                 load_light(target=target, data=msg.body,
                                 create=net_vars.load_data)
-            else:
+            elif  msg.mtype == 'Camera' :
                 load_default(target=target, data=msg.body,
                                 create=net_vars.load_data, type=msg.mtype)
+        else:            
+            if msg.mtype == 'client':
+                refresh_window()
+            elif msg.mtype == 'clientObject':
+                selected_objects = []
+                
+                for k, v in client.property_map.items():
+                        if v.mtype == 'clientObject':
+                            if client.id != v.id:
+                                selected_objects.append(v.body['object'])
+                                    
+                for obj in bpy.data.objects:
+                    if obj.name in selected_objects:
+                        obj.hide_select = True
+                    else:
+                        obj.hide_select = False
+                
+                refresh_window()
 
 
 recv_callbacks = [update_scene]
@@ -464,6 +490,9 @@ class session_join(bpy.types.Operator):
         bpy.ops.asyncio.loop()
 
         net_settings.is_running = True
+
+        # REGISTER Updaters
+        bpy.app.timers.register(tick)
 
         bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
@@ -578,6 +607,7 @@ class session_stop(bpy.types.Operator):
             client = None
             bpy.ops.asyncio.stop()
             net_settings.is_running = False
+            bpy.app.timers.unregister(tick)
         else:
             logger.debug("No server/client running.")
 
@@ -608,7 +638,9 @@ class session_settings(bpy.types.PropertyGroup):
             ('HOST', 'hosting', 'host a session'),
             ('CONNECT', 'connexion', 'connect to a session')},
         default='HOST')
-
+    client_color = bpy.props.FloatVectorProperty(name="client_color", 
+                                        subtype='COLOR', 
+                                        default=randomColor())
 
 class session_draw_clients(bpy.types.Operator):
     bl_idname = "session.draw"
@@ -650,67 +682,79 @@ class session_draw_clients(bpy.types.Operator):
             0.008, window=context.window)
 
     def unregister_handlers(self, context):
-        if self.draw_event and self.draw3d_handle and self.draw2d_handle:
+        if self.draw_event:
             context.window_manager.event_timer_remove(self.draw_event)
-            bpy.types.SpaceView3D.draw_handler_remove(
-                self.draw3d_handle, "WINDOW")
+            self.draw_event = None
+
+        if self.draw2d_handle:
             bpy.types.SpaceView3D.draw_handler_remove(
                 self.draw2d_handle, "WINDOW")
-
-            self.draw_items.clear()
-            self.draw3d_handle = None
             self.draw2d_handle = None
-            self.draw_event = None
+
+        if self.draw3d_handle:
+            bpy.types.SpaceView3D.draw_handler_remove(
+                self.draw3d_handle, "WINDOW")
+            self.draw3d_handle = None
+            
+        self.draw_items.clear()
+            
+            
+            
 
     # TODO: refactor this ugly things
     def create_batch(self):
         global client
         index = 0
         index_object = 0
+
+        self.draw_items.clear()
+
         for key, values in client.property_map.items():
-            if values.body is not None:
-                if values.mtype == "client_object":
-                    if values.id != client.id and values.body is not None:
-                        indices = (
-                            (0, 1), (1, 2), (2, 3), (0, 3),
-                            (4, 5), (5, 6), (6, 7), (4, 7),
-                            (0, 4), (1, 5), (2, 6), (3, 7)
-                        )
+            if 'net' in key and values.body is not None and values.id != client.id:
+                if values.mtype == "clientObject":
+                    indices = (
+                        (0, 1), (1, 2), (2, 3), (0, 3),
+                        (4, 5), (5, 6), (6, 7), (4, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7)
+                    )
 
-                        if values.body in bpy.data.objects.keys():
-                            ob = bpy.data.objects[values.body]
-                        else:
-                            return
-                        bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+                    if values.body['object'] in bpy.data.objects.keys():
+                        ob = bpy.data.objects[values.body['object']]
+                    else:
+                        return
+                    bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-                        coords = [(point.x, point.y, point.z)
-                                  for point in bbox_corners]
+                    coords = [(point.x, point.y, point.z)
+                                for point in bbox_corners]
 
-                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                        batch = batch_for_shader(
-                            shader, 'LINES', {"pos": coords}, indices=indices)
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-                        self.draw_items.append(
-                            (shader, batch, (None, None), COLOR_TABLE[index-1]))
+                    color =  values.body['color']
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos": coords}, indices=indices)
+
+                    self.draw_items.append(
+                        (shader, batch, (None, None), color))
 
                     # index_object += 1
 
                 if values.mtype == "client":
-                    if values.id != client.id:
-                        indices = (
-                            (1, 3), (2, 1), (3, 0), (2, 0)
-                        )
+                    indices = (
+                        (1, 3), (2, 1), (3, 0), (2, 0)
+                    )
 
-                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                        batch = batch_for_shader(
-                            shader, 'LINES', {"pos": values.body}, indices=indices)
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                    position =  values.body['location']
+                    color =  values.body['color']
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos":position}, indices=indices)
 
-                        self.draw_items.append(
-                            (shader, batch, (values.body[1], values.id.decode()), COLOR_TABLE[index]))
+                    self.draw_items.append(
+                        (shader, batch, (position[1], values.id.decode()), color))
+                        
                     index += 1
 
     def draw3d_callback(self):
-
         bgl.glLineWidth(3)
         for shader, batch, font, color in self.draw_items:
             shader.bind()
@@ -735,7 +779,7 @@ class session_draw_clients(bpy.types.Operator):
         global client
 
         for k, v in client.property_map.items():
-            if v.mtype == 'client_object':
+            if v.mtype == 'clientObject':
                 if client.id != v.id:
                     if obj.name in v.body:
                         return True
@@ -748,52 +792,50 @@ class session_draw_clients(bpy.types.Operator):
 
         if not context.scene.session_settings.is_running:
             self.finish(context)
+            return {"FINISHED"}
 
         if event.type in {"TIMER"}:
             global client
             session = context.scene.session_settings
 
-            if client:
-                # Local view update
-                current_coords = get_client_view_rect()
-                if current_coords != self.coords:
-                    self.coords = current_coords
-                    key = "net/clients/{}".format(client.id.decode())
-
-                    client.push_update(key, 'client', current_coords)
-
+            if client:                
                 # Hide selected objects
-                for object in context.scene.objects:
-                    if self.is_object_selected(object):
-                        object.hide_select = True
-                    else:
-                        object.hide_select = False
+                # for object in context.scene.objects:
+                #     if self.is_object_selected(object):
+                #         object.hide_select = True
+                #     else:
+                #         object.hide_select = False
 
                 # Active object bounding box
                 if len(context.selected_objects) > 0:
                     if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
                         session.active_object = context.selected_objects[0]
                         key = "net/objects/{}".format(client.id.decode())
+                        data = {}
+                        data['color'] = [session.client_color.r,session.client_color.g,session.client_color.b]
+                        data['object'] =  session.active_object.name
                         client.push_update(
-                            key, 'client_object', session.active_object.name)
+                            key, 'clientObject', data)
 
                 elif len(context.selected_objects) == 0 and session.active_object:
                     session.active_object = None
+                    data = {}
+                    data['object'] = None
                     key = "net/objects/{}".format(client.id.decode())
-                    client.push_update(key, 'client_object', None)
+                    client.push_update(key, 'clientObject', data)
 
                 # Draw clients
-                if len(client.property_map) > 0:
-                    self.unregister_handlers(context)
+                if len(client.property_map) > 1:
+                    # self.unregister_handlers(context)
                     self.create_batch()
 
-                    self.register_handlers(context)
+                    # self.register_handlers(context)
 
         return {"PASS_THROUGH"}
 
     def finish(self, context):
         self.unregister_handlers(context)
-        return {"FINISHED"}
+
 
 
 class session_snapview(bpy.types.Operator):
@@ -815,7 +857,7 @@ class session_snapview(bpy.types.Operator):
 
         for k, v in client.property_map.items():
             if v.mtype == 'client' and v.id.decode() == self.target_client:
-                rv3d.view_location = v.body[1]
+                rv3d.view_location = v.body['location'][1]
                 rv3d.view_distance = 30.0
                 return {"FINISHED"}
 
@@ -836,26 +878,27 @@ classes = (
     session_snapview,
 )
 
-def update_loop():
-    for t in TASKS:
-        dump_datablock(bpy.data.objects[t].data,4)
-        dump_datablock(bpy.data.objects[t],1)
-        dump_datablock(bpy.data.scenes[0],4)
 
-    return 0.5
+def tick():
+    upload_client_position()
 
-    
+    return 0.1
+
+# TODO: Enqueu tqsks
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
+        print(c[1].id)
         global client
         if client:
             if client.status == net_components.RCFStatus.CONNECTED:
+                print(c[1].id)
                 if c[1].is_updated_geometry:
-                    print("GEOMETRY UPDATE")
+                    pass
                 elif c[1].is_updated_transform:
-                    print("TRANFORM UPDATE")
                     dump_datablock_attibute(bpy.data.objects[c[1].id.name],['matrix_world'])
                 else:
+                    if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name == 'Shader Nodetree':
+                        print(c[1].id.bl_rna.name)
                     data_name = c[1].id.name
                     if data_name in bpy.data.objects.keys():
                         found = False
@@ -881,7 +924,6 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
-    bpy.app.timers.register(update_loop)
 
 def unregister():
     global server
@@ -889,7 +931,7 @@ def unregister():
 
     try:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-        bpy.app.timers.unregister(update_loop)
+       
     except:
         pass
 
