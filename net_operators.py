@@ -510,6 +510,7 @@ class session_join(bpy.types.Operator):
 
         # REGISTER Updaters
         bpy.app.timers.register(tick)
+        bpy.app.timers.register(mesh_tick)
         bpy.app.timers.register(object_tick)
 
         bpy.ops.session.draw('INVOKE_DEFAULT')
@@ -626,6 +627,7 @@ class session_stop(bpy.types.Operator):
             bpy.ops.asyncio.stop()
             net_settings.is_running = False
             bpy.app.timers.unregister(tick)
+            bpy.app.timers.unregister(mesh_tick)
             bpy.app.timers.unregister(object_tick)
         else:
             logger.debug("No server/client running.")
@@ -898,6 +900,10 @@ classes = (
 )
 
 def mesh_tick():
+    mesh = get_update("Mesh")
+
+    if mesh:
+        upload_mesh(bpy.data.meshes[mesh])
 
     return 2
 
@@ -923,32 +929,34 @@ def tick():
 # TODO: Enqueu tqsks
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
-        print(c[1].id)
+        
         global client
         if client:
             if client.status == net_components.RCFStatus.CONNECTED:
-                print(c[1].id)
-                if c[1].is_updated_geometry:
-                    pass
-                elif c[1].is_updated_transform:
-                    if c[1].id.name == scene.session_settings.active_object.name:
-                        add_update(c[1].id.bl_rna.name,c[1].id.name)
-                else:
-                    if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name == 'Shader Nodetree':
-                        print(c[1].id.bl_rna.name)
+                if scene.session_settings.active_object:
+                    if c[1].is_updated_geometry:
+                        if c[1].id.name == scene.session_settings.active_object.name:
+                            add_update(c[1].id.bl_rna.name,c[1].id.name)
+                    elif c[1].is_updated_transform:
+                        if c[1].id.name == scene.session_settings.active_object.name:
+                            add_update(c[1].id.bl_rna.name,c[1].id.name)
+                            
+                    # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
+                    print(c[1].id.bl_rna.name)
                     data_name = c[1].id.name
-                    if data_name in bpy.data.objects.keys():
-                        found = False
-                        for k in client.property_map.keys():
-                            if  data_name in k:
-                                found = True
-                                break
+                    if c[1].id.bl_rna.name == "Object":
+                        if data_name in bpy.data.objects.keys():
+                            found = False
+                            for k in client.property_map.keys():
+                                if  data_name in k:
+                                    found = True
+                                    break
 
-                        if not found:
-                            client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage("Object/{}".format(data_name), "Object", None)
-                            upload_mesh(bpy.data.objects[data_name].data)
-                            dump_datablock(bpy.data.objects[data_name],1)
-                            dump_datablock(bpy.data.scenes[0],4)                
+                            if not found:
+                                client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage("Object/{}".format(data_name), "Object", None)
+                                upload_mesh(bpy.data.objects[data_name].data)
+                                dump_datablock(bpy.data.objects[data_name],1)
+                                dump_datablock(bpy.data.scenes[0],4)                
                             
                             # dump_datablock(bpy.data.scenes[0],4)
 
