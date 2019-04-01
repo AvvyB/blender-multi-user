@@ -50,7 +50,6 @@ SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
 SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
                    'Texture', 'Light', 'Camera', 'Action', 'Armature', 'GreasePencil', 'Scene']
-
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'GreasePencil': 'grease_pencils'}
 # UTILITY FUNCTIONS
@@ -189,6 +188,8 @@ def update_selected_object(context):
 
 
 def init_scene():
+    for gp in bpy.data.grease_pencils:
+        dump_datablock(gp, 9)
     for cam in bpy.data.cameras:
         dump_datablock(cam, 1)
     for light in bpy.data.lights:
@@ -304,7 +305,6 @@ def load_scene(target=None, data=None, create=False):
     except:
         print("Collection loading error")
 
-
 def load_material(target=None, data=None, create=False):
     try:
         if target is None and create:
@@ -350,15 +350,46 @@ def load_material(target=None, data=None, create=False):
     except:
         print("Material loading error")
 
+def load_gpencil_layer(target=None,data=None, create=False):
+    
+    dump_anything.load(target, data)
+
+
+    for frame in data["frames"]:
+        try: 
+            tframe = target.frames[frame]
+        except:
+            tframe = target.frames.new(frame)
+        dump_anything.load(tframe, data["frames"][frame])
+        for stroke in data["frames"][frame]["strokes"]:
+            try:
+                tstroke = tframe.strokes[stroke]
+            except:
+                tstroke = tframe.strokes.new()
+            dump_anything.load(tstroke, data["frames"][frame]["strokes"][stroke])
+            
+            for point in data["frames"][frame]["strokes"][stroke]["points"]:
+                p = data["frames"][frame]["strokes"][stroke]["points"][point]
+                try:
+                    tpoint = tstroke.points[point]
+                except:
+                    tpoint = tstroke.points.add(1)
+                    tpoint = tstroke.points[len(tstroke.points)-1]
+                dump_anything.load(tpoint, p)    
+        
 
 def load_gpencil(target=None, data=None, create=False):
     try:
         if target is None and create:
-            bpy.data.grease_pencils.new(data["name"])
+            target = bpy.data.grease_pencils.new(data["name"])
 
         if "layers" in data.keys():
             for layer in data["layers"]:
-                print(layer)
+                if layer not in target.layers.keys():
+                    gp_layer = target.layers.new(data["layers"][layer]["info"])
+                else:
+                    gp_layer = target.layers[layer]
+                load_gpencil_layer(target=gp_layer,data=data["layers"][layer],create=create)
         # Load other meshes metadata
         dump_anything.load(target, data)
     except:
@@ -414,7 +445,7 @@ def update_scene(msg):
             elif msg.mtype == 'Material':
                 load_material(target=target, data=msg.body,
                               create=net_vars.load_data)
-            elif msg.mtype == 'GreasePencil':
+            elif msg.mtype == 'Grease Pencil':
                 load_gpencil(target=target, data=msg.body,
                              create=net_vars.load_data)
             elif msg.mtype == 'Scene':
@@ -749,7 +780,7 @@ def depsgraph_update(scene):
                     else:
                         print('other{}'.format(c[1].id.name))
                     # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
-                    
+
                     data_name = c[1].id.name
                     if c[1].id.bl_rna.name == "Object":
                         if data_name in bpy.data.objects.keys():
