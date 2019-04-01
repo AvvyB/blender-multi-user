@@ -22,34 +22,36 @@ client = None
 server = None
 context = None
 
-update_list  =  {}
+update_list = {}
 
-def add_update(type,item):
+
+def add_update(type, item):
     try:
         if item not in update_list[type]:
             update_list[type].append(item)
     except KeyError:
         update_list[type] = []
 
+
 def get_update(type):
     try:
         update = None
-        
+
         if update_list[type]:
-            update =  update_list[type].pop()
+            update = update_list[type].pop()
     except KeyError:
         update_list[type] = []
 
     return update
-COLOR_TABLE = [(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1),
-               (0, 0.5, 1, 1), (0.5, 0, 1, 1)]
-SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
-                        'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures','grease_pencils']
-SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
-                   'Texture', 'Light', 'Camera', 'Action', 'Armature','GreasePencil','Scene']
 
-CORRESPONDANCE = {'Collection':'collections', 'Mesh':'meshes', 'Object':'objects', 'Material':'materials',
-                   'Texture':'textures','Scene':'scenes', 'Light':'lights', 'Camera':'cameras', 'Action':'actions', 'Armature':'armatures','GreasePencil':'grease_pencils'}
+
+SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
+                        'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
+SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
+                   'Texture', 'Light', 'Camera', 'Action', 'Armature', 'GreasePencil', 'Scene']
+
+CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
+                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'GreasePencil': 'grease_pencils'}
 # UTILITY FUNCTIONS
 
 
@@ -73,7 +75,7 @@ def view3d_find():
 
 
 def get_target(region, rv3d, coord):
-    target = [0,0,0]
+    target = [0, 0, 0]
 
     if coord and region and rv3d:
         view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
@@ -104,10 +106,10 @@ def get_client_view_rect():
     indices = (
         (1, 3), (2, 1), (3, 0), (2, 0)
     )
-    
+
     return coords
 
-        
+
 def get_client_2d(coords):
     area, region, rv3d = view3d_find()
     if area and region and rv3d:
@@ -121,11 +123,12 @@ def randomStringDigits(stringLength=6):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
+
 def randomColor():
     r = random.random()
     v = random.random()
     b = random.random()
-    return [r,v,b]
+    return [r, v, b]
 
 
 def resolve_bpy_path(path):
@@ -148,7 +151,8 @@ def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-def dump_datablock(datablock,depth):
+
+def dump_datablock(datablock, depth):
     if datablock:
         print("sending {}".format(datablock.name))
 
@@ -157,36 +161,41 @@ def dump_datablock(datablock,depth):
         dumper.depth = depth
 
         datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type,datablock.name)
+        key = "{}/{}".format(datablock_type, datablock.name)
         data = dumper.dump(datablock)
 
         client.push_update(key, datablock_type, data)
 
-def dump_datablock_attibute(datablock,attributes,depth=1):
+
+def dump_datablock_attibute(datablock, attributes, depth=1):
     if datablock:
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
         dumper.depth = depth
 
         datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type,datablock.name)
+        key = "{}/{}".format(datablock_type, datablock.name)
 
         data = {}
         for attr in attributes:
             try:
-                data[attr] = dumper.dump(getattr(datablock,attr))
+                data[attr] = dumper.dump(getattr(datablock, attr))
             except:
                 pass
 
         client.push_update(key, datablock_type, data)
 
+
 def upload_mesh(mesh):
     if mesh.bl_rna.name == 'Mesh':
-        dump_datablock_attibute(mesh,['name','polygons','edges','vertices'],6)
+        dump_datablock_attibute(
+            mesh, ['name', 'polygons', 'edges', 'vertices'], 6)
+
 
 def upload_material(mesh):
     if mesh.bl_rna.name == 'Material':
-        dump_datablock_attibute(mesh,['name','node_tree'],7)
+        dump_datablock_attibute(mesh, ['name', 'node_tree'], 7)
+
 
 def upload_client_position():
     global client
@@ -200,8 +209,8 @@ def upload_client_position():
             if data is None:
                 data = {}
                 data['location'] = current_coords
-                color =  bpy.context.scene.session_settings.client_color
-                data['color'] = (color.r,color.g,color.b,1)
+                color = bpy.context.scene.session_settings.client_color
+                data['color'] = (color.r, color.g, color.b, 1)
                 client.push_update(key, 'client', data)
             elif current_coords[0] != data['location'][0]:
                 data['location'] = current_coords
@@ -209,21 +218,22 @@ def upload_client_position():
         except:
             pass
 
+
 def init_scene():
     for cam in bpy.data.cameras:
-        dump_datablock(cam,1)
+        dump_datablock(cam, 1)
     for light in bpy.data.lights:
-        dump_datablock(light,1)
+        dump_datablock(light, 1)
     for mat in bpy.data.materials:
-        dump_datablock(mat,7)
+        dump_datablock(mat, 7)
     for mesh in bpy.data.meshes:
         upload_mesh(mesh)
     for object in bpy.data.objects:
-        dump_datablock(object,1)
+        dump_datablock(object, 1)
     for collection in bpy.data.collections:
-        dump_datablock(collection,4)
+        dump_datablock(collection, 4)
     for scene in bpy.data.scenes:
-        dump_datablock(scene,4)
+        dump_datablock(scene, 4)
 
 
 def load_mesh(target=None, data=None, create=False):
@@ -276,7 +286,7 @@ def load_object(target=None, data=None, create=False):
                 pointer = bpy.data.curves[data["data"]]
             elif data["data"] in bpy.data.grease_pencils.keys():
                 pointer = bpy.data.grease_pencils[data["data"]]
-            
+
             target = bpy.data.objects.new(data["name"], pointer)
 
         # Load other meshes metadata
@@ -311,16 +321,17 @@ def load_scene(target=None, data=None, create=False):
         # Load other meshes metadata
         # dump_anything.load(target, data)
 
-        #Load master collection
+        # Load master collection
         for object in data["collection"]["objects"]:
             if object not in target.collection.objects.keys():
                 target.collection.objects.link(bpy.data.objects[object])
 
-        # load collections 
+        # load collections
         # TODO: Recursive link
         for collection in data["collection"]["children"]:
             if collection not in target.collection.children.keys():
-                target.collection.children.link(bpy.data.collections[collection])
+                target.collection.children.link(
+                    bpy.data.collections[collection])
     except:
         print("Collection loading error")
 
@@ -388,7 +399,7 @@ def load_gpencil(target=None, data=None, create=False):
 def load_light(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
-            bpy.data.lights.new(data["name"],data["type"])
+            bpy.data.lights.new(data["name"], data["type"])
 
         # Load other meshes metadata
         dump_anything.load(target, data)
@@ -419,55 +430,55 @@ def update_scene(msg):
 
         if 'net' not in msg.key:
             target = resolve_bpy_path(msg.key)
-        
+
             if msg.mtype == 'Object':
                 load_object(target=target, data=msg.body,
                             create=net_vars.load_data)
             elif msg.mtype == 'Mesh':
                 load_mesh(target=target, data=msg.body,
-                            create=net_vars.load_data)
+                          create=net_vars.load_data)
             elif msg.mtype == 'Collection':
                 load_collection(target=target, data=msg.body,
                                 create=net_vars.load_data)
             elif msg.mtype == 'Material':
                 load_material(target=target, data=msg.body,
-                                create=net_vars.load_data)
+                              create=net_vars.load_data)
             elif msg.mtype == 'GreasePencil':
                 load_gpencil(target=target, data=msg.body,
-                                create=net_vars.load_data)
+                             create=net_vars.load_data)
             elif msg.mtype == 'Scene':
                 load_scene(target=target, data=msg.body,
-                                create=net_vars.load_data)
-            elif  'Light' in msg.mtype:
+                           create=net_vars.load_data)
+            elif 'Light' in msg.mtype:
                 load_light(target=target, data=msg.body,
-                                create=net_vars.load_data)
-            elif  msg.mtype == 'Camera' :
+                           create=net_vars.load_data)
+            elif msg.mtype == 'Camera':
                 load_default(target=target, data=msg.body,
-                                create=net_vars.load_data, type=msg.mtype)
-        else:            
+                             create=net_vars.load_data, type=msg.mtype)
+        else:
             if msg.mtype == 'client':
                 refresh_window()
             elif msg.mtype == 'clientObject':
                 selected_objects = []
-                
+
                 for k, v in client.property_map.items():
-                        if v.mtype == 'clientObject':
-                            if client.id != v.id:
-                                selected_objects.append(v.body['object'])
-                                    
+                    if v.mtype == 'clientObject':
+                        if client.id != v.id:
+                            selected_objects.append(v.body['object'])
+
                 for obj in bpy.data.objects:
                     if obj.name in selected_objects:
                         obj.hide_select = True
                     else:
                         obj.hide_select = False
-                
+
                 refresh_window()
 
 
 recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
-     
+
 # OPERATORS
 class session_join(bpy.types.Operator):
 
@@ -508,10 +519,7 @@ class session_join(bpy.types.Operator):
 
         net_settings.is_running = True
 
-        # REGISTER Updaters
-        bpy.app.timers.register(tick)
-        bpy.app.timers.register(mesh_tick)
-        bpy.app.timers.register(object_tick)
+        register_ticks()
 
         bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
@@ -626,9 +634,8 @@ class session_stop(bpy.types.Operator):
             client = None
             bpy.ops.asyncio.stop()
             net_settings.is_running = False
-            bpy.app.timers.unregister(tick)
-            bpy.app.timers.unregister(mesh_tick)
-            bpy.app.timers.unregister(object_tick)
+
+            unregister_ticks()
         else:
             logger.debug("No server/client running.")
 
@@ -646,7 +653,7 @@ class session_settings(bpy.types.PropertyGroup):
     buffer = bpy.props.StringProperty(name="None")
     is_running = bpy.props.BoolProperty(name="is_running", default=False)
     load_data = bpy.props.BoolProperty(name="load_data", default=True)
-    init_scene =  bpy.props.BoolProperty(name="load_data", default=True)
+    init_scene = bpy.props.BoolProperty(name="load_data", default=True)
     clear_scene = bpy.props.BoolProperty(name="clear_scene", default=True)
     update_frequency = bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
@@ -659,9 +666,10 @@ class session_settings(bpy.types.PropertyGroup):
             ('HOST', 'hosting', 'host a session'),
             ('CONNECT', 'connexion', 'connect to a session')},
         default='HOST')
-    client_color = bpy.props.FloatVectorProperty(name="client_color", 
-                                        subtype='COLOR', 
-                                        default=randomColor())
+    client_color = bpy.props.FloatVectorProperty(name="client_color",
+                                                 subtype='COLOR',
+                                                 default=randomColor())
+
 
 class session_draw_clients(bpy.types.Operator):
     bl_idname = "session.draw"
@@ -716,13 +724,11 @@ class session_draw_clients(bpy.types.Operator):
             bpy.types.SpaceView3D.draw_handler_remove(
                 self.draw3d_handle, "WINDOW")
             self.draw3d_handle = None
-            
+
         self.draw_items.clear()
-            
-            
-            
 
     # TODO: refactor this ugly things
+
     def create_batch(self):
         global client
         index = 0
@@ -746,11 +752,11 @@ class session_draw_clients(bpy.types.Operator):
                     bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
                     coords = [(point.x, point.y, point.z)
-                                for point in bbox_corners]
+                              for point in bbox_corners]
 
                     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-                    color =  values.body['color']
+                    color = values.body['color']
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": coords}, indices=indices)
 
@@ -765,14 +771,14 @@ class session_draw_clients(bpy.types.Operator):
                     )
 
                     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    position =  values.body['location']
-                    color =  values.body['color']
+                    position = values.body['location']
+                    color = values.body['color']
                     batch = batch_for_shader(
-                        shader, 'LINES', {"pos":position}, indices=indices)
+                        shader, 'LINES', {"pos": position}, indices=indices)
 
                     self.draw_items.append(
                         (shader, batch, (position[1], values.id.decode()), color))
-                        
+
                     index += 1
 
     def draw3d_callback(self):
@@ -819,7 +825,7 @@ class session_draw_clients(bpy.types.Operator):
             global client
             session = context.scene.session_settings
 
-            if client:                
+            if client:
                 # Hide selected objects
                 # for object in context.scene.objects:
                 #     if self.is_object_selected(object):
@@ -833,8 +839,9 @@ class session_draw_clients(bpy.types.Operator):
                         session.active_object = context.selected_objects[0]
                         key = "net/objects/{}".format(client.id.decode())
                         data = {}
-                        data['color'] = [session.client_color.r,session.client_color.g,session.client_color.b]
-                        data['object'] =  session.active_object.name
+                        data['color'] = [session.client_color.r,
+                                         session.client_color.g, session.client_color.b]
+                        data['object'] = session.active_object.name
                         client.push_update(
                             key, 'clientObject', data)
 
@@ -856,7 +863,6 @@ class session_draw_clients(bpy.types.Operator):
 
     def finish(self, context):
         self.unregister_handlers(context)
-
 
 
 class session_snapview(bpy.types.Operator):
@@ -899,6 +905,7 @@ classes = (
     session_snapview,
 )
 
+
 def mesh_tick():
     mesh = get_update("Mesh")
 
@@ -907,40 +914,42 @@ def mesh_tick():
 
     return 2
 
+
 def object_tick():
 
     obj = get_update("Object")
 
     if obj:
-        dump_datablock_attibute(bpy.data.objects[obj],['matrix_world'])
+        dump_datablock_attibute(bpy.data.objects[obj], ['matrix_world'])
 
     return 0.1
 
+
 def material_tick():
-    
+
     return 2
 
 
-def tick():
+def draw_tick():
     upload_client_position()
 
     return 0.1
 
-# TODO: Enqueu tqsks
+
 def depsgraph_update(scene):
     for c in bpy.context.depsgraph.updates.items():
-        
+
         global client
         if client:
             if client.status == net_components.RCFStatus.CONNECTED:
                 if scene.session_settings.active_object:
                     if c[1].is_updated_geometry:
                         if c[1].id.name == scene.session_settings.active_object.name:
-                            add_update(c[1].id.bl_rna.name,c[1].id.name)
+                            add_update(c[1].id.bl_rna.name, c[1].id.name)
                     elif c[1].is_updated_transform:
                         if c[1].id.name == scene.session_settings.active_object.name:
-                            add_update(c[1].id.bl_rna.name,c[1].id.name)
-                            
+                            add_update(c[1].id.bl_rna.name, c[1].id.name)
+
                     # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
                     print(c[1].id.bl_rna.name)
                     data_name = c[1].id.name
@@ -948,17 +957,32 @@ def depsgraph_update(scene):
                         if data_name in bpy.data.objects.keys():
                             found = False
                             for k in client.property_map.keys():
-                                if  data_name in k:
+                                if data_name in k:
                                     found = True
                                     break
 
                             if not found:
-                                client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage("Object/{}".format(data_name), "Object", None)
+                                client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage(
+                                    "Object/{}".format(data_name), "Object", None)
                                 upload_mesh(bpy.data.objects[data_name].data)
-                                dump_datablock(bpy.data.objects[data_name],1)
-                                dump_datablock(bpy.data.scenes[0],4)                
-                            
+                                dump_datablock(bpy.data.objects[data_name], 1)
+                                dump_datablock(bpy.data.scenes[0], 4)
+
                             # dump_datablock(bpy.data.scenes[0],4)
+
+
+def register_ticks():
+    # REGISTER Updaters
+    bpy.app.timers.register(draw_tick)
+    bpy.app.timers.register(mesh_tick)
+    bpy.app.timers.register(object_tick)
+
+
+def unregister_ticks():
+    # REGISTER Updaters
+    bpy.app.timers.unregister(draw_tick)
+    bpy.app.timers.unregister(mesh_tick)
+    bpy.app.timers.unregister(object_tick)
 
 
 def register():
@@ -970,13 +994,14 @@ def register():
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
 
+
 def unregister():
     global server
     global client
 
     try:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-       
+
     except:
         pass
 
@@ -993,9 +1018,8 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    
     del bpy.types.Scene.session_settings
-    
+
 
 if __name__ == "__main__":
     register()

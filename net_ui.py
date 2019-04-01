@@ -102,7 +102,7 @@ class SessionUsersPanel(bpy.types.Panel):
                             info = "(self)"
                         # detail_item_box = item_box.row()
                         detail_item_box.label(
-                            text="{} - {} -{}".format(values.id.decode(),values.body, info))
+                            text="{} - {}".format(values.id.decode(), info))
 
                         if net_operators.client.id.decode() not in key:
                             detail_item_box.operator(
