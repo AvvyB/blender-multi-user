@@ -1,4 +1,9 @@
 import bpy
+import bgl
+import blf
+import gpu
+import mathutils
+
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
@@ -58,7 +63,7 @@ def get_client_2d(coords):
         return None
 
 
-class drawer():
+class HUD(object):
 
     def __init__(self, client_instance = None):
         self.draw_items = []
@@ -72,16 +77,16 @@ class drawer():
             self.client = client_instance 
 
             self.create_batch()
-            self.register_handlers(context)
+            self.register_handlers()
 
 
-    def register_handlers(self, context):
+    def register_handlers(self):
         self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
             self.draw3d_callback, (), 'WINDOW', 'POST_VIEW')
         self.draw2d_handle = bpy.types.SpaceView3D.draw_handler_add(
             self.draw2d_callback, (), 'WINDOW', 'POST_PIXEL')
 
-    def unregister_handlers(self, context):
+    def unregister_handlers(self):
         if self.draw2d_handle:
             bpy.types.SpaceView3D.draw_handler_remove(
                 self.draw2d_handle, "WINDOW")
@@ -93,7 +98,6 @@ class drawer():
             self.draw3d_handle = None
 
         self.draw_items.clear()
-
 
     def create_batch(self):
         index = 0
@@ -177,52 +181,9 @@ class drawer():
 
         return False
 
-    def draw(self, context):
-        if context.area:
-            context.area.tag_redraw()
+    def draw(self):
+        if self.client:
+            # Draw clients
+            if len(self.client.property_map) > 1:
+                self.create_batch()
 
-        if not context.scene.session_settings.is_running:
-            self.finish(context)
-            return {"FINISHED"}
-
-           
-            session = context.scene.session_settings
-
-            if self.client:
-                # Hide selected objects
-                # for object in context.scene.objects:
-                #     if self.is_object_selected(object):
-                #         object.hide_select = True
-                #     else:
-                #         object.hide_select = False
-
-                # Active object bounding box
-                if len(context.selected_objects) > 0:
-                    if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
-                        session.active_object = context.selected_objects[0]
-                        key = "net/objects/{}".format(client.id.decode())
-                        data = {}
-                        data['color'] = [session.client_color.r,
-                                         session.client_color.g, session.client_color.b]
-                        data['object'] = session.active_object.name
-                        self.client.push_update(
-                            key, 'clientObject', data)
-
-                elif len(context.selected_objects) == 0 and session.active_object:
-                    session.active_object = None
-                    data = {}
-                    data['object'] = None
-                    key = "net/objects/{}".format(self.client.id.decode())
-                    self.client.push_update(key, 'clientObject', data)
-
-                # Draw clients
-                if len(client.property_map) > 1:
-                    # self.unregister_handlers(context)
-                    self.create_batch()
-
-                    # self.register_handlers(context)
-
-        return {"PASS_THROUGH"}
-
-    def finish(self, context):
-        self.unregister_handlers(context)

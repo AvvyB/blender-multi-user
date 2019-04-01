@@ -13,9 +13,9 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
-from . import net_components, net_ui, rna_translation, net_draw
+from . import net_components, net_ui, net_draw
 from .libs import dump_anything
- 
+
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +219,29 @@ def upload_client_position():
         except:
             pass
 
+def update_selected_object(context):
+    global client 
+    session = bpy.context.scene.session_settings
+
+    # Active object bounding box
+    if len(context.selected_objects) > 0:
+        if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
+            session.active_object = context.selected_objects[0]
+            key = "net/objects/{}".format(client.id.decode())
+            data = {}
+            data['color'] = [session.client_color.r,
+                            session.client_color.g, session.client_color.b]
+            data['object'] = session.active_object.name
+            client.push_update(
+                key, 'clientObject', data)
+    elif len(context.selected_objects) == 0 and session.active_object:
+        session.active_object = None
+        data = {}
+        data['color'] = [session.client_color.r,
+                        session.client_color.g, session.client_color.b]
+        data['object'] = None
+        key = "net/objects/{}".format(client.id.decode())
+        client.push_update(key, 'clientObject', data)
 
 def init_scene():
     for cam in bpy.data.cameras:
@@ -435,6 +458,8 @@ def update_scene(msg):
             if msg.mtype == 'Object':
                 load_object(target=target, data=msg.body,
                             create=net_vars.load_data)
+                global drawer
+                drawer.draw()
             elif msg.mtype == 'Mesh':
                 load_mesh(target=target, data=msg.body,
                           create=net_vars.load_data)
@@ -480,6 +505,56 @@ recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
 
+def mesh_tick():
+    mesh = get_update("Mesh")
+
+    if mesh:
+        upload_mesh(bpy.data.meshes[mesh])
+
+    return 2
+
+
+def object_tick():
+
+    obj = get_update("Object")
+
+    if obj:
+        dump_datablock_attibute(bpy.data.objects[obj], ['matrix_world'])
+
+    return 0.1
+
+
+def material_tick():
+    return 2
+
+
+def draw_tick():
+    # drawing
+    global drawer
+
+    drawer.draw()
+
+    # Upload
+    upload_client_position()
+    return 0.2
+
+
+def register_ticks():
+    # REGISTER Updaters
+    bpy.app.timers.register(draw_tick)
+    bpy.app.timers.register(mesh_tick)
+    bpy.app.timers.register(object_tick)
+
+
+def unregister_ticks():
+    # REGISTER Updaters
+    global drawer
+    drawer.unregister_handlers()
+    bpy.app.timers.unregister(draw_tick)
+    bpy.app.timers.unregister(mesh_tick)
+    bpy.app.timers.unregister(object_tick)
+
+
 # OPERATORS
 class session_join(bpy.types.Operator):
 
@@ -493,7 +568,7 @@ class session_join(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client
+        global client, drawer
 
         net_settings = context.scene.session_settings
         # Scene setup
@@ -506,13 +581,11 @@ class session_join(bpy.types.Operator):
                 net_settings.username, randomStringDigits())
 
         username = str(context.scene.session_settings.username)
-        client_factory = rna_translation.RNAFactory()
 
         client = net_components.RCFClient(
             id=username,
             on_recv=recv_callbacks,
             on_post_init=post_init_callbacks,
-            factory=client_factory,
             address=net_settings.ip,
             is_admin=net_settings.session_mode == "HOST")
 
@@ -520,9 +593,7 @@ class session_join(bpy.types.Operator):
 
         net_settings.is_running = True
 
-        
-
-        drawer = net_components.drawer(client_instance=client)
+        drawer = net_draw.HUD(client_instance=client)
 
         register_ticks()
         # bpy.ops.session.draw('INVOKE_DEFAULT')
@@ -910,41 +981,13 @@ classes = (
 )
 
 
-def mesh_tick():
-    mesh = get_update("Mesh")
-
-    if mesh:
-        upload_mesh(bpy.data.meshes[mesh])
-
-    return 2
-
-
-def object_tick():
-
-    obj = get_update("Object")
-
-    if obj:
-        dump_datablock_attibute(bpy.data.objects[obj], ['matrix_world'])
-
-    return 0.1
-
-
-def material_tick():
-
-    return 2
-
-
-def draw_tick():
-    upload_client_position()
-
-    return 0.1
-
-
 def depsgraph_update(scene):
-    for c in bpy.context.depsgraph.updates.items():
+    global client
 
-        global client
-        if client:
+    if client:
+        update_selected_object(bpy.context)
+
+        for c in bpy.context.depsgraph.updates.items():
             if client.status == net_components.RCFStatus.CONNECTED:
                 if scene.session_settings.active_object:
                     if c[1].is_updated_geometry:
@@ -955,7 +998,6 @@ def depsgraph_update(scene):
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
 
                     # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
-                    print(c[1].id.bl_rna.name)
                     data_name = c[1].id.name
                     if c[1].id.bl_rna.name == "Object":
                         if data_name in bpy.data.objects.keys():
@@ -971,22 +1013,9 @@ def depsgraph_update(scene):
                                 upload_mesh(bpy.data.objects[data_name].data)
                                 dump_datablock(bpy.data.objects[data_name], 1)
                                 dump_datablock(bpy.data.scenes[0], 4)
+            
 
-                            # dump_datablock(bpy.data.scenes[0],4)
-
-
-def register_ticks():
-    # REGISTER Updaters
-    bpy.app.timers.register(draw_tick)
-    bpy.app.timers.register(mesh_tick)
-    bpy.app.timers.register(object_tick)
-
-
-def unregister_ticks():
-    # REGISTER Updaters
-    bpy.app.timers.unregister(draw_tick)
-    bpy.app.timers.unregister(mesh_tick)
-    bpy.app.timers.unregister(object_tick)
+                        # dump_datablock(bpy.data.scenes[0],4)
 
 
 def register():
