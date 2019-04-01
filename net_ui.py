@@ -160,11 +160,47 @@ class SessionPropertiesPanel(bpy.types.Panel):
             else:
                 area_msg.label(text="Empty")
 
+class SessionTaskPanel(bpy.types.Panel):
+    """Creates a Panel in the scene context of the properties editor"""
+    bl_label = "NET tasks"
+    bl_idname = "SCENE_PT_layout"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        if net_operators.client:
+            return net_operators.client.status == net_components.RCFStatus.CONNECTED
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        # Create a simple row.
+        row = layout.row()
+
+        if net_operators.update_list:
+            # Property area
+            area_msg = row.box()
+            if len(net_operators.update_list) > 0:
+                for key, values in net_operators.update_list.items():
+                    item_box = area_msg.box()
+                    detail_item_box = item_box.row()
+                    # detail_item_box = item_box.row()
+                    
+                    detail_item_box.label(text="{} - {} ".format(
+                        key, values))
+            else:
+                area_msg.label(text="Empty")
+
 
 classes = (
     SessionSettingsPanel,
     SessionUsersPanel,
     SessionPropertiesPanel,
+    SessionTaskPanel,
 )
 
 

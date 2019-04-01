@@ -983,20 +983,23 @@ classes = (
 
 def depsgraph_update(scene):
     global client
-
+    #  for c in (bpy.context.depsgraph.updates.items()):
+    #         print("UPDATE {}".format(c[1].id))
     if client:
         update_selected_object(bpy.context)
-
         for c in bpy.context.depsgraph.updates.items():
             if client.status == net_components.RCFStatus.CONNECTED:
                 if scene.session_settings.active_object:
                     if c[1].is_updated_geometry:
+                        print('geometry')
                         if c[1].id.name == scene.session_settings.active_object.name:
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
                     elif c[1].is_updated_transform:
+                        print('transform')
                         if c[1].id.name == scene.session_settings.active_object.name:
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
-
+                    else:
+                        print('other')
                     # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
                     data_name = c[1].id.name
                     if c[1].id.bl_rna.name == "Object":
@@ -1008,11 +1011,10 @@ def depsgraph_update(scene):
                                     break
 
                             if not found:
-                                client.property_map["Object/{}".format(data_name)] = net_components.RCFMessage(
-                                    "Object/{}".format(data_name), "Object", None)
-                                upload_mesh(bpy.data.objects[data_name].data)
-                                dump_datablock(bpy.data.objects[data_name], 1)
-                                dump_datablock(bpy.data.scenes[0], 4)
+                                pass
+                                # upload_mesh(bpy.data.objects[data_name].data)
+                                # dump_datablock(bpy.data.objects[data_name], 1)
+                                # dump_datablock(bpy.data.scenes[0], 4)
             
 
                         # dump_datablock(bpy.data.scenes[0],4)
