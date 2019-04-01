@@ -292,7 +292,7 @@ def load_scene(target=None, data=None, create=False):
             target = bpy.data.scenes.new(data["name"])
 
         # Load other meshes metadata
-        # dump_anything.load(target, data)
+        dump_anything.load(target, data)
 
         # Load master collection
         for object in data["collection"]["objects"]:
@@ -305,6 +305,9 @@ def load_scene(target=None, data=None, create=False):
             if collection not in target.collection.children.keys():
                 target.collection.children.link(
                     bpy.data.collections[collection])
+        
+        if data["grease_pencil"]:
+            target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]]
     except:
         print("Collection loading error")
 
@@ -769,17 +772,18 @@ def depsgraph_update(scene):
             if client.status == net_components.RCFStatus.CONNECTED:
                 if scene.session_settings.active_object:
                     if c[1].is_updated_geometry:
-                        print('geometry {}'.format(c[1].id.name))
+                        # print('geometry {}'.format(c[1].id.name))
                         if c[1].id.name == scene.session_settings.active_object.name:
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
                     elif c[1].is_updated_transform:
-                        print('transform{}'.format(c[1].id.name))
+                        # print('transform{}'.format(c[1].id.name))
                         if c[1].id.name == scene.session_settings.active_object.name:
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
                     else:
-                        print('other{}'.format(c[1].id.name))
+                        pass
+                        # print('other{}'.format(c[1].id.name))
                     # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
-
+                    print(len(bpy.context.depsgraph.updates.items()))
                     data_name = c[1].id.name
                     if c[1].id.bl_rna.name == "Object":
                         if data_name in bpy.data.objects.keys():
