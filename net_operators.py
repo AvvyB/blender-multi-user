@@ -460,7 +460,6 @@ def mesh_tick():
 
 
 def object_tick():
-
     obj = get_update("Object")
 
     if obj:
@@ -541,7 +540,6 @@ class session_join(bpy.types.Operator):
         drawer = net_draw.HUD(client_instance=client)
 
         register_ticks()
-        # bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
 
 
@@ -727,7 +725,6 @@ classes = (
     session_create,
     session_settings,
     session_remove_property,
-    session_draw_clients,
     session_snapview,
 )
 
@@ -742,16 +739,17 @@ def depsgraph_update(scene):
             if client.status == net_components.RCFStatus.CONNECTED:
                 if scene.session_settings.active_object:
                     if c[1].is_updated_geometry:
-                        print('geometry')
+                        print('geometry {}'.format(c[1].id.name))
                         if c[1].id.name == scene.session_settings.active_object.name:
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
                     elif c[1].is_updated_transform:
-                        print('transform')
+                        print('transform{}'.format(c[1].id.name))
                         if c[1].id.name == scene.session_settings.active_object.name:
                             add_update(c[1].id.bl_rna.name, c[1].id.name)
                     else:
-                        print('other')
+                        print('other{}'.format(c[1].id.name))
                     # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
+                    
                     data_name = c[1].id.name
                     if c[1].id.bl_rna.name == "Object":
                         if data_name in bpy.data.objects.keys():

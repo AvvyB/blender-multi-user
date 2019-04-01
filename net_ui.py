@@ -14,59 +14,60 @@ class SessionSettingsPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        net_settings = context.scene.session_settings
-        scene = context.scene
-
-        row = layout.row()
-        if net_operators.client is None:
-            
-            row = layout.row()
-            box = row.box()
-            row = box.row()
-            row.label(text="User infos")
-            row = box.row()
-            row.prop(scene.session_settings, "username", text="id")
-            row = box.row()
-            row.prop(scene.session_settings, "client_color", text="color") 
+        if hasattr(context.scene, 'session_settings'):
+            net_settings = context.scene.session_settings
+            scene = context.scene
 
             row = layout.row()
-            row.prop(scene.session_settings, "session_mode", expand=True)
-            row = layout.row()
-
-            if scene.session_settings.session_mode == 'HOST':
+            if net_operators.client is None:
+                
+                row = layout.row()
                 box = row.box()
                 row = box.row()
-                row.label(text="init scene:")
-                row.prop(net_settings, "init_scene", text="")
+                row.label(text="User infos")
+                row = box.row()
+                row.prop(scene.session_settings, "username", text="id")
+                row = box.row()
+                row.prop(scene.session_settings, "client_color", text="color") 
+
                 row = layout.row()
-                row.operator("session.create", text="HOST")
+                row.prop(scene.session_settings, "session_mode", expand=True)
+                row = layout.row()
+
+                if scene.session_settings.session_mode == 'HOST':
+                    box = row.box()
+                    row = box.row()
+                    row.label(text="init scene:")
+                    row.prop(net_settings, "init_scene", text="")
+                    row = layout.row()
+                    row.operator("session.create", text="HOST")
+                else:
+                    box = row.box()
+                    row = box.row()
+                    row.prop(net_settings, "ip", text="server ip")
+                    row = box.row()
+                    row.label(text="load data:")
+                    row.prop(net_settings, "load_data", text="")
+                    row = box.row()
+                    row.label(text="clear scene:")
+                    row.prop(net_settings, "clear_scene", text="")
+
+                    row = layout.row()
+                    row.operator("session.join", text="CONNECT")
+
             else:
-                box = row.box()
-                row = box.row()
-                row.prop(net_settings, "ip", text="server ip")
-                row = box.row()
-                row.label(text="load data:")
-                row.prop(net_settings, "load_data", text="")
-                row = box.row()
-                row.label(text="clear scene:")
-                row.prop(net_settings, "clear_scene", text="")
 
-                row = layout.row()
-                row.operator("session.join", text="CONNECT")
+                if net_operators.client.status is net_components.RCFStatus.CONNECTED:
+                    row.label(text="Net frequency:")
+                    row.prop(net_settings, "update_frequency", text="")
+                    row = layout.row()
+                    row.operator("session.stop", icon='QUIT', text="Exit")
+                elif net_operators.client.status is net_components.RCFStatus.CONNECTING:
+                    row.label(text="connecting...")
+                    row = layout.row()
+                    row.operator("session.stop", icon='QUIT', text="CANCEL")
 
-        else:
-
-            if net_operators.client.status is net_components.RCFStatus.CONNECTED:
-                row.label(text="Net frequency:")
-                row.prop(net_settings, "update_frequency", text="")
-                row = layout.row()
-                row.operator("session.stop", icon='QUIT', text="Exit")
-            elif net_operators.client.status is net_components.RCFStatus.CONNECTING:
-                row.label(text="connecting...")
-                row = layout.row()
-                row.operator("session.stop", icon='QUIT', text="CANCEL")
-
-        row = layout.row()
+            row = layout.row()
 
 
 class SessionUsersPanel(bpy.types.Panel):
@@ -117,7 +118,7 @@ class SessionUsersPanel(bpy.types.Panel):
 class SessionPropertiesPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
     bl_label = "NET properties"
-    bl_idname = "SCENE_PT_layout"
+    bl_idname = "SCENE_PT_SessionProps"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -131,39 +132,40 @@ class SessionPropertiesPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        net_settings = context.scene.session_settings
-        scene = context.scene
-        # Create a simple row.
-        row = layout.row()
-
-        if net_operators.client:
-            row = layout.row(align=True)
-            row.prop(net_settings, "buffer", text="")
-            row.prop(net_settings, "add_property_depth", text="")
-            add = row.operator("session.add_prop", text="",
-                         icon="ADD")
-            add.property_path = net_settings.buffer
-            add.depth = net_settings.add_property_depth
+        if hasattr(context.scene,'session_settings'):
+            net_settings = context.scene.session_settings
+            scene = context.scene
+            # Create a simple row.
             row = layout.row()
-            # Property area
-            area_msg = row.box()
-            if len(net_operators.client.property_map) > 0:
-                for key, values in net_operators.client.property_map.items():
-                    item_box = area_msg.box()
-                    detail_item_box = item_box.row()
-                    # detail_item_box = item_box.row()
-                    
-                    detail_item_box.label(text="{} ({}) {} ".format(
-                        key, values.mtype, values.id.decode()))
-                    detail_item_box.operator(
-                        "session.remove_prop", text="", icon="X").property_path = key
-            else:
-                area_msg.label(text="Empty")
+
+            if net_operators.client:
+                row = layout.row(align=True)
+                row.prop(net_settings, "buffer", text="")
+                row.prop(net_settings, "add_property_depth", text="")
+                add = row.operator("session.add_prop", text="",
+                            icon="ADD")
+                add.property_path = net_settings.buffer
+                add.depth = net_settings.add_property_depth
+                row = layout.row()
+                # Property area
+                area_msg = row.box()
+                if len(net_operators.client.property_map) > 0:
+                    for key, values in net_operators.client.property_map.items():
+                        item_box = area_msg.box()
+                        detail_item_box = item_box.row()
+                        # detail_item_box = item_box.row()
+                        
+                        detail_item_box.label(text="{} ({}) {} ".format(
+                            key, values.mtype, values.id.decode()))
+                        detail_item_box.operator(
+                            "session.remove_prop", text="", icon="X").property_path = key
+                else:
+                    area_msg.label(text="Empty")
 
 class SessionTaskPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
     bl_label = "NET tasks"
-    bl_idname = "SCENE_PT_layout"
+    bl_idname = "SCENE_PT_SessionTasks"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -176,8 +178,6 @@ class SessionTaskPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
-        scene = context.scene
         # Create a simple row.
         row = layout.row()
 

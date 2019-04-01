@@ -27,7 +27,8 @@ def register():
     net_ecs.register()
 
 def unregister():
-    bsyncio.unregister()
     net_ui.unregister()
     net_operators.unregister()
     net_ecs.unregister()
+    bsyncio.unregister()
+    
