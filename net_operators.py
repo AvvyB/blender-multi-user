@@ -140,6 +140,9 @@ def upload_material(mesh):
     if mesh.bl_rna.name == 'Material':
         dump_datablock_attibute(mesh, ['name', 'node_tree'], 7)
 
+def upload_gpencil(gpencil):
+    if gpencil.bl_rna.name == 'Grease Pencil':
+        dump_datablock_attibute(gpencil, ['name', 'layers','materials'], 9)
 
 def upload_client_position():
     global client
@@ -189,7 +192,7 @@ def update_selected_object(context):
 
 def init_scene():
     for gp in bpy.data.grease_pencils:
-        dump_datablock(gp, 9)
+        upload_gpencil(gp)
     for cam in bpy.data.cameras:
         dump_datablock(cam, 1)
     for light in bpy.data.lights:
@@ -377,7 +380,6 @@ def load_gpencil_layer(target=None,data=None, create=False):
                     tpoint = tstroke.points[len(tstroke.points)-1]
                 dump_anything.load(tpoint, p)    
         
-
 def load_gpencil(target=None, data=None, create=False):
     try:
         if target is None and create:
@@ -395,7 +397,6 @@ def load_gpencil(target=None, data=None, create=False):
     except:
         print("default loading error")
 
-
 def load_light(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
@@ -406,7 +407,6 @@ def load_light(target=None, data=None, create=False, type=None):
     except:
         print("light loading error")
 
-
 def load_default(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
@@ -416,7 +416,6 @@ def load_default(target=None, data=None, create=False, type=None):
         dump_anything.load(target, data)
     except:
         print("default loading error")
-
 
 def update_scene(msg):
     global client
