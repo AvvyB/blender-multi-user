@@ -13,15 +13,16 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
-from . import net_components, net_ui, rna_translation
+from . import net_components, net_ui, rna_translation, net_draw
 from .libs import dump_anything
+ 
 
 logger = logging.getLogger(__name__)
 
 client = None
 server = None
 context = None
-
+drawer = None
 update_list = {}
 
 
@@ -519,9 +520,12 @@ class session_join(bpy.types.Operator):
 
         net_settings.is_running = True
 
-        register_ticks()
+        
 
-        bpy.ops.session.draw('INVOKE_DEFAULT')
+        drawer = net_components.drawer(client_instance=client)
+
+        register_ticks()
+        # bpy.ops.session.draw('INVOKE_DEFAULT')
         return {"FINISHED"}
 
 
