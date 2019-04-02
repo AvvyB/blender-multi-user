@@ -24,7 +24,7 @@ server = None
 context = None
 drawer = None
 update_list = {}
-
+update_tasks = queue.Queue()
 
 def add_update(type, item):
     try:
@@ -136,9 +136,9 @@ def upload_mesh(mesh):
             mesh, ['name', 'polygons', 'edges', 'vertices'], 6)
 
 
-def upload_material(mesh):
-    if mesh.bl_rna.name == 'Material':
-        dump_datablock_attibute(mesh, ['name', 'node_tree'], 7)
+def upload_material(material):
+    if material.bl_rna.name == 'Material':
+        dump_datablock_attibute(material, ['name', 'node_tree'], 7)
 
 def upload_gpencil(gpencil):
     if gpencil.bl_rna.name == 'Grease Pencil':
@@ -346,14 +346,12 @@ def load_material(target=None, data=None, create=False):
 
         for link in data["node_tree"]["links"]:
             current_link = data["node_tree"]["links"][link]
-            print(target.node_tree.nodes[current_link['to_node']['name']])
             input_socket = target.node_tree.nodes[current_link['to_node']
                                                   ['name']].inputs[current_link['to_socket']['name']]
             output_socket = target.node_tree.nodes[current_link['from_node']
                                                    ['name']].outputs[current_link['from_socket']['name']]
 
             target.node_tree.links.new(input_socket, output_socket)
-            print(data["node_tree"]["links"][link])
 
     except:
         print("Material loading error")
@@ -435,6 +433,9 @@ def update_scene(msg):
 
         if 'net' not in msg.key:
             target = resolve_bpy_path(msg.key)
+            
+            if target:
+                target.is_updating = True
 
             if msg.mtype == 'Object':
                 load_object(target=target, data=msg.body,
@@ -459,7 +460,7 @@ def update_scene(msg):
             elif 'Light' in msg.mtype:
                 load_light(target=target, data=msg.body,
                            create=net_vars.load_data)
-            elif msg.mtype == 'Camera':
+            else:
                 load_default(target=target, data=msg.body,
                              create=net_vars.load_data, type=msg.mtype)
         else:
@@ -481,10 +482,22 @@ def update_scene(msg):
 
                 refresh_window()
 
+def push(data_type,id):
+    print(data_type)
+    if data_type == 'Material':
+        upload_material(bpy.data.materials[id])
+
 
 recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
+def default_tick():
+    if not update_tasks.empty():
+        update = update_tasks.get()
+
+        push(update[0],update[1])
+
+    return 2
 
 def mesh_tick():
     mesh = get_update("Mesh")
@@ -496,10 +509,14 @@ def mesh_tick():
 
 
 def object_tick():
-    obj = get_update("Object")
+    obj_name = get_update("Object")
+    global client
 
-    if obj:
-        dump_datablock_attibute(bpy.data.objects[obj], ['matrix_world'])
+    if obj_name:
+        if "Object/{}".format(obj_name) in client.property_map.keys():
+            dump_datablock_attibute(bpy.data.objects[obj_name], ['matrix_world'])
+        else:
+            dump_datablock(bpy.data.objects[obj_name], 1)
 
     return 0.1
 
@@ -524,7 +541,7 @@ def register_ticks():
     bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(mesh_tick)
     bpy.app.timers.register(object_tick)
-
+    bpy.app.timers.register(default_tick)
 
 def unregister_ticks():
     # REGISTER Updaters
@@ -533,7 +550,7 @@ def unregister_ticks():
     bpy.app.timers.unregister(draw_tick)
     bpy.app.timers.unregister(mesh_tick)
     bpy.app.timers.unregister(object_tick)
-
+    bpy.app.timers.unregister(default_tick)
 
 # OPERATORS
 class session_join(bpy.types.Operator):
@@ -767,50 +784,61 @@ classes = (
 
 def depsgraph_update(scene):
     global client
-    #  for c in (bpy.context.depsgraph.updates.items()):
-    #         print("UPDATE {}".format(c[1].id))
-    if client:
+   
+    if  client and  client.status == net_components.RCFStatus.CONNECTED:
+        updates = bpy.context.depsgraph.updates
         update_selected_object(bpy.context)
-        for c in bpy.context.depsgraph.updates.items():
-            if client.status == net_components.RCFStatus.CONNECTED:
-                if scene.session_settings.active_object:
-                    if c[1].is_updated_geometry:
-                        # print('geometry {}'.format(c[1].id.name))
-                        if c[1].id.name == scene.session_settings.active_object.name:
-                            add_update(c[1].id.bl_rna.name, c[1].id.name)
-                    elif c[1].is_updated_transform:
-                        # print('transform{}'.format(c[1].id.name))
-                        if c[1].id.name == scene.session_settings.active_object.name:
-                            add_update(c[1].id.bl_rna.name, c[1].id.name)
-                    else:
-                        pass
-                        # print('other{}'.format(c[1].id.name))
-                    # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
-                    print(len(bpy.context.depsgraph.updates.items()))
-                    data_name = c[1].id.name
-                    if c[1].id.bl_rna.name == "Object":
-                        if data_name in bpy.data.objects.keys():
-                            found = False
-                            for k in client.property_map.keys():
-                                if data_name in k:
-                                    found = True
-                                    break
 
-                            if not found:
-                                pass
-                                # upload_mesh(bpy.data.objects[data_name].data)
-                                # dump_datablock(bpy.data.objects[data_name], 1)
-                                # dump_datablock(bpy.data.scenes[0], 4)
-            
+        # Update selected object
+        for update in updates.items():
+            updated_data = update[1]
+            if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
+                if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+                    add_update(updated_data.id.bl_rna.name, updated_data.id.name)
+            elif updated_data.id.is_updating:
+                updated_data.id.is_updating = False
+            elif updated_data.id.bl_rna.name in ['Material']:
+                update_tasks.put((updated_data.id.bl_rna.name, updated_data.id.name))
 
-                        # dump_datablock(bpy.data.scenes[0],4)
+        # for c in reversed(updates.items()):
+        #     if c[1].is_updated_geometry:
+        #         print("{} - {}".format(c[1].id.name,c[1].id.bl_rna.name))
+        # for c in updates.items():
+        #     if scene.session_settings.active_object:
+        #         if c[1].id.name == scene.session_settings.active_object.name: 
+        #             if c[1].is_updated_geometry:
+        #                 add_update(c[1].id.bl_rna.name, c[1].id.name)
+        #             elif c[1].is_updated_transform:
+        #                 add_update(c[1].id.bl_rna.name, c[1].id.name)
+        #             else:
+        #                 pass
+                    # print('other{}'.format(c[1].id.name))
+                # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
+                # print(len(bpy.context.depsgraph.updates.items()))
+                # data_name = c[1].id.name
+                # if c[1].id.bl_rna.name == "Object":
+                #     if data_name in bpy.data.objects.keys():
+                #         found = False
+                #         for k in client.property_map.keys():
+                #             if data_name in k:
+                #                 found = True
+                #                 break
+
+                #         if not found:
+                #             pass
+                            # upload_mesh(bpy.data.objects[data_name].data)
+                            # dump_datablock(bpy.data.objects[data_name], 1)
+                            # dump_datablock(bpy.data.scenes[0], 4)
+        
+
+                    # dump_datablock(bpy.data.scenes[0],4)
 
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-
+    bpy.types.ID.is_updating = bpy.props.BoolProperty(default=False)
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
@@ -822,7 +850,6 @@ def unregister():
 
     try:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-
     except:
         pass
 
@@ -840,7 +867,7 @@ def unregister():
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
-
+    del bpy.types.ID.is_updating
 
 if __name__ == "__main__":
     register()
