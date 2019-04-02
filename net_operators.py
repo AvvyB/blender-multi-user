@@ -151,7 +151,7 @@ def upload_client_position():
         key = "net/clients/{}".format(client.id.decode())
 
         try:
-            current_coords = get_client_view_rect()
+            current_coords = net_draw.get_client_view_rect()
             data = client.property_map[key].body
             if data is None:
                 data = {}
@@ -306,10 +306,12 @@ def load_scene(target=None, data=None, create=False):
                 target.collection.children.link(
                     bpy.data.collections[collection])
         
+        # Load annotation
         if data["grease_pencil"]:
-            target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]]
+            target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
     except:
         print("Collection loading error")
+
 
 def load_material(target=None, data=None, create=False):
     try:
@@ -355,6 +357,7 @@ def load_material(target=None, data=None, create=False):
 
     except:
         print("Material loading error")
+
 
 def load_gpencil_layer(target=None,data=None, create=False):
     
@@ -737,7 +740,7 @@ class session_snapview(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        area, region, rv3d = view3d_find()
+        area, region, rv3d = net_draw.view3d_find()
 
         for k, v in client.property_map.items():
             if v.mtype == 'client' and v.id.decode() == self.target_client:
