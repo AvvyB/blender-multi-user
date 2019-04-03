@@ -4,6 +4,7 @@ import string
 import time
 import asyncio
 import queue
+from operator import itemgetter
 
 import bgl
 import blf
@@ -48,8 +49,8 @@ def get_update(type):
 
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
-SUPPORTED_TYPES = ['Collection', 'Mesh', 'Object', 'Material',
-                   'Texture', 'Light', 'Camera', 'Action', 'Armature', 'GreasePencil', 'Scene']
+SUPPORTED_TYPES = ['Mesh', 'Grease Pencil', 'Material',
+                   'Texture', 'Light', 'Camera', 'Object', 'Action', 'Armature','Collection', 'Scene']
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'GreasePencil': 'grease_pencils'}
 # UTILITY FUNCTIONS
@@ -180,6 +181,8 @@ def update_selected_object(context):
             data['object'] = session.active_object.name
             client.push_update(
                 key, 'clientObject', data)
+            
+            return True
     elif len(context.selected_objects) == 0 and session.active_object:
         session.active_object = None
         data = {}
@@ -189,6 +192,9 @@ def update_selected_object(context):
         key = "net/objects/{}".format(client.id.decode())
         client.push_update(key, 'clientObject', data)
 
+        return True
+    
+    return False
 
 def init_scene():
     for gp in bpy.data.grease_pencils:
@@ -282,6 +288,10 @@ def load_collection(target=None, data=None, create=False):
         # load objects into collection
         for object in data["objects"]:
             target.objects.link(bpy.data.objects[object])
+
+        for object in target.objects.keys():
+            if object not in data["objects"]:
+                target.objects.unlink(bpy.data.objects[object])
     except:
         print("Collection loading error")
 
@@ -299,6 +309,9 @@ def load_scene(target=None, data=None, create=False):
             if object not in target.collection.objects.keys():
                 target.collection.objects.link(bpy.data.objects[object])
 
+        for object in target.collection.objects.keys():
+            if object not in  data["collection"]["objects"]:
+                target.collection.objects.unlink(bpy.data.objects[object])
         # load collections
         # TODO: Recursive link
         for collection in data["collection"]["children"]:
@@ -310,7 +323,7 @@ def load_scene(target=None, data=None, create=False):
         if data["grease_pencil"]:
             target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
     except:
-        print("Collection loading error")
+        print("Scene loading error")
 
 
 def load_material(target=None, data=None, create=False):
@@ -482,10 +495,23 @@ def update_scene(msg):
 
                 refresh_window()
 
-def push(data_type,id):
-    print(data_type)
+def push(data_type,id):  
     if data_type == 'Material':
         upload_material(bpy.data.materials[id])
+    if data_type == 'Grease Pencil':
+        upload_gpencil(bpy.data.grease_pencils[id])
+    if data_type == 'Camera':
+        dump_datablock(bpy.data.cameras[id], 1)
+    if data_type == 'Light':
+        dump_datablock(bpy.data.lights[id], 1)
+    if data_type == 'Mesh':
+        upload_mesh(bpy.data.meshes[id])
+    if data_type == 'Object':
+        dump_datablock(bpy.data.objects[id], 1)
+    if data_type == 'Collection':
+        dump_datablock(bpy.data.collections[id], 4)
+    if data_type == 'Scene':
+        dump_datablock(bpy.data.scenes[id], 4)
 
 
 recv_callbacks = [update_scene]
@@ -495,9 +521,12 @@ def default_tick():
     if not update_tasks.empty():
         update = update_tasks.get()
 
-        push(update[0],update[1])
+        try:
+            push(update[0],update[1])
+        except:
+            pass
 
-    return 2
+    return 0.1
 
 def mesh_tick():
     mesh = get_update("Mesh")
@@ -781,6 +810,12 @@ classes = (
     session_snapview,
 )
 
+def ordered(updates):
+    # sorted = sorted(updates, key=lambda tup: SUPPORTED_TYPES.index(tup[1].id.bl_rna.name))
+    uplist = [(SUPPORTED_TYPES.index(item[1].id.bl_rna.name),item[1].id.bl_rna.name,item[1].id.name) for item in updates.items()]
+    uplist.sort(key=itemgetter(0))
+    return uplist
+
 
 def depsgraph_update(scene):
     global client
@@ -789,16 +824,34 @@ def depsgraph_update(scene):
         updates = bpy.context.depsgraph.updates
         update_selected_object(bpy.context)
 
+        push = True
         # Update selected object
         for update in updates.items():
             updated_data = update[1]
-            if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
-                if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-                    add_update(updated_data.id.bl_rna.name, updated_data.id.name)
-            elif updated_data.id.is_updating:
+            if updated_data.id.is_updating:
                 updated_data.id.is_updating = False
-            elif updated_data.id.bl_rna.name in ['Material']:
-                update_tasks.put((updated_data.id.bl_rna.name, updated_data.id.name))
+                push = False
+                break
+
+        if push:
+            if len(updates) is 1:
+                updated_data = updates[0]
+                if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
+                    if updated_data.is_updated_transform:
+                        add_update(updated_data.id.bl_rna.name, updated_data.id.name)
+            else:
+                for update in ordered(updates):
+                    if update[2] == "Master Collection":
+                        pass
+                    elif update[1] in SUPPORTED_TYPES:
+                        update_tasks.put((update[1], update[2]))
+
+
+            # elif scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
+            #     if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+            #         add_update(updated_data.id.bl_rna.name, updated_data.id.name)
+            # elif updated_data.id.bl_rna.name in [SUPPORTED_TYPES]:
+            #     update_tasks.put((updated_data.id.bl_rna.name, updated_data.id.name))
 
         # for c in reversed(updates.items()):
         #     if c[1].is_updated_geometry:
