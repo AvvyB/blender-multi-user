@@ -260,10 +260,11 @@ class RCFClient():
             if self.pull_sock in socks:
                 rcfmsg = RCFMessage.recv(self.pull_sock)
 
-                rcfmsg.store(self.property_map)
+                if rcfmsg.id != self.id:
+                    rcfmsg.store(self.property_map)
 
-                for f in self.on_recv:
-                    f(rcfmsg)
+                    for f in self.on_recv:
+                        f(rcfmsg)
             else:
                 await asyncio.sleep(0.0001)
 

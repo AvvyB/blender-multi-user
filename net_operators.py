@@ -437,63 +437,63 @@ def load_default(target=None, data=None, create=False, type=None):
 def update_scene(msg):
     global client
 
-    if msg.id != client.id:
-        net_vars = bpy.context.scene.session_settings
+    
+    net_vars = bpy.context.scene.session_settings
 
         # if net_vars.active_object:
         #     if net_vars.active_object.name in msg.key:
         #         raise ValueError()
 
-        if 'net' not in msg.key:
-            target = resolve_bpy_path(msg.key)
-            
-            if target:
-                target.is_updating = True
+    if 'net' not in msg.key:
+        target = resolve_bpy_path(msg.key)
+        
+        if target:
+            target.is_updating = True
 
-            if msg.mtype == 'Object':
-                load_object(target=target, data=msg.body,
+        if msg.mtype == 'Object':
+            load_object(target=target, data=msg.body,
+                        create=net_vars.load_data)
+            global drawer
+            drawer.draw()
+        elif msg.mtype == 'Mesh':
+            load_mesh(target=target, data=msg.body,
+                        create=net_vars.load_data)
+        elif msg.mtype == 'Collection':
+            load_collection(target=target, data=msg.body,
                             create=net_vars.load_data)
-                global drawer
-                drawer.draw()
-            elif msg.mtype == 'Mesh':
-                load_mesh(target=target, data=msg.body,
-                          create=net_vars.load_data)
-            elif msg.mtype == 'Collection':
-                load_collection(target=target, data=msg.body,
-                                create=net_vars.load_data)
-            elif msg.mtype == 'Material':
-                load_material(target=target, data=msg.body,
-                              create=net_vars.load_data)
-            elif msg.mtype == 'Grease Pencil':
-                load_gpencil(target=target, data=msg.body,
-                             create=net_vars.load_data)
-            elif msg.mtype == 'Scene':
-                load_scene(target=target, data=msg.body,
-                           create=net_vars.load_data)
-            elif 'Light' in msg.mtype:
-                load_light(target=target, data=msg.body,
-                           create=net_vars.load_data)
-            else:
-                load_default(target=target, data=msg.body,
-                             create=net_vars.load_data, type=msg.mtype)
+        elif msg.mtype == 'Material':
+            load_material(target=target, data=msg.body,
+                            create=net_vars.load_data)
+        elif msg.mtype == 'Grease Pencil':
+            load_gpencil(target=target, data=msg.body,
+                            create=net_vars.load_data)
+        elif msg.mtype == 'Scene':
+            load_scene(target=target, data=msg.body,
+                        create=net_vars.load_data)
+        elif 'Light' in msg.mtype:
+            load_light(target=target, data=msg.body,
+                        create=net_vars.load_data)
         else:
-            if msg.mtype == 'client':
-                refresh_window()
-            elif msg.mtype == 'clientObject':
-                selected_objects = []
+            load_default(target=target, data=msg.body,
+                            create=net_vars.load_data, type=msg.mtype)
+    else:
+        if msg.mtype == 'client':
+            refresh_window()
+        elif msg.mtype == 'clientObject':
+            selected_objects = []
 
-                for k, v in client.property_map.items():
-                    if v.mtype == 'clientObject':
-                        if client.id != v.id:
-                            selected_objects.append(v.body['object'])
+            for k, v in client.property_map.items():
+                if v.mtype == 'clientObject':
+                    if client.id != v.id:
+                        selected_objects.append(v.body['object'])
 
-                for obj in bpy.data.objects:
-                    if obj.name in selected_objects:
-                        obj.hide_select = True
-                    else:
-                        obj.hide_select = False
+            for obj in bpy.data.objects:
+                if obj.name in selected_objects:
+                    obj.hide_select = True
+                else:
+                    obj.hide_select = False
 
-                refresh_window()
+            refresh_window()
 
 def push(data_type,id):  
     if data_type == 'Material':
@@ -520,7 +520,7 @@ post_init_callbacks = [refresh_window]
 def default_tick():
     if not update_tasks.empty():
         update = update_tasks.get()
-
+        print(update)
         try:
             push(update[0],update[1])
         except:
@@ -834,17 +834,17 @@ def depsgraph_update(scene):
                 break
 
         if push:
-            if len(updates) is 1:
-                updated_data = updates[0]
-                if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
-                    if updated_data.is_updated_transform:
-                        add_update(updated_data.id.bl_rna.name, updated_data.id.name)
-            else:
-                for update in ordered(updates):
-                    if update[2] == "Master Collection":
-                        pass
-                    elif update[1] in SUPPORTED_TYPES:
-                        update_tasks.put((update[1], update[2]))
+            # if len(updates) is 1:
+            #     updated_data = updates[0]
+            #     if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
+            #         if updated_data.is_updated_transform:
+            #             add_update(updated_data.id.bl_rna.name, updated_data.id.name)
+            # else:
+            for update in ordered(updates):
+                if update[2] == "Master Collection":
+                    pass
+                elif update[1] in SUPPORTED_TYPES:
+                    update_tasks.put((update[1], update[2]))
 
 
             # elif scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
