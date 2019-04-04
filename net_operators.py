@@ -6,6 +6,7 @@ import asyncio
 import queue
 from operator import itemgetter
 
+import uuid
 import bgl
 import blf
 import bpy
@@ -25,7 +26,8 @@ server = None
 context = None
 drawer = None
 update_list = {}
-update_tasks = queue.Queue()
+push_tasks = queue.Queue()
+pull_tasks = queue.Queue()
 
 def add_update(type, item):
     try:
@@ -80,10 +82,10 @@ def resolve_bpy_path(path):
     """
     Get bpy property value from path
     """
-    path = path.split('/')
     item = None
 
     try:
+        path = path.split('/')
         item = getattr(bpy.data, CORRESPONDANCE[path[0]])[path[1]]
 
     except:
@@ -439,61 +441,61 @@ def update_scene(msg):
 
     
     net_vars = bpy.context.scene.session_settings
-
+    pull_tasks.put(msg.key)
         # if net_vars.active_object:
         #     if net_vars.active_object.name in msg.key:
         #         raise ValueError()
 
-    if 'net' not in msg.key:
-        target = resolve_bpy_path(msg.key)
+    # if 'net' not in msg.key:
+    #     target = resolve_bpy_path(msg.key)
         
-        if target:
-            target.is_updating = True
+    #     if target:
+    #         target.is_updating = True
 
-        if msg.mtype == 'Object':
-            load_object(target=target, data=msg.body,
-                        create=net_vars.load_data)
-            global drawer
-            drawer.draw()
-        elif msg.mtype == 'Mesh':
-            load_mesh(target=target, data=msg.body,
-                        create=net_vars.load_data)
-        elif msg.mtype == 'Collection':
-            load_collection(target=target, data=msg.body,
-                            create=net_vars.load_data)
-        elif msg.mtype == 'Material':
-            load_material(target=target, data=msg.body,
-                            create=net_vars.load_data)
-        elif msg.mtype == 'Grease Pencil':
-            load_gpencil(target=target, data=msg.body,
-                            create=net_vars.load_data)
-        elif msg.mtype == 'Scene':
-            load_scene(target=target, data=msg.body,
-                        create=net_vars.load_data)
-        elif 'Light' in msg.mtype:
-            load_light(target=target, data=msg.body,
-                        create=net_vars.load_data)
-        else:
-            load_default(target=target, data=msg.body,
-                            create=net_vars.load_data, type=msg.mtype)
-    else:
-        if msg.mtype == 'client':
-            refresh_window()
-        elif msg.mtype == 'clientObject':
-            selected_objects = []
+    #     if msg.mtype == 'Object':
+    #         load_object(target=target, data=msg.body,
+    #                     create=net_vars.load_data)
+    #         global drawer
+    #         drawer.draw()
+    #     elif msg.mtype == 'Mesh':
+    #         load_mesh(target=target, data=msg.body,
+    #                     create=net_vars.load_data)
+    #     elif msg.mtype == 'Collection':
+    #         load_collection(target=target, data=msg.body,
+    #                         create=net_vars.load_data)
+    #     elif msg.mtype == 'Material':
+    #         load_material(target=target, data=msg.body,
+    #                         create=net_vars.load_data)
+    #     elif msg.mtype == 'Grease Pencil':
+    #         load_gpencil(target=target, data=msg.body,
+    #                         create=net_vars.load_data)
+    #     elif msg.mtype == 'Scene':
+    #         load_scene(target=target, data=msg.body,
+    #                     create=net_vars.load_data)
+    #     elif 'Light' in msg.mtype:
+    #         load_light(target=target, data=msg.body,
+    #                     create=net_vars.load_data)
+    #     else:
+    #         load_default(target=target, data=msg.body,
+    #                         create=net_vars.load_data, type=msg.mtype)
+    # else:
+    #     if msg.mtype == 'client':
+    #         refresh_window()
+    #     elif msg.mtype == 'clientObject':
+    #         selected_objects = []
 
-            for k, v in client.property_map.items():
-                if v.mtype == 'clientObject':
-                    if client.id != v.id:
-                        selected_objects.append(v.body['object'])
+    #         for k, v in client.property_map.items():
+    #             if v.mtype == 'clientObject':
+    #                 if client.id != v.id:
+    #                     selected_objects.append(v.body['object'])
 
-            for obj in bpy.data.objects:
-                if obj.name in selected_objects:
-                    obj.hide_select = True
-                else:
-                    obj.hide_select = False
+    #         for obj in bpy.data.objects:
+    #             if obj.name in selected_objects:
+    #                 obj.hide_select = True
+    #             else:
+    #                 obj.hide_select = False
 
-            refresh_window()
+    #         refresh_window()
 
 def push(data_type,id):  
     if data_type == 'Material':
@@ -513,20 +515,91 @@ def push(data_type,id):
     if data_type == 'Scene':
         dump_datablock(bpy.data.scenes[id], 4)
 
+def pull(keystore):
+    global client
+    
+    net_vars = bpy.context.scene.session_settings
+    body = client.property_map[keystore].body
+    data_type = client.property_map[keystore].mtype
+    target = resolve_bpy_path(keystore)
+    
+    if target:
+        target.is_updating = True
+
+    if data_type == 'Object':
+        load_object(target=target, data=body,
+                    create=net_vars.load_data)
+        global drawer
+        drawer.draw()
+    elif data_type == 'Mesh':
+        load_mesh(target=target, data=body,
+                    create=net_vars.load_data)
+    elif data_type == 'Collection':
+        load_collection(target=target, data=body,
+                        create=net_vars.load_data)
+    elif data_type == 'Material':
+        load_material(target=target, data=body,
+                        create=net_vars.load_data)
+    elif data_type == 'Grease Pencil':
+        load_gpencil(target=target, data=body,
+                        create=net_vars.load_data)
+    elif data_type == 'Scene':
+        load_scene(target=target, data=body,
+                    create=net_vars.load_data)
+    elif 'Light' in data_type:
+        load_light(target=target, data=body,
+                    create=net_vars.load_data)
+    elif data_type == 'Camera':
+        load_default(target=target, data=body,
+                        create=net_vars.load_data, type=mtype)
+    elif data_type == 'client':
+        refresh_window()
+    elif data_type == 'clientObject':
+            selected_objects = []
+
+            for k, v in client.property_map.items():
+                if v.mtype == 'clientObject':
+                    if client.id != v.id:
+                        selected_objects.append(v.body['object'])
+
+            for obj in bpy.data.objects:
+                if obj.name in selected_objects:
+                    obj.hide_select = True
+                else:
+                    obj.hide_select = False
+
+            refresh_window()
 
 recv_callbacks = [update_scene]
 post_init_callbacks = [refresh_window]
 
 def default_tick():
-    if not update_tasks.empty():
-        update = update_tasks.get()
+   
+    # for op in bpy.context.window_manager.operators:
+    #     try:
+    #         if isinstance(op.uuid,tuple):
+    #             op.uuid = str(uuid.uuid4())
+    #     except Exception as e:
+    #         print("error on {} {}".format(op.name,e))
+
+    if not push_tasks.empty():
+        update = push_tasks.get()
         print(update)
         try:
             push(update[0],update[1])
-        except:
-            pass
+        except Exception as e:
+            print("push error: {}".format(e))
 
+
+    if not pull_tasks.empty():
+        try:
+            pull(pull_tasks.get())
+        except Exception as e:
+            print("pull error: {}".format(e))
+    
+    
     return 0.1
+
 
 def mesh_tick():
     mesh = get_update("Mesh")
@@ -571,6 +644,7 @@ def register_ticks():
     bpy.app.timers.register(mesh_tick)
     bpy.app.timers.register(object_tick)
     bpy.app.timers.register(default_tick)
+
 
 def unregister_ticks():
     # REGISTER Updaters
@@ -819,15 +893,17 @@ def ordered(updates):
 
 def depsgraph_update(scene):
     global client
-   
+    
     if  client and  client.status == net_components.RCFStatus.CONNECTED:
         updates = bpy.context.depsgraph.updates
         update_selected_object(bpy.context)
 
         push = True
         # Update selected object
+        
         for update in updates.items():
             updated_data = update[1]
+            
             if updated_data.id.is_updating:
                 updated_data.id.is_updating = False
                 push = False
@@ -844,14 +920,14 @@ def depsgraph_update(scene):
                 if update[2] == "Master Collection":
                     pass
                 elif update[1] in SUPPORTED_TYPES:
-                    update_tasks.put((update[1], update[2]))
+                    push_tasks.put((update[1], update[2]))
 
 
             # elif scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
             #     if updated_data.is_updated_transform or updated_data.is_updated_geometry:
             #         add_update(updated_data.id.bl_rna.name, updated_data.id.name)
             # elif updated_data.id.bl_rna.name in [SUPPORTED_TYPES]:
-            #     update_tasks.put((updated_data.id.bl_rna.name, updated_data.id.name))
+            #     push_tasks.put((updated_data.id.bl_rna.name, updated_data.id.name))
 
         # for c in reversed(updates.items()):
         #     if c[1].is_updated_geometry:

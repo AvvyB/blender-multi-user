@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import logging
+from uuid import uuid4
 import time
 from enum import Enum
 
@@ -98,12 +99,19 @@ class RCFMessage(object):
     id = None  # User  (string)
     mtype = None  # data mtype (string)
     body = None  # data blob
+    uuid = None
 
-    def __init__(self, key=None, id=None, mtype=None, body=None):
+    def __init__(self,  key=None,uuid= None, id=None, mtype=None, body=None):
+        if uuid is None:
+            uuid = uuid4()
+        
         self.key = key
+        self.uuid = uuid
         self.mtype = mtype
         self.body = body
         self.id = id
+
+        
 
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
@@ -116,25 +124,26 @@ class RCFMessage(object):
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
         key = ''.encode() if self.key is None else self.key.encode()
+        print(self.mtype)
         mtype = ''.encode() if self.mtype is None else self.mtype.encode()
         body = ''.encode() if self.body is None else umsgpack.packb(self.body)
         id = ''.encode() if self.id is None else self.id
 
         try:
-            socket.send_multipart([key, id, mtype, body])
+            socket.send_multipart([key,self.uuid, id, mtype, body])
         except:
             logger.info("Fail to send {}".format(key))
 
     @classmethod
     def recv(cls, socket):
         """Reads key-value message from socket, returns new kvmsg instance."""
-        key, id, mtype, body = socket.recv_multipart(zmq.DONTWAIT)
+        key,uuid, id, mtype, body = socket.recv_multipart(zmq.DONTWAIT)
         key = key.decode() if key else None
         id = id if id else None
         mtype = mtype.decode() if body else None
         body = umsgpack.unpackb(body) if body else None
 
-        return cls(key=key, id=id, mtype=mtype, body=body)
+        return cls(key=key,uuid=uuid, id=id, mtype=mtype, body=body)
 
     def dump(self):
         if self.body is None:
@@ -269,7 +278,7 @@ class RCFClient():
                 await asyncio.sleep(0.0001)
 
     def push_update(self, key, mtype, body):
-        rcfmsg = RCFMessage(key, self.id, mtype, body)
+        rcfmsg = RCFMessage(key=key, id=self.id,mtype=mtype, body=body)
         rcfmsg.send(self.push_sock)
 
     def stop(self):
