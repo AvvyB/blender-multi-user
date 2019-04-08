@@ -672,8 +672,8 @@ class session_join(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
         # Scene setup
-        if net_settings.session_mode == "CONNECT" and net_settings.clear_scene:
-            clean_scene()
+        # if net_settings.session_mode == "CONNECT" and net_settings.clear_scene:
+        #     clean_scene()
 
         # Session setup
         if net_settings.username == "DefaultUser":
@@ -682,21 +682,19 @@ class session_join(bpy.types.Operator):
 
         username = str(context.scene.session_settings.username)
 
-        client = net_components.RCFClient(
-            id=username,
-            on_recv=recv_callbacks,
-            on_post_init=post_init_callbacks,
-            address=net_settings.ip,
-            is_admin=net_settings.session_mode == "HOST")
 
-        bpy.ops.asyncio.loop()
+        client = net_components.RCFClient()
+        client.connect("127.0.0.1",5555)
+        client.set('key', 1)
 
-        net_settings.is_running = True
 
-        drawer = net_draw.HUD(client_instance=client)
+        # net_settings.is_running = True
 
-        register_ticks()
+        # drawer = net_draw.HUD(client_instance=client)
+
+        # register_ticks()
         return {"FINISHED"}
+
 
 
 class session_add_property(bpy.types.Operator):
@@ -715,21 +713,22 @@ class session_add_property(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        item = resolve_bpy_path(self.property_path)
+        client.set('key', 1)
+        # item = resolve_bpy_path(self.property_path)
 
-        print(item)
+        # print(item)
 
-        if item:
-            key = self.property_path
+        # if item:
+        #     key = self.property_path
 
-            dumper = dump_anything.Dumper()
-            dumper.type_subset = dumper.match_subset_all
-            dumper.depth = self.depth
+        #     dumper = dump_anything.Dumper()
+        #     dumper.type_subset = dumper.match_subset_all
+        #     dumper.depth = self.depth
 
-            data = dumper.dump(item)
-            data_type = item.__class__.__name__
+        #     data = dumper.dump(item)
+        #     data_type = item.__class__.__name__
 
-            client.push_update(key, data_type, data)
+        #     client.push_update(key, data_type, data)
 
         return {"FINISHED"}
 
@@ -771,7 +770,7 @@ class session_create(bpy.types.Operator):
         global server
         global client
 
-        server = net_components.RCFServer()
+        server = net_components.RCFServerAgent()
         time.sleep(0.1)
 
         bpy.ops.session.join()
@@ -983,11 +982,11 @@ def unregister():
         pass
 
     if server:
-        server.stop()
+        # server.stop()
         del server
         server = None
     if client:
-        client.stop()
+        # client.stop()
         del client
         client = None
 
