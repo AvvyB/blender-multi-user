@@ -19,6 +19,7 @@ CONNECT_TIMEOUT = 2
 WAITING_TIME = 0.001
 SERVER_MAX = 1
 
+stop = False
 
 def zpipe(ctx):
     """build inproc pipe for talking to threads
@@ -161,6 +162,10 @@ class RCFClient(object):
         """
         self.pipe.send_multipart([b"SET", umsgpack.packb(key), umsgpack.packb(value)])
 
+    def exit(self):
+        if self.agent.is_alive():
+            global stop
+            stop = True
 
 class RCFServer(object):
     address = None          # Server address
@@ -230,13 +235,15 @@ class RCFClientAgent(object):
 def rcf_client_agent(ctx, pipe):
     agent = RCFClientAgent(ctx, pipe)
     server = None
-    
-    while True:
+    global stop
+    while True:       
+        if stop:
+            break
         # logger.info("asdasd")
-        
         poller = zmq.Poller()
         poller.register(agent.pipe, zmq.POLLIN)
         server_socket = None
+
 
         if agent.state == State.INITIAL:
             server = agent.server
@@ -255,7 +262,7 @@ def rcf_client_agent(ctx, pipe):
             poller.register(server_socket, zmq.POLLIN)
 
         try:
-            items = dict(poller.poll())
+            items = dict(poller.poll(1))
         except:
             pass
 
@@ -277,6 +284,9 @@ def rcf_client_agent(ctx, pipe):
                     logging.info("I: received from {}:{},{} {}".format(server.address,rcfmsg.body.id, server.port, action))
                 else:
                     logger.info("IDLE")
+
+    logger.info("exit thread")
+    stop = False
         # else: else
         #     agent.state = State.INITIAL
 

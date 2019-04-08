@@ -55,17 +55,17 @@ class SessionSettingsPanel(bpy.types.Panel):
                     row = layout.row()
                     row.operator("session.join", text="CONNECT")
 
-            # else:
+            else:
 
-            #     if net_operators.client.status is net_components.RCFStatus.CONNECTED:
-            #         row.label(text="Net frequency:")
-            #         row.prop(net_settings, "update_frequency", text="")
-            #         row = layout.row()
-            #         row.operator("session.stop", icon='QUIT', text="Exit")
-            #     elif net_operators.client.status is net_components.RCFStatus.CONNECTING:
-            #         row.label(text="connecting...")
-            #         row = layout.row()
-            #         row.operator("session.stop", icon='QUIT', text="CANCEL")
+                if net_operators.client.agent.is_alive():
+                    row.label(text="Net frequency:")
+                    row.prop(net_settings, "update_frequency", text="")
+                    row = layout.row()
+                    row.operator("session.stop", icon='QUIT', text="Exit")
+                # elif net_operators.client.status is net_components.RCFStatus.CONNECTING:
+                #     row.label(text="connecting...")
+                #     row = layout.row()
+                #     row.operator("session.stop", icon='QUIT', text="CANCEL")
 
             row = layout.row()
 

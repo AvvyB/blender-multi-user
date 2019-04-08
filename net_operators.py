@@ -5,11 +5,12 @@ import time
 import asyncio
 import queue
 from operator import itemgetter
-
+import subprocess
 import uuid
 import bgl
 import blf
 import bpy
+import os
 import gpu
 import mathutils
 from bpy_extras import view3d_utils
@@ -685,8 +686,7 @@ class session_join(bpy.types.Operator):
 
         client = net_components.RCFClient()
         client.connect("127.0.0.1",5555)
-        client.set('key', 1)
-
+        
 
         # net_settings.is_running = True
 
@@ -770,13 +770,13 @@ class session_create(bpy.types.Operator):
         global server
         global client
 
-        server = net_components.RCFServerAgent()
+        server = subprocess.Popen(['python','server.py'], shell=False, stdout=subprocess.PIPE)
         time.sleep(0.1)
 
         bpy.ops.session.join()
 
-        if context.scene.session_settings.init_scene:
-            init_scene()
+        # if context.scene.session_settings.init_scene:
+        #     init_scene()
 
         return {"FINISHED"}
 
@@ -798,17 +798,17 @@ class session_stop(bpy.types.Operator):
         net_settings = context.scene.session_settings
 
         if server:
-            server.stop()
+            server.kill()
             del server
             server = None
         if client:
-            client.stop()
+            client.exit()
             del client
             client = None
-            bpy.ops.asyncio.stop()
+            # bpy.ops.asyncio.stop()
             net_settings.is_running = False
 
-            unregister_ticks()
+            # unregister_ticks()
         else:
             logger.debug("No server/client running.")
 
@@ -969,17 +969,17 @@ def register():
     bpy.types.ID.is_updating = bpy.props.BoolProperty(default=False)
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
-    bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
+    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
 
 
 def unregister():
     global server
     global client
 
-    try:
-        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-    except:
-        pass
+    # try:
+    #     bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+    # except:
+    #     pass
 
     if server:
         # server.stop()
