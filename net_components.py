@@ -43,31 +43,6 @@ class State(Enum):
     SYNCING = 2
     ACTIVE = 3
 
-
-class RCFStore(collections.MutableMapping, dict):
-
-    def __init__(self):
-        super().__init__()
-
-    def __getitem__(self, key):
-        return dict.__getitem__(self, key)
-
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
-
-    def __delitem__(self, key):
-        dict.__delitem__(self, key)
-
-    def __iter__(self):
-        return dict.__iter__(self)
-
-    def __len__(self):
-        return dict.__len__(self)
-
-    def __contains__(self, x):
-        return dict.__contains__(self, x)
-
-
 class RCFMessage(object):
     """
     Message is formatted on wire as 2 frames:
@@ -138,7 +113,6 @@ class RCFMessage(object):
             data=data,
         ))
 
-
 class RCFClient(object):
     ctx = None
     pipe = None
@@ -158,9 +132,23 @@ class RCFClient(object):
 
     def set(self, key, value):
         """Set new value in distributed hash table
-        Sends [SET][key][value][ttl] to the agent
+        Sends [SET][key][value] to the agent
         """
         self.pipe.send_multipart([b"SET", umsgpack.packb(key), umsgpack.packb(value)])
+
+    def get(self, key):
+        """Lookup value in distributed hash table
+        Sends [GET][key] to the agent and waits for a value response
+        If there is no clone available, will eventually return None.
+        """
+
+        self.pipe.send_multipart([b"GET", umsgpack.packb(key)])
+        try:
+            reply = self.pipe.recv_multipart()
+        except KeyboardInterrupt:
+            return
+        else:
+            return umsgpack.unpackb(reply[0])
 
     def exit(self):
         if self.agent.is_alive():
@@ -186,7 +174,6 @@ class RCFServer(object):
         self.subscriber.linger = 0
         print("connected on tcp://{}:{}".format(address.decode(), port))
 
-
 class RCFClientAgent(object):
     ctx = None
     pipe = None
@@ -199,7 +186,7 @@ class RCFClientAgent(object):
     def __init__(self, ctx, pipe):
         self.ctx = ctx
         self.pipe = pipe
-        self.property_map = RCFStore()
+        self.property_map = {}
         self.id = b"test"
         self.state = State.INITIAL
         self.server = None
@@ -231,6 +218,11 @@ class RCFClientAgent(object):
             rcfmsg.store(self.property_map)
             
             rcfmsg.send(self.publisher)
+        
+        elif command == b"GET":
+            key = umsgpack.unpackb(msg[0])
+            value = self.property_map.get(key)
+            self.pipe.send(umsgpack.packb(value.body) if value else b'')
 
 def rcf_client_agent(ctx, pipe):
     agent = RCFClientAgent(ctx, pipe)

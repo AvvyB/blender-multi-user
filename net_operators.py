@@ -714,6 +714,7 @@ class session_add_property(bpy.types.Operator):
         global client
 
         client.set('key', 1)
+        print(client.get('key'))
         # item = resolve_bpy_path(self.property_path)
 
         # print(item)

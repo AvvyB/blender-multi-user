@@ -126,7 +126,8 @@ class SessionPropertiesPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if net_operators.client:
-            return net_operators.client.status == net_components.RCFStatus.CONNECTED
+            return net_operators.client.agent.is_alive()
+            # return net_operators.client.status == net_components.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -149,18 +150,18 @@ class SessionPropertiesPanel(bpy.types.Panel):
                 row = layout.row()
                 # Property area
                 area_msg = row.box()
-                if len(net_operators.client.property_map) > 0:
-                    for key, values in net_operators.client.property_map.items():
-                        item_box = area_msg.box()
-                        detail_item_box = item_box.row()
-                        # detail_item_box = item_box.row()
+                # if len(net_operators.client.property_map) > 0:
+                #     for key, values in net_operators.client.property_map.items():
+                #         item_box = area_msg.box()
+                #         detail_item_box = item_box.row()
+                #         # detail_item_box = item_box.row()
                         
-                        detail_item_box.label(text="{} ({}) {} ".format(
-                            key, values.mtype, values.id.decode()))
-                        detail_item_box.operator(
-                            "session.remove_prop", text="", icon="X").property_path = key
-                else:
-                    area_msg.label(text="Empty")
+                #         detail_item_box.label(text="{} ({}) {} ".format(
+                #             key, values.mtype, values.id.decode()))
+                #         detail_item_box.operator(
+                #             "session.remove_prop", text="", icon="X").property_path = key
+                # else:
+                #     area_msg.label(text="Empty")
 
 class SessionTaskPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -173,7 +174,8 @@ class SessionTaskPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if net_operators.client:
-            return net_operators.client.status == net_components.RCFStatus.CONNECTED
+            return net_operators.client.agent.is_alive()
+            # return net_operators.client.status == net_components.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -199,7 +201,7 @@ class SessionTaskPanel(bpy.types.Panel):
 classes = (
     SessionSettingsPanel,
     # SessionUsersPanel,
-    # SessionPropertiesPanel,
+    SessionPropertiesPanel,
     # SessionTaskPanel,
 )
 
