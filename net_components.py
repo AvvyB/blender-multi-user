@@ -4,14 +4,19 @@ import threading
 from uuid import uuid4
 import binascii
 import os
+import sys
 from random import randint
 import time
 from enum import Enum
 
 try:
-    from .libs import umsgpack, zmq
+    from .libs import umsgpack
+    from .libs import zmq
 except:
-    from libs import umsgpack, zmq
+    # Server import
+    from libs import umsgpack
+    from libs import zmq
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 

@@ -8,8 +8,6 @@ bl_info = {
     "category" : "Collaboration"
 }
 
-from .libs.bsyncio import bsyncio
-
 
 import bpy
 import os
@@ -21,7 +19,6 @@ from . import net_ui
 from . import net_ecs
 
 def register():
-    bsyncio.register()
     net_operators.register()
     net_ui.register()
     net_ecs.register()
@@ -30,5 +27,4 @@ def unregister():
     net_ui.unregister()
     net_operators.unregister()
     net_ecs.unregister()
-    bsyncio.unregister()
     
