@@ -1,4 +1,4 @@
-from net_components import RCFClient
+from client import RCFClient
 import time
 client = RCFClient()
 

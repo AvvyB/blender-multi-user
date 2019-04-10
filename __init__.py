@@ -14,17 +14,16 @@ import os
 import sys
 
 
-from . import net_operators
-from . import net_ui
-from . import net_ecs
+from . import operators
+from . import ui
 
 def register():
-    net_operators.register()
-    net_ui.register()
-    net_ecs.register()
+    operators.register()
+    ui.register()
+
 
 def unregister():
-    net_ui.unregister()
-    net_operators.unregister()
-    net_ecs.unregister()
+    ui.unregister()
+    operators.unregister()
+
     

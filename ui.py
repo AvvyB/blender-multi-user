@@ -1,6 +1,6 @@
 import bpy
 
-from . import net_components, net_operators
+from . import client, operators
 
 
 class SessionSettingsPanel(bpy.types.Panel):
@@ -19,7 +19,7 @@ class SessionSettingsPanel(bpy.types.Panel):
             scene = context.scene
 
             row = layout.row()
-            if net_operators.client is None:
+            if operators.client_instance is None:
                 
                 row = layout.row()
                 box = row.box()
@@ -57,12 +57,12 @@ class SessionSettingsPanel(bpy.types.Panel):
 
             else:
 
-                if net_operators.client.agent.is_alive():
+                if operators.client_instance.agent.is_alive():
                     row.label(text="Net frequency:")
                     row.prop(net_settings, "update_frequency", text="")
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
-                # elif net_operators.client.status is net_components.RCFStatus.CONNECTING:
+                # elif operators.client.status is client.RCFStatus.CONNECTING:
                 #     row.label(text="connecting...")
                 #     row = layout.row()
                 #     row.operator("session.stop", icon='QUIT', text="CANCEL")
@@ -80,8 +80,8 @@ class SessionUsersPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if net_operators.client:
-            return net_operators.client.status == net_components.RCFStatus.CONNECTED
+        if operators.client_instance:
+            return operators.client_instance.status == client.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -91,21 +91,21 @@ class SessionUsersPanel(bpy.types.Panel):
         scene = context.scene
         # Create a simple row.
         row = layout.row()
-        if net_operators.client:
-            if len(net_operators.client.property_map) > 0:
-                for key, values in net_operators.client.property_map.items():
+        if operators.client_instance:
+            if len(operators.client_instance.property_map) > 0:
+                for key, values in operators.client_instance.property_map.items():
                     if 'client' in key:
                         info = ""
                         item_box = row.box()
                         detail_item_box = item_box.row()
 
-                        if values.id == net_operators.client.id:
+                        if values.id == operators.client_instance.id:
                             info = "(self)"
                         # detail_item_box = item_box.row()
                         detail_item_box.label(
                             text="{} - {}".format(values.id.decode(), info))
 
-                        if net_operators.client.id.decode() not in key:
+                        if operators.client.id.decode() not in key:
                             detail_item_box.operator(
                                 "session.snapview", text="", icon='VIEW_CAMERA').target_client = values.id.decode()
                         row = layout.row()
@@ -125,9 +125,9 @@ class SessionPropertiesPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if net_operators.client:
-            return net_operators.client.agent.is_alive()
-            # return net_operators.client.status == net_components.RCFStatus.CONNECTED
+        if operators.client_instance:
+            return operators.client_instance.agent.is_alive()
+            # return operators.client.status == client.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -139,7 +139,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
             # Create a simple row.
             row = layout.row()
 
-            if net_operators.client:
+            if operators.client:
                 row = layout.row(align=True)
                 row.prop(net_settings, "buffer", text="")
                 row.prop(net_settings, "add_property_depth", text="")
@@ -150,8 +150,8 @@ class SessionPropertiesPanel(bpy.types.Panel):
                 row = layout.row()
                 # Property area
                 area_msg = row.box()
-                # if len(net_operators.client.property_map) > 0:
-                #     for key, values in net_operators.client.property_map.items():
+                # if len(operators.client.property_map) > 0:
+                #     for key, values in operators.client.property_map.items():
                 #         item_box = area_msg.box()
                 #         detail_item_box = item_box.row()
                 #         # detail_item_box = item_box.row()
@@ -173,9 +173,9 @@ class SessionTaskPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if net_operators.client:
-            return net_operators.client.agent.is_alive()
-            # return net_operators.client.status == net_components.RCFStatus.CONNECTED
+        if operators.client:
+            return operators.client.agent.is_alive()
+            # return operators.client.status == client.RCFStatus.CONNECTED
         return False
 
     def draw(self, context):
@@ -183,11 +183,11 @@ class SessionTaskPanel(bpy.types.Panel):
         # Create a simple row.
         row = layout.row()
 
-        if net_operators.update_list:
+        if operators.update_list:
             # Property area
             area_msg = row.box()
-            if len(net_operators.update_list) > 0:
-                for key, values in net_operators.update_list.items():
+            if len(operators.update_list) > 0:
+                for key, values in operators.update_list.items():
                     item_box = area_msg.box()
                     detail_item_box = item_box.row()
                     # detail_item_box = item_box.row()
