@@ -1,55 +1,56 @@
 import bpy
 from .libs import dump_anything
 
-def dump_datablock(datablock, depth):
-    if datablock:
-        print("sending {}".format(datablock.name))
+CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
+                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'GreasePencil': 'grease_pencils'}
 
-        dumper = dump_anything.Dumper()
-        dumper.type_subset = dumper.match_subset_all
-        dumper.depth = depth
+#    LOAD HELPERS
 
-        datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type, datablock.name)
-        data = dumper.dump(datablock)
+def load(key, value):
+    target = resolve_bpy_path(key)
+    target_type = target.__class__.__name__
+    if target:
+        target.is_updating = True
 
-        client.push_update(key, datablock_type, data)
+    if target_type == 'Object':
+        load_object(target=target, data=value,
+                    create=True)
+    elif target_type == 'Mesh':
+        load_mesh(target=target, data=value,
+                    create=True)
+    elif target_type == 'Collection':
+        load_collection(target=target, data=value,
+                        create=True)
+    elif target_type == 'Material':
+        load_material(target=target, data=value,
+                        create=True)
+    elif target_type == 'Grease Pencil':
+        load_gpencil(target=target, data=value,
+                        create=True)
+    elif target_type == 'Scene':
+        load_scene(target=target, data=value,
+                    create=True)
+    elif 'Light' in target_type:
+        load_light(target=target, data=value,
+                    create=True)
+    else:
+        load_default(target=target, data=value,
+                        create=True, type=target_type)
 
+def resolve_bpy_path(path):
+    """
+    Get bpy property value from path
+    """
+    item = None
 
-def dump_datablock_attibute(datablock, attributes, depth=1):
-    if datablock:
-        dumper = dump_anything.Dumper()
-        dumper.type_subset = dumper.match_subset_all
-        dumper.depth = depth
+    try:
+        path = path.split('/')
+        item = getattr(bpy.data, CORRESPONDANCE[path[0]])[path[1]]
 
-        datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type, datablock.name)
+    except:
+        pass
 
-        data = {}
-        for attr in attributes:
-            try:
-                data[attr] = dumper.dump(getattr(datablock, attr))
-            except:
-                pass
-
-        client.push_update(key, datablock_type, data)
-
-
-def upload_mesh(mesh):
-    if mesh.bl_rna.name == 'Mesh':
-        dump_datablock_attibute(
-            mesh, ['name', 'polygons', 'edges', 'vertices'], 6)
-
-
-def upload_material(material):
-    if material.bl_rna.name == 'Material':
-        dump_datablock_attibute(material, ['name', 'node_tree'], 7)
-
-
-def upload_gpencil(gpencil):
-    if gpencil.bl_rna.name == 'Grease Pencil':
-        dump_datablock_attibute(gpencil, ['name', 'layers','materials'], 9)
-
+    return item
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
@@ -272,3 +273,63 @@ def load_default(target=None, data=None, create=False, type=None):
         dump_anything.load(target, data)
     except:
         print("default loading error")
+
+# DUMP HELPERS
+
+def dump(key):
+    target = resolve_bpy_path(key)
+    target_type = target.__class__.__name__
+    data = None
+
+    if target_type == 'Material':
+        data = dump_datablock_attibute(target, ['name', 'node_tree'], 7)
+    elif target_type == 'Grease Pencil':
+        data = dump_datablock_attibute(target, ['name', 'layers','materials'], 9)
+    elif target_type == 'Camera':
+        data = dump_datablock(target, 1)
+    elif target_type == 'Light':
+        data = dump_datablock(target, 1)
+    elif target_type == 'Mesh':
+        data = dump_datablock_attibute(
+            target, ['name', 'polygons', 'edges', 'vertices'], 6)
+    elif target_type == 'Object':
+        data = dump_datablock(target, 1)
+    elif target_type == 'Collection':
+        data = dump_datablock(target, 4)
+    elif target_type == 'Scene':
+        data = dump_datablock(target, 4)
+    
+    return data
+
+
+def dump_datablock(datablock, depth):
+    if datablock:
+        dumper = dump_anything.Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = depth
+
+        datablock_type = datablock.bl_rna.name
+        key = "{}/{}".format(datablock_type, datablock.name)
+        data = dumper.dump(datablock)
+
+        return data
+
+
+def dump_datablock_attibute(datablock, attributes, depth=1):
+    if datablock:
+        dumper = dump_anything.Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = depth
+
+        datablock_type = datablock.bl_rna.name
+        key = "{}/{}".format(datablock_type, datablock.name)
+
+        data = {}
+        for attr in attributes:
+            try:
+                data[attr] = dumper.dump(getattr(datablock, attr))
+            except:
+                pass
+
+        return data
+

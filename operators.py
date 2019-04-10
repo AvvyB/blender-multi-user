@@ -53,8 +53,7 @@ SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
 SUPPORTED_TYPES = ['Mesh', 'Grease Pencil', 'Material',
                    'Texture', 'Light', 'Camera', 'Object', 'Action', 'Armature','Collection', 'Scene']
-CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
-                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'GreasePencil': 'grease_pencils'}
+
 # UTILITY FUNCTIONS
 
 
@@ -76,22 +75,6 @@ def randomColor():
     v = random.random()
     b = random.random()
     return [r, v, b]
-
-
-def resolve_bpy_path(path):
-    """
-    Get bpy property value from path
-    """
-    item = None
-
-    try:
-        path = path.split('/')
-        item = getattr(bpy.data, CORRESPONDANCE[path[0]])[path[1]]
-
-    except:
-        pass
-
-    return item
 
 
 def refresh_window():
@@ -443,8 +426,8 @@ class session_add_property(bpy.types.Operator):
     def execute(self, context):
         global client_instance
 
-        client_instance.set('key', 1)
-        print(client_instance.get('key'))
+        client_instance.set(self.property_path)
+        # print(client_instance.get('key'))
         # item = resolve_bpy_path(self.property_path)
 
         # print(item)
