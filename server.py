@@ -4,7 +4,7 @@ import time
 from libs import zmq
 
 import message
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Server")
 logging.basicConfig(level=logging.DEBUG)
 
 class RCFServerAgent():
@@ -60,7 +60,7 @@ class RCFServerAgent():
 
                 identity = msg[0]
                 request = msg[1]
-                print("asdasd")
+
                 if request == b"SNAPSHOT_REQUEST":
                     pass
                 else:
@@ -81,6 +81,7 @@ class RCFServerAgent():
             # Regular update routing (Clients / Client)
             elif self.collector_sock in socks:
                 msg = message.RCFMessage.recv(self.collector_sock)
+                logger.info("received object")
                 # Update all clients
                 msg.store(self.property_map)
                 msg.send(self.pub_sock)

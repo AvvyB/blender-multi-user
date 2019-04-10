@@ -72,8 +72,9 @@ class RCFClient(object):
         self.agent.daemon = True
         self.agent.start()
 
-    def connect(self, address, port):
-        self.pipe.send_multipart([b"CONNECT", (address.encode() if isinstance(
+    def connect(self, id, address, port):
+        self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
+            id, str) else id), (address.encode() if isinstance(
             address, str) else address), b'%d' % port])
 
     def set(self, key):
@@ -149,6 +150,7 @@ class RCFClientAgent(object):
         command = msg.pop(0)
 
         if command == b"CONNECT":
+            self.id = msg.pop(0)
             address = msg.pop(0)
             port = int(msg.pop(0))
 
@@ -167,7 +169,7 @@ class RCFClientAgent(object):
             value = helpers.dump(key)
            
             if value:
-                logger.info(key,"dumped")
+                logger.info("{} dumped".format(key))
                 # Send key-value pair on to server
                 rcfmsg = message.RCFMessage(key=key, id=self.id, mtype="", body=value)
 
@@ -197,8 +199,8 @@ def rcf_client_agent(ctx, pipe):
         if agent.state == State.INITIAL:
             server = agent.server
             if agent.server:
-                logger.info("I: waiting for server at %s:%d...",
-                            server.address, server.port)
+                logger.info("%s: waiting for server at %s:%d...",
+                            agent.id.decode(),server.address, server.port)
                 server.snapshot.send(b"SNAPSHOT_REQUEST")
                 agent.state = State.SYNCING
                 server_socket = server.snapshot
@@ -232,10 +234,10 @@ def rcf_client_agent(ctx, pipe):
                     helpers.load(rcfmsg.key,rcfmsg.body)
                     rcfmsg.store(agent.property_map)
                     action = "update" if rcfmsg.body else "delete"
-                    logging.info("I: received from {}:{},{} {}".format(
+                    logging.info("{}: received from {}:{},{} {}".format(agent.id,
                         server.address, rcfmsg.body.id, server.port, action))
                 else:
-                    logger.info("IDLE")
+                    logger.info("{} nothing to do".format(agent.id))
 
     logger.info("exit thread")
     stop = False

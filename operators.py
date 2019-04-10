@@ -386,8 +386,8 @@ class session_join(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
         # Scene setup
-        # if net_settings.session_mode == "CONNECT" and net_settings.clear_scene:
-        #     clean_scene()
+        if net_settings.session_mode == "CONNECT" and net_settings.clear_scene:
+            clean_scene()
 
         # Session setup
         if net_settings.username == "DefaultUser":
@@ -398,7 +398,7 @@ class session_join(bpy.types.Operator):
 
 
         client_instance = client.RCFClient()
-        client_instance.connect("127.0.0.1",5555)
+        client_instance.connect(net_settings.username,"127.0.0.1",5555)
         
 
         # net_settings.is_running = True
