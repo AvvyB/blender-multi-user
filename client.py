@@ -140,6 +140,8 @@ class RCFClientAgent(object):
     id = None
     state = State.INITIAL
     server = None
+    serial = None
+    serialisation_agent = None
 
     def __init__(self, ctx, pipe):
         self.ctx = ctx
@@ -152,6 +154,11 @@ class RCFClientAgent(object):
         self.publisher.setsockopt(zmq.IDENTITY, self.id)
         self.publisher.setsockopt(zmq.SNDHWM, 60)
         self.publisher.linger = 0
+        self.serial, peer = zpipe(self.ctx)
+        self.serial_agent =  threading.Thread(
+            target=serialization_agent, args=(self.ctx, peer))
+        self.serial_agent.daemon = True
+        self.serial_agent.start()
 
     def control_message(self):
         msg = self.pipe.recv_multipart()
@@ -261,28 +268,26 @@ class SerializationAgent(object):
     ctx = None
     pipe = None
 
-    def __init__(self, ctx, pipe_in, pipe_out):
+    def __init__(self, ctx, pipe):
         self.ctx = ctx
-        self.pipe_in = pipe_in
-        self.pipe_out = pipe_out
+        self.pipe = pipe
+        logger.info("serialisation service launched")
 
     def control_message(self):
-        msg = self.pipe_in.recv_multipart()
+        msg = self.pipe.recv_multipart()
         command = msg.pop(0)
 
         if command == b"DUMP":
             key = umsgpack.unpackb(msg[0])
 
-            logger.log("Dumping....")
 
         elif command == b"LOAD":
             key, value = msg
-            logger.log("Loading....")
 
 
-def serialization_agent(ctx, pipe_in, pipe_out):
-    agent = SerializationAgent(ctx, pipe_in, pipe_out)
-    server = None
+def serialization_agent(ctx, pipe):
+    agent = SerializationAgent(ctx, pipe)
+
 
     global stop
     while True:

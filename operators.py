@@ -304,7 +304,7 @@ def default_tick():
     #     except Exception as e:
     #         print("pull error: {}".format(e))
     
-    bpy.ops.session.refresh()
+    # bpy.ops.session.refresh()
 
     return 0.5
 
@@ -620,7 +620,6 @@ def depsgraph_update(scene):
         updates = bpy.context.depsgraph.updates
         # update_selected_object(bpy.context)
         push = False
-
         # Update selected object
     
         # for update in updates.items():
