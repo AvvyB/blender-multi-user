@@ -16,12 +16,13 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
-from . import client, ui, draw
+from . import client, ui, draw, helpers
 
 
 logger = logging.getLogger(__name__)
 
 client_instance = None
+client_keys = None
 server = None
 context = None
 drawer = None
@@ -51,8 +52,8 @@ def get_update(type):
 
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
-SUPPORTED_TYPES = ['Mesh', 'Grease Pencil', 'Material',
-                   'Texture', 'Light', 'Camera', 'Object', 'Action', 'Armature','Collection', 'Scene']
+SUPPORTED_TYPES = [ 'Material',
+                   'Texture', 'Light', 'Camera','Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature','Collection', 'Scene']
 
 # UTILITY FUNCTIONS
 
@@ -132,23 +133,15 @@ def update_selected_object(context):
     
     return False
 
-def init_scene():
-    for gp in bpy.data.grease_pencils:
-        upload_gpencil(gp)
-    for cam in bpy.data.cameras:
-        dump_datablock(cam, 1)
-    for light in bpy.data.lights:
-        dump_datablock(light, 1)
-    for mat in bpy.data.materials:
-        dump_datablock(mat, 7)
-    for mesh in bpy.data.meshes:
-        upload_mesh(mesh)
-    for object in bpy.data.objects:
-        dump_datablock(object, 1)
-    for collection in bpy.data.collections:
-        dump_datablock(collection, 4)
-    for scene in bpy.data.scenes:
-        dump_datablock(scene, 4)
+
+def init_datablocks():
+    global client_instance
+
+    for datatype in SUPPORTED_TYPES:
+        print(datatype)
+        for item in getattr(bpy.data,helpers.CORRESPONDANCE[datatype]):
+            key = "{}/{}".format(datatype,item.name)
+            client_instance.set(key)
 
 def update_scene(msg):
     global client_instance
@@ -409,6 +402,22 @@ class session_join(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class session_refresh(bpy.types.Operator):
+    bl_idname = "session.refresh"
+    bl_label = "refresh"
+    bl_description = "refresh client ui keys "
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client_instance, client_keys
+
+        client_keys = client_instance.list()
+        return {"FINISHED"}
+
 
 class session_add_property(bpy.types.Operator):
     bl_idname = "session.add_prop"
@@ -427,22 +436,6 @@ class session_add_property(bpy.types.Operator):
         global client_instance
 
         client_instance.set(self.property_path)
-        # print(client_instance.get('key'))
-        # item = resolve_bpy_path(self.property_path)
-
-        # print(item)
-
-        # if item:
-        #     key = self.property_path
-
-        #     dumper = dump_anything.Dumper()
-        #     dumper.type_subset = dumper.match_subset_all
-        #     dumper.depth = self.depth
-
-        #     data = dumper.dump(item)
-        #     data_type = item.__class__.__name__
-
-        #     client_instance.push_update(key, data_type, data)
 
         return {"FINISHED"}
 
@@ -489,8 +482,8 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        # if context.scene.session_settings.init_scene:
-        #     init_scene()
+        if context.scene.session_settings.init_scene:
+            init_datablocks()
 
         return {"FINISHED"}
 
@@ -589,6 +582,7 @@ class session_snapview(bpy.types.Operator):
 # TODO: Rename to match official blender convention
 classes = (
     session_join,
+    session_refresh,
     session_add_property,
     session_stop,
     session_create,

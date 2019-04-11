@@ -2,13 +2,18 @@ import bpy
 from .libs import dump_anything
 
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
-                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'GreasePencil': 'grease_pencils'}
+                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
+
+
+def refresh_window():
+    import bpy
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 #    LOAD HELPERS
 
 def load(key, value):
     target = resolve_bpy_path(key)
-    target_type = target.__class__.__name__
+    target_type = key.split('/')[0]
     if target:
         target.is_updating = True
 
@@ -33,9 +38,10 @@ def load(key, value):
     elif 'Light' in target_type:
         load_light(target=target, data=value,
                     create=True)
-    else:
+    elif target_type == 'Camera':
         load_default(target=target, data=value,
                         create=True, type=target_type)
+
 
 def resolve_bpy_path(path):
     """
@@ -51,6 +57,7 @@ def resolve_bpy_path(path):
         pass
 
     return item
+
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
@@ -157,8 +164,8 @@ def load_scene(target=None, data=None, create=False):
                     bpy.data.collections[collection])
         
         # Load annotation
-        if data["grease_pencil"]:
-            target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
+        # if data["grease_pencil"]:
+        #     target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
     except:
         print("Scene loading error")
 
@@ -278,7 +285,7 @@ def load_default(target=None, data=None, create=False, type=None):
 
 def dump(key):
     target = resolve_bpy_path(key)
-    target_type = target.__class__.__name__
+    target_type = key.split('/')[0]
     data = None
 
     if target_type == 'Material':

@@ -1,5 +1,6 @@
 import logging
 import time 
+from operator import itemgetter
 
 from libs import zmq
 
@@ -7,6 +8,9 @@ import message
 logger = logging.getLogger("Server")
 logging.basicConfig(level=logging.DEBUG)
 
+SUPPORTED_TYPES = [ 'Material',
+                   'Texture', 'Light', 'Camera','Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature','Collection', 'Scene']
+                   
 class RCFServerAgent():
     def __init__(self, context=zmq.Context.instance(), id="admin"):
         self.context = context
@@ -67,7 +71,10 @@ class RCFServerAgent():
                     logger.info("Bad snapshot request")
                     break
 
-                for k, v in self.property_map.items():
+                ordered_props = [(SUPPORTED_TYPES.index(k.split('/')[0]),k,v) for k, v in self.property_map.items()]
+                ordered_props.sort(key=itemgetter(0))
+
+                for i, k, v in ordered_props:
                     logger.info(
                         "Sending {} snapshot to {}".format(k, identity))
                     self.request_sock.send(identity, zmq.SNDMORE)

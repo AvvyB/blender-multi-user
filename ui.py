@@ -139,29 +139,30 @@ class SessionPropertiesPanel(bpy.types.Panel):
             # Create a simple row.
             row = layout.row()
 
-            if operators.client:
-                row = layout.row(align=True)
-                row.prop(net_settings, "buffer", text="")
-                row.prop(net_settings, "add_property_depth", text="")
-                add = row.operator("session.add_prop", text="",
-                            icon="ADD")
-                add.property_path = net_settings.buffer
-                add.depth = net_settings.add_property_depth
-                row = layout.row()
-                # Property area
-                area_msg = row.box()
-                # if len(operators.client.property_map) > 0:
-                #     for key, values in operators.client.property_map.items():
-                #         item_box = area_msg.box()
-                #         detail_item_box = item_box.row()
-                #         # detail_item_box = item_box.row()
-                        
-                #         detail_item_box.label(text="{} ({}) {} ".format(
-                #             key, values.mtype, values.id.decode()))
-                #         detail_item_box.operator(
-                #             "session.remove_prop", text="", icon="X").property_path = key
-                # else:
-                #     area_msg.label(text="Empty")
+            row = layout.row(align=True)
+            row.prop(net_settings, "buffer", text="")
+            row.prop(net_settings, "add_property_depth", text="")
+            add = row.operator("session.add_prop", text="",
+                        icon="ADD")
+            add.property_path = net_settings.buffer
+            add.depth = net_settings.add_property_depth
+            row = layout.row()
+            # Property area
+            area_msg = row.box()
+            area_msg.operator("session.refresh", text="",
+                        icon="UV_SYNC_SELECT")
+            if operators.client_keys and len(operators.client_keys) > 0:
+                for item in operators.client_keys:
+                    item_box = area_msg.box()
+                    detail_item_box = item_box.row()
+                    # detail_item_box = item_box.row()
+                    
+                    detail_item_box.label(text="{}".format(item))
+                    # detail_item_box.operator(
+                    #     "session.remove_prop", text="", icon="X").property_path = key
+            else:
+                area_msg.label(text="Empty")
+
 
 class SessionTaskPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""

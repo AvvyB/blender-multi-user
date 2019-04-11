@@ -103,6 +103,14 @@ class RCFClient(object):
             global stop
             stop = True
 
+    def list(self):
+        self.pipe.send_multipart([b"LIST"])
+        try:
+            reply = self.pipe.recv_multipart()
+        except KeyboardInterrupt:
+            return
+        else:
+            return umsgpack.unpackb(reply[0])
 
 class RCFServer(object):
     address = None          # Server address
@@ -165,7 +173,6 @@ class RCFClientAgent(object):
         elif command == b"SET":
             key = umsgpack.unpackb(msg[0])
             value = None
-            
             value = helpers.dump(key)
            
             if value:
@@ -182,7 +189,10 @@ class RCFClientAgent(object):
             key = umsgpack.unpackb(msg[0])
             value = self.property_map.get(key)
             self.pipe.send(umsgpack.packb(value.body) if value else b'')
-
+        
+        elif command == b"LIST":
+            self.pipe.send(umsgpack.packb(list(self.property_map)))
+  
 
 def rcf_client_agent(ctx, pipe):
     agent = RCFClientAgent(ctx, pipe)
@@ -228,14 +238,15 @@ def rcf_client_agent(ctx, pipe):
                     logger.info("snapshot complete")
                     agent.state = State.ACTIVE
                 else:
+                    helpers.load(rcfmsg.key,rcfmsg.body)
                     rcfmsg.store(agent.property_map)
             elif agent.state == State.ACTIVE:
                 if rcfmsg.id != agent.id:
                     helpers.load(rcfmsg.key,rcfmsg.body)
                     rcfmsg.store(agent.property_map)
                     action = "update" if rcfmsg.body else "delete"
-                    logging.info("{}: received from {}:{},{} {}".format(agent.id,
-                        server.address, rcfmsg.body.id, server.port, action))
+                    logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
+                        server.address, rcfmsg.id, server.port, action))
                 else:
                     logger.info("{} nothing to do".format(agent.id))
 
