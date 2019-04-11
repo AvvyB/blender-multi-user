@@ -311,7 +311,7 @@ def default_tick():
         update = client_instance.queue.get()
         helpers.load(update[0],update[1])
 
-    return 0.01
+    return 0.001
 
 
 def mesh_tick():
