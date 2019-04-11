@@ -138,9 +138,9 @@ def init_datablocks():
     global client_instance
 
     for datatype in SUPPORTED_TYPES:
-        print(datatype)
         for item in getattr(bpy.data,helpers.CORRESPONDANCE[datatype]):
             key = "{}/{}".format(datatype,item.name)
+            print(key)
             client_instance.set(key)
 
 def update_scene(msg):
@@ -289,23 +289,24 @@ def default_tick():
     #     except Exception as e:
     #         print("error on {} {}".format(op.name,e))
 
-    if not push_tasks.empty():
-        update = push_tasks.get()
-        print(update)
-        try:
-            push(update[0],update[1])
-        except Exception as e:
-            print("push error: {}".format(e))
+    # if not push_tasks.empty():
+    #     update = push_tasks.get()
+    #     print(update)
+    #     try:
+    #         push(update[0],update[1])
+    #     except Exception as e:
+    #         print("push error: {}".format(e))
 
 
-    if not pull_tasks.empty():
-        try:
-            pull(pull_tasks.get())
-        except Exception as e:
-            print("pull error: {}".format(e))
+    # if not pull_tasks.empty():
+    #     try:
+    #         pull(pull_tasks.get())
+    #     except Exception as e:
+    #         print("pull error: {}".format(e))
     
-    
-    return 0.1
+    bpy.ops.session.refresh()
+
+    return 0.5
 
 
 def mesh_tick():
@@ -347,19 +348,19 @@ def draw_tick():
 
 def register_ticks():
     # REGISTER Updaters
-    bpy.app.timers.register(draw_tick)
-    bpy.app.timers.register(mesh_tick)
-    bpy.app.timers.register(object_tick)
+    # bpy.app.timers.register(draw_tick)
+    # bpy.app.timers.register(mesh_tick)
+    # bpy.app.timers.register(object_tick)
     bpy.app.timers.register(default_tick)
 
 
 def unregister_ticks():
     # REGISTER Updaters
-    global drawer
-    drawer.unregister_handlers()
-    bpy.app.timers.unregister(draw_tick)
-    bpy.app.timers.unregister(mesh_tick)
-    bpy.app.timers.unregister(object_tick)
+    # global drawer
+    # drawer.unregister_handlers()
+    # bpy.app.timers.unregister(draw_tick)
+    # bpy.app.timers.unregister(mesh_tick)
+    # bpy.app.timers.unregister(object_tick)
     bpy.app.timers.unregister(default_tick)
 
 # OPERATORS
@@ -398,7 +399,7 @@ class session_join(bpy.types.Operator):
 
         # drawer = net_draw.HUD(client_instance_instance=client_instance)
 
-        # register_ticks()
+        register_ticks()
         return {"FINISHED"}
 
 
@@ -500,7 +501,7 @@ class session_stop(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_instance
+        global client_instance, client_keys
 
         net_settings = context.scene.session_settings
 
@@ -512,10 +513,12 @@ class session_stop(bpy.types.Operator):
             client_instance.exit()
             del client_instance
             client_instance = None
+            del client_keys
+            client_keys = None
             # bpy.ops.asyncio.stop()
             net_settings.is_running = False
 
-            # unregister_ticks()
+            unregister_ticks()
         else:
             logger.debug("No server/client_instance running.")
 
@@ -597,39 +600,53 @@ def ordered(updates):
     uplist.sort(key=itemgetter(0))
     return uplist
 
+def is_dirty(updates):
+    global client_keys
+    
+    if client_keys:
+        if len(client_keys) > 0:
+            for u in updates:
+                key = "{}/{}".format(u.id.bl_rna.name,u.id.name)
+
+                if key not in client_keys:
+                    return True
+
+    return False
 
 def depsgraph_update(scene):
     global client_instance
     
-    if  client_instance and  client_instance.status == net_components.RCFStatus.CONNECTED:
+    if  client_instance and  client_instance.agent.is_alive():
         updates = bpy.context.depsgraph.updates
-        update_selected_object(bpy.context)
+        # update_selected_object(bpy.context)
+        push = False
 
-        push = True
         # Update selected object
-        
-        for update in updates.items():
-            updated_data = update[1]
+    
+        # for update in updates.items():
+        #     updated_data = update[1]
             
-            if updated_data.id.is_updating:
-                updated_data.id.is_updating = False
-                push = False
-                break
+        #     if updated_data.id.is_updating:
+        #         updated_data.id.is_updating = False
+        #         push = False
+        #         break
 
-        if push:
+        # if push:
             # if len(updates) is 1:
             #     updated_data = updates[0]
             #     if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
             #         if updated_data.is_updated_transform:
             #             add_update(updated_data.id.bl_rna.name, updated_data.id.name)
             # else:
+        if is_dirty(updates) or push:
             for update in ordered(updates):
                 if update[2] == "Master Collection":
                     pass
                 elif update[1] in SUPPORTED_TYPES:
-                    push_tasks.put((update[1], update[2]))
+                    client_instance.set("{}/{}".format(update[1], update[2]))
+            push = False
 
-
+        
             # elif scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
             #     if updated_data.is_updated_transform or updated_data.is_updated_geometry:
             #         add_update(updated_data.id.bl_rna.name, updated_data.id.name)
@@ -674,36 +691,40 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    bpy.types.ID.is_updating = bpy.props.BoolProperty(default=False)
+    bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
-    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
 
 
 def unregister():
     global server
-    global client_instance
+    global client_instance, client_keys
 
-    # try:
-    #     bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-    # except:
-    #     pass
+    try:
+        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+    except:
+        pass
 
     if server:
-        # server.stop()
-        del server
+        server.kill()
         server = None
+        del server
+        
     if client_instance:
-        # client_instance.stop()
-        del client_instance
+        client_instance.exit()
         client_instance = None
+        del client_instance
+        del client_keys
+        
+
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
-    del bpy.types.ID.is_updating
+    del bpy.types.ID.is_dirty
 
 if __name__ == "__main__":
     register()

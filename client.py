@@ -235,7 +235,7 @@ def rcf_client_agent(ctx, pipe):
             if agent.state == State.SYNCING:
                 # Store snapshot
                 if rcfmsg.key == "SNAPSHOT_END":
-                    logger.info("snapshot complete")
+                    # logger.info("snapshot complete")
                     agent.state = State.ACTIVE
                 else:
                     helpers.load(rcfmsg.key,rcfmsg.body)
@@ -243,10 +243,11 @@ def rcf_client_agent(ctx, pipe):
             elif agent.state == State.ACTIVE:
                 if rcfmsg.id != agent.id:
                     helpers.load(rcfmsg.key,rcfmsg.body)
+                    # logger.info("load")
                     rcfmsg.store(agent.property_map)
-                    action = "update" if rcfmsg.body else "delete"
-                    logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
-                        server.address, rcfmsg.id, server.port, action))
+                    # action = "update" if rcfmsg.body else "delete"
+                    # logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
+                    #     server.address, rcfmsg.id, server.port, action))
                 else:
                     logger.info("{} nothing to do".format(agent.id))
 

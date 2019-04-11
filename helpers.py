@@ -14,8 +14,7 @@ def refresh_window():
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
-    if target:
-        target.is_updating = True
+    
 
     if target_type == 'Object':
         load_object(target=target, data=value,
