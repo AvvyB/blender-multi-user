@@ -253,8 +253,8 @@ def rcf_client_agent(ctx, pipe,queue):
                     rcfmsg.store(agent.property_map)
             elif agent.state == State.ACTIVE:
                 if rcfmsg.id != agent.id:
-                    update_queue.put((rcfmsg.key,rcfmsg.body))
-                    # helpers.load(rcfmsg.key,rcfmsg.body)
+                    # update_queue.put((rcfmsg.key,rcfmsg.body))
+                    helpers.load(rcfmsg.key,rcfmsg.body)
                     # logger.info("load")
                     # agent.serial.send_multipart([b"LOAD", umsgpack.packb(rcfmsg.key), umsgpack.packb(rcfmsg.body)])
                     
