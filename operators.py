@@ -305,8 +305,13 @@ def default_tick():
     #         print("pull error: {}".format(e))
     
     # bpy.ops.session.refresh()
+    global client_instance
 
-    return 0.5
+    if not client_instance.queue.empty():
+        update = client_instance.queue.get()
+        helpers.load(update[0],update[1])
+
+    return 0.01
 
 
 def mesh_tick():
@@ -637,15 +642,19 @@ def depsgraph_update(scene):
             #         if updated_data.is_updated_transform:
             #             add_update(updated_data.id.bl_rna.name, updated_data.id.name)
             # else:
-        if is_dirty(updates) or push:
+        if is_dirty(updates):
             for update in ordered(updates):
                 if update[2] == "Master Collection":
                     pass
                 elif update[1] in SUPPORTED_TYPES:
                     client_instance.set("{}/{}".format(update[1], update[2]))
-            push = False
 
-        
+
+        if len(updates) is 1 and len(bpy.context.selected_objects)>0:
+            updated_data = updates[0]
+            if updated_data.id.name == bpy.context.selected_objects[0].name:
+                if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+                    client_instance.set("{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
             # elif scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
             #     if updated_data.is_updated_transform or updated_data.is_updated_geometry:
             #         add_update(updated_data.id.bl_rna.name, updated_data.id.name)

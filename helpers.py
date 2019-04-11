@@ -1,4 +1,5 @@
 import bpy
+import mathutils
 from .libs import dump_anything
 
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
@@ -111,9 +112,9 @@ def load_object(target=None, data=None, create=False):
 
             target = bpy.data.objects.new(data["name"], pointer)
 
-        # Load other meshes metadata
-        dump_anything.load(target, data)
-        import mathutils
+            # Load other meshes metadata
+            dump_anything.load(target, data)
+        
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
     except:

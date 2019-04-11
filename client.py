@@ -8,8 +8,9 @@ import time
 from enum import Enum
 from random import randint
 from uuid import uuid4
-
-
+import copy
+import queue
+lock = threading.Lock()
 
 try:
     from .libs import umsgpack
@@ -67,11 +68,12 @@ class RCFClient(object):
     def __init__(self):
         self.ctx = zmq.Context()
         self.pipe, peer = zpipe(self.ctx)
+        self.queue = queue.Queue()
         self.agent = threading.Thread(
-            target=rcf_client_agent, args=(self.ctx, peer))
+            target=rcf_client_agent, args=(self.ctx, peer,self.queue))
         self.agent.daemon = True
         self.agent.start()
-
+        
     def connect(self, id, address, port):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
             id, str) else id), (address.encode() if isinstance(
@@ -186,7 +188,7 @@ class RCFClientAgent(object):
                 logger.info("{} dumped".format(key))
                 # Send key-value pair on to server
                 rcfmsg = message.RCFMessage(key=key, id=self.id, mtype="", body=value)
-
+            
                 rcfmsg.store(self.property_map)
                 rcfmsg.send(self.publisher)
             else:
@@ -201,9 +203,10 @@ class RCFClientAgent(object):
             self.pipe.send(umsgpack.packb(list(self.property_map)))
   
 
-def rcf_client_agent(ctx, pipe):
+def rcf_client_agent(ctx, pipe,queue):
     agent = RCFClientAgent(ctx, pipe)
     server = None
+    update_queue = queue
     global stop
     while True:
         if stop:
@@ -239,6 +242,7 @@ def rcf_client_agent(ctx, pipe):
             agent.control_message()
         elif server_socket in items:
             rcfmsg = message.RCFMessage.recv(server_socket)
+            
             if agent.state == State.SYNCING:
                 # Store snapshot
                 if rcfmsg.key == "SNAPSHOT_END":
@@ -249,8 +253,14 @@ def rcf_client_agent(ctx, pipe):
                     rcfmsg.store(agent.property_map)
             elif agent.state == State.ACTIVE:
                 if rcfmsg.id != agent.id:
-                    helpers.load(rcfmsg.key,rcfmsg.body)
+                    update_queue.put((rcfmsg.key,rcfmsg.body))
+                    # helpers.load(rcfmsg.key,rcfmsg.body)
                     # logger.info("load")
+                    # agent.serial.send_multipart([b"LOAD", umsgpack.packb(rcfmsg.key), umsgpack.packb(rcfmsg.body)])
+                    
+                    # reply = agent.serial.recv_multipart()
+                
+                    # if reply == b"DONE":
                     rcfmsg.store(agent.property_map)
                     # action = "update" if rcfmsg.body else "delete"
                     # logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
@@ -280,9 +290,18 @@ class SerializationAgent(object):
         if command == b"DUMP":
             key = umsgpack.unpackb(msg[0])
 
+            value = helpers.dump(key)
+
+            self.pipe.send_multipart(umsgpack.packb(value))
 
         elif command == b"LOAD":
-            key, value = msg
+            
+            key = umsgpack.unpackb(msg[0])
+            value = umsgpack.unpackb(msg[1])
+
+            helpers.load(key,value)
+           
+            self.pipe.send_multipart([b"DONE"])
 
 
 def serialization_agent(ctx, pipe):
