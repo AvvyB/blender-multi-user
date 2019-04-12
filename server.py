@@ -8,7 +8,7 @@ import message
 logger = logging.getLogger("Server")
 logging.basicConfig(level=logging.DEBUG)
 
-SUPPORTED_TYPES = [ 'Material',
+SUPPORTED_TYPES = [ 'Client', 'Material',
                    'Texture', 'Light', 'Camera','Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature','Collection', 'Scene']
                    
 class RCFServerAgent():
@@ -66,6 +66,17 @@ class RCFServerAgent():
                 request = msg[1]
 
                 if request == b"SNAPSHOT_REQUEST":
+                    client_key = "Client/{}".format(identity.decode())
+
+                    if client_key not in self.property_map.keys():
+                        logger.info("New user:{}".format(identity.decode()))
+                        
+                        client_dict = {}
+                        client_dict['location'] = [0,0,0]
+                        client_dict['active_object'] = ''
+                        client_store = message.RCFMessage(key=client_key, id=identity,body=client_dict)
+                        logger.info(client_store)
+                        client_store.store(self.property_map)
                     pass
                 else:
                     logger.info("Bad snapshot request")

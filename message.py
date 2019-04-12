@@ -48,25 +48,23 @@ class RCFMessage(object):
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
         key = ''.encode() if self.key is None else self.key.encode()
-        mtype = ''.encode() if self.mtype is None else self.mtype.encode()
         body = ''.encode() if self.body is None else umsgpack.packb(self.body)
         id = ''.encode() if self.id is None else self.id
 
         try:
-            socket.send_multipart([key, id, mtype, body])
+            socket.send_multipart([key, id, body])
         except:
-            logger.info("Fail to send {} {}".format(key, id))
+            print("Fail to send {} {}".format(key, id))
 
     @classmethod
     def recv(cls, socket):
         """Reads key-value message from socket, returns new kvmsg instance."""
-        key, id, mtype, body = socket.recv_multipart(zmq.DONTWAIT)
+        key, id,  body = socket.recv_multipart(zmq.DONTWAIT)
         key = key.decode() if key else None
         id = id if id else None
-        mtype = mtype.decode() if body else None
         body = umsgpack.unpackb(body) if body else None
 
-        return cls(key=key, id=id, mtype=mtype, body=body)
+        return cls(key=key, id=id, body=body)
 
     def dump(self):
         if self.body is None:

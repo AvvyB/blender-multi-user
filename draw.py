@@ -47,7 +47,7 @@ def get_client_view_rect():
         v2 = get_target(region, rv3d, (width, height))
         v4 = get_target(region, rv3d, (width, 0))
 
-    coords = (v1, v2, v3, v4)
+    coords = [v1, v2, v3, v4]
     indices = (
         (1, 3), (2, 1), (3, 0), (2, 0)
     )
@@ -104,6 +104,8 @@ class HUD(object):
         index_object = 0
 
         self.draw_items.clear()
+
+        clients = self.client.get("Client")
 
         for key, values in self.client.property_map.items():
             if 'net' in key and values.body is not None and values.id != self.client.id:

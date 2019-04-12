@@ -17,7 +17,7 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
 from . import client, ui, draw, helpers
-
+from .libs import umsgpack
 
 logger = logging.getLogger(__name__)
 
@@ -85,21 +85,29 @@ def refresh_window():
 def upload_client_instance_position():
     global client_instance
 
+    username = bpy.context.scene.session_settings.username
     if client_instance:
-        key = "net/client_instances/{}".format(client_instance.id.decode())
-
+       
+        key = "Client/{}".format(username)
+        # key = "Object/Cube"
+        print(key)
         try:
-            current_coords = net_draw.get_client_instance_view_rect()
-            data = client_instance.property_map[key].body
-            if data is None:
-                data = {}
-                data['location'] = current_coords
-                color = bpy.context.scene.session_settings.client_instance_color
-                data['color'] = (color.r, color.g, color.b, 1)
-                client_instance.push_update(key, 'client_instance', data)
-            elif current_coords[0] != data['location'][0]:
-                data['location'] = current_coords
-                client_instance.push_update(key, 'client_instance', data)
+            current_coords = draw.get_client_view_rect()
+            client = client_instance.get(key)
+            # print((client[0][1][b'location']))
+
+
+            # if data is None:
+            #     data = {}
+            #     data['location'] = current_coords
+            #     color = bpy.context.scene.session_settings.client_instance_color
+            #     data['color'] = (color.r, color.g, color.b, 1)
+            #     client_instance.push_update(key, 'client_instance', data)
+            if current_coords != client[0][1][b'location']:
+                print(current_coords)
+                print(client[0][1][b'location'])
+                client[0][1][b'location'] = current_coords
+                client_instance.set(key, client[0][1])
         except:
             pass
 
@@ -305,11 +313,11 @@ def default_tick():
     #         print("pull error: {}".format(e))
     
     # bpy.ops.session.refresh()
-    global client_instance
+    # global client_instance
 
-    if not client_instance.queue.empty():
-        update = client_instance.queue.get()
-        helpers.load(update[0],update[1])
+    # if not client_instance.queue.empty():
+    #     update = client_instance.queue.get()
+    #     helpers.load(update[0],update[1])
 
     return 0.001
 
@@ -342,18 +350,18 @@ def material_tick():
 
 def draw_tick():
     # drawing
-    global drawer
+    # global drawer
 
-    drawer.draw()
+    # drawer.draw()
 
     # Upload
     upload_client_instance_position()
-    return 0.2
+    return 1
 
 
 def register_ticks():
     # REGISTER Updaters
-    # bpy.app.timers.register(draw_tick)
+    bpy.app.timers.register(draw_tick)
     # bpy.app.timers.register(mesh_tick)
     # bpy.app.timers.register(object_tick)
     bpy.app.timers.register(default_tick)
@@ -363,7 +371,7 @@ def unregister_ticks():
     # REGISTER Updaters
     # global drawer
     # drawer.unregister_handlers()
-    # bpy.app.timers.unregister(draw_tick)
+    bpy.app.timers.unregister(draw_tick)
     # bpy.app.timers.unregister(mesh_tick)
     # bpy.app.timers.unregister(object_tick)
     bpy.app.timers.unregister(default_tick)
@@ -442,6 +450,24 @@ class session_add_property(bpy.types.Operator):
         global client_instance
 
         client_instance.set(self.property_path)
+
+        return {"FINISHED"}
+
+
+class session_get_property(bpy.types.Operator):
+    bl_idname = "session.get_prop"
+    bl_label = "get"
+    bl_description = "broadcast a property to connected client_instances"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client_instance
+
+        client_instance.get("client")
 
         return {"FINISHED"}
 
@@ -592,6 +618,7 @@ classes = (
     session_join,
     session_refresh,
     session_add_property,
+    session_get_property,
     session_stop,
     session_create,
     session_settings,
@@ -642,6 +669,7 @@ def depsgraph_update(scene):
             #         if updated_data.is_updated_transform:
             #             add_update(updated_data.id.bl_rna.name, updated_data.id.name)
             # else:
+        
         if is_dirty(updates):
             for update in ordered(updates):
                 if update[2] == "Master Collection":
@@ -650,7 +678,7 @@ def depsgraph_update(scene):
                     client_instance.set("{}/{}".format(update[1], update[2]))
 
 
-        if len(updates) is 1 and len(bpy.context.selected_objects)>0:
+        if len(bpy.context.selected_objects)>0:
             updated_data = updates[0]
             if updated_data.id.name == bpy.context.selected_objects[0].name:
                 if updated_data.is_updated_transform or updated_data.is_updated_geometry:

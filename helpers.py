@@ -41,7 +41,9 @@ def load(key, value):
     elif target_type == 'Camera':
         load_default(target=target, data=value,
                         create=True, type=target_type)
-
+    elif target_type == 'Client':
+        pass
+    
 
 def resolve_bpy_path(path):
     """
