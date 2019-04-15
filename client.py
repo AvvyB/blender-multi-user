@@ -207,7 +207,7 @@ class RCFClientAgent(object):
             
             # value = [self.property_map.get(key) for key in keys]
             # value = self.property_map.get(key)
-            self.pipe.send(umsgpack.packb(value) if value else b'')
+            self.pipe.send(umsgpack.packb(value) if value else umsgpack.packb(''))
         
         elif command == b"LIST":
             self.pipe.send(umsgpack.packb(list(self.property_map)))
@@ -335,6 +335,7 @@ def serialization_agent(ctx, pipe):
 
         if agent.pipe in items:
             agent.control_message()
+
 
 
 

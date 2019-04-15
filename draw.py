@@ -79,7 +79,6 @@ class HUD(object):
             self.create_batch()
             self.register_handlers()
 
-
     def register_handlers(self):
         self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
             self.draw3d_callback, (), 'WINDOW', 'POST_VIEW')
@@ -107,50 +106,49 @@ class HUD(object):
 
         clients = self.client.get("Client")
 
-        for key, values in self.client.property_map.items():
-            if 'net' in key and values.body is not None and values.id != self.client.id:
-                if values.mtype == "clientObject":
-                    indices = (
-                        (0, 1), (1, 2), (2, 3), (0, 3),
-                        (4, 5), (5, 6), (6, 7), (4, 7),
-                        (0, 4), (1, 5), (2, 6), (3, 7)
-                    )
+        for client in clients:
+           
+                # if values.mtype == "clientObject":
+                #     indices = (
+                #         (0, 1), (1, 2), (2, 3), (0, 3),
+                #         (4, 5), (5, 6), (6, 7), (4, 7),
+                #         (0, 4), (1, 5), (2, 6), (3, 7)
+                #     )
 
-                    if values.body['object'] in bpy.data.objects.keys():
-                        ob = bpy.data.objects[values.body['object']]
-                    else:
-                        return
-                    bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+                #     if values.body['object'] in bpy.data.objects.keys():
+                #         ob = bpy.data.objects[values.body['object']]
+                #     else:
+                #         return
+                #     bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-                    coords = [(point.x, point.y, point.z)
-                              for point in bbox_corners]
+                #     coords = [(point.x, point.y, point.z)
+                #               for point in bbox_corners]
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                #     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-                    color = values.body['color']
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": coords}, indices=indices)
+                #     color = values.body['color']
+                #     batch = batch_for_shader(
+                #         shader, 'LINES', {"pos": coords}, indices=indices)
 
-                    self.draw_items.append(
-                        (shader, batch, (None, None), color))
+                #     self.draw_items.append(
+                #         (shader, batch, (None, None), color))
 
                     # index_object += 1
 
-                if values.mtype == "client":
-                    indices = (
-                        (1, 3), (2, 1), (3, 0), (2, 0)
-                    )
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    position = values.body['location']
-                    color = values.body['color']
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": position}, indices=indices)
+                indices = (
+                    (1, 3), (2, 1), (3, 0), (2, 0)
+                )
 
-                    self.draw_items.append(
-                        (shader, batch, (position[1], values.id.decode()), color))
+                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                position = client[1][b'location']
+                color = client[1][b'color']
+                name = client[0].split('/')[1]
+                batch = batch_for_shader(
+                    shader, 'LINES', {"pos": position}, indices=indices)
 
-                    index += 1
+                self.draw_items.append(
+                    (shader, batch, (position[1], name),color))
 
     def draw3d_callback(self):
         bgl.glLineWidth(3)
@@ -186,6 +184,5 @@ class HUD(object):
     def draw(self):
         if self.client:
             # Draw clients
-            if len(self.client.property_map) > 1:
-                self.create_batch()
+            self.create_batch()
 
