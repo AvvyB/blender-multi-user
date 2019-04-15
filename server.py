@@ -72,8 +72,8 @@ class RCFServerAgent():
                         logger.info("New user:{}".format(identity.decode()))
                         
                         client_dict = {}
-                        client_dict['location'] = [0,0,0]
-                        client_dict['color'] = [0,0,0]
+                        client_dict['location'] = [0,0,0,0]
+                        client_dict['color'] = [0,1,1,1]
                         client_dict['active_object'] = ''
                         client_store = message.RCFMessage(key=client_key, id=identity,body=client_dict)
                         logger.info(client_store)

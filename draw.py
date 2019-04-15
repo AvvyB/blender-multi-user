@@ -66,7 +66,8 @@ def get_client_2d(coords):
 class HUD(object):
 
     def __init__(self, client_instance = None):
-        self.draw_items = []
+        self.d3d_items = []
+        self.d2d_items = []
         self.draw3d_handle = None
         self.draw2d_handle = None
         self.draw_event = None
@@ -96,18 +97,21 @@ class HUD(object):
                 self.draw3d_handle, "WINDOW")
             self.draw3d_handle = None
 
-        self.draw_items.clear()
+        self.d3d_items.clear()
+        self.d2d_items.clear()
+
 
     def create_batch(self):
         index = 0
         index_object = 0
 
-        self.draw_items.clear()
+        self.d3d_items.clear()
+        self.d2d_items.clear()
 
         clients = self.client.get("Client")
 
         for client in clients:
-           
+                try:
                 # if values.mtype == "clientObject":
                 #     indices = (
                 #         (0, 1), (1, 2), (2, 3), (0, 3),
@@ -136,39 +140,48 @@ class HUD(object):
                     # index_object += 1
 
 
-                indices = (
-                    (1, 3), (2, 1), (3, 0), (2, 0)
-                )
+                    indices = (
+                        (1, 3), (2, 1), (3, 0), (2, 0)
+                    )
 
-                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                position = client[1][b'location']
-                color = client[1][b'color']
-                name = client[0].split('/')[1]
-                batch = batch_for_shader(
-                    shader, 'LINES', {"pos": position}, indices=indices)
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                    position = client[1][b'location']
+                    color = client[1][b'color']
+                    name = client[0].split('/')[1]
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos": position}, indices=indices)
 
-                self.draw_items.append(
-                    (shader, batch, (position[1], name),color))
+                    self.d3d_items.append(
+                        (shader, batch, color))
+                
+                    self.d2d_items.append(
+                        (position[1], name,color))
+
+                except Exception as e:
+                    print(e)
 
     def draw3d_callback(self):
         bgl.glLineWidth(3)
-        for shader, batch, font, color in self.draw_items:
-            shader.bind()
-            shader.uniform_float("color", color)
-            batch.draw(shader)
+        try:
+            for shader, batch, color in self.d3d_items:
+                shader.bind()
+                shader.uniform_float("color", color)
+                batch.draw(shader)
+        except Exception as e:
+            print(e)
 
     def draw2d_callback(self):
-        for shader, batch, font, color in self.draw_items:
+        for position, font, color in self.d2d_items:
             try:
-                coords = get_client_2d(font[0])
+                coords = get_client_2d(position)
 
                 blf.position(0, coords[0], coords[1]+10, 0)
                 blf.size(0, 10, 72)
                 blf.color(0, color[0], color[1], color[2], color[3])
-                blf.draw(0,  font[1])
+                blf.draw(0,  font)
 
-            except:
-                pass
+            except Exception as e:
+                print(e)
 
     def is_object_selected(self, obj):
         # TODO: function to find occurence
