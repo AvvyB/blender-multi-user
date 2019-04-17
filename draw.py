@@ -102,32 +102,39 @@ class HUD(object):
 
     def draw_selected_object(self):
         clients = self.client.get("Client")
-        # if values.mtype == "clientObject":
-        #     indices = (
-        #         (0, 1), (1, 2), (2, 3), (0, 3),
-        #         (4, 5), (5, 6), (6, 7), (4, 7),
-        #         (0, 4), (1, 5), (2, 6), (3, 7)
-        #     )
 
-        #     if values.body['object'] in bpy.data.objects.keys():
-        #         ob = bpy.data.objects[values.body['object']]
-        #     else:
-        #         return
-        #     bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+        for client in clients:
+            name = client[0].split('/')[1]
+            local_username = bpy.context.scene.session_settings.username
 
-        #     coords = [(point.x, point.y, point.z)
-        #               for point in bbox_corners]
+            if name != local_username and client[1]['active_objects']:
+                for select_ob in client[1]['active_objects']:
+                    indices = (
+                        (0, 1), (1, 2), (2, 3), (0, 3),
+                        (4, 5), (5, 6), (6, 7), (4, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7)
+                    )
 
-        #     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                    if select_ob in bpy.data.objects.keys():
+                        ob = bpy.data.objects[select_ob]
+                    else:
+                        return
 
-        #     color = values.body['color']
-        #     batch = batch_for_shader(
-        #         shader, 'LINES', {"pos": coords}, indices=indices)
+                    bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-        #     self.draw_items.append(
-        #         (shader, batch, (None, None), color))
+                    coords = [(point.x, point.y, point.z)
+                            for point in bbox_corners]
 
-            # index_object += 1
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+
+                    color = client[1]['color']
+
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos": coords}, indices=indices)
+
+                    self.d3d_items["{}/{}".format(client[0],select_ob)]=(shader, batch, color)
+
+               
 
     def draw_clients(self):
         clients = self.client.get("Client")
@@ -183,4 +190,5 @@ class HUD(object):
         if self.client:
             # Draw clients
             self.draw_clients()
+            self.draw_selected_object()
 

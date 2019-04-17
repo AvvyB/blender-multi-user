@@ -11,9 +11,9 @@ def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-def get_selected_objects(view_layer):
+def get_selected_objects(scene):
     selected_objects = []
-    for obj in view_layer.objects:
+    for obj in scene.objects:
         if obj.select_get():
             selected_objects.append(obj.name)
 
@@ -69,12 +69,20 @@ def resolve_bpy_path(path):
 
 
 def load_client(client=None,data=None):
+    C = bpy.context
+    D = bpy.data
     if client and data:
+        # localy_selected = get_selected_objects(C.scene)
         # Draw client
 
         #Load selected object
         if data['active_objects']:
-            print("toto")
+            for obj in C.scene.objects:
+                if obj.name in data['active_objects']:
+                    D.objects[obj.name].hide_select = True
+                else:
+                    print(data['active_objects'])
+                    D.objects[obj.name].hide_select = False
         pass
     
 
@@ -357,6 +365,7 @@ def dump_datablock_attibute(datablock, attributes, depth=1):
                 pass
 
         return data
+
 
 def init_client(key=None):
     client_dict = {}

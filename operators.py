@@ -413,6 +413,7 @@ def ordered(updates):
     uplist.sort(key=itemgetter(0))
     return uplist
 
+
 def is_dirty(updates):
     global client_keys
     
@@ -425,6 +426,7 @@ def is_dirty(updates):
                     return True
 
     return False
+
 
 def depsgraph_update(scene):
     global client_instance
@@ -445,6 +447,7 @@ def depsgraph_update(scene):
             if updated_data.id.name == bpy.context.selected_objects[0].name:
                 if updated_data.is_updated_transform or updated_data.is_updated_geometry:
                     client_instance.set("{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+
 
 def register():
     from bpy.utils import register_class
