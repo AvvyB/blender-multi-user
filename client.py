@@ -27,7 +27,7 @@ except:
     import message
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 CONNECT_TIMEOUT = 2
 WAITING_TIME = 0.001
@@ -277,7 +277,7 @@ def rcf_client_agent(ctx, pipe,queue):
                     # logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
                     #     server.address, rcfmsg.id, server.port, action))
                 else:
-                    logger.info("{} nothing to do".format(agent.id))
+                    logger.debug("{} nothing to do".format(agent.id))
 
     logger.info("exit thread")
     stop = False

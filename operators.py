@@ -68,24 +68,12 @@ def upload_client_instance_position():
     if client_instance:
        
         key = "Client/{}".format(username)
-        # key = "Object/Cube"
-        print(key)
+
         try:
             current_coords = draw.get_client_view_rect()
             client = client_instance.get(key)
-            # print((client[0][1][b'location']))
-
-
-            # if data is None:
-            #     data = {}
-            #     data['location'] = current_coords
-            #     color = bpy.context.scene.session_settings.client_instance_color
-            #     data['color'] = (color.r, color.g, color.b, 1)
-            #     client_instance.push_update(key, 'client_instance', data)
+           
             if current_coords != client[0][1][b'location']:
-                print(current_coords)
-                print(client[0][1][b'location'])
-                # client[0][1][b'color'] = [0,1,1,1]
                 client[0][1][b'location'] = current_coords
                 client_instance.set(key, client[0][1])
         except:
@@ -153,7 +141,7 @@ def draw_tick():
     # refresh_window()
     # Upload
     upload_client_instance_position()
-    return 1
+    return .2
 
 
 def register_ticks():
@@ -384,7 +372,7 @@ class session_snapview(bpy.types.Operator):
     bl_description = "Description that shows in blender tooltips"
     bl_options = {"REGISTER"}
 
-    target_client_instance = bpy.props.StringProperty()
+    target_client = bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
