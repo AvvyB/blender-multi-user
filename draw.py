@@ -135,7 +135,7 @@ class HUD(object):
         for client in clients:
             name = client[0].split('/')[1]
             local_username = bpy.context.scene.session_settings.username
-            
+
             if name != local_username:
                 try:     
                     indices = (
@@ -143,8 +143,8 @@ class HUD(object):
                     )
 
                     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    position = client[1][b'location']
-                    color = client[1][b'color']
+                    position = client[1]['location']
+                    color = client[1]['color']
                    
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": position}, indices=indices)

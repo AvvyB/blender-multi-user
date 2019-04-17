@@ -66,18 +66,18 @@ class RCFServerAgent():
                 request = msg[1]
 
                 if request == b"SNAPSHOT_REQUEST":
-                    client_key = "Client/{}".format(identity.decode())
+                #     client_key = "Client/{}".format(identity.decode())
 
-                    if client_key not in self.property_map.keys():
-                        logger.info("New user:{}".format(identity.decode()))
+                #     if client_key not in self.property_map.keys():
+                #         logger.info("New user:{}".format(identity.decode()))
                         
-                        client_dict = {}
-                        client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-                        client_dict['color'] = [0,1,1,1]
-                        client_dict['active_object'] = ''
-                        client_store = message.RCFMessage(key=client_key, id=identity,body=client_dict)
-                        logger.info(client_store)
-                        client_store.store(self.property_map)
+                #         client_dict = {}
+                #         client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+                #         client_dict['color'] = [0,1,1,1]
+                #         client_dict['active_object'] = ''
+                #         client_store = message.RCFMessage(key=client_key, id=identity,body=client_dict)
+                #         logger.info(client_store)
+                #         client_store.store(self.property_map)
                     pass
                 else:
                     logger.info("Bad snapshot request")

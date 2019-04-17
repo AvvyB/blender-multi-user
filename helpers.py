@@ -42,7 +42,7 @@ def load(key, value):
         load_default(target=target, data=value,
                         create=True, type=target_type)
     elif target_type == 'Client':
-        pass
+        load_client(key.split('/')[1],value)
     
 
 def resolve_bpy_path(path):
@@ -60,7 +60,15 @@ def resolve_bpy_path(path):
 
     return item
 
+def load_client(client=None,data=None):
+    if client and data:
+        # Draw client
 
+        #Load selected object
+        if data['active_object']:
+            print("toto")
+        pass
+    
 def load_mesh(target=None, data=None, create=False):
     import bmesh
 

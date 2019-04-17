@@ -73,8 +73,8 @@ def upload_client_instance_position():
             current_coords = draw.get_client_view_rect()
             client = client_instance.get(key)
            
-            if current_coords != client[0][1][b'location']:
-                client[0][1][b'location'] = current_coords
+            if current_coords != client[0][1]['location']:
+                client[0][1]['location'] = current_coords
                 client_instance.set(key, client[0][1])
         except:
             pass
