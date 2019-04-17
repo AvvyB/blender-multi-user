@@ -60,14 +60,14 @@ def get_client_2d(coords):
     if area and region and rv3d:
         return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
     else:
-        return None
+        return (0,0)
 
 
 class HUD(object):
 
     def __init__(self, client_instance = None):
-        self.d3d_items = []
-        self.d2d_items = []
+        self.d3d_items = {}
+        self.d2d_items = {}
         self.draw3d_handle = None
         self.draw2d_handle = None
         self.draw_event = None
@@ -77,7 +77,7 @@ class HUD(object):
         if client_instance:
             self.client = client_instance 
 
-            self.create_batch()
+            self.draw_clients()
             self.register_handlers()
 
     def register_handlers(self):
@@ -100,46 +100,40 @@ class HUD(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
+    def draw_selected_object(self):
+        clients = self.client.get("Client")
+        # if values.mtype == "clientObject":
+        #     indices = (
+        #         (0, 1), (1, 2), (2, 3), (0, 3),
+        #         (4, 5), (5, 6), (6, 7), (4, 7),
+        #         (0, 4), (1, 5), (2, 6), (3, 7)
+        #     )
 
-    def create_batch(self):
-        index = 0
-        index_object = 0
+        #     if values.body['object'] in bpy.data.objects.keys():
+        #         ob = bpy.data.objects[values.body['object']]
+        #     else:
+        #         return
+        #     bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-        self.d3d_items.clear()
-        self.d2d_items.clear()
+        #     coords = [(point.x, point.y, point.z)
+        #               for point in bbox_corners]
 
+        #     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+
+        #     color = values.body['color']
+        #     batch = batch_for_shader(
+        #         shader, 'LINES', {"pos": coords}, indices=indices)
+
+        #     self.draw_items.append(
+        #         (shader, batch, (None, None), color))
+
+            # index_object += 1
+
+    def draw_clients(self):
         clients = self.client.get("Client")
 
         for client in clients:
-                try:
-                # if values.mtype == "clientObject":
-                #     indices = (
-                #         (0, 1), (1, 2), (2, 3), (0, 3),
-                #         (4, 5), (5, 6), (6, 7), (4, 7),
-                #         (0, 4), (1, 5), (2, 6), (3, 7)
-                #     )
-
-                #     if values.body['object'] in bpy.data.objects.keys():
-                #         ob = bpy.data.objects[values.body['object']]
-                #     else:
-                #         return
-                #     bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
-
-                #     coords = [(point.x, point.y, point.z)
-                #               for point in bbox_corners]
-
-                #     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-
-                #     color = values.body['color']
-                #     batch = batch_for_shader(
-                #         shader, 'LINES', {"pos": coords}, indices=indices)
-
-                #     self.draw_items.append(
-                #         (shader, batch, (None, None), color))
-
-                    # index_object += 1
-
-
+                try:     
                     indices = (
                         (1, 3), (2, 1), (3, 0), (2, 0)
                     )
@@ -151,37 +145,35 @@ class HUD(object):
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": position}, indices=indices)
 
-                    self.d3d_items.append(
-                        (shader, batch, color))
-                
-                    self.d2d_items.append(
-                        (position[1], name,color))
+                    self.d3d_items[client[0]]=(shader, batch, color)
+                    self.d2d_items[client[0]]=(position[1], name,color)
 
                 except Exception as e:
-                    print(e)
+                    print("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
         bgl.glLineWidth(3)
         try:
-            for shader, batch, color in self.d3d_items:
+            for shader, batch, color in self.d3d_items.values():
                 shader.bind()
                 shader.uniform_float("color", color)
                 batch.draw(shader)
         except Exception as e:
-            print(e)
+            print("3D Exception")
 
     def draw2d_callback(self):
-        for position, font, color in self.d2d_items:
+        for position, font, color in self.d2d_items.values():
             try:
                 coords = get_client_2d(position)
 
-                blf.position(0, coords[0], coords[1]+10, 0)
-                blf.size(0, 10, 72)
-                blf.color(0, color[0], color[1], color[2], color[3])
-                blf.draw(0,  font)
+                if coords:
+                    blf.position(0, coords[0], coords[1]+10, 0)
+                    blf.size(0, 10, 72)
+                    blf.color(0, color[0], color[1], color[2], color[3])
+                    blf.draw(0,  font)
 
             except Exception as e:
-                print(e)
+                print("2D EXCEPTION")
 
     def is_object_selected(self, obj):
         # TODO: function to find occurence
@@ -197,5 +189,5 @@ class HUD(object):
     def draw(self):
         if self.client:
             # Draw clients
-            self.create_batch()
+            self.draw_clients()
 
