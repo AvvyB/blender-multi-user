@@ -30,7 +30,7 @@ update_list = {}
 
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
-SUPPORTED_TYPES = [ 'Material',
+SUPPORTED_TYPES = ['Material',
                    'Texture', 'Light', 'Camera','Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature','Collection', 'Scene']
 
 # UTILITY FUNCTIONS
@@ -150,6 +150,7 @@ def draw_tick():
 
     drawer.draw()
 
+    # refresh_window()
     # Upload
     upload_client_instance_position()
     return 1

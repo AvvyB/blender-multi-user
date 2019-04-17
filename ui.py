@@ -81,7 +81,7 @@ class SessionUsersPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if operators.client_instance:
-            return operators.client_instance.status == client.RCFStatus.CONNECTED
+            return operators.client_instance.agent.is_alive()
         return False
 
     def draw(self, context):
@@ -91,28 +91,28 @@ class SessionUsersPanel(bpy.types.Panel):
         scene = context.scene
         # Create a simple row.
         row = layout.row()
-        if operators.client_instance:
-            if len(operators.client_instance.property_map) > 0:
-                for key, values in operators.client_instance.property_map.items():
-                    if 'client' in key:
-                        info = ""
-                        item_box = row.box()
-                        detail_item_box = item_box.row()
+        if operators.client_keys and len(operators.client_keys) > 0:
+            for key in operators.client_keys:
+                if 'Client' in key:
+                    info = ""
+                    item_box = row.box()
+                    detail_item_box = item_box.row()
 
-                        if values.id == operators.client_instance.id:
-                            info = "(self)"
-                        # detail_item_box = item_box.row()
-                        detail_item_box.label(
-                            text="{} - {}".format(values.id.decode(), info))
+                    username = key.split('/')[1]
+                    if username == net_settings.username:
+                        info = "(self)"
+                    # detail_item_box = item_box.row()
+                    detail_item_box.label(
+                        text="{} - {}".format(username, info))
 
-                        if operators.client.id.decode() not in key:
-                            detail_item_box.operator(
-                                "session.snapview", text="", icon='VIEW_CAMERA').target_client = values.id.decode()
-                        row = layout.row()
-            else:
-                row.label(text="Empty")
+                    if net_settings.username not in key:
+                        detail_item_box.operator(
+                            "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
+                    row = layout.row()
+        else:
+            row.label(text="Empty")
 
-            row = layout.row()
+        row = layout.row()
 
 
 class SessionPropertiesPanel(bpy.types.Panel):
@@ -127,7 +127,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
     def poll(cls, context):
         if operators.client_instance:
             return operators.client_instance.agent.is_alive()
-            # return operators.client.status == client.RCFStatus.CONNECTED
+
         return False
 
     def draw(self, context):
@@ -201,7 +201,7 @@ class SessionTaskPanel(bpy.types.Panel):
 
 classes = (
     SessionSettingsPanel,
-    # SessionUsersPanel,
+    SessionUsersPanel,
     SessionPropertiesPanel,
     # SessionTaskPanel,
 )
