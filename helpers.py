@@ -6,12 +6,19 @@ CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'obje
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
 
+# UTILITY FUNCTIONS
 def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
-#    LOAD HELPERS
+def get_selected_objects(view_layer):
+    selected_objects = []
+    for obj in view_layer.objects:
+        if obj.select_get():
+            selected_objects.append(obj.name)
 
+    return selected_objects
+#    LOAD HELPERS
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -60,15 +67,17 @@ def resolve_bpy_path(path):
 
     return item
 
+
 def load_client(client=None,data=None):
     if client and data:
         # Draw client
 
         #Load selected object
-        if data['active_object']:
+        if data['active_objects']:
             print("toto")
         pass
     
+
 def load_mesh(target=None, data=None, create=False):
     import bmesh
 
@@ -292,7 +301,6 @@ def load_default(target=None, data=None, create=False, type=None):
         print("default loading error")
 
 # DUMP HELPERS
-
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -350,3 +358,14 @@ def dump_datablock_attibute(datablock, attributes, depth=1):
 
         return data
 
+def init_client(key=None):
+    client_dict = {}
+    client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+    client_dict['color'] = [0,1,1,1]
+    C = bpy.context
+
+    # for o in bpy.context.selected_objects:
+    #     print("TOTO {}".format(o.name))
+    client_dict['active_objects'] = get_selected_objects(C.view_layer)
+    print(client_dict['active_objects'])
+    return client_dict

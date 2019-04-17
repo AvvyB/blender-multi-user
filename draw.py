@@ -179,17 +179,6 @@ class HUD(object):
             except Exception as e:
                 print("2D EXCEPTION")
 
-    def is_object_selected(self, obj):
-        # TODO: function to find occurence
-
-        for k, v in self.client.property_map.items():
-            if v.mtype == 'clientObject':
-                if self.client.id != v.id:
-                    if obj.name in v.body:
-                        return True
-
-        return False
-
     def draw(self):
         if self.client:
             # Draw clients

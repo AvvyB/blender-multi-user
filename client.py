@@ -257,11 +257,11 @@ def rcf_client_agent(ctx, pipe,queue):
                 # Store snapshot
                 if rcfmsg.key == "SNAPSHOT_END":
                     client_key = "Client/{}".format(agent.id.decode())
-
                     client_dict = {}
-                    client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-                    client_dict['color'] = [0,1,1,1]
-                    client_dict['active_object'] = ''
+
+                    with lock:
+                        client_dict = helpers.init_client(key=client_key)
+                    
                     client_store = message.RCFMessage(key=client_key, id=agent.id.decode(),body=client_dict)
                     logger.info(client_store)
                     client_store.store(agent.property_map)
