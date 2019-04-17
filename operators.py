@@ -27,28 +27,6 @@ server = None
 context = None
 drawer = None
 update_list = {}
-push_tasks = queue.Queue()
-pull_tasks = queue.Queue()
-
-def add_update(type, item):
-    try:
-        if item not in update_list[type]:
-            update_list[type].append(item)
-    except KeyError:
-        update_list[type] = []
-
-
-def get_update(type):
-    try:
-        update = None
-
-        if update_list[type]:
-            update = update_list[type].pop()
-    except KeyError:
-        update_list[type] = []
-
-    return update
-
 
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
@@ -155,30 +133,7 @@ def init_datablocks():
             client_instance.set(key)
 
 
-def default_tick():
-   
-    # for op in bpy.context.window_manager.operators:
-    #     try:
-    #         if isinstance(op.uuid,tuple):
-    #             op.uuid = str(uuid.uuid4())
-    #     except Exception as e:
-    #         print("error on {} {}".format(op.name,e))
-
-    # if not push_tasks.empty():
-    #     update = push_tasks.get()
-    #     print(update)
-    #     try:
-    #         push(update[0],update[1])
-    #     except Exception as e:
-    #         print("push error: {}".format(e))
-
-
-    # if not pull_tasks.empty():
-    #     try:
-    #         pull(pull_tasks.get())
-    #     except Exception as e:
-    #         print("pull error: {}".format(e))
-    
+def default_tick():  
     bpy.ops.session.refresh()
     # global client_instance
 
@@ -203,8 +158,7 @@ def draw_tick():
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(draw_tick)
-    # bpy.app.timers.register(mesh_tick)
-    # bpy.app.timers.register(object_tick)
+
     bpy.app.timers.register(default_tick)
 
 
@@ -213,8 +167,7 @@ def unregister_ticks():
     global drawer
     drawer.unregister_handlers()
     bpy.app.timers.unregister(draw_tick)
-    # bpy.app.timers.unregister(mesh_tick)
-    # bpy.app.timers.unregister(object_tick)
+
     bpy.app.timers.unregister(default_tick)
 
 # OPERATORS
@@ -386,7 +339,6 @@ class session_stop(bpy.types.Operator):
             client_instance = None
             del client_keys
             client_keys = None
-            # bpy.ops.asyncio.stop()
             net_settings.is_running = False
 
             unregister_ticks()
@@ -490,26 +442,7 @@ def depsgraph_update(scene):
     
     if  client_instance and  client_instance.agent.is_alive():
         updates = bpy.context.depsgraph.updates
-        # update_selected_object(bpy.context)
-        push = False
-        # Update selected object
-    
-        # for update in updates.items():
-        #     updated_data = update[1]
-            
-        #     if updated_data.id.is_updating:
-        #         updated_data.id.is_updating = False
-        #         push = False
-        #         break
-
-        # if push:
-            # if len(updates) is 1:
-            #     updated_data = updates[0]
-            #     if scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
-            #         if updated_data.is_updated_transform:
-            #             add_update(updated_data.id.bl_rna.name, updated_data.id.name)
-            # else:
-        
+  
         if is_dirty(updates):
             for update in ordered(updates):
                 if update[2] == "Master Collection":
@@ -523,45 +456,6 @@ def depsgraph_update(scene):
             if updated_data.id.name == bpy.context.selected_objects[0].name:
                 if updated_data.is_updated_transform or updated_data.is_updated_geometry:
                     client_instance.set("{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
-            # elif scene.session_settings.active_object and updated_data.id.name == scene.session_settings.active_object.name:
-            #     if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-            #         add_update(updated_data.id.bl_rna.name, updated_data.id.name)
-            # elif updated_data.id.bl_rna.name in [SUPPORTED_TYPES]:
-            #     push_tasks.put((updated_data.id.bl_rna.name, updated_data.id.name))
-
-        # for c in reversed(updates.items()):
-        #     if c[1].is_updated_geometry:
-        #         print("{} - {}".format(c[1].id.name,c[1].id.bl_rna.name))
-        # for c in updates.items():
-        #     if scene.session_settings.active_object:
-        #         if c[1].id.name == scene.session_settings.active_object.name: 
-        #             if c[1].is_updated_geometry:
-        #                 add_update(c[1].id.bl_rna.name, c[1].id.name)
-        #             elif c[1].is_updated_transform:
-        #                 add_update(c[1].id.bl_rna.name, c[1].id.name)
-        #             else:
-        #                 pass
-                    # print('other{}'.format(c[1].id.name))
-                # if c[1].id.bl_rna.name == 'Material' or c[1].id.bl_rna.name== 'Shader Nodetree':
-                # print(len(bpy.context.depsgraph.updates.items()))
-                # data_name = c[1].id.name
-                # if c[1].id.bl_rna.name == "Object":
-                #     if data_name in bpy.data.objects.keys():
-                #         found = False
-                #         for k in client_instance.property_map.keys():
-                #             if data_name in k:
-                #                 found = True
-                #                 break
-
-                #         if not found:
-                #             pass
-                            # upload_mesh(bpy.data.objects[data_name].data)
-                            # dump_datablock(bpy.data.objects[data_name], 1)
-                            # dump_datablock(bpy.data.scenes[0], 4)
-        
-
-                    # dump_datablock(bpy.data.scenes[0],4)
-
 
 def register():
     from bpy.utils import register_class
