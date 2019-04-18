@@ -87,14 +87,12 @@ def update_selected_object(context):
     username = bpy.context.scene.session_settings.username
     client_key = "Client/{}".format(username)
     client_data = client_instance.get(client_key)
-    
+    selected_objects = helpers.get_selected_objects(context.scene)
     # Active object bounding box
-    if len(context.selected_objects) > 0:
-        
-
+    if len(selected_objects) > 0:
         for obj in context.selected_objects:
             if obj.name not in client_data[0][1]['active_objects']:
-                client_data[0][1]['active_objects'] = helpers.get_selected_objects(context.scene)
+                client_data[0][1]['active_objects'] = selected_objects
 
                 client_instance.set(client_key,client_data[0][1])
                 break
@@ -473,10 +471,11 @@ def depsgraph_update(scene):
                 elif update[1] in SUPPORTED_TYPES:
                     client_instance.set("{}/{}".format(update[1], update[2]))
 
-        if hasattr(bpy.context, 'selected_objects'):
-            if len(bpy.context.selected_objects) > 0:
-                updated_data = updates[0]
-                if updated_data.id.name == bpy.context.selected_objects[0].name:
+        # if hasattr(bpy.context, 'selected_objects'):
+        selected_objects = helpers.get_selected_objects(scene)
+        if len(selected_objects) > 0:
+            for updated_data in updates:
+                if updated_data.id.name in selected_objects:
                     if updated_data.is_updated_transform or updated_data.is_updated_geometry:
                         client_instance.set(
                             "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
