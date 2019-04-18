@@ -78,14 +78,15 @@ def load_client(client=None, data=None):
         # localy_selected = get_selected_objects(C.scene)
         # Draw client
 
+        client_data = data
         # Load selected object
-        if data['active_objects']:
-            for obj in C.scene.objects:
-                if obj.name in data['active_objects']:
-                    D.objects[obj.name].hide_select = True
-                else:
-                    D.objects[obj.name].hide_select = False
-        pass
+        for obj in C.scene.objects:
+            if client_data['active_objects'] and obj.name in client_data['active_objects']:
+                D.objects[obj.name].hide_select = True
+            else:
+                D.objects[obj.name].hide_select = False
+        
+        
 
 
 def load_mesh(target=None, data=None, create=False):

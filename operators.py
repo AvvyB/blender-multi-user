@@ -84,31 +84,48 @@ def update_selected_object(context):
     global client_instance
     session = bpy.context.scene.session_settings
 
+    username = bpy.context.scene.session_settings.username
+    client_key = "Client/{}".format(username)
+    client_data = client_instance.get(client_key)
+    
     # Active object bounding box
     if len(context.selected_objects) > 0:
-        if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
-            session.active_object = context.selected_objects[0]
-            key = "net/objects/{}".format(client_instance.id.decode())
-            data = {}
-            data['color'] = [session.client_instance_color.r,
-                             session.client_instance_color.g, session.client_instance_color.b]
-            data['object'] = session.active_object.name
-            client_instance.push_update(
-                key, 'client_instanceObject', data)
+        
 
-            return True
-    elif len(context.selected_objects) == 0 and session.active_object:
-        session.active_object = None
-        data = {}
-        data['color'] = [session.client_instance_color.r,
-                         session.client_instance_color.g, session.client_instance_color.b]
-        data['object'] = None
-        key = "net/objects/{}".format(client_instance.id.decode())
-        client_instance.push_update(key, 'client_instanceObject', data)
+        for obj in context.selected_objects:
+            if obj.name not in client_data[0][1]['active_objects']:
+                client_data[0][1]['active_objects'] = helpers.get_selected_objects(context.scene)
 
-        return True
+                client_instance.set(client_key,client_data[0][1])
+                break
+    elif client_data[0][1]['active_objects']:
+        client_data[0][1]['active_objects'] = []
+        client_instance.set(client_key,client_data[0][1])
+                
 
-    return False
+        # if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
+        #     session.active_object = context.selected_objects[0]
+        #     key = "net/objects/{}".format(client_instance.id.decode())
+        #     data = {}
+        #     data['color'] = [session.client_instance_color.r,
+        #                      session.client_instance_color.g, session.client_instance_color.b]
+        #     data['object'] = session.active_object.name
+        #     client_instance.push_update(
+        #         key, 'client_instanceObject', data)
+
+            # return True
+    # elif len(context.selected_objects) == 0 and session.active_object:
+    #     session.active_object = None
+    #     data = {}
+    #     data['color'] = [session.client_instance_color.r,
+    #                      session.client_instance_color.g, session.client_instance_color.b]
+    #     data['object'] = None
+    #     key = "net/objects/{}".format(client_instance.id.decode())
+    #     client_instance.push_update(key, 'client_instanceObject', data)
+
+    #     return True
+
+    # return False
 
 
 def init_datablocks():
@@ -446,6 +463,8 @@ def depsgraph_update(scene):
 
     if client_instance and client_instance.agent.is_alive():
         updates = bpy.context.depsgraph.updates
+
+        update_selected_object(bpy.context)
 
         if is_dirty(updates):
             for update in ordered(updates):

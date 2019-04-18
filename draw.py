@@ -108,34 +108,36 @@ class HUD(object):
             name = client[0].split('/')[1]
             local_username = bpy.context.scene.session_settings.username
 
-            if name != local_username and client[1]['active_objects']:
-                for select_ob in client[1]['active_objects']:
-                    indices = (
-                        (0, 1), (1, 2), (2, 3), (0, 3),
-                        (4, 5), (5, 6), (6, 7), (4, 7),
-                        (0, 4), (1, 5), (2, 6), (3, 7)
-                    )
+            if name != local_username:
+                if client[1]['active_objects']:
+                    for select_ob in client[1]['active_objects']:
+                        indices = (
+                            (0, 1), (1, 2), (2, 3), (0, 3),
+                            (4, 5), (5, 6), (6, 7), (4, 7),
+                            (0, 4), (1, 5), (2, 6), (3, 7)
+                        )
 
-                    if select_ob in bpy.data.objects.keys():
-                        ob = bpy.data.objects[select_ob]
-                    else:
-                        return
+                        if select_ob in bpy.data.objects.keys():
+                            ob = bpy.data.objects[select_ob]
+                        else:
+                            return
 
-                    bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+                        bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-                    coords = [(point.x, point.y, point.z)
-                              for point in bbox_corners]
+                        coords = [(point.x, point.y, point.z)
+                                for point in bbox_corners]
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-                    color = client[1]['color']
+                        color = client[1]['color']
 
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": coords}, indices=indices)
+                        batch = batch_for_shader(
+                            shader, 'LINES', {"pos": coords}, indices=indices)
 
-                    self.d3d_items["{}/{}".format(client[0],
-                                                  select_ob)] = (shader, batch, color)
-
+                        self.d3d_items["{}/{}".format(client[0],
+                                                    select_ob)] = (shader, batch, color)
+                else:
+                    self.d3d_items.clear()
     def draw_clients(self):
         clients = self.client.get("Client")
 
