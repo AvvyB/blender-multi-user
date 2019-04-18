@@ -69,21 +69,21 @@ class RCFClient(object):
         self.pipe, peer = zpipe(self.ctx)
         self.queue = queue.Queue()
         self.agent = threading.Thread(
-            target=rcf_client_agent, args=(self.ctx, peer,self.queue),name="net-agent")
+            target=rcf_client_agent, args=(self.ctx, peer, self.queue), name="net-agent")
         self.agent.daemon = True
         self.agent.start()
-        
+
     def connect(self, id, address, port):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
             id, str) else id), (address.encode() if isinstance(
-            address, str) else address), b'%d' % port])
+                address, str) else address), b'%d' % port])
 
     def set(self, key, value=None):
         """Set new value in distributed hash table
         Sends [SET][key][value] to the agent
         """
         self.pipe.send_multipart(
-            [b"SET", umsgpack.packb(key),( umsgpack.packb(value) if value else umsgpack.packb('None') )])
+            [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
 
     def get(self, key):
         """Lookup value in distributed hash table
@@ -157,7 +157,7 @@ class RCFClientAgent(object):
         self.publisher.setsockopt(zmq.SNDHWM, 60)
         self.publisher.linger = 0
         self.serial, peer = zpipe(self.ctx)
-        self.serial_agent =  threading.Thread(
+        self.serial_agent = threading.Thread(
             target=serialization_agent, args=(self.ctx, peer), name="serial-agent")
         self.serial_agent.daemon = True
         self.serial_agent.start()
@@ -184,15 +184,14 @@ class RCFClientAgent(object):
             value = None
 
             value = umsgpack.unpackb(msg[1])
-            
+
             if value == 'None':
                 value = helpers.dump(key)
-           
+
             if value:
-                logger.info("{} dumped".format(key))
-                # Send key-value pair on to server
-                rcfmsg = message.RCFMessage(key=key, id=self.id, mtype="", body=value)
-            
+                rcfmsg = message.RCFMessage(
+                    key=key, id=self.id, mtype="", body=value)
+
                 rcfmsg.store(self.property_map)
                 rcfmsg.send(self.publisher)
             else:
@@ -203,17 +202,18 @@ class RCFClientAgent(object):
             key = umsgpack.unpackb(msg[0])
             for k in self.property_map.keys():
                 if key in k:
-                    value.append([k,self.property_map.get(k).body])
-            
+                    value.append([k, self.property_map.get(k).body])
+
             # value = [self.property_map.get(key) for key in keys]
             # value = self.property_map.get(key)
-            self.pipe.send(umsgpack.packb(value) if value else umsgpack.packb(''))
-        
+            self.pipe.send(umsgpack.packb(value)
+                           if value else umsgpack.packb(''))
+
         elif command == b"LIST":
             self.pipe.send(umsgpack.packb(list(self.property_map)))
-  
 
-def rcf_client_agent(ctx, pipe,queue):
+
+def rcf_client_agent(ctx, pipe, queue):
     agent = RCFClientAgent(ctx, pipe)
     server = None
     update_queue = queue
@@ -230,7 +230,7 @@ def rcf_client_agent(ctx, pipe,queue):
             server = agent.server
             if agent.server:
                 logger.info("%s: waiting for server at %s:%d...",
-                            agent.id.decode(),server.address, server.port)
+                            agent.id.decode(), server.address, server.port)
                 server.snapshot.send(b"SNAPSHOT_REQUEST")
                 agent.state = State.SYNCING
                 server_socket = server.snapshot
@@ -252,7 +252,7 @@ def rcf_client_agent(ctx, pipe,queue):
             agent.control_message()
         elif server_socket in items:
             rcfmsg = message.RCFMessage.recv(server_socket)
-            
+
             if agent.state == State.SYNCING:
                 # Store snapshot
                 if rcfmsg.key == "SNAPSHOT_END":
@@ -261,26 +261,27 @@ def rcf_client_agent(ctx, pipe,queue):
 
                     with lock:
                         client_dict = helpers.init_client(key=client_key)
-                    
-                    client_store = message.RCFMessage(key=client_key, id=agent.id.decode(),body=client_dict)
+
+                    client_store = message.RCFMessage(
+                        key=client_key, id=agent.id.decode(), body=client_dict)
                     logger.info(client_store)
                     client_store.store(agent.property_map)
 
                     logger.info("snapshot complete")
                     agent.state = State.ACTIVE
                 else:
-                    helpers.load(rcfmsg.key,rcfmsg.body)
+                    helpers.load(rcfmsg.key, rcfmsg.body)
                     rcfmsg.store(agent.property_map)
             elif agent.state == State.ACTIVE:
                 if rcfmsg.id != agent.id:
                     # update_queue.put((rcfmsg.key,rcfmsg.body))
                     with lock:
-                        helpers.load(rcfmsg.key,rcfmsg.body)
+                        helpers.load(rcfmsg.key, rcfmsg.body)
                     # logger.info("load")
                     # agent.serial.send_multipart([b"LOAD", umsgpack.packb(rcfmsg.key), umsgpack.packb(rcfmsg.body)])
-                    
+
                     # reply = agent.serial.recv_multipart()
-                
+
                     # if reply == b"DONE":
                     rcfmsg.store(agent.property_map)
                     # action = "update" if rcfmsg.body else "delete"
@@ -316,13 +317,12 @@ class SerializationAgent(object):
             self.pipe.send_multipart(umsgpack.packb(value))
 
         elif command == b"LOAD":
-            
+
             key = umsgpack.unpackb(msg[0])
             value = umsgpack.unpackb(msg[1])
-            
 
-            helpers.load(key,value)
-           
+            helpers.load(key, value)
+
             self.pipe.send_multipart([b"DONE"])
 
 
@@ -345,7 +345,3 @@ def serialization_agent(ctx, pipe):
 
         if agent.pipe in items:
             agent.control_message()
-
-
-
-

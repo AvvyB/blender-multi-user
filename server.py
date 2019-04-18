@@ -88,7 +88,7 @@ class RCFServerAgent():
             # Regular update routing (Clients / Client)
             elif self.collector_sock in socks:
                 msg = message.RCFMessage.recv(self.collector_sock)
-                logger.info("received object")
+                # logger.info("received object")
                 # Update all clients
                 msg.store(self.property_map)
                 msg.send(self.pub_sock)

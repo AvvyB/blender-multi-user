@@ -31,7 +31,7 @@ update_list = {}
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
 SUPPORTED_TYPES = ['Material',
-                   'Texture', 'Light', 'Camera','Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature','Collection', 'Scene']
+                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature', 'Collection', 'Scene']
 
 # UTILITY FUNCTIONS
 
@@ -66,13 +66,13 @@ def upload_client_instance_position():
 
     username = bpy.context.scene.session_settings.username
     if client_instance:
-       
+
         key = "Client/{}".format(username)
 
         try:
             current_coords = draw.get_client_view_rect()
             client = client_instance.get(key)
-           
+
             if current_coords != client[0][1]['location']:
                 client[0][1]['location'] = current_coords
                 client_instance.set(key, client[0][1])
@@ -81,7 +81,7 @@ def upload_client_instance_position():
 
 
 def update_selected_object(context):
-    global client_instance 
+    global client_instance
     session = bpy.context.scene.session_settings
 
     # Active object bounding box
@@ -91,23 +91,23 @@ def update_selected_object(context):
             key = "net/objects/{}".format(client_instance.id.decode())
             data = {}
             data['color'] = [session.client_instance_color.r,
-                            session.client_instance_color.g, session.client_instance_color.b]
+                             session.client_instance_color.g, session.client_instance_color.b]
             data['object'] = session.active_object.name
             client_instance.push_update(
                 key, 'client_instanceObject', data)
-            
+
             return True
     elif len(context.selected_objects) == 0 and session.active_object:
         session.active_object = None
         data = {}
         data['color'] = [session.client_instance_color.r,
-                        session.client_instance_color.g, session.client_instance_color.b]
+                         session.client_instance_color.g, session.client_instance_color.b]
         data['object'] = None
         key = "net/objects/{}".format(client_instance.id.decode())
         client_instance.push_update(key, 'client_instanceObject', data)
 
         return True
-    
+
     return False
 
 
@@ -115,13 +115,13 @@ def init_datablocks():
     global client_instance
 
     for datatype in SUPPORTED_TYPES:
-        for item in getattr(bpy.data,helpers.CORRESPONDANCE[datatype]):
-            key = "{}/{}".format(datatype,item.name)
+        for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
+            key = "{}/{}".format(datatype, item.name)
             print(key)
             client_instance.set(key)
 
 
-def default_tick():  
+def default_tick():
     bpy.ops.session.refresh()
     # global client_instance
 
@@ -160,6 +160,8 @@ def unregister_ticks():
     bpy.app.timers.unregister(default_tick)
 
 # OPERATORS
+
+
 class session_join(bpy.types.Operator):
 
     bl_idname = "session.join"
@@ -186,12 +188,12 @@ class session_join(bpy.types.Operator):
 
         username = str(context.scene.session_settings.username)
 
-        if len(net_settings.ip)<1:
+        if len(net_settings.ip) < 1:
             net_settings.ip = "127.0.0.1"
 
         client_instance = client.RCFClient()
-        client_instance.connect(net_settings.username, net_settings.ip,net_settings.port)
-        
+        client_instance.connect(net_settings.username,
+                                net_settings.ip, net_settings.port)
 
         # net_settings.is_running = True
         drawer = draw.HUD(client_instance=client_instance)
@@ -293,7 +295,8 @@ class session_create(bpy.types.Operator):
         global server
         global client_instance
 
-        server = subprocess.Popen(['python','server.py'], shell=False, stdout=subprocess.PIPE)
+        server = subprocess.Popen(
+            ['python', 'server.py'], shell=False, stdout=subprocess.PIPE)
         time.sleep(0.1)
 
         bpy.ops.session.join()
@@ -342,8 +345,10 @@ class session_stop(bpy.types.Operator):
 class session_settings(bpy.types.PropertyGroup):
     username = bpy.props.StringProperty(
         name="Username", default="user_{}".format(randomStringDigits()))
-    ip = bpy.props.StringProperty(name="ip", description='Distant host ip',default="127.0.0.1")
-    port = bpy.props.IntProperty(name="port", description='Distant host port',default=5555)
+    ip = bpy.props.StringProperty(
+        name="ip", description='Distant host ip', default="127.0.0.1")
+    port = bpy.props.IntProperty(
+        name="port", description='Distant host port', default=5555)
 
     add_property_depth = bpy.props.IntProperty(
         name="add_property_depth", default=1)
@@ -409,20 +414,26 @@ classes = (
     session_snapview,
 )
 
+
 def ordered(updates):
     # sorted = sorted(updates, key=lambda tup: SUPPORTED_TYPES.index(tup[1].id.bl_rna.name))
-    uplist = [(SUPPORTED_TYPES.index(item[1].id.bl_rna.name),item[1].id.bl_rna.name,item[1].id.name) for item in updates.items()]
+    uplist = []
+    for item in updates.items():
+        if item[1].id.bl_rna.name in SUPPORTED_TYPES:
+            uplist.append((SUPPORTED_TYPES.index(
+                item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name))
+
     uplist.sort(key=itemgetter(0))
     return uplist
 
 
 def is_dirty(updates):
     global client_keys
-    
+
     if client_keys:
         if len(client_keys) > 0:
             for u in updates:
-                key = "{}/{}".format(u.id.bl_rna.name,u.id.name)
+                key = "{}/{}".format(u.id.bl_rna.name, u.id.name)
 
                 if key not in client_keys:
                     return True
@@ -432,10 +443,10 @@ def is_dirty(updates):
 
 def depsgraph_update(scene):
     global client_instance
-    
-    if  client_instance and  client_instance.agent.is_alive():
+
+    if client_instance and client_instance.agent.is_alive():
         updates = bpy.context.depsgraph.updates
-  
+
         if is_dirty(updates):
             for update in ordered(updates):
                 if update[2] == "Master Collection":
@@ -443,12 +454,13 @@ def depsgraph_update(scene):
                 elif update[1] in SUPPORTED_TYPES:
                     client_instance.set("{}/{}".format(update[1], update[2]))
 
-
-        if len(bpy.context.selected_objects)>0:
-            updated_data = updates[0]
-            if updated_data.id.name == bpy.context.selected_objects[0].name:
-                if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-                    client_instance.set("{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+        if hasattr(bpy.context, 'selected_objects'):
+            if len(bpy.context.selected_objects) > 0:
+                updated_data = updates[0]
+                if updated_data.id.name == bpy.context.selected_objects[0].name:
+                    if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+                        client_instance.set(
+                            "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
 
 
 def register():
@@ -474,14 +486,12 @@ def unregister():
         server.kill()
         server = None
         del server
-        
+
     if client_instance:
         client_instance.exit()
         client_instance = None
         del client_instance
         del client_keys
-        
-
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
@@ -489,6 +499,7 @@ def unregister():
 
     del bpy.types.Scene.session_settings
     del bpy.types.ID.is_dirty
+
 
 if __name__ == "__main__":
     register()

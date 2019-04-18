@@ -11,6 +11,7 @@ def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+
 def get_selected_objects(scene):
     selected_objects = []
     for obj in scene.objects:
@@ -18,40 +19,41 @@ def get_selected_objects(scene):
             selected_objects.append(obj.name)
 
     return selected_objects
-    
+
 #    LOAD HELPERS
+
+
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
-    
 
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
     elif target_type == 'Mesh':
         load_mesh(target=target, data=value,
-                    create=True)
+                  create=True)
     elif target_type == 'Collection':
         load_collection(target=target, data=value,
                         create=True)
     elif target_type == 'Material':
         load_material(target=target, data=value,
-                        create=True)
+                      create=True)
     elif target_type == 'Grease Pencil':
         load_gpencil(target=target, data=value,
-                        create=True)
+                     create=True)
     elif target_type == 'Scene':
         load_scene(target=target, data=value,
-                    create=True)
+                   create=True)
     elif 'Light' in target_type:
         load_light(target=target, data=value,
-                    create=True)
+                   create=True)
     elif target_type == 'Camera':
         load_default(target=target, data=value,
-                        create=True, type=target_type)
+                     create=True, type=target_type)
     elif target_type == 'Client':
-        load_client(key.split('/')[1],value)
-    
+        load_client(key.split('/')[1], value)
+
 
 def resolve_bpy_path(path):
     """
@@ -69,23 +71,22 @@ def resolve_bpy_path(path):
     return item
 
 
-def load_client(client=None,data=None):
+def load_client(client=None, data=None):
     C = bpy.context
     D = bpy.data
     if client and data:
         # localy_selected = get_selected_objects(C.scene)
         # Draw client
 
-        #Load selected object
+        # Load selected object
         if data['active_objects']:
             for obj in C.scene.objects:
                 if obj.name in data['active_objects']:
                     D.objects[obj.name].hide_select = True
                 else:
-                    print(data['active_objects'])
                     D.objects[obj.name].hide_select = False
         pass
-    
+
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
@@ -142,7 +143,7 @@ def load_object(target=None, data=None, create=False):
 
             # Load other meshes metadata
         dump_anything.load(target, data)
-        
+
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
     except:
@@ -182,7 +183,7 @@ def load_scene(target=None, data=None, create=False):
                 target.collection.objects.link(bpy.data.objects[object])
 
         for object in target.collection.objects.keys():
-            if object not in  data["collection"]["objects"]:
+            if object not in data["collection"]["objects"]:
                 target.collection.objects.unlink(bpy.data.objects[object])
         # load collections
         # TODO: Recursive link
@@ -190,7 +191,7 @@ def load_scene(target=None, data=None, create=False):
             if collection not in target.collection.children.keys():
                 target.collection.children.link(
                     bpy.data.collections[collection])
-        
+
         # Load annotation
         # if data["grease_pencil"]:
         #     target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
@@ -242,13 +243,12 @@ def load_material(target=None, data=None, create=False):
         print("Material loading error")
 
 
-def load_gpencil_layer(target=None,data=None, create=False):
-    
+def load_gpencil_layer(target=None, data=None, create=False):
+
     dump_anything.load(target, data)
 
-
     for frame in data["frames"]:
-        try: 
+        try:
             tframe = target.frames[frame]
         except:
             tframe = target.frames.new(frame)
@@ -258,8 +258,9 @@ def load_gpencil_layer(target=None,data=None, create=False):
                 tstroke = tframe.strokes[stroke]
             except:
                 tstroke = tframe.strokes.new()
-            dump_anything.load(tstroke, data["frames"][frame]["strokes"][stroke])
-            
+            dump_anything.load(
+                tstroke, data["frames"][frame]["strokes"][stroke])
+
             for point in data["frames"][frame]["strokes"][stroke]["points"]:
                 p = data["frames"][frame]["strokes"][stroke]["points"][point]
                 try:
@@ -267,8 +268,8 @@ def load_gpencil_layer(target=None,data=None, create=False):
                 except:
                     tpoint = tstroke.points.add(1)
                     tpoint = tstroke.points[len(tstroke.points)-1]
-                dump_anything.load(tpoint, p)    
-        
+                dump_anything.load(tpoint, p)
+
 
 def load_gpencil(target=None, data=None, create=False):
     try:
@@ -281,7 +282,8 @@ def load_gpencil(target=None, data=None, create=False):
                     gp_layer = target.layers.new(data["layers"][layer]["info"])
                 else:
                     gp_layer = target.layers[layer]
-                load_gpencil_layer(target=gp_layer,data=data["layers"][layer],create=create)
+                load_gpencil_layer(
+                    target=gp_layer, data=data["layers"][layer], create=create)
         # Load other meshes metadata
         dump_anything.load(target, data)
     except:
@@ -310,6 +312,8 @@ def load_default(target=None, data=None, create=False, type=None):
         print("default loading error")
 
 # DUMP HELPERS
+
+
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -318,7 +322,8 @@ def dump(key):
     if target_type == 'Material':
         data = dump_datablock_attibute(target, ['name', 'node_tree'], 7)
     elif target_type == 'Grease Pencil':
-        data = dump_datablock_attibute(target, ['name', 'layers','materials'], 9)
+        data = dump_datablock_attibute(
+            target, ['name', 'layers', 'materials'], 9)
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
     elif target_type == 'Light':
@@ -332,7 +337,7 @@ def dump(key):
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':
         data = dump_datablock(target, 4)
-    
+
     return data
 
 
@@ -370,12 +375,13 @@ def dump_datablock_attibute(datablock, attributes, depth=1):
 
 def init_client(key=None):
     client_dict = {}
-    
+
     C = bpy.context
     Net = C.scene.session_settings
 
-    client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-    client_dict['color'] = [Net.client_color.r,Net.client_color.g,Net.client_color.b,1]
+    client_dict['location'] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    client_dict['color'] = [Net.client_color.r,
+                            Net.client_color.g, Net.client_color.b, 1]
 
     client_dict['active_objects'] = get_selected_objects(C.view_layer)
 

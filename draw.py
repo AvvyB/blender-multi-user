@@ -7,6 +7,7 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
+
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
@@ -60,12 +61,12 @@ def get_client_2d(coords):
     if area and region and rv3d:
         return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
     else:
-        return (0,0)
+        return (0, 0)
 
 
 class HUD(object):
 
-    def __init__(self, client_instance = None):
+    def __init__(self, client_instance=None):
         self.d3d_items = {}
         self.d2d_items = {}
         self.draw3d_handle = None
@@ -75,7 +76,7 @@ class HUD(object):
         self.active_object = None
 
         if client_instance:
-            self.client = client_instance 
+            self.client = client_instance
 
             self.draw_clients()
             self.register_handlers()
@@ -123,7 +124,7 @@ class HUD(object):
                     bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
                     coords = [(point.x, point.y, point.z)
-                            for point in bbox_corners]
+                              for point in bbox_corners]
 
                     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
@@ -132,9 +133,8 @@ class HUD(object):
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": coords}, indices=indices)
 
-                    self.d3d_items["{}/{}".format(client[0],select_ob)]=(shader, batch, color)
-
-               
+                    self.d3d_items["{}/{}".format(client[0],
+                                                  select_ob)] = (shader, batch, color)
 
     def draw_clients(self):
         clients = self.client.get("Client")
@@ -144,7 +144,7 @@ class HUD(object):
             local_username = bpy.context.scene.session_settings.username
 
             if name != local_username:
-                try:     
+                try:
                     indices = (
                         (1, 3), (2, 1), (3, 0), (2, 0)
                     )
@@ -152,12 +152,12 @@ class HUD(object):
                     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
                     position = client[1]['location']
                     color = client[1]['color']
-                   
+
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": position}, indices=indices)
 
-                    self.d3d_items[client[0]]=(shader, batch, color)
-                    self.d2d_items[client[0]]=(position[1], name,color)
+                    self.d3d_items[client[0]] = (shader, batch, color)
+                    self.d2d_items[client[0]] = (position[1], name, color)
 
                 except Exception as e:
                     print("Draw client exception {}".format(e))
@@ -191,4 +191,3 @@ class HUD(object):
             # Draw clients
             self.draw_clients()
             self.draw_selected_object()
-
