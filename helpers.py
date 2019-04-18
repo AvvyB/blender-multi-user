@@ -18,6 +18,7 @@ def get_selected_objects(scene):
             selected_objects.append(obj.name)
 
     return selected_objects
+    
 #    LOAD HELPERS
 def load(key, value):
     target = resolve_bpy_path(key)
@@ -369,12 +370,13 @@ def dump_datablock_attibute(datablock, attributes, depth=1):
 
 def init_client(key=None):
     client_dict = {}
-    client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
-    client_dict['color'] = [0,1,1,1]
+    
     C = bpy.context
+    Net = C.scene.session_settings
 
-    # for o in bpy.context.selected_objects:
-    #     print("TOTO {}".format(o.name))
+    client_dict['location'] = [[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+    client_dict['color'] = [Net.client_color.r,Net.client_color.g,Net.client_color.b,1]
+
     client_dict['active_objects'] = get_selected_objects(C.view_layer)
-    print(client_dict['active_objects'])
+
     return client_dict

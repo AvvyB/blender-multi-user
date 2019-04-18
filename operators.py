@@ -186,9 +186,11 @@ class session_join(bpy.types.Operator):
 
         username = str(context.scene.session_settings.username)
 
+        if len(net_settings.ip)<1:
+            net_settings.ip = "127.0.0.1"
 
         client_instance = client.RCFClient()
-        client_instance.connect(net_settings.username,"127.0.0.1",5555)
+        client_instance.connect(net_settings.username, net_settings.ip,net_settings.port)
         
 
         # net_settings.is_running = True
@@ -340,8 +342,8 @@ class session_stop(bpy.types.Operator):
 class session_settings(bpy.types.PropertyGroup):
     username = bpy.props.StringProperty(
         name="Username", default="user_{}".format(randomStringDigits()))
-    ip = bpy.props.StringProperty(name="ip")
-    port = bpy.props.IntProperty(name="5555")
+    ip = bpy.props.StringProperty(name="ip", description='Distant host ip',default="127.0.0.1")
+    port = bpy.props.IntProperty(name="port", description='Distant host port',default=5555)
 
     add_property_depth = bpy.props.IntProperty(
         name="add_property_depth", default=1)

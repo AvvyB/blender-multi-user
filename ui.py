@@ -27,6 +27,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row.label(text="User infos")
                 row = box.row()
                 row.prop(scene.session_settings, "username", text="id")
+                
                 row = box.row()
                 row.prop(scene.session_settings, "client_color", text="color") 
 
@@ -44,7 +45,10 @@ class SessionSettingsPanel(bpy.types.Panel):
                 else:
                     box = row.box()
                     row = box.row()
-                    row.prop(net_settings, "ip", text="server ip")
+                    row.prop(net_settings, "ip", text="ip")
+                    row = box.row()
+                    row.label(text="port:")
+                    row.prop(scene.session_settings, "port", text="")
                     row = box.row()
                     row.label(text="load data:")
                     row.prop(net_settings, "load_data", text="")
@@ -154,7 +158,9 @@ class SessionPropertiesPanel(bpy.types.Panel):
             if operators.client_keys and len(operators.client_keys) > 0:
                 for item in operators.client_keys:
                     item_box = area_msg.box()
+                    
                     detail_item_box = item_box.row()
+
                     # detail_item_box = item_box.row()
                     
                     detail_item_box.label(text="{}".format(item))
