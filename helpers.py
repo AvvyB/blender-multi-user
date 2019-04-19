@@ -1,10 +1,13 @@
 import bpy
 import mathutils
 from .libs import dump_anything
+from uuid import uuid4
+import logging
 
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
+logger = logging.getLogger(__name__)
 
 # UTILITY FUNCTIONS
 def refresh_window():
@@ -27,6 +30,10 @@ def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
+    try:
+        target.uuid = value['uuid']
+    except:
+        pass
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
@@ -92,35 +99,38 @@ def load_client(client=None, data=None):
 def load_mesh(target=None, data=None, create=False):
     import bmesh
 
-    # TODO: handle error
-    mesh_buffer = bmesh.new()
+    if not target or not target.is_editmode:
+        # TODO: handle error
+        mesh_buffer = bmesh.new()
 
-    for i in data["vertices"]:
-        mesh_buffer.verts.new(data["vertices"][i]["co"])
+        for i in data["vertices"]:
+            mesh_buffer.verts.new(data["vertices"][i]["co"])
 
-    mesh_buffer.verts.ensure_lookup_table()
+        mesh_buffer.verts.ensure_lookup_table()
 
-    for i in data["edges"]:
-        verts = mesh_buffer.verts
-        v1 = data["edges"][i]["vertices"][0]
-        v2 = data["edges"][i]["vertices"][1]
-        mesh_buffer.edges.new([verts[v1], verts[v2]])
+        for i in data["edges"]:
+            verts = mesh_buffer.verts
+            v1 = data["edges"][i]["vertices"][0]
+            v2 = data["edges"][i]["vertices"][1]
+            mesh_buffer.edges.new([verts[v1], verts[v2]])
 
-    for p in data["polygons"]:
-        verts = []
-        for v in data["polygons"][p]["vertices"]:
-            verts.append(mesh_buffer.verts[v])
+        for p in data["polygons"]:
+            verts = []
+            for v in data["polygons"][p]["vertices"]:
+                verts.append(mesh_buffer.verts[v])
 
-        if len(verts) > 0:
-            mesh_buffer.faces.new(verts)
+            if len(verts) > 0:
+                mesh_buffer.faces.new(verts)
 
-    if target is None and create:
-        target = bpy.data.meshes.new(data["name"])
+        if target is None and create:
+            target = bpy.data.meshes.new(data["name"])
 
-    mesh_buffer.to_mesh(target)
+        mesh_buffer.to_mesh(target)
 
-    # Load other meshes metadata
-    dump_anything.load(target, data)
+        # Load other meshes metadata
+        dump_anything.load(target, data)
+    else:
+        logger.info("Mesh can't be loaded")
 
 
 def load_object(target=None, data=None, create=False):
@@ -320,18 +330,21 @@ def dump(key):
     target_type = key.split('/')[0]
     data = None
 
+   
+    target.uuid = str(uuid4)
+
     if target_type == 'Material':
-        data = dump_datablock_attibute(target, ['name', 'node_tree'], 7)
+        data = dump_datablock_attibute(target, ['name', 'node_tree','uuid'], 7)
     elif target_type == 'Grease Pencil':
         data = dump_datablock_attibute(
-            target, ['name', 'layers', 'materials'], 9)
+            target, ['name', 'layers', 'materials','uuid'], 9)
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
     elif target_type == 'Light':
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
         data = dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices'], 6)
+            target, ['name', 'polygons', 'edges', 'vertices','uuid'], 6)
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
     elif target_type == 'Collection':
@@ -379,7 +392,7 @@ def init_client(key=None):
 
     C = bpy.context
     Net = C.scene.session_settings
-
+    client_dict['uuid'] = str(uuid4())
     client_dict['location'] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     client_dict['color'] = [Net.client_color.r,
                             Net.client_color.g, Net.client_color.b, 1]

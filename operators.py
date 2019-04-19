@@ -15,6 +15,7 @@ import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+from uuid import uuid4
 
 from . import client, ui, draw, helpers
 from .libs import umsgpack
@@ -86,21 +87,28 @@ def update_selected_object(context):
 
     username = bpy.context.scene.session_settings.username
     client_key = "Client/{}".format(username)
-    client_data = client_instance.get(client_key)
+    client_data = client_instance.get(client_key)   
+
     selected_objects = helpers.get_selected_objects(context.scene)
-    # Active object bounding box
+    
     if len(selected_objects) > 0:
+        
         for obj in context.selected_objects:
             if obj.name not in client_data[0][1]['active_objects']:
                 client_data[0][1]['active_objects'] = selected_objects
 
                 client_instance.set(client_key,client_data[0][1])
                 break
+
     elif client_data[0][1]['active_objects']:
         client_data[0][1]['active_objects'] = []
         client_instance.set(client_key,client_data[0][1])
-                
 
+ 
+
+    # for update in local_updates:
+
+    #     client_instance.get('')
         # if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
         #     session.active_object = context.selected_objects[0]
         #     key = "net/objects/{}".format(client_instance.id.decode())
@@ -131,6 +139,7 @@ def init_datablocks():
 
     for datatype in SUPPORTED_TYPES:
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
+            item.uuid = str(uuid4())
             key = "{}/{}".format(datatype, item.name)
             print(key)
             client_instance.set(key)
@@ -461,24 +470,36 @@ def depsgraph_update(scene):
 
     if client_instance and client_instance.agent.is_alive():
         updates = bpy.context.depsgraph.updates
-
+        username = bpy.context.scene.session_settings.username
         update_selected_object(bpy.context)
 
-        if is_dirty(updates):
-            for update in ordered(updates):
-                if update[2] == "Master Collection":
-                    pass
-                elif update[1] in SUPPORTED_TYPES:
-                    client_instance.set("{}/{}".format(update[1], update[2]))
-
-        # if hasattr(bpy.context, 'selected_objects'):
         selected_objects = helpers.get_selected_objects(scene)
         if len(selected_objects) > 0:
-            for updated_data in updates:
-                if updated_data.id.name in selected_objects:
-                    if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-                        client_instance.set(
-                            "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+            for update in updates:
+                update_key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
+                remote_update = client_instance.get(update_key)
+                
+                if remote_update and  remote_update[0][1]["uuid"] == update.id.uuid:
+                    print("{} sending update".format(username))
+                    client_instance.set(
+                                "{}/{}".format(update.id.bl_rna.name, update.id.name))
+                else:
+                    print("{} applying update".format(username))
+        # if is_dirty(updates):
+        # for update in ordered(updates):
+        #     if update[2] == "Master Collection":
+        #         pass
+        #     elif update[1] in SUPPORTED_TYPES:
+        #         client_instance.set("{}/{}".format(update[1], update[2]))
+
+        # if hasattr(bpy.context, 'selected_objects'):
+        # selected_objects = helpers.get_selected_objects(scene)
+        # if len(selected_objects) > 0:
+        #     for updated_data in updates:
+        #         if updated_data.id.name in selected_objects:
+        #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+        #                 client_instance.set(
+        #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
 
 
 def register():
@@ -486,6 +507,7 @@ def register():
     for cls in classes:
         register_class(cls)
     bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
+    bpy.types.ID.uuid = bpy.props.StringProperty(default="None")
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)

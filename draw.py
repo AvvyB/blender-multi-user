@@ -137,7 +137,14 @@ class HUD(object):
                         self.d3d_items["{}/{}".format(client[0],
                                                     select_ob)] = (shader, batch, color)
                 else:
-                    self.d3d_items.clear()
+                    key_to_remove = []
+                    for k in self.d3d_items.keys():
+                        if "{}/".format(client[0]) in k:
+                            key_to_remove.append(k)
+                            
+                    for k in key_to_remove:
+                        del self.d3d_items[k]
+    
     def draw_clients(self):
         clients = self.client.get("Client")
 

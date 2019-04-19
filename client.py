@@ -187,10 +187,10 @@ class RCFClientAgent(object):
 
             if value == 'None':
                 value = helpers.dump(key)
-
+                
             if value:
                 rcfmsg = message.RCFMessage(
-                    key=key, id=self.id, mtype="", body=value)
+                    key=key, id=self.id,uuid=value['uuid'], mtype="", body=value)
 
                 rcfmsg.store(self.property_map)
                 rcfmsg.send(self.publisher)
@@ -345,3 +345,42 @@ def serialization_agent(ctx, pipe):
 
         if agent.pipe in items:
             agent.control_message()
+
+
+class SyncAgent(object):
+    ctx = None
+    pipe = None
+
+    def __init__(self, ctx, pipe):
+        self.ctx = ctx
+        self.pipe = pipe
+        logger.info("serialisation service launched")
+    
+    def control_message(self):
+        msg = self.pipe.recv_multipart()
+        command = msg.pop(0)
+
+        pass
+
+def sync_agent(ctx, pipe):
+    agent = SyncAgent(ctx, pipe)
+
+    global stop
+    while True:
+        if stop:
+            break
+
+        poller = zmq.Poller()
+        poller.register(agent.pipe, zmq.POLLIN)
+
+        try:
+            items = dict(poller.poll(1))
+        except:
+            raise
+            break
+
+        if agent.pipe in items:
+            agent.control_message()
+
+        # Synchronisation
+        
