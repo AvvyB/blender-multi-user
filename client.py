@@ -92,7 +92,6 @@ class RCFClient(object):
         self.pipe.send_multipart(
             [b"ADD", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
 
-
     def get(self, key):
         """Lookup value in distributed hash table
         Sends [GET][key] to the agent and waits for a value response
@@ -114,6 +113,15 @@ class RCFClient(object):
 
     def list(self):
         self.pipe.send_multipart([b"LIST"])
+        try:
+            reply = self.pipe.recv_multipart()
+        except KeyboardInterrupt:
+            return
+        else:
+            return umsgpack.unpackb(reply[0])
+
+    def state(self):
+        self.pipe.send_multipart([b"STATE"])
         try:
             reply = self.pipe.recv_multipart()
         except KeyboardInterrupt:
@@ -159,6 +167,7 @@ class RCFClientAgent(object):
         self.property_map = {}
         self.id = b"test"
         self.state = State.INITIAL
+        self.admin = False
         self.server = None
         self.publisher = self.ctx.socket(zmq.PUSH)  # push update socket
         self.publisher.setsockopt(zmq.IDENTITY, self.id)
@@ -180,6 +189,8 @@ class RCFClientAgent(object):
             port = int(msg.pop(0))
 
             if self.server is None:
+                if address == '127.0.0.1':
+                    self.admin = True
                 self.server = RCFServer(self.ctx, address, port, self.id)
                 self.publisher.connect(
                     "tcp://{}:{}".format(address.decode(), port+2))
@@ -242,6 +253,8 @@ class RCFClientAgent(object):
             self.pipe.send(umsgpack.packb(dump_list)
                            if dump_list else umsgpack.packb(''))
 
+        elif command == b"STATE":
+            self.pipe.send(umsgpack.packb(self.state.value))
 
 def rcf_client_agent(ctx, pipe, queue):
     agent = RCFClientAgent(ctx, pipe)

@@ -60,14 +60,14 @@ class SessionSettingsPanel(bpy.types.Panel):
                     row.operator("session.join", text="CONNECT")
 
             else:
-
-                if operators.client_instance.agent.is_alive():
+                if operators.client_state == 3:
+                    
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
-                # elif operators.client.status is client.RCFStatus.CONNECTING:
-                #     row.label(text="connecting...")
-                #     row = layout.row()
-                #     row.operator("session.stop", icon='QUIT', text="CANCEL")
+                elif operators.client_state is 2:
+                    row.label(text="connecting...")
+                    row = layout.row()
+                    row.operator("session.stop", icon='QUIT', text="CANCEL")
 
             row = layout.row()
 
@@ -82,9 +82,8 @@ class SessionUsersPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if operators.client_instance:
-            return operators.client_instance.agent.is_alive()
-        return False
+        return operators.client_state == 3
+ 
 
     def draw(self, context):
         layout = self.layout
@@ -127,10 +126,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if operators.client_instance:
-            return operators.client_instance.agent.is_alive()
-
-        return False
+        return operators.client_state == 3
 
     def draw(self, context):
         layout = self.layout
@@ -191,10 +187,7 @@ class SessionTaskPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if operators.client:
-            return operators.client.agent.is_alive()
-            # return operators.client.status == client.RCFStatus.CONNECTED
-        return False
+        return operators.client_state == 3
 
     def draw(self, context):
         layout = self.layout

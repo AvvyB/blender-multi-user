@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 client_instance = None
 client_keys = None
+client_state = 1
 server = None
 context = None
 drawer = None
@@ -237,9 +238,11 @@ class session_refresh(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance, client_keys
+        global client_instance, client_keys,client_state
 
         client_keys = client_instance.list()
+        client_state = client_instance.state()
+        
         return {"FINISHED"}
 
 
@@ -494,7 +497,7 @@ def depsgraph_update(scene):
         #         if update[2] == "Master Collection":
         #             pass
         #         elif update[1] in SUPPORTED_TYPES:
-        #             client_instance.set("{}/{}".format(update[1], update[2]))
+        #             client_instance.add("{}/{}".format(update[1], update[2]))
 
         if hasattr(bpy.context, 'selected_objects'):
             selected_objects = helpers.get_selected_objects(scene)
