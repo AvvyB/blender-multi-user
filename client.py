@@ -85,6 +85,14 @@ class RCFClient(object):
         self.pipe.send_multipart(
             [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
 
+    def add(self, key, value=None):
+        """Set new value in distributed hash table
+        Sends [SET][key][value] to the agent
+        """
+        self.pipe.send_multipart(
+            [b"ADD", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
+
+
     def get(self, key):
         """Lookup value in distributed hash table
         Sends [GET][key] to the agent and waits for a value response
@@ -181,13 +189,30 @@ class RCFClientAgent(object):
 
         elif command == b"SET":
             key = umsgpack.unpackb(msg[0])
-            value = None
+            value = umsgpack.unpackb(msg[1])
 
+            if key in self.property_map.keys():
+                if self.property_map[key].id == self.id:
+                    if value == 'None':
+                        value = helpers.dump(key)
+
+                    if value:
+                        rcfmsg = message.RCFMessage(
+                            key=key, id=self.id,uuid=value['uuid'], mtype="", body=value)
+
+                        rcfmsg.store(self.property_map)
+                        rcfmsg.send(self.publisher)
+                    else:
+                        logger.error("Fail to dump ")
+
+        elif command == b"ADD":
+            key = umsgpack.unpackb(msg[0])
             value = umsgpack.unpackb(msg[1])
 
             if value == 'None':
+                # try to dump from bpy
                 value = helpers.dump(key)
-                
+
             if value:
                 rcfmsg = message.RCFMessage(
                     key=key, id=self.id,uuid=value['uuid'], mtype="", body=value)
@@ -268,30 +293,37 @@ def rcf_client_agent(ctx, pipe, queue):
                         client_dict = helpers.init_client(key=client_key)
 
                     client_store = message.RCFMessage(
-                        key=client_key, id=agent.id.decode(), body=client_dict)
+                        key=client_key, id=agent.id, body=client_dict)
                     logger.info(client_store)
-                    client_store.store(agent.property_map)
-
+                    client_store.store(agent.property_map, True)
+                    client_store.send(agent.publisher)
                     logger.info("snapshot complete")
                     agent.state = State.ACTIVE
                 else:
                     helpers.load(rcfmsg.key, rcfmsg.body)
+                    
                     rcfmsg.store(agent.property_map)
+                    logger.info("snapshot from {} stored".format(rcfmsg.id))
             elif agent.state == State.ACTIVE:
                 if rcfmsg.id != agent.id:
                     # update_queue.put((rcfmsg.key,rcfmsg.body))
+                   
                     with lock:
                         helpers.load(rcfmsg.key, rcfmsg.body)
-                    # logger.info("load")
-                    # agent.serial.send_multipart([b"LOAD", umsgpack.packb(rcfmsg.key), umsgpack.packb(rcfmsg.body)])
-
-                    # reply = agent.serial.recv_multipart()
-
-                    # if reply == b"DONE":
                     rcfmsg.store(agent.property_map)
-                    # action = "update" if rcfmsg.body else "delete"
-                    # logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
-                    #     server.address, rcfmsg.id, server.port, action))
+                    # elif rcfmsg.id == agent.property_map[rcfmsg.key].id:
+                    #     with lock:
+                    #         helpers.load(rcfmsg.key, rcfmsg.body)
+                        # logger.info("load")
+                        # agent.serial.send_multipart([b"LOAD", umsgpack.packb(rcfmsg.key), umsgpack.packb(rcfmsg.body)])
+
+                        # reply = agent.serial.recv_multipart()
+
+                        # if reply == b"DONE":
+                        # rcfmsg.store(agent.property_map)
+                        # action = "update" if rcfmsg.body else "delete"
+                        # logging.info("{}: received from {}:{},{} {}".format(rcfmsg.key,
+                        #     server.address, rcfmsg.id, server.port, action))
                 else:
                     logger.debug("{} nothing to do".format(agent.id))
 

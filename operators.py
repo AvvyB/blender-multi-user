@@ -142,7 +142,7 @@ def init_datablocks():
             item.uuid = str(uuid4())
             key = "{}/{}".format(datatype, item.name)
             print(key)
-            client_instance.set(key)
+            client_instance.add(key)
 
 
 def default_tick():
@@ -259,7 +259,7 @@ class session_add_property(bpy.types.Operator):
     def execute(self, context):
         global client_instance
 
-        client_instance.set(self.property_path)
+        client_instance.add(self.property_path)
 
         return {"FINISHED"}
 
@@ -474,39 +474,42 @@ def depsgraph_update(scene):
         update_selected_object(bpy.context)
 
         selected_objects = helpers.get_selected_objects(scene)
-        if len(selected_objects) > 0:
-            for update in updates:
-                update_key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
-                remote_update = client_instance.get(update_key)
-                
-                if remote_update and  remote_update[0][1]["uuid"] == update.id.uuid:
-                    print("{} sending update".format(username))
-                    client_instance.set(
-                                "{}/{}".format(update.id.bl_rna.name, update.id.name))
-                else:
-                    print("{} applying update".format(username))
-        # if is_dirty(updates):
-        # for update in ordered(updates):
-        #     if update[2] == "Master Collection":
-        #         pass
-        #     elif update[1] in SUPPORTED_TYPES:
-        #         client_instance.set("{}/{}".format(update[1], update[2]))
 
-        # if hasattr(bpy.context, 'selected_objects'):
-        # selected_objects = helpers.get_selected_objects(scene)
+
+
         # if len(selected_objects) > 0:
-        #     for updated_data in updates:
-        #         if updated_data.id.name in selected_objects:
-        #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-        #                 client_instance.set(
-        #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+        #     for update in updates:
+        #         update_key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
+        #         remote_update = client_instance.get(update_key)
+                
+        #         if remote_update and  remote_update[0][1]["uuid"] == update.id.uuid:
+        #             print("{} sending update".format(username))
+        #             client_instance.set(
+        #                         "{}/{}".format(update.id.bl_rna.name, update.id.name))
+        #         else:
+        #             print("{} applying update".format(username))
+
+        # if is_dirty(updates):
+        #     for update in ordered(updates):
+        #         if update[2] == "Master Collection":
+        #             pass
+        #         elif update[1] in SUPPORTED_TYPES:
+        #             client_instance.set("{}/{}".format(update[1], update[2]))
+
+        if hasattr(bpy.context, 'selected_objects'):
+            selected_objects = helpers.get_selected_objects(scene)
+            if len(selected_objects) > 0:
+                for updated_data in updates:
+                    if updated_data.id.name in selected_objects:
+                        if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+                            client_instance.set(
+                                "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
 
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.ID.uuid = bpy.props.StringProperty(default="None")
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
@@ -538,7 +541,6 @@ def unregister():
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
-    del bpy.types.ID.is_dirty
 
 
 if __name__ == "__main__":

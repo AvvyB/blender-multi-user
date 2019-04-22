@@ -155,7 +155,11 @@ class SessionPropertiesPanel(bpy.types.Panel):
                         icon="UV_SYNC_SELECT")
             if operators.client_keys and len(operators.client_keys) > 0:
                 for item in operators.client_keys:
-                    owner =  item[1].decode()
+                    owner = 'toto'
+                    try:
+                        owner =  item[1].decode()
+                    except:
+                        pass
                     item_box = area_msg.box()
                     
                     detail_item_box = item_box.row(align = True)

@@ -37,11 +37,15 @@ class RCFMessage(object):
     def apply(self):
         pass
 
-    def store(self, dikt):
+    def store(self, dikt, override=False):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
-        if self.key is not None:
-            dikt[self.key] = self
+        if self in dikt:
+            if override:
+                dikt[self.key] = self
+        else:
+            if self.key is not None:
+                dikt[self.key] = self
         # elif self.key in dikt:
         #     del dikt[self.key]
 
