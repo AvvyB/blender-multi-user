@@ -6,7 +6,6 @@ import asyncio
 import queue
 from operator import itemgetter
 import subprocess
-import uuid
 import bgl
 import blf
 import bpy
@@ -15,7 +14,6 @@ import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
-from uuid import uuid4
 
 from . import client, ui, draw, helpers
 from .libs import umsgpack
@@ -140,9 +138,8 @@ def init_datablocks():
 
     for datatype in SUPPORTED_TYPES:
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
-            item.uuid = str(uuid4())
+            item.id= bpy.context.scene.session_settings.username
             key = "{}/{}".format(datatype, item.name)
-            print(key)
             client_instance.add(key)
 
 
@@ -346,22 +343,23 @@ class session_stop(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_instance, client_keys
+        global client_instance, client_keys, client_state
 
         net_settings = context.scene.session_settings
 
+
         if server:
             server.kill()
-            del server
+            time.sleep(0.25)
             server = None
         if client_instance:
             client_instance.exit()
+            time.sleep(0.25)
             del client_instance
             client_instance = None
-            del client_keys
             client_keys = None
             net_settings.is_running = False
-
+            client_state = 1
             unregister_ticks()
         else:
             logger.debug("No server/client_instance running.")
@@ -415,13 +413,14 @@ class session_snapview(bpy.types.Operator):
     def execute(self, context):
         global client_instance
 
-        area, region, rv3d = net_draw.view3d_find()
+        area, region, rv3d = draw.view3d_find()
 
-        for k, v in client_instance.property_map.items():
-            if v.mtype == 'client_instance' and v.id.decode() == self.target_client_instance:
-                rv3d.view_location = v.body['location'][1]
-                rv3d.view_distance = 30.0
-                return {"FINISHED"}
+        client = client_instance.get("Client/{}".format(self.target_client))
+        if client:
+            rv3d.view_location = client[0][1]['location'][0]
+            rv3d.view_distance = 30.0
+       
+            return {"FINISHED"}
 
         return {"CANCELLED"}
 
@@ -493,11 +492,11 @@ def depsgraph_update(scene):
         #             print("{} applying update".format(username))
 
         # if is_dirty(updates):
-        #     for update in ordered(updates):
-        #         if update[2] == "Master Collection":
-        #             pass
-        #         elif update[1] in SUPPORTED_TYPES:
-        #             client_instance.add("{}/{}".format(update[1], update[2]))
+        # for update in ordered(updates):
+        #     if update[2] == "Master Collection":
+        #         pass
+        #     elif update[1] in SUPPORTED_TYPES:
+        #         client_instance.add("{}/{}".format(update[1], update[2]))
 
         if hasattr(bpy.context, 'selected_objects'):
             selected_objects = helpers.get_selected_objects(scene)
@@ -513,7 +512,7 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    bpy.types.ID.uuid = bpy.props.StringProperty(default="None")
+    bpy.types.ID.id = bpy.props.StringProperty(default="None")
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
@@ -544,7 +543,7 @@ def unregister():
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
-
+    del bpy.types.ID.id 
 
 if __name__ == "__main__":
     register()

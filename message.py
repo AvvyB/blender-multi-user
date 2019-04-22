@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 try:
     from .libs import umsgpack
     from .libs import zmq
@@ -22,14 +20,11 @@ class RCFMessage(object):
     id = None  # User  (string)
     mtype = None  # data mtype (string)
     body = None  # data blob
-    uuid = None
 
-    def __init__(self,  key=None, uuid=None, id=None, mtype=None, body=None):
-        if uuid is None:
-            uuid = uuid4().bytes
 
+    def __init__(self,  key=None, id=None, mtype=None, body=None):
         self.key = key
-        self.uuid = uuid
+
         self.mtype = mtype
         self.body = body
         self.id = id

@@ -7,7 +7,6 @@ import threading
 import time
 from enum import Enum
 from random import randint
-from uuid import uuid4
 import copy
 import queue
 lock = threading.Lock()
@@ -174,10 +173,10 @@ class RCFClientAgent(object):
         self.publisher.setsockopt(zmq.SNDHWM, 60)
         self.publisher.linger = 0
         self.serial, peer = zpipe(self.ctx)
-        self.serial_agent = threading.Thread(
-            target=serialization_agent, args=(self.ctx, peer), name="serial-agent")
-        self.serial_agent.daemon = True
-        self.serial_agent.start()
+        # self.serial_agent = threading.Thread(
+        #     target=serialization_agent, args=(self.ctx, peer), name="serial-agent")
+        # self.serial_agent.daemon = True
+        # self.serial_agent.start()
 
     def control_message(self):
         msg = self.pipe.recv_multipart()
@@ -209,7 +208,7 @@ class RCFClientAgent(object):
 
                     if value:
                         rcfmsg = message.RCFMessage(
-                            key=key, id=self.id,uuid=value['uuid'], mtype="", body=value)
+                            key=key, id=self.id, mtype="", body=value)
 
                         rcfmsg.store(self.property_map)
                         rcfmsg.send(self.publisher)
@@ -228,7 +227,7 @@ class RCFClientAgent(object):
 
             if value:
                 rcfmsg = message.RCFMessage(
-                    key=key, id=self.id,uuid=value['uuid'], mtype="", body=value)
+                    key=key, id=self.id, mtype="", body=value)
 
                 rcfmsg.store(self.property_map)
                 rcfmsg.send(self.publisher)

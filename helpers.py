@@ -30,10 +30,7 @@ def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
-    try:
-        target.uuid = value['uuid']
-    except:
-        pass
+    
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
@@ -91,9 +88,7 @@ def load_client(client=None, data=None):
             if client_data['active_objects'] and obj.name in client_data['active_objects']:
                 D.objects[obj.name].hide_select = True
             else:
-                D.objects[obj.name].hide_select = False
-        
-        
+                D.objects[obj.name].hide_select = False       
 
 
 def load_mesh(target=None, data=None, create=False):
@@ -330,21 +325,19 @@ def dump(key):
     target_type = key.split('/')[0]
     data = None
 
-   
-    target.uuid = str(uuid4)
 
     if target_type == 'Material':
-        data = dump_datablock_attibute(target, ['name', 'node_tree','uuid'], 7)
+        data = dump_datablock_attibute(target, ['name', 'node_tree','id'], 7)
     elif target_type == 'Grease Pencil':
         data = dump_datablock_attibute(
-            target, ['name', 'layers', 'materials','uuid'], 9)
+            target, ['name', 'layers', 'materials','id'], 9)
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
     elif target_type == 'Light':
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
         data = dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices','uuid'], 6)
+            target, ['name', 'polygons', 'edges', 'vertices','id'], 6)
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
     elif target_type == 'Collection':
