@@ -215,6 +215,8 @@ class RCFClientAgent(object):
                         rcfmsg.send(self.publisher)
                     else:
                         logger.error("Fail to dump ")
+                else:
+                    helpers.load(key,self.property_map[key].body)
 
         elif command == b"ADD":
             key = umsgpack.unpackb(msg[0])
