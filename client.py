@@ -210,7 +210,12 @@ class RCFClientAgent(object):
                            if value else umsgpack.packb(''))
 
         elif command == b"LIST":
-            self.pipe.send(umsgpack.packb(list(self.property_map)))
+            dump_list = []
+            for k,v in self.property_map.items():
+                dump_list.append([k,v.id])
+
+            self.pipe.send(umsgpack.packb(dump_list)
+                           if dump_list else umsgpack.packb(''))
 
 
 def rcf_client_agent(ctx, pipe, queue):
@@ -362,6 +367,7 @@ class SyncAgent(object):
 
         pass
 
+
 def sync_agent(ctx, pipe):
     agent = SyncAgent(ctx, pipe)
 
@@ -383,4 +389,4 @@ def sync_agent(ctx, pipe):
             agent.control_message()
 
         # Synchronisation
-        
+

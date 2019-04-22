@@ -62,8 +62,6 @@ class SessionSettingsPanel(bpy.types.Panel):
             else:
 
                 if operators.client_instance.agent.is_alive():
-                    row.label(text="Net frequency:")
-                    row.prop(net_settings, "update_frequency", text="")
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
                 # elif operators.client.status is client.RCFStatus.CONNECTING:
@@ -97,19 +95,19 @@ class SessionUsersPanel(bpy.types.Panel):
         row = layout.row()
         if operators.client_keys and len(operators.client_keys) > 0:
             for key in operators.client_keys:
-                if 'Client' in key:
+                if 'Client' in key[0]:
                     info = ""
                     item_box = row.box()
                     detail_item_box = item_box.row()
 
-                    username = key.split('/')[1]
+                    username = key[0].split('/')[1]
                     if username == net_settings.username:
                         info = "(self)"
                     # detail_item_box = item_box.row()
                     detail_item_box.label(
                         text="{} - {}".format(username, info))
 
-                    if net_settings.username not in key:
+                    if net_settings.username not in key[0]:
                         detail_item_box.operator(
                             "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
                     row = layout.row()
@@ -157,13 +155,22 @@ class SessionPropertiesPanel(bpy.types.Panel):
                         icon="UV_SYNC_SELECT")
             if operators.client_keys and len(operators.client_keys) > 0:
                 for item in operators.client_keys:
+                    owner =  item[1].decode()
                     item_box = area_msg.box()
                     
-                    detail_item_box = item_box.row()
+                    detail_item_box = item_box.row(align = True)
 
                     # detail_item_box = item_box.row()
                     
-                    detail_item_box.label(text="{}".format(item))
+                    detail_item_box.label(text="{} ".format(item[0]))
+
+                    detail_item_box.label(text="{} ".format(owner))
+
+                    if owner == net_settings.username:
+                        detail_item_box.label(text="",icon="DECORATE_UNLOCKED")
+                    else:
+                        
+                        detail_item_box.label(text="",icon="DECORATE_LOCKED")
                     # detail_item_box.operator(
                     #     "session.remove_prop", text="", icon="X").property_path = key
             else:
