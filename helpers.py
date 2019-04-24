@@ -124,6 +124,8 @@ def load_mesh(target=None, data=None, create=False):
 
         # Load other meshes metadata
         dump_anything.load(target, data)
+
+        target.id = data['id']
     else:
         logger.info("Mesh can't be loaded")
 
@@ -152,6 +154,8 @@ def load_object(target=None, data=None, create=False):
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
+        target.id = data['id']
+
     except:
         print("Object {} loading error ".format(data["name"]))
 
@@ -171,6 +175,8 @@ def load_collection(target=None, data=None, create=False):
         for object in target.objects.keys():
             if object not in data["objects"]:
                 target.objects.unlink(bpy.data.objects[object])
+        
+        target.id = data['id']
     except:
         print("Collection loading error")
 
@@ -198,6 +204,7 @@ def load_scene(target=None, data=None, create=False):
                 target.collection.children.link(
                     bpy.data.collections[collection])
 
+        target.id = data['id']
         # Load annotation
         # if data["grease_pencil"]:
         #     target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
@@ -235,6 +242,8 @@ def load_material(target=None, data=None, create=False):
 
         # Load nodes links
         target.node_tree.links.clear()
+
+        target.id = data['id']
 
         for link in data["node_tree"]["links"]:
             current_link = data["node_tree"]["links"][link]
@@ -290,8 +299,10 @@ def load_gpencil(target=None, data=None, create=False):
                     gp_layer = target.layers[layer]
                 load_gpencil_layer(
                     target=gp_layer, data=data["layers"][layer], create=create)
-        # Load other meshes metadata
+
         dump_anything.load(target, data)
+
+        target.id = data['id']
     except:
         print("default loading error")
 
@@ -301,8 +312,10 @@ def load_light(target=None, data=None, create=False, type=None):
         if target is None and create:
             bpy.data.lights.new(data["name"], data["type"])
 
-        # Load other meshes metadata
+
         dump_anything.load(target, data)
+
+        target.id = data['id']
     except:
         print("light loading error")
 
@@ -312,8 +325,9 @@ def load_default(target=None, data=None, create=False, type=None):
         if target is None and create:
             getattr(bpy.data, CORRESPONDANCE[type]).new(data["name"])
 
-        # Load other meshes metadata
         dump_anything.load(target, data)
+
+        target.id = data['id']
     except:
         print("default loading error")
 

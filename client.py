@@ -205,7 +205,7 @@ class RCFClientAgent(object):
                 if self.property_map[key].id == self.id:
                     if value == 'None':
                         value = helpers.dump(key)
-
+                        value['id'] = self.id.decode()
                     if value:
                         rcfmsg = message.RCFMessage(
                             key=key, id=self.id, mtype="", body=value)
@@ -224,7 +224,7 @@ class RCFClientAgent(object):
             if value == 'None':
                 # try to dump from bpy
                 value = helpers.dump(key)
-
+                value['id'] = self.id.decode()
             if value:
                 rcfmsg = message.RCFMessage(
                     key=key, id=self.id, mtype="", body=value)
