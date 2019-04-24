@@ -71,18 +71,22 @@ class RCFClient(object):
             target=rcf_client_agent, args=(self.ctx, peer, self.queue), name="net-agent")
         self.agent.daemon = True
         self.agent.start()
+        # self.sync_agent = threading.Thread(
+        #     target=rcf_sync_agent, args=(self.ctx, self.pipe), name="sync-agent")
+        # self.sync_agent.daemon = True
+        # self.sync_agent.start()
 
     def connect(self, id, address, port):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
             id, str) else id), (address.encode() if isinstance(
                 address, str) else address), b'%d' % port])
 
-    def set(self, key, value=None):
+    def set(self, key, value=None, override=False):
         """Set new value in distributed hash table
         Sends [SET][key][value] to the agent
         """
         self.pipe.send_multipart(
-            [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
+            [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None')),umsgpack.packb(override)])
 
     def add(self, key, value=None):
         """Set new value in distributed hash table
@@ -200,6 +204,7 @@ class RCFClientAgent(object):
         elif command == b"SET":
             key = umsgpack.unpackb(msg[0])
             value = umsgpack.unpackb(msg[1])
+            override = umsgpack.unpackb(msg[2])
 
             if key in self.property_map.keys():
                 if self.property_map[key].id == self.id:
@@ -207,8 +212,13 @@ class RCFClientAgent(object):
                         value = helpers.dump(key)
                         value['id'] = self.id.decode()
                     if value:
+                        key_id = self.id
+
+                        if override:
+                            key_id = value['id'].encode()
+
                         rcfmsg = message.RCFMessage(
-                            key=key, id=self.id, mtype="", body=value)
+                            key=key, id=key_id, mtype="", body=value)
 
                         rcfmsg.store(self.property_map)
                         rcfmsg.send(self.publisher)
@@ -216,6 +226,7 @@ class RCFClientAgent(object):
                         logger.error("Fail to dump ")
                 else:
                     helpers.load(key,self.property_map[key].body)
+        
 
         elif command == b"ADD":
             key = umsgpack.unpackb(msg[0])
@@ -398,7 +409,7 @@ def serialization_agent(ctx, pipe):
             agent.control_message()
 
 
-class SyncAgent(object):
+class RCFSyncAgent(object):
     ctx = None
     pipe = None
 
@@ -414,8 +425,8 @@ class SyncAgent(object):
         pass
 
 
-def sync_agent(ctx, pipe):
-    agent = SyncAgent(ctx, pipe)
+def rcf_sync_agent(ctx, pipe):
+    agent = RCFSyncAgent(ctx, pipe)
 
     global stop
     while True:

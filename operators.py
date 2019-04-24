@@ -36,6 +36,18 @@ SUPPORTED_TYPES = ['Material',
 # UTILITY FUNCTIONS
 
 
+def client_list_callback(scene, context):
+    global client_keys
+    
+    items = []
+
+    for k in client_keys:
+        if 'Client' in k[0]:
+            name = k[1].decode()
+            items.append((name, name, ""))
+
+    return items
+
 def clean_scene(elements=SUPPORTED_DATABLOCKS):
     for datablock in elements:
         datablock_ref = getattr(bpy.data, datablock)
@@ -319,14 +331,17 @@ class session_create(bpy.types.Operator):
         global server
         global client_instance
 
+        net_settings = context.scene.session_settings
         server = subprocess.Popen(
             ['python', 'server.py'], shell=False, stdout=subprocess.PIPE)
         time.sleep(0.1)
 
         bpy.ops.session.join()
 
-        if context.scene.session_settings.init_scene:
+        if net_settings.init_scene:
             init_datablocks()
+
+        net_settings.is_admin = True
 
         return {"FINISHED"}
 
@@ -358,11 +373,55 @@ class session_stop(bpy.types.Operator):
             del client_instance
             client_instance = None
             client_keys = None
-            net_settings.is_running = False
+            net_settings.is_admin = False
             client_state = 1
             unregister_ticks()
         else:
             logger.debug("No server/client_instance running.")
+
+        return {"FINISHED"}
+
+
+class session_rights(bpy.types.Operator):
+    bl_idname = "session.right"
+    bl_label = "close"
+    bl_description = "stop net service"
+    bl_options = {"REGISTER"}
+
+    key: bpy.props.StringProperty(default="None")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        net_settings = context.scene.session_settings
+
+        col = layout.column()
+        col.prop(net_settings,"clients")
+
+
+
+    def execute(self, context):
+        global server
+        global client_instance, client_keys, client_state
+
+        net_settings = context.scene.session_settings
+
+        if net_settings.is_admin:
+            val = client_instance.get(self.key)
+            val[0][1]['id'] = net_settings.clients
+    
+            client_instance.set(key=self.key, value=val[0][1],override=True)
+
+            print("Updating rights")
+        else:
+            print("Not admin")
 
         return {"FINISHED"}
 
@@ -378,7 +437,7 @@ class session_settings(bpy.types.PropertyGroup):
     add_property_depth = bpy.props.IntProperty(
         name="add_property_depth", default=1)
     buffer = bpy.props.StringProperty(name="None")
-    is_running = bpy.props.BoolProperty(name="is_running", default=False)
+    is_admin = bpy.props.BoolProperty(name="is_admin", default=False)
     load_data = bpy.props.BoolProperty(name="load_data", default=True)
     init_scene = bpy.props.BoolProperty(name="load_data", default=True)
     clear_scene = bpy.props.BoolProperty(name="clear_scene", default=True)
@@ -396,6 +455,11 @@ class session_settings(bpy.types.PropertyGroup):
     client_color = bpy.props.FloatVectorProperty(name="client_instance_color",
                                                  subtype='COLOR',
                                                  default=randomColor())
+    clients = bpy.props.EnumProperty(
+        name="clients",
+        description="client enum",
+        items=client_list_callback
+        )
 
 
 class session_snapview(bpy.types.Operator):
@@ -438,6 +502,7 @@ classes = (
     session_settings,
     session_remove_property,
     session_snapview,
+    session_rights,
 )
 
 
@@ -453,22 +518,20 @@ def ordered(updates):
     return uplist
 
 
-def is_dirty(updates):
+def exist(update):
     global client_keys
 
-    if client_keys:
-        if len(client_keys) > 0:
-            for u in updates:
-                key = "{}/{}".format(u.id.bl_rna.name, u.id.name)
+    key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
 
-                if key not in client_keys:
-                    return True
-
-    return False
+    if key in client_keys:
+        return True
+    else:
+        return False
 
 
 def depsgraph_update(scene):
     global client_instance
+    global client_keys
 
     if client_instance and client_instance.agent.is_alive():
         updates = bpy.context.depsgraph.updates
@@ -491,12 +554,22 @@ def depsgraph_update(scene):
         #         else:
         #             print("{} applying update".format(username))
 
-        # if is_dirty(updates):
+        
         # for update in ordered(updates):
         #     if update[2] == "Master Collection":
         #         pass
         #     elif update[1] in SUPPORTED_TYPES:
-        #         client_instance.add("{}/{}".format(update[1], update[2]))
+        #         key = "{}/{}".format(update[1], update[2])
+                
+        #         data = client_instance.get(key)
+
+        #         if data:
+        #             # Queue update
+        #             client_instance.set(key)
+        #         else:
+        #             # Instance new object ?
+        #             print("new")
+        #             client_instance.add(key)
 
         if hasattr(bpy.context, 'selected_objects'):
             selected_objects = helpers.get_selected_objects(scene)

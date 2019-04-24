@@ -3,6 +3,9 @@ import bpy
 from . import client, operators
 
 
+
+
+
 class SessionSettingsPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
     bl_label = "NET settings"
@@ -164,13 +167,19 @@ class SessionPropertiesPanel(bpy.types.Panel):
                     
                     detail_item_box.label(text="{} ".format(item[0]))
 
+                    # detail_item_box.prop(net_settings, "clients", text="")
+
                     detail_item_box.label(text="{} ".format(owner))
 
+                    right_icon = "DECORATE_UNLOCKED"
                     if owner == net_settings.username:
-                        detail_item_box.label(text="",icon="DECORATE_UNLOCKED")
+                        right_icon="DECORATE_UNLOCKED"
                     else:
                         
-                        detail_item_box.label(text="",icon="DECORATE_LOCKED")
+                        right_icon="DECORATE_LOCKED"
+                    
+                    ro = detail_item_box.operator("session.right", text="", icon=right_icon)
+                    ro.key = item[0]
                     # detail_item_box.operator(
                     #     "session.remove_prop", text="", icon="X").property_path = key
             else:

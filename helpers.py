@@ -23,9 +23,8 @@ def get_selected_objects(scene):
 
     return selected_objects
 
+
 #    LOAD HELPERS
-
-
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -85,10 +84,14 @@ def load_client(client=None, data=None):
         client_data = data
         # Load selected object
         for obj in C.scene.objects:
-            if client_data['active_objects'] and obj.name in client_data['active_objects']:
-                D.objects[obj.name].hide_select = True
+            if obj.id == client:
+                 D.objects[obj.name].hide_select = True
             else:
-                D.objects[obj.name].hide_select = False       
+                D.objects[obj.name].hide_select = False
+            # if client_data['active_objects'] and obj.name in client_data['active_objects']:
+            #     D.objects[obj.name].hide_select = True
+            # else:
+            #     D.objects[obj.name].hide_select = False       
 
 
 def load_mesh(target=None, data=None, create=False):
