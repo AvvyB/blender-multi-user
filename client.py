@@ -214,13 +214,16 @@ class RCFClientAgent(object):
                     if value:
                         key_id = self.id
 
-                        if override:
-                            key_id = value['id'].encode()
+                        # if override:
+                        #     key_id = value['id'].encode()
 
                         rcfmsg = message.RCFMessage(
-                            key=key, id=key_id, mtype="", body=value)
+                            key=key, id=key_id, body=value)
 
                         rcfmsg.store(self.property_map)
+                        
+                        if override:
+                            helpers.load(key,self.property_map[key].body)
                         rcfmsg.send(self.publisher)
                     else:
                         logger.error("Fail to dump ")
@@ -238,7 +241,7 @@ class RCFClientAgent(object):
                 value['id'] = self.id.decode()
             if value:
                 rcfmsg = message.RCFMessage(
-                    key=key, id=self.id, mtype="", body=value)
+                    key=key, id=self.id, body=value)
 
                 rcfmsg.store(self.property_map)
                 rcfmsg.send(self.publisher)
@@ -333,6 +336,10 @@ def rcf_client_agent(ctx, pipe, queue):
                 if rcfmsg.id != agent.id:
                     # update_queue.put((rcfmsg.key,rcfmsg.body))
                    
+                    try:
+                        logger.info(rcfmsg.body['id'])
+                    except:
+                        pass
                     with lock:
                         helpers.load(rcfmsg.key, rcfmsg.body)
                     rcfmsg.store(agent.property_map)

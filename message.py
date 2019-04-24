@@ -12,20 +12,16 @@ class RCFMessage(object):
     Message is formatted on wire as 2 frames:
     frame 0: key (0MQ string) // property path
     frame 1: id (0MQ string) // property path
-    frame 2: mtype (0MQ string) // property path
     frame 3: body (blob) // Could be any data 
 
     """
     key = None  # key (string)
     id = None  # User  (string)
-    mtype = None  # data mtype (string)
     body = None  # data blob
 
 
-    def __init__(self,  key=None, id=None, mtype=None, body=None):
+    def __init__(self,  key=None, id=None,  body=None):
         self.key = key
-
-        self.mtype = mtype
         self.body = body
         self.id = id
 
@@ -72,10 +68,9 @@ class RCFMessage(object):
         else:
             size = len(self.body)
             data = repr(self.body)
-        print("[key:{key}][size:{size}][mtype:{mtype}] {data}".format(
+        print("[key:{key}][size:{size}] {data}".format(
             key=self.key,
             size=size,
-            mtype=self.mtype,
             data=data,
         ))
 

@@ -416,6 +416,7 @@ class session_rights(bpy.types.Operator):
         if net_settings.is_admin:
             val = client_instance.get(self.key)
             val[0][1]['id'] = net_settings.clients
+            
     
             client_instance.set(key=self.key, value=val[0][1],override=True)
 
