@@ -434,7 +434,7 @@ class session_rights(bpy.types.Operator):
     
             client_instance.set(key=self.key, value=val[0][1],override=True)
 
-            print("Updating rights")
+            print("Updating {} rights to {}".format(self.key,net_settings.clients))
         else:
             print("Not admin")
 

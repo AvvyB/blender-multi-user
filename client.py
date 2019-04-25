@@ -207,7 +207,7 @@ class RCFClientAgent(object):
             override = umsgpack.unpackb(msg[2])
 
             if key in self.property_map.keys():
-                if self.property_map[key].body['id'] == self.id.decode():
+                if self.property_map[key].body['id'] == self.id.decode() or override:
                     if value == 'None':
                         value = helpers.dump(key)
                         value['id'] = self.id.decode()
@@ -339,10 +339,10 @@ def rcf_client_agent(ctx, pipe, queue):
                 if rcfmsg.id != agent.id:
                     # update_queue.put((rcfmsg.key,rcfmsg.body))
                    
-                    try:
-                        logger.info(rcfmsg.body['id'])
-                    except:
-                        pass
+                    # try:
+                    #     logger.info(rcfmsg.body['id'])
+                    # except:
+                    #     pass
                     with lock:
                         helpers.load(rcfmsg.key, rcfmsg.body)
                     rcfmsg.store(agent.property_map)
