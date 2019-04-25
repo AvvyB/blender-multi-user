@@ -156,8 +156,9 @@ class SessionPropertiesPanel(bpy.types.Panel):
                 for item in operators.client_keys:
                     owner = 'toto'
                     try:
-                        owner =  item[1].decode()
+                        owner =  item[1]
                     except:
+                        owner =  item[1].decode()
                         pass
                     item_box = area_msg.box()
                     

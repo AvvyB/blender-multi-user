@@ -43,7 +43,7 @@ def client_list_callback(scene, context):
 
     for k in client_keys:
         if 'Client' in k[0]:
-            name = k[1].decode()
+            name = k[1]
             items.append((name, name, ""))
 
     return items
@@ -144,6 +144,17 @@ def update_selected_object(context):
 
     # return False
 
+def update_rights():
+    
+    C = bpy.context
+    D = bpy.data
+    client = C.scene.session_settings.username
+
+    for obj in C.scene.objects:
+            if obj.id == client:
+                 D.objects[obj.name].hide_select = False
+            else:
+                D.objects[obj.name].hide_select = True
 
 def init_datablocks():
     global client_instance
@@ -175,6 +186,9 @@ def draw_tick():
     # refresh_window()
     # Upload
     upload_client_instance_position()
+
+    update_rights()
+
     return .2
 
 

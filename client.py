@@ -207,7 +207,7 @@ class RCFClientAgent(object):
             override = umsgpack.unpackb(msg[2])
 
             if key in self.property_map.keys():
-                if self.property_map[key].id == self.id:
+                if self.property_map[key].body['id'] == self.id.decode():
                     if value == 'None':
                         value = helpers.dump(key)
                         value['id'] = self.id.decode()
@@ -263,7 +263,10 @@ class RCFClientAgent(object):
         elif command == b"LIST":
             dump_list = []
             for k,v in self.property_map.items():
-                dump_list.append([k,v.id])
+                if 'Client' in k:
+                    dump_list.append([k,v.id.decode()])
+                else:
+                    dump_list.append([k,v.body['id']])
 
             self.pipe.send(umsgpack.packb(dump_list)
                            if dump_list else umsgpack.packb(''))
@@ -319,7 +322,7 @@ def rcf_client_agent(ctx, pipe, queue):
 
                     with lock:
                         client_dict = helpers.init_client(key=client_key)
-
+                        client_dict['id'] = agent.id.decode()
                     client_store = message.RCFMessage(
                         key=client_key, id=agent.id, body=client_dict)
                     logger.info(client_store)

@@ -77,17 +77,18 @@ def resolve_bpy_path(path):
 def load_client(client=None, data=None):
     C = bpy.context
     D = bpy.data
+    
     if client and data:
         # localy_selected = get_selected_objects(C.scene)
         # Draw client
 
         client_data = data
         # Load selected object
-        for obj in C.scene.objects:
-            if obj.id == client:
-                 D.objects[obj.name].hide_select = True
-            else:
-                D.objects[obj.name].hide_select = False
+        # for obj in C.scene.objects:
+        #     if obj.id == client:
+        #          D.objects[obj.name].hide_select = True
+        #     else:
+        #         D.objects[obj.name].hide_select = False
             # if client_data['active_objects'] and obj.name in client_data['active_objects']:
             #     D.objects[obj.name].hide_select = True
             # else:
