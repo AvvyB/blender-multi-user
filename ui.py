@@ -4,6 +4,8 @@ from . import client, operators
 
 
 
+ICONS = {'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
+                  'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA', 'Light': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'Grease Pencil': 'GREASEPENCIL'}
 
 
 class SessionSettingsPanel(bpy.types.Panel):
@@ -160,13 +162,16 @@ class SessionPropertiesPanel(bpy.types.Panel):
                     except:
                         owner =  item[1].decode()
                         pass
+                    
+                    store_type,store_name =  item[0].split('/')
                     item_box = area_msg.box()
                     
                     detail_item_box = item_box.row(align = True)
 
                     # detail_item_box = item_box.row()
-                    
-                    detail_item_box.label(text="{} ".format(item[0]))
+                    detail_item_box.label(text="",icon=ICONS[store_type])
+
+                    detail_item_box.label(text="{} ".format(store_name))
 
                     # detail_item_box.prop(net_settings, "clients", text="")
 
@@ -179,42 +184,10 @@ class SessionPropertiesPanel(bpy.types.Panel):
                         
                         right_icon="DECORATE_LOCKED"
                     
-                    ro = detail_item_box.operator("session.right", text="", icon=right_icon)
+                    ro = detail_item_box.operator("session.right", text="",emboss=net_settings.is_admin, icon=right_icon)
                     ro.key = item[0]
                     # detail_item_box.operator(
                     #     "session.remove_prop", text="", icon="X").property_path = key
-            else:
-                area_msg.label(text="Empty")
-
-
-class SessionTaskPanel(bpy.types.Panel):
-    """Creates a Panel in the scene context of the properties editor"""
-    bl_label = "NET tasks"
-    bl_idname = "SCENE_PT_SessionTasks"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "scene"
-
-    @classmethod
-    def poll(cls, context):
-        return operators.client_state == 3
-
-    def draw(self, context):
-        layout = self.layout
-        # Create a simple row.
-        row = layout.row()
-
-        if operators.update_list:
-            # Property area
-            area_msg = row.box()
-            if len(operators.update_list) > 0:
-                for key, values in operators.update_list.items():
-                    item_box = area_msg.box()
-                    detail_item_box = item_box.row()
-                    # detail_item_box = item_box.row()
-                    
-                    detail_item_box.label(text="{} - {} ".format(
-                        key, values))
             else:
                 area_msg.label(text="Empty")
 
@@ -223,7 +196,7 @@ classes = (
     SessionSettingsPanel,
     SessionUsersPanel,
     SessionPropertiesPanel,
-    # SessionTaskPanel,
+
 )
 
 
