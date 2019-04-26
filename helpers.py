@@ -342,8 +342,6 @@ def load_default(target=None, data=None, create=False, type=None):
         print("default loading error")
 
 # DUMP HELPERS
-
-
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]

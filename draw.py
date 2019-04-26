@@ -30,6 +30,16 @@ def get_target(region, rv3d, coord):
 
     return [target.x, target.y, target.z]
 
+def get_target_far(region, rv3d, coord, distance):
+    target = [0, 0, 0]
+
+    if coord and region and rv3d:
+        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+        target = ray_origin + view_vector * distance
+
+    return [target.x, target.y, target.z]
+
 
 def get_client_view_rect():
     area, region, rv3d = view3d_find()
@@ -38,6 +48,8 @@ def get_client_view_rect():
     v2 = [0, 0, 0]
     v3 = [0, 0, 0]
     v4 = [0, 0, 0]
+    v5 = [0, 0, 0]
+    v6 = [0, 0, 0]
 
     if area and region and rv3d:
         width = region.width
@@ -48,7 +60,10 @@ def get_client_view_rect():
         v2 = get_target(region, rv3d, (width, height))
         v4 = get_target(region, rv3d, (width, 0))
 
-    coords = [v1, v2, v3, v4]
+        v5 = get_target(region, rv3d, (width/2, height/2))
+        v6 = get_target_far(region, rv3d, (width/2, height/2), 10)
+
+    coords = [v1, v2, v3, v4,v5,v6]
     indices = (
         (1, 3), (2, 1), (3, 0), (2, 0)
     )
@@ -155,7 +170,7 @@ class HUD(object):
             if name != local_username:
                 try:
                     indices = (
-                        (1, 3), (2, 1), (3, 0), (2, 0)
+                        (1, 3), (2, 1), (3, 0), (2, 0),(4, 5)
                     )
 
                     shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
@@ -172,7 +187,7 @@ class HUD(object):
                     print("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
-        bgl.glLineWidth(3)
+        bgl.glLineWidth(2)
         try:
             for shader, batch, color in self.d3d_items.values():
                 shader.bind()
