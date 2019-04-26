@@ -40,13 +40,14 @@ def client_list_callback(scene, context):
     global client_keys
     
     items = []
-
-    for k in client_keys:
-        if 'Client' in k[0]:
-            name = k[1]
-            items.append((name, name, ""))
+    if client_keys:
+        for k in client_keys:
+            if 'Client' in k[0]:
+                name = k[1]
+                items.append((name, name, ""))
 
     return items
+
 
 def clean_scene(elements=SUPPORTED_DATABLOCKS):
     for datablock in elements:
@@ -104,14 +105,14 @@ def update_selected_object(context):
     
     if len(selected_objects) > 0:
         
-        for obj in context.selected_objects:
-            if obj.name not in client_data[0][1]['active_objects']:
+        for obj in selected_objects:
+            if obj not in client_data[0][1]['active_objects']:
                 client_data[0][1]['active_objects'] = selected_objects
 
                 client_instance.set(client_key,client_data[0][1])
                 break
 
-    elif client_data[0][1]['active_objects']:
+    elif client_data and client_data[0][1]['active_objects']:
         client_data[0][1]['active_objects'] = []
         client_instance.set(client_key,client_data[0][1])
 
@@ -144,6 +145,7 @@ def update_selected_object(context):
 
     # return False
 
+
 def update_rights():
     
     C = bpy.context
@@ -155,6 +157,7 @@ def update_rights():
                  D.objects[obj.name].hide_select = False
             else:
                 D.objects[obj.name].hide_select = True
+
 
 def init_datablocks():
     global client_instance
@@ -527,7 +530,7 @@ def ordered(updates):
     for item in updates.items():
         if item[1].id.bl_rna.name in SUPPORTED_TYPES:
             uplist.append((SUPPORTED_TYPES.index(
-                item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name))
+                item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name,item[1].id ))
 
     uplist.sort(key=itemgetter(0))
     return uplist
@@ -553,7 +556,7 @@ def depsgraph_update(scene):
         username = bpy.context.scene.session_settings.username
         update_selected_object(bpy.context)
 
-        selected_objects = helpers.get_selected_objects(scene)
+        # selected_objects = helpers.get_selected_objects(scene)
 
 
 
@@ -579,21 +582,21 @@ def depsgraph_update(scene):
         #         data = client_instance.get(key)
 
         #         if data:
-        #             # Queue update
-        #             client_instance.set(key)
+        #             if update[3].id == username:
+        #                 # Queue update
+        #                 client_instance.set(key)
         #         else:
         #             # Instance new object ?
         #             print("new")
         #             client_instance.add(key)
 
-        if hasattr(bpy.context, 'selected_objects'):
-            selected_objects = helpers.get_selected_objects(scene)
-            if len(selected_objects) > 0:
-                for updated_data in updates:
-                    if updated_data.id.name in selected_objects:
-                        if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-                            client_instance.set(
-                                "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+        selected_objects = helpers.get_selected_objects(scene)
+        if len(selected_objects) > 0:
+            for updated_data in updates:
+                if updated_data.id.name in selected_objects:
+                    if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+                        client_instance.set(
+                            "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
 
 
 def register():

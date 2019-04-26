@@ -172,7 +172,7 @@ def load_collection(target=None, data=None, create=False):
         # Load other meshes metadata
         # dump_anything.load(target, data)
 
-        # load objects into collection
+        # link objects
         for object in data["objects"]:
             target.objects.link(bpy.data.objects[object])
 
@@ -180,9 +180,15 @@ def load_collection(target=None, data=None, create=False):
             if object not in data["objects"]:
                 target.objects.unlink(bpy.data.objects[object])
         
+        # Link childrens
+        for collection in data["children"]:
+            if collection not in target.children.keys():
+                target.children.link(
+                    bpy.data.collections[collection])
+        
         target.id = data['id']
-    except:
-        print("Collection loading error")
+    except Exception as e:
+        print("Collection loading error: {}".format(e))
 
 
 def load_scene(target=None, data=None, create=False):
