@@ -212,7 +212,6 @@ def unregister_ticks():
 
 # OPERATORS
 
-
 class session_join(bpy.types.Operator):
 
     bl_idname = "session.join"
@@ -351,7 +350,7 @@ class session_create(bpy.types.Operator):
         net_settings = context.scene.session_settings
         server = subprocess.Popen(
             ['python', 'server.py'], shell=False, stdout=subprocess.PIPE)
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
         bpy.ops.session.join()
 

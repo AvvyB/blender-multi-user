@@ -9,6 +9,7 @@ from enum import Enum
 from random import randint
 import copy
 import queue
+
 lock = threading.Lock()
 
 try:

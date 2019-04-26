@@ -30,6 +30,7 @@ def get_target(region, rv3d, coord):
 
     return [target.x, target.y, target.z]
 
+
 def get_target_far(region, rv3d, coord, distance):
     target = [0, 0, 0]
 

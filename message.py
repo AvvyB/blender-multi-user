@@ -54,7 +54,7 @@ class RCFMessage(object):
     @classmethod
     def recv(cls, socket):
         """Reads key-value message from socket, returns new kvmsg instance."""
-        key, id,  body = socket.recv_multipart(zmq.DONTWAIT)
+        key, id,  body = socket.recv_multipart()
         key = key.decode() if key else None
         id = id if id else None
         body = umsgpack.unpackb(body) if body else None
