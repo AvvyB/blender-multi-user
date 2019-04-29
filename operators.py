@@ -170,14 +170,14 @@ def init_datablocks():
 
 
 def default_tick():
-    bpy.ops.session.refresh()
+    # bpy.ops.session.refresh()
     # global client_instance
 
     # if not client_instance.queue.empty():
     #     update = client_instance.queue.get()
     #     helpers.load(update[0],update[1])
 
-    return 0.5
+    return 10
 
 
 def draw_tick():
@@ -210,7 +210,7 @@ def sync():
 
 def register_ticks():
     # REGISTER Updaters
-    bpy.app.timers.register(draw_tick)
+    # bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
 
@@ -260,7 +260,7 @@ class session_join(bpy.types.Operator):
 
         # net_settings.is_running = True
         drawer = draw.HUD(client_instance=client_instance)
-
+        # bpy.ops.session.refresh()
         register_ticks()
         return {"FINISHED"}
 
@@ -367,9 +367,10 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        if net_settings.init_scene:
-            init_datablocks()
+        # if net_settings.init_scene:
+        #     init_datablocks()
 
+        client_instance.init()
         net_settings.is_admin = True
 
         return {"FINISHED"}

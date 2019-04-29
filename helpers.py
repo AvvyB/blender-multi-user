@@ -7,6 +7,9 @@ import logging
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
+SUPPORTED_TYPES = ['Material',
+                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature', 'Collection', 'Scene']
+
 logger = logging.getLogger(__name__)
 
 # UTILITY FUNCTIONS
@@ -23,7 +26,15 @@ def get_selected_objects(scene):
 
     return selected_objects
 
-
+def get_all_datablocks():
+    datas = []
+    for datatype in SUPPORTED_TYPES:
+        for item in getattr(bpy.data, CORRESPONDANCE[datatype]):
+            item.id= bpy.context.scene.session_settings.username
+            datas.append("{}/{}".format(datatype, item.name))
+    
+    return datas
+            
 #    LOAD HELPERS
 def load(key, value):
     target = resolve_bpy_path(key)

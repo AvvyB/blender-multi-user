@@ -81,6 +81,12 @@ class RCFClient(object):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
             id, str) else id), (address.encode() if isinstance(
                 address, str) else address), b'%d' % port])
+    def init(self):
+        """Set new value in distributed hash table
+        Sends [SET][key][value] to the agent
+        """
+        self.pipe.send_multipart(
+            [b"INIT"])
 
     def set(self, key, value=None, override=False):
         """Set new value in distributed hash table
@@ -183,6 +189,20 @@ class RCFClientAgent(object):
         #     target=serialization_agent, args=(self.ctx, peer), name="serial-agent")
         # self.serial_agent.daemon = True
         # self.serial_agent.start()
+    def _add(self,key, value='None'):
+        if value == 'None':
+            # try to dump from bpy
+            # logging.info(key)
+            value = helpers.dump(key)
+            value['id'] = self.id.decode()
+        if value:
+            rcfmsg = message.RCFMessage(
+                key=key, id=self.id, body=value)
+
+            rcfmsg.store(self.property_map)
+            rcfmsg.send(self.publisher)
+        else:
+            logger.error("Fail to dump ")
 
     def control_message(self):
         msg = self.pipe.recv_multipart()
@@ -232,6 +252,10 @@ class RCFClientAgent(object):
                 else:
                     helpers.load(key,self.property_map[key].body)
         
+        elif command == b"INIT":
+            d = helpers.get_all_datablocks()
+            for i in d:
+                self._add(i)
 
         elif command == b"ADD":
             key = umsgpack.unpackb(msg[0])
@@ -367,19 +391,19 @@ def rcf_client_agent(ctx, pipe, queue):
                     logger.debug("{} nothing to do".format(agent.id))
 
                 # LOCAL SYNC
-                if not update_queue.empty():
-                    key = update_queue.get()
+                # if not update_queue.empty():
+                #     key = update_queue.get()
 
-                    value = helpers.dump(key)
-                    value['id'] = agent.id.decode()
-                    if value:
-                        rcfmsg = message.RCFMessage(
-                            key=key, id=agent.id, body=value)
+                #     value = helpers.dump(key)
+                #     value['id'] = agent.id.decode()
+                #     if value:
+                #         rcfmsg = message.RCFMessage(
+                #             key=key, id=agent.id, body=value)
 
-                        rcfmsg.store(agent.property_map)
-                        rcfmsg.send(agent.publisher)
-                    else:
-                        logger.error("Fail to dump ")
+                #         rcfmsg.store(agent.property_map)
+                #         rcfmsg.send(agent.publisher)
+                #     else:
+                #         logger.error("Fail to dump ")
 
 
 
