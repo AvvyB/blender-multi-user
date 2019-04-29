@@ -131,7 +131,7 @@ def load_mesh(target=None, data=None, create=False):
 
         target.id = data['id']
     else:
-        logger.info("Mesh can't be loaded")
+        logger.debug("Mesh can't be loaded")
 
 
 def load_object(target=None, data=None, create=False):
@@ -365,7 +365,7 @@ def dump(key):
     elif target_type == 'Collection':
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':
-        data = dump_datablock(target, 4)
+        data = dump_datablock_attibute(target,['name','collection','id','camera','grease_pencil'], 4)
 
     return data
 

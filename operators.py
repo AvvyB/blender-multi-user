@@ -203,7 +203,7 @@ def sync():
                 if item.id == 'None':
                     item.id= bpy.context.scene.session_settings.username
                     key = "{}/{}".format(datatype, item.name)
-                    client_instance.queue.put(key)
+                    client_instance.add(key)
 
 
     return .2
@@ -570,8 +570,7 @@ def depsgraph_update(scene):
 
         # selected_objects = helpers.get_selected_objects(scene)
 
-
-
+            
         # if len(selected_objects) > 0:
         #     for update in updates:
         #         update_key = "{}/{}".format(update.id.bl_rna.name, update.id.name)

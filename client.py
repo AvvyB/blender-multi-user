@@ -239,6 +239,7 @@ class RCFClientAgent(object):
 
             if value == 'None':
                 # try to dump from bpy
+                # logging.info(key)
                 value = helpers.dump(key)
                 value['id'] = self.id.decode()
             if value:
