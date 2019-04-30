@@ -170,14 +170,14 @@ def init_datablocks():
 
 
 def default_tick():
-    # bpy.ops.session.refresh()
+    bpy.ops.session.refresh()
     # global client_instance
 
     # if not client_instance.queue.empty():
     #     update = client_instance.queue.get()
     #     helpers.load(update[0],update[1])
 
-    return 10
+    return 1
 
 
 def draw_tick():
@@ -186,7 +186,7 @@ def draw_tick():
 
     drawer.draw()
 
-    # refresh_window()
+    refresh_window()
     # Upload
     upload_client_instance_position()
 
@@ -219,7 +219,7 @@ def unregister_ticks():
     # REGISTER Updaters
     global drawer
     drawer.unregister_handlers()
-    bpy.app.timers.unregister(draw_tick)
+    # bpy.app.timers.unregister(draw_tick)
 
     bpy.app.timers.unregister(default_tick)
 

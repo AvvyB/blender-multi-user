@@ -40,6 +40,8 @@ def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
+    if value == "None":
+        return 
     
     if target_type == 'Object':
         load_object(target=target, data=value,

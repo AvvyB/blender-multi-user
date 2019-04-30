@@ -1,3 +1,4 @@
+import logging
 try:
     from .libs import umsgpack
     from .libs import zmq
@@ -6,6 +7,8 @@ except:
     from libs import umsgpack
     from libs import zmq
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 class RCFMessage(object):
     """
@@ -28,28 +31,29 @@ class RCFMessage(object):
     def apply(self):
         pass
 
-    def store(self, dikt, override=False):
+    def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
-        if self in dikt:
-            if override:
+        if self.key is not None:
+            if self in dikt and self.body == 'None':
+                logger.info("erasing key {}".format(self.key))
+                del dikt[self.key]
+            else:
                 dikt[self.key] = self
-        else:
-            if self.key is not None:
-                dikt[self.key] = self
+
         # elif self.key in dikt:
         #     del dikt[self.key]
 
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""
         key = ''.encode() if self.key is None else self.key.encode()
-        body = ''.encode() if self.body is None else umsgpack.packb(self.body)
+        body = umsgpack.packb('None') if self.body is None else umsgpack.packb(self.body)
         id = ''.encode() if self.id is None else self.id
 
         try:
             socket.send_multipart([key, id, body])
         except:
-            print("Fail to send {} {}".format(key, id))
+            print("Fail to send {} {} {}".format(key, id, body))
 
     @classmethod
     def recv(cls, socket):

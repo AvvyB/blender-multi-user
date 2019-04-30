@@ -10,18 +10,19 @@ from random import randint
 import copy
 import queue
 
+import zmq
 lock = threading.Lock()
 
 try:
     from .libs import umsgpack
-    from .libs import zmq
+    # from .libs import zmq
     from .libs import dump_anything
     from . import helpers
     from . import message
 except:
     # Server import
     from libs import umsgpack
-    from libs import zmq
+    # from libs import zmq
     from libs import dump_anything
     import helpers
     import message
@@ -88,6 +89,13 @@ class RCFClient(object):
         self.pipe.send_multipart(
             [b"INIT"])
 
+    def disconnect(self):
+        """
+        Disconnect
+        """
+        self.pipe.send_multipart(
+            [b"DISCONNECT"]) 
+
     def set(self, key, value=None, override=False):
         """Set new value in distributed hash table
         Sends [SET][key][value] to the agent
@@ -118,6 +126,11 @@ class RCFClient(object):
 
     def exit(self):
         if self.agent.is_alive():
+            self.disconnect()
+
+            # Disconnect time
+            time.sleep(0.2)
+
             global stop
             stop = True
 
@@ -223,6 +236,17 @@ class RCFClientAgent(object):
             else:
                 logger.error("E: too many servers (max. %i)", SERVER_MAX)
 
+        elif command == b"DISCONNECT":
+            if not self.admin:
+                uid = self.id.decode()
+
+                for k,v in self.property_map.items():
+                    if v.body["id"] == uid:
+                        delete_msg = message.RCFMessage(
+                                key=k, id=self.id, body=None)
+                        # delete_msg.store(self.property_map)
+                        delete_msg.send(self.publisher)
+                        
         elif command == b"SET":
             key = umsgpack.unpackb(msg[0])
             value = umsgpack.unpackb(msg[1])
@@ -293,8 +317,10 @@ class RCFClientAgent(object):
                 if 'Client' in k:
                     dump_list.append([k,v.id.decode()])
                 else:
-                    dump_list.append([k,v.body['id']])
-
+                    try:
+                        dump_list.append([k,v.body['id']])
+                    except:
+                        pass
             self.pipe.send(umsgpack.packb(dump_list)
                            if dump_list else umsgpack.packb(''))
 
@@ -353,7 +379,7 @@ def rcf_client_agent(ctx, pipe, queue):
                     client_store = message.RCFMessage(
                         key=client_key, id=agent.id, body=client_dict)
                     logger.info(client_store)
-                    client_store.store(agent.property_map, True)
+                    client_store.store(agent.property_map)
                     client_store.send(agent.publisher)
                     logger.info("snapshot complete")
                     agent.state = State.ACTIVE
