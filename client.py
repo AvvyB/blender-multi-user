@@ -402,6 +402,7 @@ def rcf_client_agent(ctx, pipe, queue):
                     #     logger.info(rcfmsg.body['id'])
                     # except:
                     #     pass
+                    
                     with lock:
                         helpers.load(rcfmsg.key, rcfmsg.body)
                     rcfmsg.store(agent.property_map)
