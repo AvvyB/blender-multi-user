@@ -213,6 +213,9 @@ class HUD(object):
 
     def draw(self):
         if self.client:
+            self.d3d_items.clear()
+            self.d2d_items.clear()
+            
             # Draw clients
             self.draw_clients()
             self.draw_selected_object()
