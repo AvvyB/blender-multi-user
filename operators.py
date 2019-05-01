@@ -186,7 +186,6 @@ def draw_tick():
 
     drawer.draw()
 
-    refresh_window()
     # Upload
     upload_client_instance_position()
 
@@ -210,7 +209,7 @@ def sync():
 
 def register_ticks():
     # REGISTER Updaters
-    # bpy.app.timers.register(draw_tick)
+    bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
 
@@ -219,7 +218,7 @@ def unregister_ticks():
     # REGISTER Updaters
     global drawer
     drawer.unregister_handlers()
-    # bpy.app.timers.unregister(draw_tick)
+    bpy.app.timers.unregister(draw_tick)
 
     bpy.app.timers.unregister(default_tick)
 
