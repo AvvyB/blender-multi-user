@@ -1,4 +1,5 @@
 import bpy
+import sys
 import mathutils
 from .libs import dump_anything
 from uuid import uuid4
@@ -69,6 +70,8 @@ def load(key, value):
                      create=True, type=target_type)
     elif target_type == 'Client':
         load_client(key.split('/')[1], value)
+
+    
 
 
 def resolve_bpy_path(path):
@@ -174,7 +177,7 @@ def load_object(target=None, data=None, create=False):
         target.id = data['id']
 
     except:
-        print("Object {} loading error ".format(data["name"]))
+        logger.error("Object {} loading error ".format(data["name"]))
 
 
 def load_collection(target=None, data=None, create=False):
@@ -201,7 +204,7 @@ def load_collection(target=None, data=None, create=False):
         
         target.id = data['id']
     except Exception as e:
-        print("Collection loading error: {}".format(e))
+        logger.error("Collection loading error: {}".format(e))
 
 
 def load_scene(target=None, data=None, create=False):
@@ -232,53 +235,58 @@ def load_scene(target=None, data=None, create=False):
         # if data["grease_pencil"]:
         #     target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
     except:
-        print("Scene loading error")
+        logger.error("Scene loading error")
 
 
 def load_material(target=None, data=None, create=False):
     try:
-        if target is None and create:
+        if target is None:
             target = bpy.data.materials.new(data["name"])
 
         # Load other meshes metadata
         dump_anything.load(target, data)
 
         # load nodes
-        for node in data["node_tree"]["nodes"]:
-            index = target.node_tree.nodes.find(node)
+        if data["node_tree"]:
+            for node in data["node_tree"]["nodes"]:
+                # fix None node tree error
+                if target.node_tree is None:
+                    target.use_nodes = True
 
-            if index is -1:
-                node_type = data["node_tree"]["nodes"][node]["bl_idname"]
+                index = target.node_tree.nodes.find(node)
 
-                target.node_tree.nodes.new(type=node_type)
+                if index is -1:
+                    node_type = data["node_tree"]["nodes"][node]["bl_idname"]
 
-            dump_anything.load(
-                target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
+                    target.node_tree.nodes.new(type=node_type)
 
-            for input in data["node_tree"]["nodes"][node]["inputs"]:
+                dump_anything.load(
+                    target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
 
-                try:
-                    target.node_tree.nodes[index].inputs[input].default_value = data[
-                        "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
-                except:
-                    pass
+                for input in data["node_tree"]["nodes"][node]["inputs"]:
 
-        # Load nodes links
-        target.node_tree.links.clear()
+                    try:
+                        target.node_tree.nodes[index].inputs[input].default_value = data[
+                            "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
+                    except:
+                        pass
+
+            # Load nodes links
+            target.node_tree.links.clear()
+
+            for link in data["node_tree"]["links"]:
+                current_link = data["node_tree"]["links"][link]
+                input_socket = target.node_tree.nodes[current_link['to_node']
+                                                    ['name']].inputs[current_link['to_socket']['name']]
+                output_socket = target.node_tree.nodes[current_link['from_node']
+                                                    ['name']].outputs[current_link['from_socket']['name']]
+
+                target.node_tree.links.new(input_socket, output_socket)
 
         target.id = data['id']
 
-        for link in data["node_tree"]["links"]:
-            current_link = data["node_tree"]["links"][link]
-            input_socket = target.node_tree.nodes[current_link['to_node']
-                                                  ['name']].inputs[current_link['to_socket']['name']]
-            output_socket = target.node_tree.nodes[current_link['from_node']
-                                                   ['name']].outputs[current_link['from_socket']['name']]
-
-            target.node_tree.links.new(input_socket, output_socket)
-
-    except:
-        print("Material loading error")
+    except Exception as e:
+        logger.error("Material loading error: {}".format(e))
 
 
 def load_gpencil_layer(target=None, data=None, create=False):
@@ -327,32 +335,32 @@ def load_gpencil(target=None, data=None, create=False):
 
         target.id = data['id']
     except:
-        print("default loading error")
+        logger.error("default loading error")
 
 
 def load_light(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
-            bpy.data.lights.new(data["name"], data["type"])
+            target = bpy.data.lights.new(data["name"], data["type"])
 
 
         dump_anything.load(target, data)
 
         target.id = data['id']
-    except:
-        print("light loading error")
+    except Exception as e:
+        logger.error("light loading error: {}".format(e))
 
 
 def load_default(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
-            getattr(bpy.data, CORRESPONDANCE[type]).new(data["name"])
+            target = getattr(bpy.data, CORRESPONDANCE[type]).new(data["name"])
 
         dump_anything.load(target, data)
 
         target.id = data['id']
-    except:
-        print("default loading error")
+    except Exception as e:
+        logger.error("default loading error {}".format(e))
 
 # DUMP HELPERS
 def dump(key):

@@ -28,9 +28,6 @@ class RCFMessage(object):
         self.body = body
         self.id = id
 
-    def apply(self):
-        pass
-
     def store(self, dikt):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
@@ -40,9 +37,6 @@ class RCFMessage(object):
                 del dikt[self.key]
             else:
                 dikt[self.key] = self
-
-        # elif self.key in dikt:
-        #     del dikt[self.key]
 
     def send(self, socket):
         """Send key-value message to socket; any empty frames are sent as such."""

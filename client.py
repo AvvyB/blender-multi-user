@@ -227,7 +227,7 @@ class RCFClientAgent(object):
             port = int(msg.pop(0))
 
             if self.server is None:
-                if address == '127.0.0.1':
+                if address == '127.0.0.1' or 'localhost' :
                     self.admin = True
                 self.server = RCFServer(self.ctx, address, port, self.id)
                 self.publisher.connect(
@@ -237,7 +237,7 @@ class RCFClientAgent(object):
                 logger.error("E: too many servers (max. %i)", SERVER_MAX)
 
         elif command == b"DISCONNECT":
-            if not self.admin:
+            if self.admin is False:
                 uid = self.id.decode()
 
                 for k,v in self.property_map.items():
