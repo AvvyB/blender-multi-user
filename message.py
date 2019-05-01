@@ -32,7 +32,7 @@ class RCFMessage(object):
         """Store me in a dict if I have anything to store"""
         # this currently erasing old value
         if self.key is not None:
-            if self in dikt and self.body == 'None':
+            if self.body == 'None':
                 logger.info("erasing key {}".format(self.key))
                 del dikt[self.key]
             else:

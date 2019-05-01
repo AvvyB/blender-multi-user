@@ -227,7 +227,7 @@ class RCFClientAgent(object):
             port = int(msg.pop(0))
 
             if self.server is None:
-                if address == '127.0.0.1' or 'localhost' :
+                if address == '127.0.0.1' or address == 'localhost' :
                     self.admin = True
                 self.server = RCFServer(self.ctx, address, port, self.id)
                 self.publisher.connect(
@@ -239,13 +239,18 @@ class RCFClientAgent(object):
         elif command == b"DISCONNECT":
             if self.admin is False:
                 uid = self.id.decode()
+                
+                delete_user = message.RCFMessage(
+                                key="Client/{}".format(uid), id=self.id, body=None)
+                delete_user.send(self.publisher)
 
-                for k,v in self.property_map.items():
-                    if v.body["id"] == uid:
-                        delete_msg = message.RCFMessage(
-                                key=k, id=self.id, body=None)
-                        # delete_msg.store(self.property_map)
-                        delete_msg.send(self.publisher)
+                # TODO: Do we need to pass every object rights to the moderator ?
+                # for k,v in self.property_map.items():
+                #     if v.body["id"] == uid:
+                #         delete_msg = message.RCFMessage(
+                #                 key=k, id=self.id, body=None)
+                #         # delete_msg.store(self.property_map)
+                #         delete_msg.send(self.publisher)
                         
         elif command == b"SET":
             key = umsgpack.unpackb(msg[0])
