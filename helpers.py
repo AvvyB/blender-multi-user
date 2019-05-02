@@ -1,10 +1,12 @@
-import bpy
-import sys
-import mathutils
-from .libs import dump_anything
-from uuid import uuid4
 import logging
+import sys
+from uuid import uuid4
+
+import bpy
+import mathutils
+
 from . import draw
+from .libs import dump_anything
 
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
@@ -15,6 +17,8 @@ SUPPORTED_TYPES = ['Material',
 logger = logging.getLogger(__name__)
 
 # UTILITY FUNCTIONS
+
+
 def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -28,23 +32,26 @@ def get_selected_objects(scene):
 
     return selected_objects
 
+
 def get_all_datablocks():
     datas = []
     for datatype in SUPPORTED_TYPES:
         for item in getattr(bpy.data, CORRESPONDANCE[datatype]):
-            item.id= bpy.context.scene.session_settings.username
+            item.id = bpy.context.scene.session_settings.username
             datas.append("{}/{}".format(datatype, item.name))
-    
+
     return datas
-            
+
 #    LOAD HELPERS
+
+
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
     if value == "None":
-        return 
-    
+        return
+
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
@@ -94,25 +101,10 @@ def load_client(client=None, data=None):
     D = bpy.data
     net_settings = C.scene.session_settings
 
-    
     if client and data:
         if net_settings.enable_draw:
             draw.renderer.draw_client(data)
             draw.renderer.draw_client_selected_objects(data)
-        # localy_selected = get_selected_objects(C.scene)
-        # Draw client
-
-        
-        # Load selected object
-        # for obj in C.scene.objects:
-        #     if obj.id == client:
-        #          D.objects[obj.name].hide_select = True
-        #     else:
-        #         D.objects[obj.name].hide_select = False
-            # if client_data['active_objects'] and obj.name in client_data['active_objects']:
-            #     D.objects[obj.name].hide_select = True
-            # else:
-            #     D.objects[obj.name].hide_select = False       
 
 
 def load_mesh(target=None, data=None, create=False):
@@ -179,7 +171,7 @@ def load_object(target=None, data=None, create=False):
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
         target.id = data['id']
-        
+
         client = bpy.context.scene.session_settings.username
 
         if target.id == client:
@@ -206,13 +198,13 @@ def load_collection(target=None, data=None, create=False):
         for object in target.objects.keys():
             if object not in data["objects"]:
                 target.objects.unlink(bpy.data.objects[object])
-        
+
         # Link childrens
         for collection in data["children"]:
             if collection not in target.children.keys():
                 target.children.link(
                     bpy.data.collections[collection])
-        
+
         target.id = data['id']
     except Exception as e:
         logger.error("Collection loading error: {}".format(e))
@@ -288,9 +280,9 @@ def load_material(target=None, data=None, create=False):
             for link in data["node_tree"]["links"]:
                 current_link = data["node_tree"]["links"][link]
                 input_socket = target.node_tree.nodes[current_link['to_node']
-                                                    ['name']].inputs[current_link['to_socket']['name']]
+                                                      ['name']].inputs[current_link['to_socket']['name']]
                 output_socket = target.node_tree.nodes[current_link['from_node']
-                                                    ['name']].outputs[current_link['from_socket']['name']]
+                                                       ['name']].outputs[current_link['from_socket']['name']]
 
                 target.node_tree.links.new(input_socket, output_socket)
 
@@ -354,7 +346,6 @@ def load_light(target=None, data=None, create=False, type=None):
         if target is None and create:
             target = bpy.data.lights.new(data["name"], data["type"])
 
-
         dump_anything.load(target, data)
 
         target.id = data['id']
@@ -374,30 +365,32 @@ def load_default(target=None, data=None, create=False, type=None):
         logger.error("default loading error {}".format(e))
 
 # DUMP HELPERS
+
+
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
     data = None
 
-
     if target_type == 'Material':
-        data = dump_datablock_attibute(target, ['name', 'node_tree','id'], 7)
+        data = dump_datablock_attibute(target, ['name', 'node_tree', 'id'], 7)
     elif target_type == 'Grease Pencil':
         data = dump_datablock_attibute(
-            target, ['name', 'layers', 'materials','id'], 9)
+            target, ['name', 'layers', 'materials', 'id'], 9)
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
     elif target_type == 'Light':
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
         data = dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices','id'], 6)
+            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6)
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
     elif target_type == 'Collection':
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':
-        data = dump_datablock_attibute(target,['name','collection','id','camera','grease_pencil'], 4)
+        data = dump_datablock_attibute(
+            target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
 
     return data
 

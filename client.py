@@ -1,25 +1,22 @@
 import binascii
 import collections
+import copy
 import logging
 import os
+import queue
 import sys
 import threading
 import time
 from enum import Enum
 from random import randint
-import copy
-import queue
+
+from . import draw, helpers, message
+from .libs import dump_anything, umsgpack, zmq
 
 # import zmq
 lock = threading.Lock()
 
 
-from .libs import umsgpack
-from .libs import zmq
-from .libs import dump_anything
-from . import helpers
-from . import message
-from . import draw
 
 
 logger = logging.getLogger(__name__)
@@ -487,4 +484,3 @@ def serial_worker(product,  feed):
         elif command == 'LOAD':
             if value:
                 helpers.load(key, value)
-   

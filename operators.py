@@ -1,21 +1,22 @@
+import asyncio
 import logging
+import os
+import queue
 import random
 import string
-import time
-import asyncio
-import queue
-from operator import itemgetter
 import subprocess
+import time
+from operator import itemgetter
+
 import bgl
 import blf
 import bpy
-import os
 import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
-from . import client, ui, draw, helpers
+from . import client, draw, helpers, ui
 from .libs import umsgpack
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ SUPPORTED_TYPES = ['Material',
 
 def client_list_callback(scene, context):
     global client_keys
-    
+
     items = []
     if client_keys:
         for k in client_keys:
@@ -98,53 +99,22 @@ def update_selected_object(context):
 
     username = bpy.context.scene.session_settings.username
     client_key = "Client/{}".format(username)
-    client_data = client_instance.get(client_key)   
+    client_data = client_instance.get(client_key)
 
     selected_objects = helpers.get_selected_objects(context.scene)
-    
+
     if len(selected_objects) > 0:
-        
+
         for obj in selected_objects:
             # if obj not in client_data[0][1]['active_objects']:
             client_data[0][1]['active_objects'] = selected_objects
 
-            client_instance.set(client_key,client_data[0][1])
+            client_instance.set(client_key, client_data[0][1])
             break
 
     elif client_data and client_data[0][1]['active_objects']:
         client_data[0][1]['active_objects'] = []
-        client_instance.set(client_key,client_data[0][1])
-
-
-    # for update in local_updates:
-
-    #     client_instance.get('')
-        # if session.active_object is not context.selected_objects[0] or session.active_object.is_evaluated:
-        #     session.active_object = context.selected_objects[0]
-        #     key = "net/objects/{}".format(client_instance.id.decode())
-        #     data = {}
-        #     data['color'] = [session.client_instance_color.r,
-        #                      session.client_instance_color.g, session.client_instance_color.b]
-        #     data['object'] = session.active_object.name
-        #     client_instance.push_update(
-        #         key, 'client_instanceObject', data)
-
-            # return True
-    # elif len(context.selected_objects) == 0 and session.active_object:
-    #     session.active_object = None
-    #     data = {}
-    #     data['color'] = [session.client_instance_color.r,
-    #                      session.client_instance_color.g, session.client_instance_color.b]
-    #     data['object'] = None
-    #     key = "net/objects/{}".format(client_instance.id.decode())
-    #     client_instance.push_update(key, 'client_instanceObject', data)
-
-    #     return True
-
-    # return False
-
-
-
+        client_instance.set(client_key, client_data[0][1])
 
 
 def init_datablocks():
@@ -152,7 +122,7 @@ def init_datablocks():
 
     for datatype in SUPPORTED_TYPES:
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
-            item.id= bpy.context.scene.session_settings.username
+            item.id = bpy.context.scene.session_settings.username
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
 
@@ -160,34 +130,30 @@ def init_datablocks():
 def default_tick():
     bpy.ops.session.refresh()
     upload_client_instance_position()
-    # global client_instance
-
-    # if not client_instance.queue.empty():
-    #     update = client_instance.queue.get()
-    #     helpers.load(update[0],update[1])
 
     return 1
 
 
 def sync():
     global client_instance
-    
+
     if client_instance:
         for datatype in SUPPORTED_TYPES:
             for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
                 if item.id == 'None':
-                    item.id= bpy.context.scene.session_settings.username
+                    item.id = bpy.context.scene.session_settings.username
                     key = "{}/{}".format(datatype, item.name)
                     client_instance.add(key)
 
-
     return .2
+
 
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
     pass
+
 
 def unregister_ticks():
     # REGISTER Updaters
@@ -196,6 +162,8 @@ def unregister_ticks():
     pass
 
 # OPERATORS
+
+
 class session_join(bpy.types.Operator):
 
     bl_idname = "session.join"
@@ -251,17 +219,17 @@ class session_refresh(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance, client_keys,client_state
-        
+        global client_instance, client_keys, client_state
+
         keys = client_instance.list()
 
         if keys:
-            client_keys= keys
+            client_keys = keys
         state = client_instance.state()
 
         if state:
             client_state = state
-        
+
         return {"FINISHED"}
 
 
@@ -373,7 +341,6 @@ class session_stop(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
 
-
         if server:
             server.kill()
             time.sleep(0.25)
@@ -417,9 +384,7 @@ class session_rights(bpy.types.Operator):
         net_settings = context.scene.session_settings
 
         col = layout.column()
-        col.prop(net_settings,"clients")
-
-
+        col.prop(net_settings, "clients")
 
     def execute(self, context):
         global server
@@ -430,11 +395,11 @@ class session_rights(bpy.types.Operator):
         if net_settings.is_admin:
             val = client_instance.get(self.key)
             val[0][1]['id'] = net_settings.clients
-            
-    
-            client_instance.set(key=self.key, value=val[0][1],override=True)
 
-            print("Updating {} rights to {}".format(self.key,net_settings.clients))
+            client_instance.set(key=self.key, value=val[0][1], override=True)
+
+            print("Updating {} rights to {}".format(
+                self.key, net_settings.clients))
         else:
             print("Not admin")
 
@@ -474,8 +439,10 @@ class session_settings(bpy.types.PropertyGroup):
         name="clients",
         description="client enum",
         items=client_list_callback
-        )
-    enable_draw = bpy.props.BoolProperty(name="enable_draw",  description='Enable overlay drawing module', default=True)
+    )
+    enable_draw = bpy.props.BoolProperty(
+        name="enable_draw",  description='Enable overlay drawing module', default=True)
+
 
 class session_snapview(bpy.types.Operator):
     bl_idname = "session.snapview"
@@ -498,7 +465,7 @@ class session_snapview(bpy.types.Operator):
         if client:
             rv3d.view_location = client[0][1]['location'][0]
             rv3d.view_distance = 30.0
-       
+
             return {"FINISHED"}
 
         return {"CANCELLED"}
@@ -527,7 +494,7 @@ def ordered(updates):
     for item in updates.items():
         if item[1].id.bl_rna.name in SUPPORTED_TYPES:
             uplist.append((SUPPORTED_TYPES.index(
-                item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name,item[1].id ))
+                item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name, item[1].id))
 
     uplist.sort(key=itemgetter(0))
     return uplist
@@ -553,7 +520,6 @@ def depsgraph_update(scene):
         username = bpy.context.scene.session_settings.username
         update_selected_object(bpy.context)
 
-        
         selected_objects = helpers.get_selected_objects(scene)
         if len(selected_objects) > 0:
             for updated_data in updates:
@@ -601,8 +567,8 @@ def unregister():
         unregister_class(cls)
 
     del bpy.types.Scene.session_settings
-    del bpy.types.ID.id 
-    
+    del bpy.types.ID.id
+
 
 if __name__ == "__main__":
     register()
