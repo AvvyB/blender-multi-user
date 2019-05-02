@@ -36,7 +36,7 @@ CONNECT_TIMEOUT = 2
 WAITING_TIME = 0.001
 SERVER_MAX = 1
 stop = False
-
+DUMP_AGENTS_NUMBER = 1
 
 class State(Enum):
     INITIAL = 1
@@ -80,12 +80,16 @@ class RCFClient(object):
         self.net_agent.daemon = True
         self.net_agent.start()
 
+
         # Local data translation agent
-        self.serial_agent = threading.Thread(
-            target=serialization_agent, args=(self.serial_product, self.serial_feed), name="serial-agent")
-        self.serial_agent.daemon = True
-        self.serial_agent.start()
-        
+        self.serial_agents = []
+
+        for a in range(0, DUMP_AGENTS_NUMBER):
+            serial_agent = threading.Thread(
+            target=dumper_agent, args=(self.serial_product, self.serial_feed), name="serial-agent")
+            serial_agent.daemon = True
+            serial_agent.start()
+            self.serial_agents.append(serial_agent)
 
     def connect(self, id, address, port):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
@@ -99,12 +103,14 @@ class RCFClient(object):
         self.pipe.send_multipart(
             [b"INIT"])
 
+
     def disconnect(self):
         """
         Disconnect
         """
         self.pipe.send_multipart(
             [b"DISCONNECT"]) 
+
 
     def set(self, key, value=None, override=False):
         """Set new value in distributed hash table
@@ -121,6 +127,7 @@ class RCFClient(object):
             # [b"DUMP", umsgpack.packb(key)])
         #  self.pipe.send_multipart(
             # [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None')),umsgpack.packb(override)])
+
 
     def add(self, key, value=None):
         """Set new value in distributed hash table
@@ -147,6 +154,9 @@ class RCFClient(object):
 
             global stop
             stop = True
+        for a in range(0,DUMP_AGENTS_NUMBER):
+            self.serial_feed.put('exit')
+
 
     # READ-ONLY FUNCTIONS 
     def get(self, key):
@@ -481,87 +491,15 @@ def rcf_client_agent(ctx,store, pipe, queue):
     # else: else
     #     agent.state = State.INITIAL
 
-
-class SerializationAgent(object):
-    ctx = None
-    pipe = None
-
-    def __init__(self, ctx, pipe, product, feed):
-        self.ctx = ctx
-        self.pipe = pipe
-        self.product = product
-        self.feed = feed
-        logger.info("serialisation service launched")
-
-    def control_message(self):
-        msg = self.pipe.recv_multipart(zmq.NOBLOCK)
-        command = msg.pop(0)
-
-        if command == b"DUMP":
-            key = umsgpack.unpackb(msg[0])
-
-            value = helpers.dump(key)
-
-            self.product.put((key,value))
-            # self.pipe.send_multipart(umsgpack.packb(value))
-
-        elif command == b"LOAD":
-
-            key = umsgpack.unpackb(msg[0])
-            value = umsgpack.unpackb(msg[1])
-
-            helpers.load(key, value)
-
-            self.pipe.send_multipart([b"DONE"])
-
-
-def serialization_agent(product,  feed ):
-    # agent = SerializationAgent(ctx, pipe, feed)
-
-    global stop
-
+def dumper_agent(product,  feed):
     while True:
-        if stop:
+        key = feed.get()
+
+        if key == 'exit':
             break
 
-        
-        key = feed.get()
         value = helpers.dump(key)
 
         if value:
             product.put((key,value))
-        # poller = zmq.Poller()
-        # poller.register(agent.pipe, zmq.POLLIN)
-
-        # try:
-        #     items = dict(poller.poll(1))
-        # except:
-        #     raise
-        #     break
-
-        # if agent.pipe in items:
-        #     agent.control_message()
-
-        # TODO : Fill tasks
-
-class RCFSyncAgent(object):
-    ctx = None
-    pipe = None
-
-    def __init__(self, feed):
-        self.feed = feed
-        logger.info("sync service launched")
     
-
-
-
-def rcf_sync_agent(ctx, feed):
-    agent = RCFSyncAgent(feed)
-
-    global stop
-    while True:
-        if stop:
-            break
-
-        # Synchronisation
-

@@ -116,7 +116,6 @@ def update_selected_object(context):
         client_data[0][1]['active_objects'] = []
         client_instance.set(client_key,client_data[0][1])
 
- 
 
     # for update in local_updates:
 
@@ -146,17 +145,7 @@ def update_selected_object(context):
     # return False
 
 
-def update_rights():
-    
-    C = bpy.context
-    D = bpy.data
-    client = C.scene.session_settings.username
 
-    for obj in C.scene.objects:
-            if obj.id == client:
-                 D.objects[obj.name].hide_select = False
-            else:
-                D.objects[obj.name].hide_select = True
 
 
 def init_datablocks():
@@ -189,7 +178,6 @@ def draw_tick():
     # Upload
     upload_client_instance_position()
 
-    update_rights()
 
     return .2
 

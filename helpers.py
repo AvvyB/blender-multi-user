@@ -175,6 +175,13 @@ def load_object(target=None, data=None, create=False):
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
         target.id = data['id']
+        
+        client = bpy.context.scene.session_settings.username
+
+        if target.id == client:
+            target.hide_select = False
+        else:
+            target.hide_select = True
 
     except:
         logger.error("Object {} loading error ".format(data["name"]))
