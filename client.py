@@ -96,6 +96,7 @@ class RCFClient(object):
             id, str) else id), (address.encode() if isinstance(
                 address, str) else address), b'%d' % port])
 
+
     def init(self):
         """
         Scene initialisation
@@ -110,7 +111,6 @@ class RCFClient(object):
         """
         self.pipe.send_multipart(
             [b"DISCONNECT"]) 
-
 
     def set(self, key, value=None, override=False):
         """Set new value in distributed hash table
@@ -145,6 +145,7 @@ class RCFClient(object):
         else:
             return True
 
+
     def exit(self):
         if self.net_agent.is_alive():
             self.disconnect()
@@ -171,16 +172,7 @@ class RCFClient(object):
                 value.append([k, self.store.get(k).body])
 
         return value
-        # if not self.is_busy():
-        #     self.pipe.send_multipart([b"GET", umsgpack.packb(key)])
-        #     try:
-        #         reply = self.pipe.recv_multipart()
-        #     except KeyboardInterrupt:
-        #         return
-        #     else:
-        #         return umsgpack.unpackb(reply[0])
-        # else:
-        #     return None
+
 
     def list(self):
         dump_list = []
@@ -194,16 +186,6 @@ class RCFClient(object):
                     pass
 
         return dump_list
-        # if not self.is_busy():
-        #     self.pipe.send_multipart([b"LIST"])
-        #     try:
-        #         reply = self.pipe.recv_multipart()
-        #     except KeyboardInterrupt:
-        #         return
-        #     else:
-        #         return umsgpack.unpackb(reply[0])
-        # else:
-        #     return None
 
     def state(self):
         if not self.is_busy():

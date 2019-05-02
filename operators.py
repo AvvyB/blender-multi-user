@@ -199,14 +199,14 @@ def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(sync)
-    bpy.app.timers.register(default_tick)
+    # bpy.app.timers.register(default_tick)
     pass
 
 def unregister_ticks():
     # REGISTER Updaters
     global drawer
     drawer.unregister_handlers()
-    bpy.app.timers.unregister(draw_tick)
+    # bpy.app.timers.unregister(draw_tick)
     bpy.app.timers.unregister(sync)
     bpy.app.timers.unregister(default_tick)
     pass
@@ -562,6 +562,7 @@ def depsgraph_update(scene):
         username = bpy.context.scene.session_settings.username
         update_selected_object(bpy.context)
 
+        
         # selected_objects = helpers.get_selected_objects(scene)
 
             
