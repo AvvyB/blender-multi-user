@@ -10,19 +10,19 @@ from random import randint
 import copy
 import queue
 
-import zmq
+# import zmq
 lock = threading.Lock()
 
 try:
     from .libs import umsgpack
-    # from .libs import zmq
+    from .libs import zmq
     from .libs import dump_anything
     from . import helpers
     from . import message
 except:
     # Server import
     from libs import umsgpack
-    # from libs import zmq
+    from libs import zmq
     from libs import dump_anything
     import helpers
     import message
@@ -63,28 +63,36 @@ class State(Enum):
 class RCFClient(object):
     ctx = None
     pipe = None
-    agent = None
+    net_agent = None
 
     def __init__(self):
         self.ctx = zmq.Context()
         self.pipe, peer = zpipe(self.ctx)
-        self.queue = queue.Queue()
-        self.agent = threading.Thread(
-            target=rcf_client_agent, args=(self.ctx, peer, self.queue), name="net-agent")
-        self.agent.daemon = True
-        self.agent.start()
-        # self.sync_agent = threading.Thread(
-        #     target=rcf_sync_agent, args=(self.ctx, self.pipe), name="sync-agent")
-        # self.sync_agent.daemon = True
-        # self.sync_agent.start()
+        self.serial_pipe, serial_peer = zpipe(self.ctx)
+        serial_in, net_in = zpipe(self.ctx)
+        self.tasks = queue.Queue()
+
+        # Database and connexion agent
+        self.net_agent = threading.Thread(
+            target=rcf_client_agent, args=(self.ctx, peer, self.tasks), name="net-agent")
+        self.net_agent.daemon = True
+        self.net_agent.start()
+
+        # Local data translation agent
+        self.serial_agent = threading.Thread(
+            target=serialization_agent, args=(self.ctx, serial_peer, self.tasks), name="serial-agent")
+        self.serial_agent.daemon = True
+        self.serial_agent.start()
+        
 
     def connect(self, id, address, port):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
             id, str) else id), (address.encode() if isinstance(
                 address, str) else address), b'%d' % port])
+
     def init(self):
-        """Set new value in distributed hash table
-        Sends [SET][key][value] to the agent
+        """
+        Scene initialisation
         """
         self.pipe.send_multipart(
             [b"INIT"])
@@ -100,6 +108,7 @@ class RCFClient(object):
         """Set new value in distributed hash table
         Sends [SET][key][value] to the agent
         """
+        
         self.pipe.send_multipart(
             [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None')),umsgpack.packb(override)])
 
@@ -125,7 +134,7 @@ class RCFClient(object):
             return umsgpack.unpackb(reply[0])
 
     def exit(self):
-        if self.agent.is_alive():
+        if self.net_agent.is_alive():
             self.disconnect()
 
             # Disconnect time
@@ -476,7 +485,7 @@ class SerializationAgent(object):
             self.pipe.send_multipart([b"DONE"])
 
 
-def serialization_agent(ctx, pipe):
+def serialization_agent(ctx, pipe, tasks):
     agent = SerializationAgent(ctx, pipe)
 
     global stop
@@ -496,6 +505,7 @@ def serialization_agent(ctx, pipe):
         if agent.pipe in items:
             agent.control_message()
 
+        # TODO : Fill tasks
 
 class RCFSyncAgent(object):
     ctx = None

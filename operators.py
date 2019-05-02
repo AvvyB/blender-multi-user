@@ -563,7 +563,7 @@ def depsgraph_update(scene):
     global client_instance
     global client_keys
 
-    if client_instance and client_instance.agent.is_alive():
+    if client_instance and client_instance.net_agent.is_alive():
         updates = bpy.context.depsgraph.updates
         username = bpy.context.scene.session_settings.username
         update_selected_object(bpy.context)
