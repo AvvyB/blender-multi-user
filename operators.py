@@ -106,11 +106,11 @@ def update_selected_object(context):
     if len(selected_objects) > 0:
         
         for obj in selected_objects:
-            if obj not in client_data[0][1]['active_objects']:
-                client_data[0][1]['active_objects'] = selected_objects
+            # if obj not in client_data[0][1]['active_objects']:
+            client_data[0][1]['active_objects'] = selected_objects
 
-                client_instance.set(client_key,client_data[0][1])
-                break
+            client_instance.set(client_key,client_data[0][1])
+            break
 
     elif client_data and client_data[0][1]['active_objects']:
         client_data[0][1]['active_objects'] = []
@@ -166,7 +166,7 @@ def init_datablocks():
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
             item.id= bpy.context.scene.session_settings.username
             key = "{}/{}".format(datatype, item.name)
-            client_instance.add(key)
+            client_instance.set(key)
 
 
 def default_tick():
@@ -212,16 +212,16 @@ def register_ticks():
     bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
-
+    pass
 
 def unregister_ticks():
     # REGISTER Updaters
     global drawer
     drawer.unregister_handlers()
     bpy.app.timers.unregister(draw_tick)
-
+    bpy.app.timers.unregister(sync)
     bpy.app.timers.unregister(default_tick)
-
+    pass
 # OPERATORS
 
 class session_join(bpy.types.Operator):
@@ -276,9 +276,15 @@ class session_refresh(bpy.types.Operator):
 
     def execute(self, context):
         global client_instance, client_keys,client_state
+        
+        keys = client_instance.list()
 
-        client_keys = client_instance.list()
-        client_state = client_instance.state()
+        if keys:
+            client_keys= keys
+        state = client_instance.state()
+
+        if state:
+            client_state = state
         
         return {"FINISHED"}
 
@@ -366,10 +372,10 @@ class session_create(bpy.types.Operator):
 
         bpy.ops.session.join()
 
-        # if net_settings.init_scene:
-        #     init_datablocks()
+        if net_settings.init_scene:
+            init_datablocks()
 
-        client_instance.init()
+        # client_instance.init()
         net_settings.is_admin = True
 
         return {"FINISHED"}
