@@ -150,14 +150,14 @@ def sync():
 
 def register_ticks():
     # REGISTER Updaters
-    bpy.app.timers.register(sync)
+    # bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
     pass
 
 
 def unregister_ticks():
     # REGISTER Updaters
-    bpy.app.timers.unregister(sync)
+    # bpy.app.timers.unregister(sync)
     bpy.app.timers.unregister(default_tick)
     pass
 
