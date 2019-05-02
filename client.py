@@ -85,7 +85,7 @@ class RCFClient(object):
 
         # Database and connexion agent
         self.watchdog_agent = threading.Thread(
-            target=watchdog_worker, args=(self.serial_feed, .5, self.stop_event), name="watchdog-agent")
+            target=watchdog_worker, args=(self.serial_feed, 2, self.stop_event), name="watchdog-agent")
         self.watchdog_agent.daemon = True
         self.watchdog_agent.start()
 
@@ -502,12 +502,15 @@ def watchdog_worker(feed,interval, stop_event):
 
         for datatype in helpers.SUPPORTED_TYPES:
             for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
+                key = "{}/{}".format(datatype, item.name)
+
                 if item.id == 'None':
                     item.id = bpy.context.scene.session_settings.username
-                    key = "{}/{}".format(datatype, item.name)
                     feed.put(('DUMP',key,None))
                 elif item.is_dirty:
-                    logger.info("{} needs update".format(item.name))             
+                    logger.info("{} needs update".format(item.name))
+                    feed.put(('DUMP',key,None))             
+                    item.is_dirty = False
         time.sleep(interval)
 
     logger.info("watchdog thread stopped")
