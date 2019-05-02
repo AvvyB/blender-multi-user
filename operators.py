@@ -505,19 +505,22 @@ def depsgraph_update(scene):
         update_selected_object(bpy.context)
 
         selected_objects = helpers.get_selected_objects(scene)
-        if len(selected_objects) > 0:
-            for updated_data in updates:
-                if updated_data.id.name in selected_objects:
-                    if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-                        client_instance.set(
-                            "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
-
+        # if len(selected_objects) > 0:
+        #     for updated_data in updates:
+        #         if updated_data.id.name in selected_objects:
+        #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+        #                 client_instance.set(
+        #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+        for update in updates:
+            if update.id.id == username:
+                getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name].is_dirty= True
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
     bpy.types.ID.id = bpy.props.StringProperty(default="None")
+    bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
@@ -552,6 +555,7 @@ def unregister():
 
     del bpy.types.Scene.session_settings
     del bpy.types.ID.id
+    del bpy.types.ID.is_dirty
 
 
 if __name__ == "__main__":

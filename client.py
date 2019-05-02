@@ -506,7 +506,8 @@ def watchdog_worker(feed,interval, stop_event):
                     item.id = bpy.context.scene.session_settings.username
                     key = "{}/{}".format(datatype, item.name)
                     feed.put(('DUMP',key,None))
-        
+                elif item.is_dirty:
+                    logger.info("{} needs update".format(item.name))             
         time.sleep(interval)
 
     logger.info("watchdog thread stopped")
