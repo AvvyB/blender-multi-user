@@ -71,7 +71,7 @@ class RCFClient(object):
 
         # Database and connexion agent
         self.net_agent = threading.Thread(
-            target=rcf_client_agent, args=(self.ctx, self.store, peer, self.serial_product,self.serial_feed), name="net-agent")
+            target=rcf_client_worker, args=(self.ctx, self.store, peer, self.serial_product,self.serial_feed), name="net-agent")
         self.net_agent.daemon = True
         self.net_agent.start()
 
@@ -81,7 +81,7 @@ class RCFClient(object):
 
         for a in range(0, DUMP_AGENTS_NUMBER):
             serial_agent = threading.Thread(
-            target=dumper_agent, args=(self.serial_product, self.serial_feed), name="serial-agent")
+            target=serial_worker, args=(self.serial_product, self.serial_feed), name="serial-agent")
             serial_agent.daemon = True
             serial_agent.start()
             self.serial_agents.append(serial_agent)
@@ -373,7 +373,7 @@ class RCFClientAgent(object):
             self.pipe.send(umsgpack.packb(self.state.value))
 
 
-def rcf_client_agent(ctx,store, pipe, serial_product, serial_feed):
+def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed):
     agent = RCFClientAgent(ctx,store, pipe)
     server = None
     net_feed = serial_product
@@ -473,7 +473,7 @@ def rcf_client_agent(ctx,store, pipe, serial_product, serial_feed):
     #     agent.state = State.INITIAL
 
 
-def dumper_agent(product,  feed):
+def serial_worker(product,  feed):
     while True:
         command,key,value = feed.get()
 
@@ -487,4 +487,4 @@ def dumper_agent(product,  feed):
         elif command == 'LOAD':
             if value:
                 helpers.load(key, value)
-    
+   

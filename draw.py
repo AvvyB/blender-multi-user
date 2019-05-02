@@ -7,6 +7,8 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
+global renderer
+
 
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
@@ -80,7 +82,7 @@ def get_client_2d(coords):
         return (0, 0)
 
 
-class HUD(object):
+class DrawFactory(object):
 
     def __init__(self):
         self.d3d_items = {}
@@ -92,9 +94,11 @@ class HUD(object):
         self.active_object = None
 
 
-            # self.draw_clients()
+    def run(self):
         self.register_handlers()
-
+    
+    def stop(self):
+        self.unregister_handlers()
     def register_handlers(self):
         self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
             self.draw3d_callback, (), 'WINDOW', 'POST_VIEW')
@@ -115,55 +119,50 @@ class HUD(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
-    def draw_selected_object(self):
-        clients = self.client.get("Client")
+    def draw_client_selected_objects(self, client):
+        if client:
+            name = client['id']
+            local_username = bpy.context.scene.session_settings.username
 
-        if clients:
-            for client in clients:
-                name = client[0].split('/')[1]
-                local_username = bpy.context.scene.session_settings.username
-
-                if name != local_username:
-                    if client[1]['active_objects']:
-                        for select_ob in client[1]['active_objects']:
-                            indices = (
-                                (0, 1), (1, 2), (2, 3), (0, 3),
-                                (4, 5), (5, 6), (6, 7), (4, 7),
-                                (0, 4), (1, 5), (2, 6), (3, 7)
-                            )
+            if name != local_username:
+                if client['active_objects']:
+                    for select_ob in client['active_objects']:
+                        indices = (
+                            (0, 1), (1, 2), (2, 3), (0, 3),
+                            (4, 5), (5, 6), (6, 7), (4, 7),
+                            (0, 4), (1, 5), (2, 6), (3, 7)
+                        )
 
 
-                            if select_ob in bpy.data.objects.keys():
-                                ob = bpy.data.objects[select_ob]
-                            else:
-                                return
+                        if select_ob in bpy.data.objects.keys():
+                            ob = bpy.data.objects[select_ob]
+                        else:
+                            return
 
-                            bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+                        bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
 
-                            coords = [(point.x, point.y, point.z)
-                                    for point in bbox_corners]
+                        coords = [(point.x, point.y, point.z)
+                                for point in bbox_corners]
 
-                            shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
-                            color = client[1]['color']
+                        color = client['color']
 
-                            batch = batch_for_shader(
-                                shader, 'LINES', {"pos": coords}, indices=indices)
+                        batch = batch_for_shader(
+                            shader, 'LINES', {"pos": coords}, indices=indices)
 
-                            self.d3d_items["{}/{}".format(client[0],
-                                                        select_ob)] = (shader, batch, color)
-                    else:
-                        key_to_remove = []
-                        for k in self.d3d_items.keys():
-                            if "{}/".format(client[0]) in k:
-                                key_to_remove.append(k)
-                                
-                        for k in key_to_remove:
-                            del self.d3d_items[k]
+                        self.d3d_items["{}/{}".format(client['id'],
+                                                    select_ob)] = (shader, batch, color)
+                else:
+                    key_to_remove = []
+                    for k in self.d3d_items.keys():
+                        if "{}/".format(client['id']) in k:
+                            key_to_remove.append(k)
+                            
+                    for k in key_to_remove:
+                        del self.d3d_items[k]
     
     def draw_client(self, client):
-        clients = self.client.get("Client")
-
         if client:
             name = client['id']
             local_username = bpy.context.scene.session_settings.username
@@ -181,8 +180,8 @@ class HUD(object):
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": position}, indices=indices)
 
-                    self.d3d_items[client[0]] = (shader, batch, color)
-                    self.d2d_items[client[0]] = (position[1], name, color)
+                    self.d3d_items[name] = (shader, batch, color)
+                    self.d2d_items[name] = (position[1], name, color)
 
                 except Exception as e:
                     print("Draw client exception {}".format(e))
@@ -210,3 +209,14 @@ class HUD(object):
 
             except Exception as e:
                 print("2D EXCEPTION")
+
+def register():
+    global renderer
+    renderer = DrawFactory()
+
+
+def unregister():
+    global renderer
+    renderer.unregister_handlers()
+
+    del renderer

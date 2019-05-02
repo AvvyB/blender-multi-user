@@ -25,20 +25,29 @@ class SessionSettingsPanel(bpy.types.Panel):
 
             row = layout.row()
             if operators.client_instance is None:
-                
                 row = layout.row()
                 box = row.box()
                 row = box.row()
-                row.label(text="User infos")
+                row.label(text="USER", icon='GHOST_ENABLED')
                 row = box.row()
                 row.prop(scene.session_settings, "username", text="id")
                 
                 row = box.row()
                 row.prop(scene.session_settings, "client_color", text="color") 
+                row = box.row()
 
                 row = layout.row()
+                box = row.box()
+                row = box.row()
+                row.label(text="NETWORK", icon = "TOOL_SETTINGS")
+                
+                row = box.row()
+                row.label(text="draw overlay:")
+                row.prop(net_settings, "enable_draw", text="")
+
+                row = box.row()
                 row.prop(scene.session_settings, "session_mode", expand=True)
-                row = layout.row()
+                row = box.row()
 
                 if scene.session_settings.session_mode == 'HOST':
                     box = row.box()

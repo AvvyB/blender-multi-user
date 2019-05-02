@@ -25,7 +25,6 @@ client_keys = None
 client_state = 1
 server = None
 context = None
-drawer = None
 update_list = {}
 
 SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
@@ -160,6 +159,7 @@ def init_datablocks():
 
 def default_tick():
     bpy.ops.session.refresh()
+    upload_client_instance_position()
     # global client_instance
 
     # if not client_instance.queue.empty():
@@ -169,22 +169,9 @@ def default_tick():
     return 1
 
 
-def draw_tick():
-    # drawing
-    global drawer
-
-
-    # drawer.draw()
-
-    # Upload
-    upload_client_instance_position()
-
-
-    return .2
-
 def sync():
     global client_instance
-
+    
     if client_instance:
         for datatype in SUPPORTED_TYPES:
             for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
@@ -198,21 +185,17 @@ def sync():
 
 def register_ticks():
     # REGISTER Updaters
-    # bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
     pass
 
 def unregister_ticks():
     # REGISTER Updaters
-    global drawer
-    drawer.unregister_handlers()
-    # bpy.app.timers.unregister(draw_tick)
     bpy.app.timers.unregister(sync)
     bpy.app.timers.unregister(default_tick)
     pass
-# OPERATORS
 
+# OPERATORS
 class session_join(bpy.types.Operator):
 
     bl_idname = "session.join"
@@ -225,7 +208,7 @@ class session_join(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance, drawer
+        global client_instance
 
         net_settings = context.scene.session_settings
         # Scene setup
@@ -247,9 +230,13 @@ class session_join(bpy.types.Operator):
                                 net_settings.ip, net_settings.port)
 
         # net_settings.is_running = True
-        drawer = draw.HUD()
         # bpy.ops.session.refresh()
         register_ticks()
+
+        # Launch drawing module
+        if net_settings.enable_draw:
+            draw.renderer.run()
+
         return {"FINISHED"}
 
 
@@ -400,6 +387,9 @@ class session_stop(bpy.types.Operator):
             net_settings.is_admin = False
             client_state = 1
             unregister_ticks()
+
+            # Stop drawing
+            draw.renderer.stop()
         else:
             logger.debug("No server/client_instance running.")
 
@@ -485,7 +475,7 @@ class session_settings(bpy.types.PropertyGroup):
         description="client enum",
         items=client_list_callback
         )
-
+    enable_draw = bpy.props.BoolProperty(name="enable_draw",  description='Enable overlay drawing module', default=True)
 
 class session_snapview(bpy.types.Operator):
     bl_idname = "session.snapview"
@@ -581,11 +571,14 @@ def register():
     bpy.types.Scene.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
+    draw.register()
 
 
 def unregister():
     global server
     global client_instance, client_keys
+
+    draw.unregister()
 
     try:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
@@ -609,6 +602,7 @@ def unregister():
 
     del bpy.types.Scene.session_settings
     del bpy.types.ID.id 
+    
 
 if __name__ == "__main__":
     register()

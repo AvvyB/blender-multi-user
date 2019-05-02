@@ -4,6 +4,7 @@ import mathutils
 from .libs import dump_anything
 from uuid import uuid4
 import logging
+from . import draw
 
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
@@ -91,12 +92,17 @@ def resolve_bpy_path(path):
 def load_client(client=None, data=None):
     C = bpy.context
     D = bpy.data
+    net_settings = C.scene.session_settings
+
     
     if client and data:
+        if net_settings.enable_draw:
+            draw.renderer.draw_client(data)
+            draw.renderer.draw_client_selected_objects(data)
         # localy_selected = get_selected_objects(C.scene)
         # Draw client
 
-        client_data = data
+        
         # Load selected object
         # for obj in C.scene.objects:
         #     if obj.id == client:
