@@ -173,7 +173,8 @@ def draw_tick():
     # drawing
     global drawer
 
-    drawer.draw()
+
+    # drawer.draw()
 
     # Upload
     upload_client_instance_position()
@@ -197,9 +198,9 @@ def sync():
 
 def register_ticks():
     # REGISTER Updaters
-    bpy.app.timers.register(draw_tick)
+    # bpy.app.timers.register(draw_tick)
     bpy.app.timers.register(sync)
-    # bpy.app.timers.register(default_tick)
+    bpy.app.timers.register(default_tick)
     pass
 
 def unregister_ticks():
@@ -246,7 +247,7 @@ class session_join(bpy.types.Operator):
                                 net_settings.ip, net_settings.port)
 
         # net_settings.is_running = True
-        drawer = draw.HUD(client_instance=client_instance)
+        drawer = draw.HUD()
         # bpy.ops.session.refresh()
         register_ticks()
         return {"FINISHED"}
@@ -563,39 +564,6 @@ def depsgraph_update(scene):
         update_selected_object(bpy.context)
 
         
-        # selected_objects = helpers.get_selected_objects(scene)
-
-            
-        # if len(selected_objects) > 0:
-        #     for update in updates:
-        #         update_key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
-        #         remote_update = client_instance.get(update_key)
-                
-        #         if remote_update and  remote_update[0][1]["uuid"] == update.id.uuid:
-        #             print("{} sending update".format(username))
-        #             client_instance.set(
-        #                         "{}/{}".format(update.id.bl_rna.name, update.id.name))
-        #         else:
-        #             print("{} applying update".format(username))
-
-        
-        # for update in ordered(updates):
-        #     if update[2] == "Master Collection":
-        #         pass
-        #     elif update[1] in SUPPORTED_TYPES:
-        #         key = "{}/{}".format(update[1], update[2])
-                
-        #         data = client_instance.get(key)
-
-        #         if data:
-        #             if update[3].id == username:
-        #                 # Queue update
-        #                 client_instance.set(key)
-        #         else:
-        #             # Instance new object ?
-        #             print("new")
-        #             client_instance.add(key)
-
         selected_objects = helpers.get_selected_objects(scene)
         if len(selected_objects) > 0:
             for updated_data in updates:

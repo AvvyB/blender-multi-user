@@ -82,7 +82,7 @@ def get_client_2d(coords):
 
 class HUD(object):
 
-    def __init__(self, client_instance=None):
+    def __init__(self):
         self.d3d_items = {}
         self.d2d_items = {}
         self.draw3d_handle = None
@@ -91,11 +91,9 @@ class HUD(object):
         self.coords = None
         self.active_object = None
 
-        if client_instance:
-            self.client = client_instance
 
-            self.draw_clients()
-            self.register_handlers()
+            # self.draw_clients()
+        self.register_handlers()
 
     def register_handlers(self):
         self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
@@ -163,32 +161,31 @@ class HUD(object):
                         for k in key_to_remove:
                             del self.d3d_items[k]
     
-    def draw_clients(self):
+    def draw_client(self, client):
         clients = self.client.get("Client")
 
-        if clients:
-            for client in clients:
-                name = client[0].split('/')[1]
-                local_username = bpy.context.scene.session_settings.username
+        if client:
+            name = client['id']
+            local_username = bpy.context.scene.session_settings.username
 
-                if name != local_username:
-                    try:
-                        indices = (
-                            (1, 3), (2, 1), (3, 0), (2, 0),(4, 5)
-                        )
+            if name != local_username:
+                try:
+                    indices = (
+                        (1, 3), (2, 1), (3, 0), (2, 0),(4, 5)
+                    )
 
-                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                        position = client[1]['location']
-                        color = client[1]['color']
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                    position = client['location']
+                    color = client['color']
 
-                        batch = batch_for_shader(
-                            shader, 'LINES', {"pos": position}, indices=indices)
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos": position}, indices=indices)
 
-                        self.d3d_items[client[0]] = (shader, batch, color)
-                        self.d2d_items[client[0]] = (position[1], name, color)
+                    self.d3d_items[client[0]] = (shader, batch, color)
+                    self.d2d_items[client[0]] = (position[1], name, color)
 
-                    except Exception as e:
-                        print("Draw client exception {}".format(e))
+                except Exception as e:
+                    print("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
         bgl.glLineWidth(2)
@@ -213,12 +210,3 @@ class HUD(object):
 
             except Exception as e:
                 print("2D EXCEPTION")
-
-    def draw(self):
-        if self.client:
-            self.d3d_items.clear()
-            self.d2d_items.clear()
-            
-            # Draw clients
-            self.draw_clients()
-            self.draw_selected_object()

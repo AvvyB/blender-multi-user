@@ -71,8 +71,6 @@ def load(key, value):
     elif target_type == 'Client':
         load_client(key.split('/')[1], value)
 
-    
-
 
 def resolve_bpy_path(path):
     """
