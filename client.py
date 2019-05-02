@@ -475,6 +475,8 @@ def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
 
 
 def serial_worker(product,  feed):
+    logger.info("serial thread launched")
+
     while True:
         command,key,value = feed.get()
 
@@ -489,11 +491,13 @@ def serial_worker(product,  feed):
             if value:
                 helpers.load(key, value)
 
+    logger.info("serial thread stopped")
+
 
 def watchdog_worker(feed,interval, stop_event):
     import bpy
-    global stop
-
+    
+    logger.info("watchdog thread launched with {} sec of interval".format(interval))
     while not stop_event.is_set():
 
         for datatype in helpers.SUPPORTED_TYPES:
@@ -504,3 +508,5 @@ def watchdog_worker(feed,interval, stop_event):
                     feed.put(('DUMP',key,None))
         
         time.sleep(interval)
+
+    logger.info("watchdog thread stopped")

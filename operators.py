@@ -134,30 +134,14 @@ def default_tick():
     return 1
 
 
-def sync():
-    global client_instance
-
-    if client_instance:
-        for datatype in SUPPORTED_TYPES:
-            for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
-                if item.id == 'None':
-                    item.id = bpy.context.scene.session_settings.username
-                    key = "{}/{}".format(datatype, item.name)
-                    client_instance.add(key)
-
-    return .2
-
-
 def register_ticks():
     # REGISTER Updaters
-    # bpy.app.timers.register(sync)
     bpy.app.timers.register(default_tick)
     pass
 
 
 def unregister_ticks():
     # REGISTER Updaters
-    # bpy.app.timers.unregister(sync)
     bpy.app.timers.unregister(default_tick)
     pass
 
