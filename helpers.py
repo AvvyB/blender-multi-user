@@ -1,6 +1,7 @@
 import logging
 import sys
 from uuid import uuid4
+import json
 
 import bpy
 import mathutils
@@ -24,32 +25,27 @@ def refresh_window():
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 def get_armature_edition_context(armature):
-    override = bpy.context.copy()
-
+    
+    override = {}
     # Set correct area
     for area in bpy.data.window_managers[0].windows[0].screen.areas :
         if area.type == 'VIEW_3D':
+            override = bpy.context.copy()
             override['area'] = area
             break
 
     # Set correct armature settings
+    override['window'] =  bpy.data.window_managers[0].windows[0]
+    override['screen'] = bpy.data.window_managers[0].windows[0].screen
     override['mode'] = 'EDIT_ARMATURE'
     override['active_object'] = armature
     override['selected_objects'] = [armature]
 
-    edit_object_ref = None
-
     for o in bpy.data.objects:
         if o.data == armature:
-            edit_object_ref = o
+            override['edit_object'] = o
+    
             break
-
-    if edit_object_ref is None:
-        edit_object_ref = bpy.data.objects.new(armature.name, armature)
-
-
-    override['edit_object'] = edit_object_ref
-
 
     return override
 
@@ -106,7 +102,7 @@ def load(key, value):
         load_default(target=target, data=value,
                      create=True, type=target_type)
     elif target_type == 'Armature':
-        load_armature(target=target, data=value,
+        preload_armature(target=target, data=value,
                      create=True)
     elif target_type == 'Client':
         load_client(key.split('/')[1], value)
@@ -139,28 +135,39 @@ def load_client(client=None, data=None):
             draw.renderer.draw_client_selected_objects(data)
 
 def load_armature(target=None, data=None, create=False):
+    file = "cache_{}.json".format(data['name'])
+
     if not target or not target.is_editmode:
-        target = bpy.data.armatures.new(data['name'])
+        target = bpy.data.armatures.new(data['name'])   
     
-    # Construct a correct execution context
-    # context = get_armature_edition_context(target)
+        dump_anything.load(target, data)
 
-    dump_anything.load(target, data)
-    
-    # for eb in data['edit_bones']:
-    #     if eb in target.edit_bones.keys():
-    #         # Update the bone
-    #         pass
-    #     else:
-    #         # Add new edit bone and load it
-    #         bpy.ops.armature.bone_primitive_add(context)
+        with open(file, 'w') as fp:
+            json.dump(data, fp)
+            fp.close()    
+        
+        target.id = data['id']
+    else:
+         # Construct a correct execution context
+        context = get_armature_edition_context(target)
+        file = "cache_{}.json".format(target.name)
 
-            # target_new_eb = target.edit_bones[eb]
-            # dump_anything.load(target_new_eb, data['edit_bones'][eb])
+        with open(file, 'r') as fp:
+            data = json.load(fp)
 
-        # logger.info(eb)
-    target.id = data['id']
+            if data:
+                for b in data['bones']:
+                    if b in target.edit_bones.keys():
+                        # Update the bone
+                        pass
+                    else:
+                        # Add new edit bone and load it
+                        bpy.ops.armature.bone_primitive_add(context)
 
+                        target_new_b = target.bones[b]
+                        dump_anything.load(target_new_b, data['bones'][b])
+
+                    logger.info(b)
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
@@ -222,6 +229,8 @@ def load_object(target=None, data=None, create=False):
 
             target = bpy.data.objects.new(data["name"], pointer)
 
+            
+
             # Load other meshes metadata
         dump_anything.load(target, data)
 
@@ -235,9 +244,13 @@ def load_object(target=None, data=None, create=False):
             target.hide_select = False
         else:
             target.hide_select = True
+        
+        #Post load 
+        if pointer and pointer.__class__.__name__ == 'Armature':
+            load_armature(pointer)
 
-    except:
-        logger.error("Object {} loading error ".format(data["name"]))
+    except Exception as e:
+        logger.error("Object {} loading error: {} ".format(data["name"],e))
 
 
 def load_collection(target=None, data=None, create=False):
