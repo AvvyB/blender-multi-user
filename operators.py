@@ -511,7 +511,7 @@ def depsgraph_update(scene):
         #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
         #                 client_instance.set(
         #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
-        for update in updates:
+        for update in reversed(updates):
             if update.id.id == username:
                 getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name].is_dirty= True
 
