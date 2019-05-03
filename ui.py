@@ -28,7 +28,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = layout.row()
                 box = row.box()
                 row = box.row()
-                row.label(text="USER", icon='GHOST_ENABLED')
+                row.label(text="USER", icon='TRIA_RIGHT')
                 row = box.row()
                 row.prop(scene.session_settings, "username", text="id")
                 
@@ -39,7 +39,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = layout.row()
                 box = row.box()
                 row = box.row()
-                row.label(text="NETWORK", icon = "TOOL_SETTINGS")
+                row.label(text="NETWORK", icon = "TRIA_RIGHT")
                 
                 row = box.row()
                 row.label(text="draw overlay:")
@@ -78,6 +78,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
+                    row = layout.row()
 
                     # row = layout.row()
                     # row.label(text="serial ",icon="KEYTYPE_EXTREME_VEC")
@@ -85,10 +86,20 @@ class SessionSettingsPanel(bpy.types.Panel):
                     # row.label(text="serial ",icon="KEYTYPE_BREAKDOWN_VEC")
                     # row = layout.row()
                     # row.label(text="serial ",icon="KEYTYPE_JITTER_VEC")
-                elif operators.client_state is 2:
-                    row.label(text="connecting...")
+
+                    box = row.box()
+                    row = box.row()
+                    row.label(text="", icon='INFO')
+                    row = box.row()
+                    row.label(text="Sync tasks: {}".format(operators.client_instance.active_tasks))
+                else:
+                    status = "connecting..."
+                    if net_settings.is_admin:
+                        status =  "init scene...({} tasks remaining)".format(operators.client_instance.active_tasks)
+                    row.label(text=status)
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
+
 
             row = layout.row()
 

@@ -16,12 +16,8 @@ from .libs import dump_anything, umsgpack, zmq
 # import zmq
 lock = threading.Lock()
 
-
-
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
 
 
 CONNECT_TIMEOUT = 2
@@ -34,6 +30,7 @@ class State(Enum):
     INITIAL = 1
     SYNCING = 2
     ACTIVE = 3
+    WORKING = 4
 
 
 def zpipe(ctx):
@@ -58,6 +55,8 @@ class RCFClient(object):
     pipe = None
     net_agent = None
     store = None
+    active_tasks = None
+
     def __init__(self):
         self.ctx = zmq.Context()
         self.pipe, peer = zpipe(self.ctx)
@@ -88,6 +87,10 @@ class RCFClient(object):
             target=watchdog_worker, args=(self.serial_feed, 2, self.stop_event), name="watchdog-agent")
         self.watchdog_agent.daemon = True
         self.watchdog_agent.start()
+
+        # Status
+        self.active_tasks = 0
+
 
     def connect(self, id, address, port):
         self.pipe.send_multipart([b"CONNECT", (id.encode() if isinstance(
@@ -136,10 +139,11 @@ class RCFClient(object):
 
         # self.pipe.send_multipart(
             # [b"ADD", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
-
     
+
     def is_busy(self):
-        if self.serial_feed.qsize() == 0  and self.serial_product.qsize() == 0:
+        self.active_tasks = self.serial_feed.qsize() + self.serial_product.qsize()
+        if self.active_tasks == 0:
             return False
         else:
             return True
