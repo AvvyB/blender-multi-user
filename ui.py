@@ -78,6 +78,13 @@ class SessionSettingsPanel(bpy.types.Panel):
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
+
+                    # row = layout.row()
+                    # row.label(text="serial ",icon="KEYTYPE_EXTREME_VEC")
+                    # row = layout.row()
+                    # row.label(text="serial ",icon="KEYTYPE_BREAKDOWN_VEC")
+                    # row = layout.row()
+                    # row.label(text="serial ",icon="KEYTYPE_JITTER_VEC")
                 elif operators.client_state is 2:
                     row.label(text="connecting...")
                     row = layout.row()
