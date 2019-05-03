@@ -498,22 +498,26 @@ def exist(update):
 def depsgraph_update(scene):
     global client_instance
     global client_keys
+    global client_state
+    
 
-    if client_instance and client_instance.net_agent.is_alive():
-        updates = bpy.context.depsgraph.updates
-        username = bpy.context.scene.session_settings.username
-        update_selected_object(bpy.context)
+    if client_state == 3:
+        if bpy.context.mode == 'OBJECT':
+            updates = bpy.context.depsgraph.updates
+            username = bpy.context.scene.session_settings.username
+            update_selected_object(bpy.context)
 
-        selected_objects = helpers.get_selected_objects(scene)
-        # if len(selected_objects) > 0:
-        #     for updated_data in updates:
-        #         if updated_data.id.name in selected_objects:
-        #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-        #                 client_instance.set(
-        #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
-        for update in reversed(updates):
-            if update.id.id == username:
-                getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name].is_dirty= True
+            selected_objects = helpers.get_selected_objects(scene)
+            # if len(selected_objects) > 0:
+            #     for updated_data in updates:
+            #         if updated_data.id.name in selected_objects:
+            #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
+            #                 client_instance.set(
+            #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+            for update in reversed(updates):
+                if update.id.id == username:
+                    getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name].is_dirty= True
+
 
 def register():
     from bpy.utils import register_class

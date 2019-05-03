@@ -18,10 +18,16 @@ SUPPORTED_TYPES = [ 'Armature', 'Material',
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 # UTILITY FUNCTIONS
-
+def revers(d):
+    l = []
+    for i in d:
+        l.append(i)
+    
+    return l[::-1]
 
 def refresh_window():
     import bpy
+
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 def get_armature_edition_context(armature):
@@ -102,7 +108,7 @@ def load(key, value):
         load_default(target=target, data=value,
                      create=True, type=target_type)
     elif target_type == 'Armature':
-        preload_armature(target=target, data=value,
+        load_armature(target=target, data=value,
                      create=True)
     elif target_type == 'Client':
         load_client(key.split('/')[1], value)
@@ -134,10 +140,12 @@ def load_client(client=None, data=None):
             draw.renderer.draw_client(data)
             draw.renderer.draw_client_selected_objects(data)
 
+
 def load_armature(target=None, data=None, create=False):
     file = "cache_{}.json".format(data['name'])
+    context = bpy.context
 
-    if not target or not target.is_editmode:
+    if not target:
         target = bpy.data.armatures.new(data['name'])   
     
         dump_anything.load(target, data)
@@ -148,32 +156,43 @@ def load_armature(target=None, data=None, create=False):
         
         target.id = data['id']
     else:
-         # Construct a correct execution context
-        context = get_armature_edition_context(target)
+        # Construct a correct execution context
         file = "cache_{}.json".format(target.name)
 
         with open(file, 'r') as fp:
             data = json.load(fp)
 
             if data:
-                for b in data['bones']:
-                    if b in target.edit_bones.keys():
-                        # Update the bone
-                        pass
-                    else:
-                        # Add new edit bone and load it
-                        bpy.ops.armature.bone_primitive_add(context)
+                ob = None
+                for o in bpy.data.objects:
+                    if o.data == target:
+                        ob = o
+                if ob:
+                    bpy.context.view_layer.objects.active = ob
+                    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+                    for eb in data['edit_bones']:
+                        if eb in target.edit_bones.keys():
+                            # Update the bone
+                            pass
+                        else:
+                            # Add new edit bone and load it
 
-                        target_new_b = target.bones[b]
-                        dump_anything.load(target_new_b, data['bones'][b])
+                            target_new_b = target.edit_bones.new[eb]
+                            dump_anything.load(target_new_b, data['bones'][eb])
 
-                    logger.info(b)
+                        logger.info(eb)
+
+                    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            fp.close()
+            import os
+            os.remove(file)
+
 
 def load_mesh(target=None, data=None, create=False):
     import bmesh
 
     if not target or not target.is_editmode:
-        # TODO: handle error
+        # LOAD GEOMETRY
         mesh_buffer = bmesh.new()
 
         for i in data["vertices"]:
@@ -193,15 +212,28 @@ def load_mesh(target=None, data=None, create=False):
                 verts.append(mesh_buffer.verts[v])
 
             if len(verts) > 0:
-                mesh_buffer.faces.new(verts)
+                f = mesh_buffer.faces.new(verts)
+                f.material_index= data["polygons"][p]['material_index']
+    
 
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
 
         mesh_buffer.to_mesh(target)
-
-        # Load other meshes metadata
+        
+        # LOAD METADATA
         dump_anything.load(target, data)
+
+        material_to_load = []
+        material_to_load = revers(data["materials"])
+
+        target.materials.clear()
+        # SLots
+        i = 0
+        while len(material_to_load) > len(target.materials):
+            target.materials.append(bpy.data.materials[material_to_load[i]])
+            i+=1
+           
 
         target.id = data['id']
     else:
@@ -244,10 +276,6 @@ def load_object(target=None, data=None, create=False):
             target.hide_select = False
         else:
             target.hide_select = True
-        
-        #Post load 
-        if pointer and pointer.__class__.__name__ == 'Armature':
-            load_armature(pointer)
 
     except Exception as e:
         logger.error("Object {} loading error: {} ".format(data["name"],e))
@@ -450,8 +478,10 @@ def dump(key):
     elif target_type == 'Light':
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
-        data = dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6)
+        data = dump_datablock(target, 2)
+        dump_datablock_attibute(
+            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6,data)
+        
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
     elif target_type == 'Collection':
@@ -459,8 +489,8 @@ def dump(key):
     elif target_type == 'Scene':
         data = dump_datablock_attibute(
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
-    elif target_type == 'Armature':
-        data = dump_datablock(target, 4)
+    # elif target_type == 'Armature':
+    #     data = dump_datablock(target, 4)
 
 
     return data
@@ -479,7 +509,7 @@ def dump_datablock(datablock, depth):
         return data
 
 
-def dump_datablock_attibute(datablock, attributes, depth=1):
+def dump_datablock_attibute(datablock, attributes, depth=1,dickt=None):
     if datablock:
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
@@ -489,6 +519,9 @@ def dump_datablock_attibute(datablock, attributes, depth=1):
         key = "{}/{}".format(datablock_type, datablock.name)
 
         data = {}
+        
+        if dickt:
+            data = dickt
         for attr in attributes:
             try:
                 data[attr] = dumper.dump(getattr(datablock, attr))

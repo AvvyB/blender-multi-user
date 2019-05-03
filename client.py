@@ -84,7 +84,7 @@ class RCFClient(object):
 
         # Sync Watchdog
         self.watchdog_agent = threading.Thread(
-            target=watchdog_worker, args=(self.serial_feed, 2, self.stop_event), name="watchdog-agent")
+            target=watchdog_worker, args=(self.serial_feed, 0.2, self.stop_event), name="watchdog-agent")
         self.watchdog_agent.daemon = True
         self.watchdog_agent.start()
 
