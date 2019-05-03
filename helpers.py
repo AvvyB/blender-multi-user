@@ -11,11 +11,11 @@ from .libs import dump_anything
 CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
-SUPPORTED_TYPES = ['Material',
-                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature', 'Collection', 'Scene']
+SUPPORTED_TYPES = [ 'Armature', 'Material',
+                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
 
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(level=logging.DEBUG)
 # UTILITY FUNCTIONS
 
 
@@ -23,6 +23,35 @@ def refresh_window():
     import bpy
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+def get_armature_edition_context(armature):
+    override = bpy.context.copy()
+
+    # Set correct area
+    for area in bpy.data.window_managers[0].windows[0].screen.areas :
+        if area.type == 'VIEW_3D':
+            override['area'] = area
+            break
+
+    # Set correct armature settings
+    override['mode'] = 'EDIT_ARMATURE'
+    override['active_object'] = armature
+    override['selected_objects'] = [armature]
+
+    edit_object_ref = None
+
+    for o in bpy.data.objects:
+        if o.data == armature:
+            edit_object_ref = o
+            break
+
+    if edit_object_ref is None:
+        edit_object_ref = bpy.data.objects.new(armature.name, armature)
+
+
+    override['edit_object'] = edit_object_ref
+
+
+    return override
 
 def get_selected_objects(scene):
     selected_objects = []
@@ -76,6 +105,9 @@ def load(key, value):
     elif target_type == 'Camera':
         load_default(target=target, data=value,
                      create=True, type=target_type)
+    elif target_type == 'Armature':
+        load_armature(target=target, data=value,
+                     create=True)
     elif target_type == 'Client':
         load_client(key.split('/')[1], value)
 
@@ -105,6 +137,29 @@ def load_client(client=None, data=None):
         if net_settings.enable_draw:
             draw.renderer.draw_client(data)
             draw.renderer.draw_client_selected_objects(data)
+
+def load_armature(target=None, data=None, create=False):
+    if not target or not target.is_editmode:
+        target = bpy.data.armatures.new(data['name'])
+    
+    # Construct a correct execution context
+    # context = get_armature_edition_context(target)
+
+    dump_anything.load(target, data)
+    
+    # for eb in data['edit_bones']:
+    #     if eb in target.edit_bones.keys():
+    #         # Update the bone
+    #         pass
+    #     else:
+    #         # Add new edit bone and load it
+    #         bpy.ops.armature.bone_primitive_add(context)
+
+            # target_new_eb = target.edit_bones[eb]
+            # dump_anything.load(target_new_eb, data['edit_bones'][eb])
+
+        # logger.info(eb)
+    target.id = data['id']
 
 
 def load_mesh(target=None, data=None, create=False):
@@ -160,6 +215,8 @@ def load_object(target=None, data=None, create=False):
                 pointer = bpy.data.cameras[data["data"]]
             elif data["data"] in bpy.data.curves.keys():
                 pointer = bpy.data.curves[data["data"]]
+            elif data["data"] in bpy.data.armatures.keys():
+                pointer = bpy.data.armatures[data["data"]]
             elif data["data"] in bpy.data.grease_pencils.keys():
                 pointer = bpy.data.grease_pencils[data["data"]]
 
@@ -365,8 +422,6 @@ def load_default(target=None, data=None, create=False, type=None):
         logger.error("default loading error {}".format(e))
 
 # DUMP HELPERS
-
-
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -391,6 +446,9 @@ def dump(key):
     elif target_type == 'Scene':
         data = dump_datablock_attibute(
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
+    elif target_type == 'Armature':
+        data = dump_datablock(target, 4)
+
 
     return data
 

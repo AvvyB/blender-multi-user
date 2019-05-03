@@ -28,10 +28,10 @@ server = None
 context = None
 update_list = {}
 
-SUPPORTED_DATABLOCKS = ['collections', 'meshes', 'objects',
-                        'materials', 'textures', 'lights', 'cameras', 'actions', 'armatures', 'grease_pencils']
-SUPPORTED_TYPES = ['Material',
-                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Armature', 'Collection', 'Scene']
+SUPPORTED_DATABLOCKS = ['collections','armatures', 'meshes', 'objects', 
+                        'materials', 'textures', 'lights', 'cameras', 'actions', 'grease_pencils']
+SUPPORTED_TYPES = [ 'Armature', 'Material',
+                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
 
 # UTILITY FUNCTIONS
 
