@@ -125,9 +125,22 @@ def init_datablocks():
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
 
+def refresh_session_data():
+    global client_instance, client_keys, client_state
+
+    keys = client_instance.list()
+
+    if keys:
+        client_keys = keys
+    state = client_instance.state()
+
+    if state:
+        client_state = state
 
 def default_tick():
-    bpy.ops.session.refresh()
+    logger.info("Refreshing data")
+    refresh_session_data()
+
     upload_client_instance_position()
 
     return 1
@@ -136,13 +149,13 @@ def default_tick():
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(default_tick)
-    pass
+    
 
 
 def unregister_ticks():
     # REGISTER Updaters
     bpy.app.timers.unregister(default_tick)
-    pass
+    
 
 # OPERATORS
 
@@ -202,16 +215,7 @@ class session_refresh(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance, client_keys, client_state
-
-        keys = client_instance.list()
-
-        if keys:
-            client_keys = keys
-        state = client_instance.state()
-
-        if state:
-            client_state = state
+        refresh_session_data()
 
         return {"FINISHED"}
 
