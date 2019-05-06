@@ -227,12 +227,14 @@ def load_mesh(target=None, data=None, create=False):
         material_to_load = []
         material_to_load = revers(data["materials"])
 
+
         target.materials.clear()
         # SLots
         i = 0
-        while len(material_to_load) > len(target.materials):
-            target.materials.append(bpy.data.materials[material_to_load[i]])
-            i+=1
+
+        for m in data["material_list"]:
+            target.materials.append(bpy.data.materials[m])
+            
            
 
         target.id = data['id']
@@ -481,7 +483,12 @@ def dump(key):
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
             target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6,data)
+        m_list = []
+        for m in target.materials:
+            m_list.append(m.name)
         
+        data['material_list'] = m_list
+
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
     elif target_type == 'Collection':

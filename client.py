@@ -487,13 +487,19 @@ def serial_worker(product,  feed):
         if command == 'STOP':
             break
         elif command == 'DUMP':
-            value = helpers.dump(key)
+            try:
+                value = helpers.dump(key)
 
-            if value:
-                product.put((key,value))
+                if value:
+                    product.put((key,value))
+            except Exception as e:
+                logger.error("{}".format(e))
         elif command == 'LOAD':
             if value:
-                helpers.load(key, value)
+                try:
+                    helpers.load(key, value)
+                except Exception as e:
+                    logger.error("{}".format(e))
 
     logger.info("serial thread stopped")
 
@@ -508,10 +514,10 @@ def watchdog_worker(feed,interval, stop_event):
             for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
                 key = "{}/{}".format(datatype, item.name)
                 try:
-                    if item.id == 'None':
-                        item.id = bpy.context.scene.session_settings.username
-                        feed.put(('DUMP',key,None))
-                    elif item.is_dirty:
+                    # if item.id == 'None':
+                    #     item.id = bpy.context.scene.session_settings.username
+                    #     feed.put(('DUMP',key,None))
+                    if item.is_dirty:
                         logger.info("{} needs update".format(item.name))
                         feed.put(('DUMP',key,None))             
                         item.is_dirty = False

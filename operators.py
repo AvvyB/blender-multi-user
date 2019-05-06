@@ -30,12 +30,11 @@ update_list = {}
 
 SUPPORTED_DATABLOCKS = ['collections','armatures', 'meshes', 'objects', 
                         'materials', 'textures', 'lights', 'cameras', 'actions', 'grease_pencils']
+
 SUPPORTED_TYPES = [ 'Armature', 'Material',
                    'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
 
 # UTILITY FUNCTIONS
-
-
 def client_list_callback(scene, context):
     global client_keys
 
@@ -494,6 +493,24 @@ def exist(update):
     else:
         return False
 
+def get_datablock(update,context):
+    
+    item_type = update.id.__class__.__name__
+    item_id = update.id.name
+   
+    datablock_ref = None
+
+    if item_id == 'Master Collection':
+        Adatablock_ref= bpy.context.scene
+    elif item_type in helpers.CORRESPONDANCE.keys():
+        datablock_ref = getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name]
+    else:
+        if item_id in bpy.data.lights.keys():
+            datablock_ref = bpy.data.lights[item_id]
+    
+
+    return datablock_ref
+
 
 def depsgraph_update(scene):
     global client_instance
@@ -508,16 +525,15 @@ def depsgraph_update(scene):
             update_selected_object(bpy.context)
 
             selected_objects = helpers.get_selected_objects(scene)
-            # if len(selected_objects) > 0:
-            #     for updated_data in updates:
-            #         if updated_data.id.name in selected_objects:
-            #             if updated_data.is_updated_transform or updated_data.is_updated_geometry:
-            #                 client_instance.set(
-            #                     "{}/{}".format(updated_data.id.bl_rna.name, updated_data.id.name))
+          
             for update in reversed(updates):
-                if update.id.id == username:
-                    getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name].is_dirty= True
+                if update.id.id == username or update.id.id == 'None':
+                    # TODO: handle errors
+                    data_ref = get_datablock(update,context)
 
+                    if data_ref:
+                        data_ref.is_dirty= True
+                        
 
 def register():
     from bpy.utils import register_class
