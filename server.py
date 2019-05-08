@@ -4,12 +4,13 @@ from operator import itemgetter
 
 from libs import zmq
 
+
+
 import message
 logger = logging.getLogger("Server")
 logging.basicConfig(level=logging.DEBUG)
 
-SUPPORTED_TYPES = [ 'Client', 'Material',
-                   'Texture', 'Light', 'Camera','Mesh', 'Grease Pencil','Armature', 'Object', 'Action', 'Collection', 'Scene']
+SUPPORTED_TYPES = ['Client','Curve','Material','Texture', 'Light', 'Camera', 'Mesh','Armature', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
                    
 class RCFServerAgent():
     def __init__(self, context=zmq.Context.instance(), id="admin"):

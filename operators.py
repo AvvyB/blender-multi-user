@@ -28,12 +28,6 @@ server = None
 context = None
 update_list = {}
 
-SUPPORTED_DATABLOCKS = ['collections','armatures', 'meshes', 'objects', 
-                        'materials', 'textures', 'lights', 'cameras', 'actions', 'grease_pencils']
-
-SUPPORTED_TYPES = [ 'Armature', 'Material',
-                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
-
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
     global client_keys
@@ -48,11 +42,15 @@ def client_list_callback(scene, context):
     return items
 
 
-def clean_scene(elements=SUPPORTED_DATABLOCKS):
+def clean_scene(elements=helpers.SUPPORTED_TYPES):
     for datablock in elements:
-        datablock_ref = getattr(bpy.data, datablock)
+        datablock_ref =getattr(bpy.data, helpers.CORRESPONDANCE[datablock])
         for item in datablock_ref:
-            datablock_ref.remove(item)
+            try:
+                datablock_ref.remove(item)
+            #Catch last scene remove
+            except RuntimeError:
+                pass
 
 
 def randomStringDigits(stringLength=6):
@@ -119,11 +117,15 @@ def update_selected_object(context):
 def init_datablocks():
     global client_instance
 
-    for datatype in SUPPORTED_TYPES:
+   
+    for datatype in helpers.SUPPORTED_TYPES:
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
             item.id = bpy.context.scene.session_settings.username
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
+            print(key)
+           
+
 
 def refresh_session_data():
     global client_instance, client_keys, client_state
@@ -137,12 +139,12 @@ def refresh_session_data():
     if state:
         client_state = state
 
+
 def default_tick():
-    logger.info("Refreshing data")
     refresh_session_data()
 
     upload_client_instance_position()
-
+    
     return 1
 
 
@@ -476,11 +478,11 @@ classes = (
 
 
 def ordered(updates):
-    # sorted = sorted(updates, key=lambda tup: SUPPORTED_TYPES.index(tup[1].id.bl_rna.name))
+    # sorted = sorted(updates, key=lambda tup: hepers.SUPPORTED_TYPES.index(tup[1].id.bl_rna.name))
     uplist = []
     for item in updates.items():
-        if item[1].id.bl_rna.name in SUPPORTED_TYPES:
-            uplist.append((SUPPORTED_TYPES.index(
+        if item[1].id.bl_rna.name in hepers.SUPPORTED_TYPES:
+            uplist.append((hepers.SUPPORTED_TYPES.index(
                 item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name, item[1].id))
 
     uplist.sort(key=itemgetter(0))

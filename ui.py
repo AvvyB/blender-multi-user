@@ -4,7 +4,7 @@ from . import client, operators
 
 
 
-ICONS = {'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
+ICONS = {'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
                   'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA', 'Light': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'Grease Pencil': 'GREASEPENCIL'}
 
 

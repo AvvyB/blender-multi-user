@@ -9,39 +9,43 @@ import mathutils
 from . import draw
 from .libs import dump_anything
 
-CORRESPONDANCE = {'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
+CORRESPONDANCE = {'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
-SUPPORTED_TYPES = [ 'Armature', 'Material',
-                   'Texture', 'Light', 'Camera', 'Mesh', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
+SUPPORTED_TYPES = ['Curve', 'Material', 'Texture', 'Light', 'Camera', 'Mesh',
+                   'Armature', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 # UTILITY FUNCTIONS
+
+
 def revers(d):
     l = []
     for i in d:
         l.append(i)
-    
+
     return l[::-1]
+
 
 def refresh_window():
     import bpy
 
     bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+
 def get_armature_edition_context(armature):
-    
+
     override = {}
     # Set correct area
-    for area in bpy.data.window_managers[0].windows[0].screen.areas :
+    for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
             override = bpy.context.copy()
             override['area'] = area
             break
 
     # Set correct armature settings
-    override['window'] =  bpy.data.window_managers[0].windows[0]
+    override['window'] = bpy.data.window_managers[0].windows[0]
     override['screen'] = bpy.data.window_managers[0].windows[0].screen
     override['mode'] = 'EDIT_ARMATURE'
     override['active_object'] = armature
@@ -50,10 +54,11 @@ def get_armature_edition_context(armature):
     for o in bpy.data.objects:
         if o.data == armature:
             override['edit_object'] = o
-    
+
             break
 
     return override
+
 
 def get_selected_objects(scene):
     selected_objects = []
@@ -109,7 +114,10 @@ def load(key, value):
                      create=True, type=target_type)
     elif target_type == 'Armature':
         load_armature(target=target, data=value,
-                     create=True)
+                      create=True)
+    elif target_type == 'Curve':
+        load_curve(target=target, data=value,
+                   create=True)
     elif target_type == 'Client':
         load_client(key.split('/')[1], value)
 
@@ -146,14 +154,14 @@ def load_armature(target=None, data=None, create=False):
     context = bpy.context
 
     if not target:
-        target = bpy.data.armatures.new(data['name'])   
-    
+        target = bpy.data.armatures.new(data['name'])
+
         dump_anything.load(target, data)
 
         with open(file, 'w') as fp:
             json.dump(data, fp)
-            fp.close()    
-        
+            fp.close()
+
         target.id = data['id']
     else:
         # Construct a correct execution context
@@ -213,20 +221,18 @@ def load_mesh(target=None, data=None, create=False):
 
             if len(verts) > 0:
                 f = mesh_buffer.faces.new(verts)
-                f.material_index= data["polygons"][p]['material_index']
-    
+                f.material_index = data["polygons"][p]['material_index']
 
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
 
         mesh_buffer.to_mesh(target)
-        
+
         # LOAD METADATA
         dump_anything.load(target, data)
 
         material_to_load = []
         material_to_load = revers(data["materials"])
-
 
         target.materials.clear()
         # SLots
@@ -234,8 +240,6 @@ def load_mesh(target=None, data=None, create=False):
 
         for m in data["material_list"]:
             target.materials.append(bpy.data.materials[m])
-            
-           
 
         target.id = data['id']
     else:
@@ -260,10 +264,10 @@ def load_object(target=None, data=None, create=False):
                 pointer = bpy.data.armatures[data["data"]]
             elif data["data"] in bpy.data.grease_pencils.keys():
                 pointer = bpy.data.grease_pencils[data["data"]]
+            elif data["data"] in bpy.data.curves.keys():
+                pointer = bpy.data.curves[data["data"]]
 
             target = bpy.data.objects.new(data["name"], pointer)
-
-            
 
             # Load other meshes metadata
         dump_anything.load(target, data)
@@ -280,7 +284,36 @@ def load_object(target=None, data=None, create=False):
             target.hide_select = True
 
     except Exception as e:
-        logger.error("Object {} loading error: {} ".format(data["name"],e))
+        logger.error("Object {} loading error: {} ".format(data["name"], e))
+
+
+def load_curve(target=None, data=None, create=False):
+    try:
+        if target is None and create:
+            target = bpy.data.curves.new(data["name"], 'CURVE')
+
+        dump_anything.load(target, data)
+
+        target.splines.clear()
+        # load splines
+        for spline in data['splines']:
+            # Update existing..
+            # if spline in target.splines.keys():
+
+            new_spline = target.splines.new(data['splines'][spline]['type'])
+            dump_anything.load(new_spline, data['splines'][spline])
+
+            #Load curve geometry data
+            for bezier_point_index in data['splines'][spline]["bezier_points"]:
+                new_spline.bezier_points.add(1)
+                dump_anything.load(new_spline.bezier_points[bezier_point_index], data['splines'][spline]["bezier_points"][bezier_point_index])
+            
+            for point_index in data['splines'][spline]["points"]:
+                new_spline.points.add(1)
+                dump_anything.load(new_spline.points[point_index], data['splines'][spline]["points"][point_index])
+
+    except Exception as e:
+        logger.error("curve loading error: {}".format(e))
 
 
 def load_collection(target=None, data=None, create=False):
@@ -449,6 +482,7 @@ def load_light(target=None, data=None, create=False, type=None):
         dump_anything.load(target, data)
 
         target.id = data['id']
+
     except Exception as e:
         logger.error("light loading error: {}".format(e))
 
@@ -465,6 +499,8 @@ def load_default(target=None, data=None, create=False, type=None):
         logger.error("default loading error {}".format(e))
 
 # DUMP HELPERS
+
+
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -482,12 +518,21 @@ def dump(key):
     elif target_type == 'Mesh':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6,data)
+            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
+        # Fix material index
         m_list = []
         for m in target.materials:
             m_list.append(m.name)
-        
+
         data['material_list'] = m_list
+    elif target_type == 'Curve':
+        data = dump_datablock(target, 1)
+        dump_datablock_attibute(
+            target, ['splines'], 5, data)
+
+        # for index, spline in enumerate(target.splines):
+        #     data["splines"][index] = dump_datablock_attibute(target.splines[index],"Curve/{}".format(index), ["bezier_points", "material_index", "points", "order_u", "order_v", "point_count_u", "point_count_v",
+        #                                                               "radius_interpolation", "resolution_v", "use_bezier_u", "use_bezier_v", "use_cyclic_u", "use_cyclic_v", "use_endpoint_u", "use_endpoint_v"], 3)
 
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
@@ -498,7 +543,6 @@ def dump(key):
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
     # elif target_type == 'Armature':
     #     data = dump_datablock(target, 4)
-
 
     return data
 
@@ -516,17 +560,18 @@ def dump_datablock(datablock, depth):
         return data
 
 
-def dump_datablock_attibute(datablock, attributes, depth=1,dickt=None):
+def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
     if datablock:
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
         dumper.depth = depth
 
-        datablock_type = datablock.bl_rna.name
+      
+        datablock_type = datablock.bl_rna.name 
         key = "{}/{}".format(datablock_type, datablock.name)
 
         data = {}
-        
+
         if dickt:
             data = dickt
         for attr in attributes:
