@@ -518,7 +518,7 @@ def watchdog_worker(feed,interval, stop_event):
                     #     item.id = bpy.context.scene.session_settings.username
                     #     feed.put(('DUMP',key,None))
                     if item.is_dirty:
-                        logger.info("{} needs update".format(item.name))
+                        logger.info("{} needs update".format(key))
                         feed.put(('DUMP',key,None))             
                         item.is_dirty = False
                 except:

@@ -311,7 +311,7 @@ def load_curve(target=None, data=None, create=False):
             for point_index in data['splines'][spline]["points"]:
                 new_spline.points.add(1)
                 dump_anything.load(new_spline.points[point_index], data['splines'][spline]["points"][point_index])
-
+        target.id = data['id']
     except Exception as e:
         logger.error("curve loading error: {}".format(e))
 
@@ -451,12 +451,19 @@ def load_gpencil_layer(target=None, data=None, create=False):
                     tpoint = tstroke.points.add(1)
                     tpoint = tstroke.points[len(tstroke.points)-1]
                 dump_anything.load(tpoint, p)
+                tpoint.co[0] = p['co'][0]
+                tpoint.co[1] = p['co'][1]
+                tpoint.co[2] = p['co'][2]
+                print(p['co'])
+                print(tpoint.co)
+
 
 
 def load_gpencil(target=None, data=None, create=False):
     try:
         if target is None and create:
             target = bpy.data.grease_pencils.new(data["name"])
+
 
         if "layers" in data.keys():
             for layer in data["layers"]:

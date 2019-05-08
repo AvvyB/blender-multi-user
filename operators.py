@@ -536,7 +536,7 @@ def depsgraph_update(scene):
                 if update.id.id == username or update.id.id == 'None':
                     # TODO: handle errors
                     data_ref = get_datablock(update,context)
-
+                    
                     if data_ref:
                         data_ref.is_dirty= True
                         
