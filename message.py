@@ -1,11 +1,12 @@
 import logging
 try:
     from .libs import umsgpack
-    from .libs import zmq
+
 except:
     # Server import
     from libs import umsgpack
-    from libs import zmq
+
+import zmq
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

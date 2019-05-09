@@ -15,6 +15,9 @@ import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+from pathlib import Path
+
+python_path = Path(bpy.app.binary_path_python)
 
 from . import client, draw, helpers, ui
 from .libs import umsgpack
@@ -299,8 +302,9 @@ class session_create(bpy.types.Operator):
         global client_instance
 
         net_settings = context.scene.session_settings
+        print(python_path)
         server = subprocess.Popen(
-            ['python', 'server.py'], shell=False, stdout=subprocess.PIPE)
+            [str(python_path), 'server.py'], shell=False, stdout=subprocess.PIPE)
         # time.sleep(0.1)
 
         bpy.ops.session.join()

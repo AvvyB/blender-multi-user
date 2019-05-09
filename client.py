@@ -9,9 +9,10 @@ import threading
 import time
 from enum import Enum
 from random import randint
+import zmq
 
 from . import draw, helpers, message
-from .libs import dump_anything, umsgpack, zmq
+from .libs import dump_anything, umsgpack
 
 # import zmq
 lock = threading.Lock()
