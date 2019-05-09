@@ -460,7 +460,7 @@ def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
             if value:
                 # Stamp with id
                 value['id'] = agent.id.decode()
-
+            
                 # Format massage
                 rcfmsg = message.RCFMessage(
                     key=key, id=agent.id, body=value)

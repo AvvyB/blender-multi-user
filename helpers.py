@@ -326,6 +326,7 @@ def load_collection(target=None, data=None, create=False):
 
         # link objects
         for object in data["objects"]:
+            # if object not in target.objects.keys():
             target.objects.link(bpy.data.objects[object])
 
         for object in target.objects.keys():
@@ -451,11 +452,11 @@ def load_gpencil_layer(target=None, data=None, create=False):
                     tpoint = tstroke.points.add(1)
                     tpoint = tstroke.points[len(tstroke.points)-1]
                 dump_anything.load(tpoint, p)
-                tpoint.co[0] = p['co'][0]
-                tpoint.co[1] = p['co'][1]
-                tpoint.co[2] = p['co'][2]
-                print(p['co'])
-                print(tpoint.co)
+                # tpoint.co[0] = p['co'][0]
+                # tpoint.co[1] = p['co'][1]
+                # tpoint.co[2] = p['co'][2]
+                # print(p['co'])
+                # print(tpoint.co)
 
 
 
@@ -548,6 +549,7 @@ def dump(key):
     elif target_type == 'Scene':
         data = dump_datablock_attibute(
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
+            
     # elif target_type == 'Armature':
     #     data = dump_datablock(target, 4)
 

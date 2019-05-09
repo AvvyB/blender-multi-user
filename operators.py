@@ -7,6 +7,7 @@ import string
 import subprocess
 import time
 from operator import itemgetter
+import queue
 
 import bgl
 import blf
@@ -30,12 +31,13 @@ client_state = 1
 server = None
 context = None
 update_list = {}
+history = queue.Queue()
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
     global client_keys
 
-    items = []
+    items = [("Common", "Common", "")]
     if client_keys:
         for k in client_keys:
             if 'Client' in k[0]:
@@ -148,7 +150,15 @@ def default_tick():
 
     upload_client_instance_position()
     
-    return 1
+    global history
+    try:
+        c = history.get_nowait()
+        if c:
+            bpy.ops.ed.undo()
+    except Exception as e:
+        pass
+
+    return .2
 
 
 def register_ticks():
@@ -537,12 +547,14 @@ def depsgraph_update(scene):
             selected_objects = helpers.get_selected_objects(scene)
           
             for update in reversed(updates):
-                if update.id.id == username or update.id.id == 'None':
+                if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
                     # TODO: handle errors
                     data_ref = get_datablock(update,context)
                     
                     if data_ref:
                         data_ref.is_dirty= True
+                elif update.id.id != username:
+                    history.put("undo")
                         
 
 def register():

@@ -324,7 +324,7 @@ class Loader:
             (_load_filter_type(T.PointerProperty), self._load_pointer),
             (_load_filter_array, self._load_array),
             (_load_filter_type(T.CollectionProperty), self._load_collection),
-            (_load_filter_default, self._load_default)
+            # (_load_filter_default, self._load_default)
         ]
 
 
