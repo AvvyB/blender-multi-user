@@ -38,10 +38,17 @@ def client_list_callback(scene, context):
     global client_keys
 
     items = [("Common", "Common", "")]
+
+    username = bpy.context.scene.session_settings.username 
+
     if client_keys:
         for k in client_keys:
             if 'Client' in k[0]:
                 name = k[1]
+                
+                if name == username:
+                    name += " (self)"
+
                 items.append((name, name, ""))
 
     return items
@@ -368,7 +375,7 @@ class session_stop(bpy.types.Operator):
 
 class session_rights(bpy.types.Operator):
     bl_idname = "session.right"
-    bl_label = "close"
+    bl_label = "Change owner to"
     bl_description = "stop net service"
     bl_options = {"REGISTER"}
 

@@ -147,6 +147,8 @@ class SessionUsersPanel(bpy.types.Panel):
 
         row = layout.row()
 
+def get_client_key(item):
+    return item[0]
 
 class SessionPropertiesPanel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
@@ -182,7 +184,8 @@ class SessionPropertiesPanel(bpy.types.Panel):
             area_msg.operator("session.refresh", text="",
                         icon="UV_SYNC_SELECT")
             if operators.client_keys and len(operators.client_keys) > 0:
-                for item in operators.client_keys:
+
+                for item in sorted(operators.client_keys, key=get_client_key):
                     owner = 'toto'
                     try:
                         owner =  item[1]
