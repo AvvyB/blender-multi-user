@@ -270,7 +270,7 @@ def load_object(target=None, data=None, create=False):
             target = bpy.data.objects.new(data["name"], pointer)
 
             # Load other meshes metadata
-        dump_anything.load(target, data)
+        # dump_anything.load(target, data)
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
@@ -452,11 +452,8 @@ def load_gpencil_layer(target=None, data=None, create=False):
                     tpoint = tstroke.points.add(1)
                     tpoint = tstroke.points[len(tstroke.points)-1]
                 dump_anything.load(tpoint, p)
-                # tpoint.co[0] = p['co'][0]
-                # tpoint.co[1] = p['co'][1]
-                # tpoint.co[2] = p['co'][2]
-                # print(p['co'])
-                # print(tpoint.co)
+                print(p['co'])
+                print(tpoint.co)
 
 
 
