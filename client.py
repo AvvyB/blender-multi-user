@@ -179,8 +179,12 @@ class RCFClient(object):
         Fast key exist check
         """
 
-        pass 
+        if key in self.store.keys():
+            return True
+        else:
+            return False
         
+
     def list(self):
         dump_list = []
         for k,v in self.store.items():
@@ -521,9 +525,6 @@ def watchdog_worker(feed,interval, stop_event):
             for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
                 key = "{}/{}".format(datatype, item.name)
                 try:
-                    # if item.id == 'None':
-                    #     item.id = bpy.context.scene.session_settings.username
-                    #     feed.put(('DUMP',key,None))
                     if item.is_dirty:
                         logger.info("{} needs update".format(key))
                         feed.put(('DUMP',key,None))             

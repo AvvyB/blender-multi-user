@@ -135,7 +135,6 @@ def init_datablocks():
             item.id = bpy.context.scene.session_settings.username
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
-            print(key)
            
 
 
@@ -156,27 +155,37 @@ def default_tick():
     refresh_session_data()
 
     upload_client_instance_position()
+
+    return .2
+
+def undo_test():
     
+    print("UNDO")
+    bpy.ops.ed.undo()
+
+def undo_tick():
     global history
     try:
         c = history.get_nowait()
         if c:
-            bpy.ops.ed.undo()
+            undo_test()        
+           
     except Exception as e:
         pass
-
-    return .2
-
+    
+    return 1.0
 
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(default_tick)
+    bpy.app.timers.register(undo_tick)
     
 
 
 def unregister_ticks():
     # REGISTER Updaters
     bpy.app.timers.unregister(default_tick)
+    bpy.app.timers.unregister(undo_tick)
     
 
 # OPERATORS
@@ -513,13 +522,21 @@ def ordered(updates):
 
 
 def is_replicated(update):
-    global client_keys
-    dickt = dict(client_keys)
-    key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
+    # global client_keys
+    # dickt = dict(client_keys)
+    global client_instance
 
-    if key in dickt:
+    
+    #Master collection special cae
+    if  update.id.name == 'Master Collection':
+        key = "Scene/{}".format(bpy.context.scene.name)
+    else:
+        key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
+
+    if client_instance.exist(key):
         return True
     else:
+        logger.info("{} Not rep".format(key))
         return False
 
 def get_datablock(update,context):
@@ -560,7 +577,7 @@ def depsgraph_update(scene):
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = ctx.depsgraph.updates
             username = ctx.scene.session_settings.username
-            update_selected_object(ctx)
+           
 
             selected_objects = helpers.get_selected_objects(scene)
 
@@ -579,7 +596,16 @@ def depsgraph_update(scene):
                         key = "{}/{}".format(item.__class__.__name__, item.name)
                         client_instance.set(key)
                     else:
+                        history.put("etst")
+                        try:
+                            item = get_datablock(update,ctx)
+                            print(item)
+                            getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__]).remove(item)
+                        except:
+                            print("asdasdasd")
                         break
+
+            update_selected_object(ctx)   
                 # if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
                 #     # TODO: handle errors
                 #     data_ref = get_datablock(update,context)

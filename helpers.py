@@ -326,8 +326,8 @@ def load_collection(target=None, data=None, create=False):
 
         # link objects
         for object in data["objects"]:
-            # if object not in target.objects.keys():
-            target.objects.link(bpy.data.objects[object])
+            if object not in target.objects.keys():
+                target.objects.link(bpy.data.objects[object])
 
         for object in target.objects.keys():
             if object not in data["objects"]:
@@ -348,7 +348,7 @@ def load_collection(target=None, data=None, create=False):
             target.hide_select = False
         else:
             target.hide_select = True
-            
+
     except Exception as e:
         logger.error("Collection loading error: {}".format(e))
 
