@@ -44,10 +44,18 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = box.row()
                 row.label(text="draw overlay:")
                 row.prop(net_settings, "enable_draw", text="")
+                row = box.row()
+                row.label(text="clear blend:")
+                row.prop(net_settings, "clear_scene", text="")
+                row = box.row()
+                
 
                 row = box.row()
                 row.prop(scene.session_settings, "session_mode", expand=True)
                 row = box.row()
+                
+
+                
 
                 if scene.session_settings.session_mode == 'HOST':
                     box = row.box()
@@ -66,9 +74,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                     row = box.row()
                     row.label(text="load data:")
                     row.prop(net_settings, "load_data", text="")
-                    row = box.row()
-                    row.label(text="clear scene:")
-                    row.prop(net_settings, "clear_scene", text="")
+                    
 
                     row = layout.row()
                     row.operator("session.join", text="CONNECT")

@@ -362,10 +362,19 @@ def load_scene(target=None, data=None, create=False):
                 target.collection.objects.unlink(bpy.data.objects[object])
         # load collections
         # TODO: Recursive link
+        logger.info("check for new collections")
         for collection in data["collection"]["children"]:
+            logger.debug(collection)
             if collection not in target.collection.children.keys():
                 target.collection.children.link(
                     bpy.data.collections[collection])
+
+        logger.info("check for collection to remove")
+        for collection in target.collection.children.keys():
+            if collection not in data["collection"]["children"]:
+                target.collection.children.unlink(
+                    bpy.data.collections[collection])
+
 
         target.id = data['id']
         # Load annotation
@@ -374,8 +383,8 @@ def load_scene(target=None, data=None, create=False):
         # else:
         #     target.grease_pencil = None
 
-    except:
-        logger.error("Scene loading error")
+    except Exception as e:
+        logger.error("Scene loading error: {}".format(e))
 
 
 def load_material(target=None, data=None, create=False):

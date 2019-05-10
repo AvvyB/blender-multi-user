@@ -174,7 +174,13 @@ class RCFClient(object):
 
         return value
 
+    def exist(self,key):
+        """
+        Fast key exist check
+        """
 
+        pass 
+        
     def list(self):
         dump_list = []
         for k,v in self.store.items():

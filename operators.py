@@ -126,7 +126,6 @@ def update_selected_object(context):
         client_data[0][1]['active_objects'] = []
         client_instance.set(client_key, client_data[0][1])
 
-
 def init_datablocks():
     global client_instance
 
@@ -199,7 +198,7 @@ class session_join(bpy.types.Operator):
 
         net_settings = context.scene.session_settings
         # Scene setup
-        if net_settings.session_mode == "CONNECT" and net_settings.clear_scene:
+        if net_settings.clear_scene:
             clean_scene()
 
         # Session setup
@@ -513,12 +512,12 @@ def ordered(updates):
     return uplist
 
 
-def exist(update):
+def is_replicated(update):
     global client_keys
-
+    dickt = dict(client_keys)
     key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
 
-    if key in client_keys:
+    if key in dickt:
         return True
     else:
         return False
@@ -531,7 +530,7 @@ def get_datablock(update,context):
     datablock_ref = None
 
     if item_id == 'Master Collection':
-        Adatablock_ref= bpy.context.scene
+        datablock_ref= bpy.context.scene
     elif item_type in helpers.CORRESPONDANCE.keys():
         datablock_ref = getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name]
     else:
@@ -541,30 +540,53 @@ def get_datablock(update,context):
 
     return datablock_ref
 
+def toogle_dirty(context, update):
+    data_ref = get_datablock(update,context)
+                    
+    if data_ref:
+        logger.info(update.id.bl_rna.__class__.__name__)
+        data_ref.is_dirty= True
 
 def depsgraph_update(scene):
     global client_instance
     global client_keys
     global client_state
     
+    ctx = bpy.context
 
     if client_state == 3:
-        print(bpy.context.mode)
-        if bpy.context.mode in ['OBJECT','PAINT_GPENCIL']:
-            updates = bpy.context.depsgraph.updates
-            username = bpy.context.scene.session_settings.username
-            update_selected_object(bpy.context)
+
+        
+        if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
+            updates = ctx.depsgraph.updates
+            username = ctx.scene.session_settings.username
+            update_selected_object(ctx)
 
             selected_objects = helpers.get_selected_objects(scene)
-          
+
             for update in reversed(updates):
-                if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
-                    # TODO: handle errors
-                    data_ref = get_datablock(update,context)
+                if is_replicated(update):
+                    if update.id.id == username or update.id.id == 'Common':
+                        toogle_dirty(ctx, update)
+                else:
+                    #get parent authority
+                    parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
+
+                    if parent_id == username or parent_id == 'Common':
+                        item = get_datablock(update,ctx)
+                        item.id = bpy.context.scene.session_settings.username
+
+                        key = "{}/{}".format(item.__class__.__name__, item.name)
+                        client_instance.set(key)
+                    else:
+                        break
+                # if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
+                #     # TODO: handle errors
+                #     data_ref = get_datablock(update,context)
                     
-                    if data_ref:
-                        logger.info(update.id.bl_rna.__class__.__name__)
-                        data_ref.is_dirty= True
+                #     if data_ref:
+                #         logger.info(update.id.bl_rna.__class__.__name__)
+                #         data_ref.is_dirty= True
                 # elif update.id.id != username:
                 #     history.put("undo")
                         
