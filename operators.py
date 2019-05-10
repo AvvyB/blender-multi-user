@@ -560,8 +560,9 @@ def depsgraph_update(scene):
                 if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
                     # TODO: handle errors
                     data_ref = get_datablock(update,context)
-                    logger.info(update.id.name)
+                    
                     if data_ref:
+                        logger.info(update.id.bl_rna.__class__.__name__)
                         data_ref.is_dirty= True
                 # elif update.id.id != username:
                 #     history.put("undo")

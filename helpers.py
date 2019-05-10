@@ -9,7 +9,7 @@ import mathutils
 from . import draw
 from .libs import dump_anything
 
-CORRESPONDANCE = {'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
+CORRESPONDANCE = {'GreasePencil':'grease_pencils','Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
 SUPPORTED_TYPES = ['Curve', 'Material', 'Texture', 'Light', 'Camera', 'Mesh',
@@ -380,11 +380,18 @@ def load_material(target=None, data=None, create=False):
         if target is None:
             target = bpy.data.materials.new(data["name"])
 
+        if data['grease_pencil']:
+            if not target.is_grease_pencil:
+                bpy.data.materials.create_gpencil_data(target)
+                
+            dump_anything.load(target.grease_pencil, data['grease_pencil'])
+
         # Load other meshes metadata
         dump_anything.load(target, data)
 
+        
         # load nodes
-        if data["node_tree"]:
+        if data["use_nodes"]:
             for node in data["node_tree"]["nodes"]:
                 # fix None node tree error
                 if target.node_tree is None:
@@ -414,9 +421,9 @@ def load_material(target=None, data=None, create=False):
             for link in data["node_tree"]["links"]:
                 current_link = data["node_tree"]["links"][link]
                 input_socket = target.node_tree.nodes[current_link['to_node']
-                                                      ['name']].inputs[current_link['to_socket']['name']]
+                                                    ['name']].inputs[current_link['to_socket']['name']]
                 output_socket = target.node_tree.nodes[current_link['from_node']
-                                                       ['name']].outputs[current_link['from_socket']['name']]
+                                                    ['name']].outputs[current_link['from_socket']['name']]
 
                 target.node_tree.links.new(input_socket, output_socket)
 
@@ -446,14 +453,12 @@ def load_gpencil_layer(target=None, data=None, create=False):
 
             for point in data["frames"][frame]["strokes"][stroke]["points"]:
                 p = data["frames"][frame]["strokes"][stroke]["points"][point]
-                try:
-                    tpoint = tstroke.points[point]
-                except:
-                    tpoint = tstroke.points.add(1)
-                    tpoint = tstroke.points[len(tstroke.points)-1]
+
+                tstroke.points.add(1)
+                tpoint = tstroke.points[len(tstroke.points)-1]
+
                 dump_anything.load(tpoint, p)
-                print(p['co'])
-                print(tpoint.co)
+
 
 
 
@@ -462,6 +467,8 @@ def load_gpencil(target=None, data=None, create=False):
         if target is None and create:
             target = bpy.data.grease_pencils.new(data["name"])
 
+        for layer in target.layers:
+            target.layers.remove(layer)
 
         if "layers" in data.keys():
             for layer in data["layers"]:
@@ -473,6 +480,11 @@ def load_gpencil(target=None, data=None, create=False):
                     target=gp_layer, data=data["layers"][layer], create=create)
 
         dump_anything.load(target, data)
+
+        target.materials.clear()
+        if "materials" in data.keys():
+            for mat in data['materials']:
+                target.materials.append(bpy.data.materials[mat])
 
         target.id = data['id']
     except:
@@ -512,7 +524,7 @@ def dump(key):
     data = None
 
     if target_type == 'Material':
-        data = dump_datablock_attibute(target, ['name', 'node_tree', 'id'], 7)
+        data = dump_datablock_attibute(target, ['name','grease_pencil' ,'node_tree', 'id'], 7)
     elif target_type == 'Grease Pencil':
         data = dump_datablock_attibute(
             target, ['name', 'layers', 'materials', 'id'], 9)
