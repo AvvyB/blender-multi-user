@@ -580,7 +580,9 @@ def dump(key):
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':
         data = dump_datablock_attibute(
-            target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
+            target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 2)
+        dump_datablock_attibute(
+            target, ['collection'], 4, data)
             
     # elif target_type == 'Armature':
     #     data = dump_datablock(target, 4)
