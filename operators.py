@@ -593,19 +593,18 @@ def depsgraph_update(scene):
                         parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
 
                         if parent_id == username or parent_id == 'Common':
-                        
                             item.id = username
 
                             key = "{}/{}".format(item.__class__.__name__, item.name)
                             client_instance.set(key)
+                            logger.info("APPEND {}".format(key))
                         else:
-                            history.put("etst")
                             try:
                                 item = get_datablock(update,ctx)
                                 print(item)
                                 getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__]).remove(item)
                             except:
-                                print("asdasdasd")
+                                pass
                             break
 
             update_selected_object(ctx)   

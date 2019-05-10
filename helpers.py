@@ -481,8 +481,6 @@ def load_gpencil_layer(target=None, data=None, create=False):
                 dump_anything.load(tpoint, p)
 
 
-
-
 def load_gpencil(target=None, data=None, create=False):
     try:
         if target is None and create:
@@ -554,7 +552,7 @@ def dump(key):
         
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
-    elif target_type == 'Light':
+    elif 'Light' in target_type :
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
         data = dump_datablock(target, 2)
