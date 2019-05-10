@@ -340,6 +340,15 @@ def load_collection(target=None, data=None, create=False):
                     bpy.data.collections[collection])
 
         target.id = data['id']
+
+        
+        client = bpy.context.scene.session_settings.username
+
+        if target.id == client:
+            target.hide_select = False
+        else:
+            target.hide_select = True
+            
     except Exception as e:
         logger.error("Collection loading error: {}".format(e))
 
