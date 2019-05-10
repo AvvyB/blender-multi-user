@@ -369,10 +369,10 @@ def load_scene(target=None, data=None, create=False):
 
         target.id = data['id']
         # Load annotation
-        if data["grease_pencil"]:
-            target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
-        else:
-            target.grease_pencil = None
+        # if data["grease_pencil"]:
+        #     target.grease_pencil = bpy.data.grease_pencils[data["grease_pencil"]["name"]]
+        # else:
+        #     target.grease_pencil = None
 
     except:
         logger.error("Scene loading error")
@@ -561,8 +561,6 @@ def dump(key):
     elif target_type == 'Collection':
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':
-        if target_type.grease_pencil:
-            pass
         data = dump_datablock_attibute(
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 4)
             
