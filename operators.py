@@ -549,7 +549,8 @@ def depsgraph_update(scene):
     
 
     if client_state == 3:
-        if bpy.context.mode == 'OBJECT':
+        print(bpy.context.mode)
+        if bpy.context.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = bpy.context.depsgraph.updates
             username = bpy.context.scene.session_settings.username
             update_selected_object(bpy.context)
