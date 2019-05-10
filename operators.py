@@ -40,7 +40,7 @@ def client_list_callback(scene, context):
 
     items = [("Common", "Common", "")]
 
-    username = bpy.context.scene.session_settings.username 
+    username = bpy.context.window_manager.session_settings.username 
 
     if client_keys:
         for k in client_keys:
@@ -87,7 +87,7 @@ def refresh_window():
 def upload_client_instance_position():
     global client_instance
 
-    username = bpy.context.scene.session_settings.username
+    username = bpy.context.window_manager.session_settings.username
     if client_instance:
 
         key = "Client/{}".format(username)
@@ -105,9 +105,9 @@ def upload_client_instance_position():
 
 def update_selected_object(context):
     global client_instance
-    session = bpy.context.scene.session_settings
+    session = bpy.context.window_manager.session_settings
 
-    username = bpy.context.scene.session_settings.username
+    username = bpy.context.window_manager.session_settings.username
     client_key = "Client/{}".format(username)
     client_data = client_instance.get(client_key)
 
@@ -132,7 +132,7 @@ def init_datablocks():
    
     for datatype in helpers.SUPPORTED_TYPES:
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
-            item.id = bpy.context.scene.session_settings.username
+            item.id = bpy.context.window_manager.session_settings.username
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
            
@@ -205,7 +205,7 @@ class session_join(bpy.types.Operator):
     def execute(self, context):
         global client_instance
 
-        net_settings = context.scene.session_settings
+        net_settings = context.window_manager.session_settings
         # Scene setup
         if net_settings.clear_scene:
             clean_scene()
@@ -215,7 +215,7 @@ class session_join(bpy.types.Operator):
             net_settings.username = "{}_{}".format(
                 net_settings.username, randomStringDigits())
 
-        username = str(context.scene.session_settings.username)
+        username = str(context.window_manager.session_settings.username)
 
         if len(net_settings.ip) < 1:
             net_settings.ip = "127.0.0.1"
@@ -327,7 +327,7 @@ class session_create(bpy.types.Operator):
         global server
         global client_instance
 
-        net_settings = context.scene.session_settings
+        net_settings = context.window_manager.session_settings
 
         script = os.path.join(os.path.dirname(os.path.abspath(__file__)),"server.py")
 
@@ -360,7 +360,7 @@ class session_stop(bpy.types.Operator):
         global server
         global client_instance, client_keys, client_state
 
-        net_settings = context.scene.session_settings
+        net_settings = context.window_manager.session_settings
 
         if server:
             server.kill()
@@ -402,7 +402,7 @@ class session_rights(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        net_settings = context.scene.session_settings
+        net_settings = context.window_manager.session_settings
 
         col = layout.column()
         col.prop(net_settings, "clients")
@@ -411,7 +411,7 @@ class session_rights(bpy.types.Operator):
         global server
         global client_instance, client_keys, client_state
 
-        net_settings = context.scene.session_settings
+        net_settings = context.window_manager.session_settings
 
         if net_settings.is_admin:
             val = client_instance.get(self.key)
@@ -576,8 +576,8 @@ def depsgraph_update(scene):
         
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = ctx.depsgraph.updates
-            username = ctx.scene.session_settings.username
-           
+            username = ctx.window_manager.session_settings.username
+            
 
             selected_objects = helpers.get_selected_objects(scene)
 
@@ -586,24 +586,27 @@ def depsgraph_update(scene):
                     if update.id.id == username or update.id.id == 'Common':
                         toogle_dirty(ctx, update)
                 else:
+                    item = get_datablock(update,ctx)
                     #get parent authority
-                    parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
+                    
+                    if hasattr(item,"id"):
+                        parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
 
-                    if parent_id == username or parent_id == 'Common':
-                        item = get_datablock(update,ctx)
-                        item.id = bpy.context.scene.session_settings.username
+                        if parent_id == username or parent_id == 'Common':
+                        
+                            item.id = username
 
-                        key = "{}/{}".format(item.__class__.__name__, item.name)
-                        client_instance.set(key)
-                    else:
-                        history.put("etst")
-                        try:
-                            item = get_datablock(update,ctx)
-                            print(item)
-                            getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__]).remove(item)
-                        except:
-                            print("asdasdasd")
-                        break
+                            key = "{}/{}".format(item.__class__.__name__, item.name)
+                            client_instance.set(key)
+                        else:
+                            history.put("etst")
+                            try:
+                                item = get_datablock(update,ctx)
+                                print(item)
+                                getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__]).remove(item)
+                            except:
+                                print("asdasdasd")
+                            break
 
             update_selected_object(ctx)   
                 # if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
@@ -623,7 +626,7 @@ def register():
         register_class(cls)
     bpy.types.ID.id = bpy.props.StringProperty(default="None")
     bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
-    bpy.types.Scene.session_settings = bpy.props.PointerProperty(
+    bpy.types.WindowManager.session_settings = bpy.props.PointerProperty(
         type=session_settings)
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
     draw.register()
@@ -655,7 +658,7 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    del bpy.types.Scene.session_settings
+    del bpy.types.WindowManager.session_settings
     del bpy.types.ID.id
     del bpy.types.ID.is_dirty
 

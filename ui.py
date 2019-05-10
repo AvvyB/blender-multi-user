@@ -19,9 +19,9 @@ class SessionSettingsPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if hasattr(context.scene, 'session_settings'):
-            net_settings = context.scene.session_settings
-            scene = context.scene
+        if hasattr(context.window_manager, 'session_settings'):
+            net_settings = context.window_manager.session_settings
+            window_manager = context.window_manager
 
             row = layout.row()
             if operators.client_instance is None:
@@ -30,10 +30,10 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = box.row()
                 row.label(text="USER", icon='TRIA_RIGHT')
                 row = box.row()
-                row.prop(scene.session_settings, "username", text="id")
+                row.prop(window_manager.session_settings, "username", text="id")
                 
                 row = box.row()
-                row.prop(scene.session_settings, "client_color", text="color") 
+                row.prop(window_manager.session_settings, "client_color", text="color") 
                 row = box.row()
 
                 row = layout.row()
@@ -51,13 +51,13 @@ class SessionSettingsPanel(bpy.types.Panel):
                 
 
                 row = box.row()
-                row.prop(scene.session_settings, "session_mode", expand=True)
+                row.prop(net_settings, "session_mode", expand=True)
                 row = box.row()
                 
 
                 
 
-                if scene.session_settings.session_mode == 'HOST':
+                if window_manager.session_settings.session_mode == 'HOST':
                     box = row.box()
                     row = box.row()
                     row.label(text="init scene:")
@@ -70,7 +70,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                     row.prop(net_settings, "ip", text="ip")
                     row = box.row()
                     row.label(text="port:")
-                    row.prop(scene.session_settings, "port", text="")
+                    row.prop(window_manager.session_settings, "port", text="")
                     row = box.row()
                     row.label(text="load data:")
                     row.prop(net_settings, "load_data", text="")
@@ -126,8 +126,8 @@ class SessionUsersPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        net_settings = context.scene.session_settings
-        scene = context.scene
+        net_settings = context.window_manager.session_settings
+        scene = context.window_manager
         # Create a simple row.
         row = layout.row()
         if operators.client_keys and len(operators.client_keys) > 0:
@@ -171,9 +171,9 @@ class SessionPropertiesPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if hasattr(context.scene,'session_settings'):
-            net_settings = context.scene.session_settings
-            scene = context.scene
+        if hasattr(context.window_manager,'session_settings'):
+            net_settings = context.window_manager.session_settings
+            scene = context.window_manager
             # Create a simple row.
             row = layout.row()
 

@@ -457,8 +457,9 @@ def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
 
                     # with lock:
                     #     helpers.load(rcfmsg.key, rcfmsg.body)
-                    net_product.put(('LOAD',rcfmsg.key, rcfmsg.body))
                     rcfmsg.store(agent.property_map)
+                    net_product.put(('LOAD',rcfmsg.key, rcfmsg.body))
+                    
 
                 else:
                     logger.debug("{} nothing to do".format(agent.id))

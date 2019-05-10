@@ -122,7 +122,7 @@ class DrawFactory(object):
     def draw_client_selected_objects(self, client):
         if client:
             name = client['id']
-            local_username = bpy.context.scene.session_settings.username
+            local_username = bpy.context.window_manager.session_settings.username
 
             if name != local_username:
                 if client['active_objects']:
@@ -165,7 +165,7 @@ class DrawFactory(object):
     def draw_client(self, client):
         if client:
             name = client['id']
-            local_username = bpy.context.scene.session_settings.username
+            local_username = bpy.context.window_manager.session_settings.username
 
             if name != local_username:
                 try:

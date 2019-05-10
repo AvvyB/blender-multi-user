@@ -73,7 +73,7 @@ def get_all_datablocks():
     datas = []
     for datatype in SUPPORTED_TYPES:
         for item in getattr(bpy.data, CORRESPONDANCE[datatype]):
-            item.id = bpy.context.scene.session_settings.username
+            item.id = bpy.context.window_manager.session_settings.username
             datas.append("{}/{}".format(datatype, item.name))
 
     return datas
@@ -141,7 +141,7 @@ def resolve_bpy_path(path):
 def load_client(client=None, data=None):
     C = bpy.context
     D = bpy.data
-    net_settings = C.scene.session_settings
+    net_settings = C.window_manager.session_settings
 
     if client and data:
         if net_settings.enable_draw:
@@ -276,7 +276,7 @@ def load_object(target=None, data=None, create=False):
 
         target.id = data['id']
 
-        client = bpy.context.scene.session_settings.username
+        client = bpy.context.window_manager.session_settings.username
 
         if target.id == client:
             target.hide_select = False
@@ -342,7 +342,7 @@ def load_collection(target=None, data=None, create=False):
         target.id = data['id']
 
         
-        client = bpy.context.scene.session_settings.username
+        client = bpy.context.window_manager.session_settings.username
 
         if target.id == client:
             target.hide_select = False
@@ -401,7 +401,7 @@ def load_material(target=None, data=None, create=False):
         if target is None:
             target = bpy.data.materials.new(data["name"])
 
-        if data['grease_pencil']:
+        if data['is_grease_pencil']:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
                 
@@ -545,7 +545,8 @@ def dump(key):
     data = None
 
     if target_type == 'Material':
-        data = dump_datablock_attibute(target, ['name','grease_pencil' ,'node_tree', 'id'], 7)
+        data = dump_datablock(target, 2)
+        dump_datablock_attibute(target, ['node_tree'], 7, data)
     elif target_type == 'Grease Pencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
@@ -630,7 +631,7 @@ def init_client(key=None):
     client_dict = {}
 
     C = bpy.context
-    Net = C.scene.session_settings
+    Net = C.window_manager.session_settings
     client_dict['uuid'] = str(uuid4())
     client_dict['location'] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     client_dict['color'] = [Net.client_color.r,
