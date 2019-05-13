@@ -9,8 +9,8 @@ import mathutils
 from . import draw
 from .libs import dump_anything
 
-CORRESPONDANCE = {'GreasePencil':'grease_pencils','Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
-                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
+CORRESPONDANCE = {'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
+                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
 SUPPORTED_TYPES = ['Curve', 'Material', 'Texture', 'Light', 'Camera', 'Mesh',
                    'Armature', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
@@ -303,14 +303,16 @@ def load_curve(target=None, data=None, create=False):
             new_spline = target.splines.new(data['splines'][spline]['type'])
             dump_anything.load(new_spline, data['splines'][spline])
 
-            #Load curve geometry data
+            # Load curve geometry data
             for bezier_point_index in data['splines'][spline]["bezier_points"]:
                 new_spline.bezier_points.add(1)
-                dump_anything.load(new_spline.bezier_points[bezier_point_index], data['splines'][spline]["bezier_points"][bezier_point_index])
-            
+                dump_anything.load(
+                    new_spline.bezier_points[bezier_point_index], data['splines'][spline]["bezier_points"][bezier_point_index])
+
             for point_index in data['splines'][spline]["points"]:
                 new_spline.points.add(1)
-                dump_anything.load(new_spline.points[point_index], data['splines'][spline]["points"][point_index])
+                dump_anything.load(
+                    new_spline.points[point_index], data['splines'][spline]["points"][point_index])
         target.id = data['id']
     except Exception as e:
         logger.error("curve loading error: {}".format(e))
@@ -341,7 +343,6 @@ def load_collection(target=None, data=None, create=False):
 
         target.id = data['id']
 
-        
         client = bpy.context.window_manager.session_settings.username
 
         if target.id == client:
@@ -384,7 +385,6 @@ def load_scene(target=None, data=None, create=False):
                 target.collection.children.unlink(
                     bpy.data.collections[collection])
 
-
         target.id = data['id']
         # Load annotation
         # if data["grease_pencil"]:
@@ -404,13 +404,12 @@ def load_material(target=None, data=None, create=False):
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
-                
+
             dump_anything.load(target.grease_pencil, data['grease_pencil'])
 
         # Load other meshes metadata
         dump_anything.load(target, data)
 
-        
         # load nodes
         if data["use_nodes"]:
             for node in data["node_tree"]["nodes"]:
@@ -442,9 +441,9 @@ def load_material(target=None, data=None, create=False):
             for link in data["node_tree"]["links"]:
                 current_link = data["node_tree"]["links"][link]
                 input_socket = target.node_tree.nodes[current_link['to_node']
-                                                    ['name']].inputs[current_link['to_socket']['name']]
+                                                      ['name']].inputs[current_link['to_socket']['name']]
                 output_socket = target.node_tree.nodes[current_link['from_node']
-                                                    ['name']].outputs[current_link['from_socket']['name']]
+                                                       ['name']].outputs[current_link['from_socket']['name']]
 
                 target.node_tree.links.new(input_socket, output_socket)
 
@@ -535,8 +534,6 @@ def load_default(target=None, data=None, create=False, type=None):
         logger.error("default loading error {}".format(e))
 
 # DUMP HELPERS
-
-
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -548,11 +545,10 @@ def dump(key):
     elif target_type == 'Grease Pencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
-            target, ['layers'], 9,data)
-        
+            target, ['layers'], 9, data)
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
-    elif 'Light' in target_type :
+    elif 'Light' in target_type:
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
         data = dump_datablock(target, 2)
@@ -568,11 +564,9 @@ def dump(key):
         data = dump_datablock(target, 1)
         dump_datablock_attibute(
             target, ['splines'], 5, data)
-
         # for index, spline in enumerate(target.splines):
         #     data["splines"][index] = dump_datablock_attibute(target.splines[index],"Curve/{}".format(index), ["bezier_points", "material_index", "points", "order_u", "order_v", "point_count_u", "point_count_v",
         #                                                               "radius_interpolation", "resolution_v", "use_bezier_u", "use_bezier_v", "use_cyclic_u", "use_cyclic_v", "use_endpoint_u", "use_endpoint_v"], 3)
-
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
     elif target_type == 'Collection':
@@ -582,12 +576,11 @@ def dump(key):
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 2)
         dump_datablock_attibute(
             target, ['collection'], 4, data)
-            
+
     # elif target_type == 'Armature':
     #     data = dump_datablock(target, 4)
 
     return data
-
 
 def dump_datablock(datablock, depth):
     if datablock:
@@ -601,15 +594,13 @@ def dump_datablock(datablock, depth):
 
         return data
 
-
 def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
     if datablock:
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
         dumper.depth = depth
 
-      
-        datablock_type = datablock.bl_rna.name 
+        datablock_type = datablock.bl_rna.name
         key = "{}/{}".format(datablock_type, datablock.name)
 
         data = {}

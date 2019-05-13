@@ -526,12 +526,17 @@ def is_replicated(update):
     # dickt = dict(client_keys)
     global client_instance
 
-    
+    object_type = update.id.bl_rna.name
+    object_name = update.id.name
+
     #Master collection special cae
     if  update.id.name == 'Master Collection':
-        key = "Scene/{}".format(bpy.context.scene.name)
-    else:
-        key = "{}/{}".format(update.id.bl_rna.name, update.id.name)
+        object_type = 'Scene' 
+        object_name = bpy.context.scene.name
+    if 'Light' in update.id.bl_rna.name:
+        object_type = 'Light' 
+        
+    key = "{}/{}".format(object_type, object_name)
 
     if client_instance.exist(key):
         return True
@@ -572,8 +577,7 @@ def depsgraph_update(scene):
     ctx = bpy.context
 
     if client_state == 3:
-
-        
+       
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = ctx.depsgraph.updates
             username = ctx.window_manager.session_settings.username
@@ -595,7 +599,12 @@ def depsgraph_update(scene):
                         if parent_id == username or parent_id == 'Common':
                             item.id = username
 
-                            key = "{}/{}".format(item.__class__.__name__, item.name)
+                            item_type = item.__class__.__name__
+                            
+                            if 'Light'in item.__class__.__name__:
+                                item_type = 'Light'
+                                
+                            key = "{}/{}".format(item_type , item.name)
                             client_instance.set(key)
                             logger.info("APPEND {}".format(key))
                         else:

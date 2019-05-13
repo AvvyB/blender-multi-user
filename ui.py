@@ -5,7 +5,7 @@ from . import client, operators
 
 
 ICONS = {'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
-                  'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA', 'Light': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'Grease Pencil': 'GREASEPENCIL'}
+                  'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'Grease Pencil': 'GREASEPENCIL'}
 
 
 class SessionSettingsPanel(bpy.types.Panel):
