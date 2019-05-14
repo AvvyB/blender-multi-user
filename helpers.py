@@ -16,7 +16,7 @@ SUPPORTED_TYPES = ['Curve', 'Material', 'Texture', 'Light', 'Camera', 'Mesh',
                    'Armature', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 # UTILITY FUNCTIONS
 
 
@@ -78,9 +78,8 @@ def get_all_datablocks():
 
     return datas
 
+
 #    LOAD HELPERS
-
-
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]

@@ -66,16 +66,15 @@ class RCFClient(object):
         self.serial_product = queue.Queue()
         self.serial_feed = queue.Queue()
         self.stop_event= threading.Event()
-        # Database and connexion agent
+        # Net agent
         self.net_agent = threading.Thread(
-            target=rcf_client_worker, args=(self.ctx, self.store, peer, self.serial_product,self.serial_feed, self.stop_event), name="net-agent")
+            target=rcf_net_worker, args=(self.ctx, self.store, peer, self.serial_product,self.serial_feed, self.stop_event), name="net-agent")
         self.net_agent.daemon = True
         self.net_agent.start()
 
 
         # Local data translation agent
         self.serial_agents = []
-
         for a in range(0, DUMP_AGENTS_NUMBER):
             serial_agent = threading.Thread(
             target=serial_worker, args=(self.serial_product, self.serial_feed), name="serial-agent")
@@ -83,7 +82,7 @@ class RCFClient(object):
             serial_agent.start()
             self.serial_agents.append(serial_agent)
 
-        # Sync Watchdog
+        # Sync agent
         self.watchdog_agent = threading.Thread(
             target=watchdog_worker, args=(self.serial_feed, 0.2, self.stop_event), name="watchdog-agent")
         self.watchdog_agent.daemon = True
@@ -126,21 +125,12 @@ class RCFClient(object):
             [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None')),umsgpack.packb(override)])
         else:
             self.serial_feed.put(('DUMP',key,None))
-            # self.serial_pipe.send_multipart(
-            # [b"DUMP", umsgpack.packb(key)])
-        #  self.pipe.send_multipart(
-            # [b"SET", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None')),umsgpack.packb(override)])
-
 
     def add(self, key, value=None):
         """Set new value in distributed hash table
         Sends [SET][key][value] to the agent
         """
         self.serial_feed.put(key)
-
-        # self.pipe.send_multipart(
-            # [b"ADD", umsgpack.packb(key), (umsgpack.packb(value) if value else umsgpack.packb('None'))])
-    
 
     def is_busy(self):
         self.active_tasks = self.serial_feed.qsize() + self.serial_product.qsize()
@@ -255,24 +245,6 @@ class RCFClientAgent(object):
         self.publisher.setsockopt(zmq.IDENTITY, self.id)
         self.publisher.setsockopt(zmq.SNDHWM, 60)
         self.publisher.linger = 0
-        # self.serial_agent = threading.Thread(
-        #     target=serialization_agent, args=(self.ctx, peer), name="serial-agent")
-        # self.serial_agent.daemon = True
-        # self.serial_agent.start()
-    def _add(self,key, value='None'):
-        if value == 'None':
-            # try to dump from bpy
-            # logging.info(key)
-            value = helpers.dump(key)
-            value['id'] = self.id.decode()
-        if value:
-            rcfmsg = message.RCFMessage(
-                key=key, id=self.id, body=value)
-
-            rcfmsg.store(self.property_map)
-            rcfmsg.send(self.publisher)
-        else:
-            logger.error("Fail to dump ")
 
     def control_message(self):
         msg = self.pipe.recv_multipart()
@@ -301,7 +273,7 @@ class RCFClientAgent(object):
                                 key="Client/{}".format(uid), id=self.id, body=None)
                 delete_user.send(self.publisher)
 
-                # TODO: Do we need to pass every object rights to the moderator ?
+                # TODO: Do we need to pass every object rights to the moderator on disconnect?
                 # for k,v in self.property_map.items():
                 #     if v.body["id"] == uid:
                 #         delete_msg = message.RCFMessage(
@@ -321,10 +293,6 @@ class RCFClientAgent(object):
                         value['id'] = self.id.decode()
                     if value:
                         key_id = self.id
-
-                        # if override:
-                        #     key_id = value['id'].encode()
-
                         rcfmsg = message.RCFMessage(
                             key=key, id=key_id, body=value)
 
@@ -337,19 +305,12 @@ class RCFClientAgent(object):
                         logger.error("Fail to dump ")
                 else:
                     helpers.load(key,self.property_map[key].body)
-        
-        elif command == b"INIT":
-            d = helpers.get_all_datablocks()
-            for i in d:
-                self._add(i)
 
         elif command == b"ADD":
             key = umsgpack.unpackb(msg[0])
             value = umsgpack.unpackb(msg[1])
 
             if value == 'None':
-                # try to dump from bpy
-                # logging.info(key)
                 value = helpers.dump(key)
                 value['id'] = self.id.decode()
             if value:
@@ -368,8 +329,6 @@ class RCFClientAgent(object):
                 if key in k:
                     value.append([k, self.property_map.get(k).body])
 
-            # value = [self.property_map.get(key) for key in keys]
-            # value = self.property_map.get(key)
             self.pipe.send(umsgpack.packb(value)
                            if value else umsgpack.packb(''))
 
@@ -390,15 +349,13 @@ class RCFClientAgent(object):
             self.pipe.send(umsgpack.packb(self.state.value))
 
 
-def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
+def rcf_net_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
     agent = RCFClientAgent(ctx,store, pipe)
     server = None
     net_feed = serial_product
     net_product = serial_feed
 
     while not stop_event.is_set():
-        
-        # logger.info("asdasd")
         poller = zmq.Poller()
         poller.register(agent.pipe, zmq.POLLIN)
         server_socket = None
@@ -406,7 +363,7 @@ def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
         if agent.state == State.INITIAL:
             server = agent.server
             if agent.server:
-                logger.info("%s: waiting for server at %s:%d...",
+                logger.debug("%s: waiting for server at %s:%d...",
                             agent.id.decode(), server.address, server.port)
                 server.snapshot.send(b"SNAPSHOT_REQUEST")
                 agent.state = State.SYNCING
@@ -431,43 +388,39 @@ def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
             rcfmsg = message.RCFMessage.recv(server_socket)
 
             if agent.state == State.SYNCING:
-                # Store snapshot
+                # CLient snapshot 
                 if rcfmsg.key == "SNAPSHOT_END":
                     client_key = "Client/{}".format(agent.id.decode())
-                    client_dict = {}
 
-                    with lock:
-                        client_dict = helpers.init_client(key=client_key)
-                        client_dict['id'] = agent.id.decode()
+                    client_dict = {}
+                    client_dict = helpers.init_client(key=client_key)
+                    client_dict['id'] = agent.id.decode()
+
                     client_store = message.RCFMessage(
                         key=client_key, id=agent.id, body=client_dict)
-                    logger.info(client_store)
                     client_store.store(agent.property_map)
                     client_store.send(agent.publisher)
-                    logger.info("snapshot complete")
+                    
                     agent.state = State.ACTIVE
+                    logger.debug("snapshot complete")
                 else:
                     net_product.put(('LOAD',rcfmsg.key, rcfmsg.body))
                     # helpers.load(rcfmsg.key, rcfmsg.body)
                     rcfmsg.store(agent.property_map)
-                    logger.info("snapshot from {} stored".format(rcfmsg.id))
+                    logger.debug("snapshot from {} stored".format(rcfmsg.id))
             elif agent.state == State.ACTIVE:
-                # IN
                 if rcfmsg.id != agent.id:
 
                     # with lock:
                     #     helpers.load(rcfmsg.key, rcfmsg.body)
                     rcfmsg.store(agent.property_map)
                     net_product.put(('LOAD',rcfmsg.key, rcfmsg.body))
-                    
-
                 else:
                     logger.debug("{} nothing to do".format(agent.id))
 
-        # Serialisation thread input
+        # Serialisation thread  => Net thread 
         if not net_feed.empty():
             key, value = net_feed.get()
-
             if value:
                 # Stamp with id
                 value['id'] = agent.id.decode()
@@ -481,20 +434,15 @@ def rcf_client_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
             else:
                 logger.error("Fail to dump ")
 
-            
-
-
     logger.info("exit thread")
     stop = False
-    # else: else
-    #     agent.state = State.INITIAL
 
 
-def serial_worker(product,  feed):
+def serial_worker(serial_product,  serial_feed):
     logger.info("serial thread launched")
 
     while True:
-        command,key,value = feed.get()
+        command,key,value = serial_feed.get()
 
         if command == 'STOP':
             break
@@ -503,7 +451,7 @@ def serial_worker(product,  feed):
                 value = helpers.dump(key)
 
                 if value:
-                    product.put((key,value))
+                    serial_product.put((key,value))
             except Exception as e:
                 logger.error("{}".format(e))
         elif command == 'LOAD':
@@ -516,7 +464,7 @@ def serial_worker(product,  feed):
     logger.info("serial thread stopped")
 
 
-def watchdog_worker(feed,interval, stop_event):
+def watchdog_worker(serial_feed,interval, stop_event):
     import bpy
     
     logger.info("watchdog thread launched with {} sec of interval".format(interval))
@@ -527,8 +475,8 @@ def watchdog_worker(feed,interval, stop_event):
                 key = "{}/{}".format(datatype, item.name)
                 try:
                     if item.is_dirty:
-                        logger.info("{} needs update".format(key))
-                        feed.put(('DUMP',key,None))             
+                        logger.debug("{} needs update".format(key))
+                        serial_feed.put(('DUMP',key,None))             
                         item.is_dirty = False
                 except:
                     pass
