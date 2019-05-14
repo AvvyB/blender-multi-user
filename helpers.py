@@ -581,6 +581,7 @@ def dump(key):
 
     return data
 
+
 def dump_datablock(datablock, depth):
     if datablock:
         dumper = dump_anything.Dumper()
@@ -592,6 +593,7 @@ def dump_datablock(datablock, depth):
         data = dumper.dump(datablock)
 
         return data
+
 
 def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
     if datablock:
