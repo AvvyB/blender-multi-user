@@ -61,58 +61,50 @@ def get_package_install_directory():
         if os.path.basename(path) in ("dist-packages", "site-packages"):
             return path
 
-try:
-    import zmq
-except:
-    target = get_package_install_directory()
-    subprocess.run([str(python_path), "-m", "pip", "install", "zmq", '--target', target], cwd=cwd_for_subprocesses)
-
-from . import operators
-from . import ui
 
 class RCFSessionProps(bpy.types.PropertyGroup):
-    username = bpy.props.StringProperty(
+    username: bpy.props.StringProperty(
         name="Username",
         default="user_{}".format(randomStringDigits())
         )
-    ip = bpy.props.StringProperty(
+    ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
         default="127.0.0.1")
-    port = bpy.props.IntProperty(
+    port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',
         default=5555)
 
-    add_property_depth = bpy.props.IntProperty(
+    add_property_depth: bpy.props.IntProperty(
         name="add_property_depth",
         default=1)
-    buffer = bpy.props.StringProperty(name="None")
-    is_admin = bpy.props.BoolProperty(name="is_admin", default=False)
-    load_data = bpy.props.BoolProperty(name="load_data", default=True)
-    init_scene = bpy.props.BoolProperty(name="load_data", default=True)
-    clear_scene = bpy.props.BoolProperty(name="clear_scene", default=True)
-    update_frequency = bpy.props.FloatProperty(
+    buffer: bpy.props.StringProperty(name="None")
+    is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
+    load_data: bpy.props.BoolProperty(name="load_data", default=True)
+    init_scene: bpy.props.BoolProperty(name="load_data", default=True)
+    clear_scene: bpy.props.BoolProperty(name="clear_scene", default=True)
+    update_frequency: bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
-    active_object = bpy.props.PointerProperty(
+    active_object: bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
-    session_mode = bpy.props.EnumProperty(
+    session_mode: bpy.props.EnumProperty(
         name='session_mode',
         description='session mode',
         items={
             ('HOST', 'hosting', 'host a session'),
             ('CONNECT', 'connexion', 'connect to a session')},
         default='HOST')
-    client_color = bpy.props.FloatVectorProperty(
+    client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
         subtype='COLOR',
         default=randomColor())
-    clients = bpy.props.EnumProperty(
+    clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
         items=client_list_callback
     )
-    enable_draw = bpy.props.BoolProperty(
+    enable_draw: bpy.props.BoolProperty(
         name="enable_draw",
         description='Enable overlay drawing module',
         default=True)
@@ -122,6 +114,15 @@ classes = {
 }
 
 def register():
+    try:
+        import zmq
+    except:
+        target = get_package_install_directory()
+        subprocess.run([str(python_path), "-m", "pip", "install", "zmq", '--target', target], cwd=cwd_for_subprocesses)
+
+    from . import operators
+    from . import ui
+
     for cls in classes:
         bpy.utils.register_class(cls)
 
@@ -135,7 +136,9 @@ def register():
 
 
 def unregister():
-
+    from . import operators
+    from . import ui
+    
     ui.unregister()
     operators.unregister()
 
