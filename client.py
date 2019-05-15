@@ -11,7 +11,7 @@ from enum import Enum
 from random import randint
 import zmq
 
-from . import draw, helpers, message
+from . import helpers, message
 from .libs import dump_anything, umsgpack
 
 # import zmq
@@ -24,7 +24,6 @@ logging.basicConfig(level=logging.INFO)
 CONNECT_TIMEOUT = 2
 WAITING_TIME = 0.001
 SERVER_MAX = 1
-stop = False
 DUMP_AGENTS_NUMBER = 1
 
 class State(Enum):
@@ -68,7 +67,7 @@ class RCFClient(object):
         self.stop_event= threading.Event()
         # Net agent
         self.net_agent = threading.Thread(
-            target=rcf_net_worker, args=(self.ctx, self.store, peer, self.serial_product,self.serial_feed, self.stop_event), name="net-agent")
+            target=net_worker, args=(self.ctx, self.store, peer, self.serial_product,self.serial_feed, self.stop_event), name="net-agent")
         self.net_agent.daemon = True
         self.net_agent.start()
 
@@ -349,7 +348,7 @@ class RCFClientAgent(object):
             self.pipe.send(umsgpack.packb(self.state.value))
 
 
-def rcf_net_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
+def net_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
     agent = RCFClientAgent(ctx,store, pipe)
     server = None
     net_feed = serial_product
@@ -435,7 +434,6 @@ def rcf_net_worker(ctx,store, pipe, serial_product, serial_feed, stop_event):
                 logger.error("Fail to dump ")
 
     logger.info("exit thread")
-    stop = False
 
 
 def serial_worker(serial_product,  serial_feed):

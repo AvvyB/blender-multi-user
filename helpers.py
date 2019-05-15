@@ -369,6 +369,7 @@ def load_scene(target=None, data=None, create=False):
         for object in target.collection.objects.keys():
             if object not in data["collection"]["objects"]:
                 target.collection.objects.unlink(bpy.data.objects[object])
+
         # load collections
         # TODO: Recursive link
         logger.info("check for new collections")
@@ -553,6 +554,7 @@ def dump(key):
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
             target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
+        
         # Fix material index
         m_list = []
         for m in target.materials:

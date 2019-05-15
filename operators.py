@@ -9,10 +9,8 @@ import time
 from operator import itemgetter
 import queue
 
-import bgl
-import blf
+
 import bpy
-import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
@@ -37,7 +35,6 @@ history = queue.Queue()
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
     global client_keys
-
     items = [("Common", "Common", "")]
 
     username = bpy.context.window_manager.session_settings.username 
@@ -103,7 +100,7 @@ def upload_client_instance_position():
             pass
 
 
-def update_selected_object(context):
+def update_client_selected_object(context):
     global client_instance
     session = bpy.context.window_manager.session_settings
 
@@ -126,16 +123,15 @@ def update_selected_object(context):
         client_data[0][1]['active_objects'] = []
         client_instance.set(client_key, client_data[0][1])
 
+# Init configuration
 def init_datablocks():
     global client_instance
 
-   
     for datatype in helpers.SUPPORTED_TYPES:
         for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
             item.id = bpy.context.window_manager.session_settings.username
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
-           
 
 
 def refresh_session_data():
@@ -153,46 +149,23 @@ def refresh_session_data():
 
 def default_tick():
     refresh_session_data()
-
     upload_client_instance_position()
 
     return .2
 
-def undo_test():
-    
-    print("UNDO")
-    bpy.ops.ed.undo()
-
-def undo_tick():
-    global history
-    try:
-        c = history.get_nowait()
-        if c:
-            undo_test()        
-           
-    except Exception as e:
-        pass
-    
-    return 1.0
 
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(default_tick)
-    bpy.app.timers.register(undo_tick)
     
-
 
 def unregister_ticks():
     # REGISTER Updaters
     bpy.app.timers.unregister(default_tick)
-    bpy.app.timers.unregister(undo_tick)
+
     
-
 # OPERATORS
-
-
 class session_join(bpy.types.Operator):
-
     bl_idname = "session.join"
     bl_label = "join"
     bl_description = "connect to a net server"
@@ -329,11 +302,10 @@ class session_create(bpy.types.Operator):
 
         net_settings = context.window_manager.session_settings
 
-        script = os.path.join(os.path.dirname(os.path.abspath(__file__)),"server.py")
+        script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"server.py")
 
         server = subprocess.Popen(
-            [str(python_path),script],shell=False, stdout=subprocess.PIPE)
-        # time.sleep(0.1)
+            [str(python_path),script_dir],shell=False, stdout=subprocess.PIPE)
 
         bpy.ops.session.join()
 
@@ -365,18 +337,20 @@ class session_stop(bpy.types.Operator):
         if server:
             server.kill()
             time.sleep(0.25)
+
             server = None
+
         if client_instance:
             client_instance.exit()
             time.sleep(0.25)
             del client_instance
+
             client_instance = None
             client_keys = None
             net_settings.is_admin = False
             client_state = 1
-            unregister_ticks()
 
-            # Stop drawing
+            unregister_ticks()
             draw.renderer.stop()
         else:
             logger.debug("No server/client_instance running.")
@@ -429,14 +403,21 @@ class session_rights(bpy.types.Operator):
 
 class session_settings(bpy.types.PropertyGroup):
     username = bpy.props.StringProperty(
-        name="Username", default="user_{}".format(randomStringDigits()))
+        name="Username",
+        default="user_{}".format(randomStringDigits())
+        )
     ip = bpy.props.StringProperty(
-        name="ip", description='Distant host ip', default="127.0.0.1")
+        name="ip",
+        description='Distant host ip',
+        default="127.0.0.1")
     port = bpy.props.IntProperty(
-        name="port", description='Distant host port', default=5555)
+        name="port",
+        description='Distant host port',
+        default=5555)
 
     add_property_depth = bpy.props.IntProperty(
-        name="add_property_depth", default=1)
+        name="add_property_depth",
+        default=1)
     buffer = bpy.props.StringProperty(name="None")
     is_admin = bpy.props.BoolProperty(name="is_admin", default=False)
     load_data = bpy.props.BoolProperty(name="load_data", default=True)
@@ -453,16 +434,19 @@ class session_settings(bpy.types.PropertyGroup):
             ('HOST', 'hosting', 'host a session'),
             ('CONNECT', 'connexion', 'connect to a session')},
         default='HOST')
-    client_color = bpy.props.FloatVectorProperty(name="client_instance_color",
-                                                 subtype='COLOR',
-                                                 default=randomColor())
+    client_color = bpy.props.FloatVectorProperty(
+        name="client_instance_color",
+        subtype='COLOR',
+        default=randomColor())
     clients = bpy.props.EnumProperty(
         name="clients",
         description="client enum",
         items=client_list_callback
     )
     enable_draw = bpy.props.BoolProperty(
-        name="enable_draw",  description='Enable overlay drawing module', default=True)
+        name="enable_draw",
+        description='Enable overlay drawing module',
+        default=True)
 
 
 class session_snapview(bpy.types.Operator):
@@ -509,18 +493,6 @@ classes = (
 )
 
 
-def ordered(updates):
-    # sorted = sorted(updates, key=lambda tup: hepers.SUPPORTED_TYPES.index(tup[1].id.bl_rna.name))
-    uplist = []
-    for item in updates.items():
-        if item[1].id.bl_rna.name in hepers.SUPPORTED_TYPES:
-            uplist.append((hepers.SUPPORTED_TYPES.index(
-                item[1].id.bl_rna.name), item[1].id.bl_rna.name, item[1].id.name, item[1].id))
-
-    uplist.sort(key=itemgetter(0))
-    return uplist
-
-
 def is_replicated(update):
     # global client_keys
     # dickt = dict(client_keys)
@@ -544,8 +516,7 @@ def is_replicated(update):
         logger.info("{} Not rep".format(key))
         return False
 
-def get_datablock(update,context):
-    
+def get_datablock_from_update(update,context):
     item_type = update.id.__class__.__name__
     item_id = update.id.name
    
@@ -563,7 +534,7 @@ def get_datablock(update,context):
     return datablock_ref
 
 def toogle_dirty(context, update):
-    data_ref = get_datablock(update,context)
+    data_ref = get_datablock_from_update(update,context)
                     
     if data_ref:
         logger.info(update.id.bl_rna.__class__.__name__)
@@ -590,7 +561,7 @@ def depsgraph_update(scene):
                     if update.id.id == username or update.id.id == 'Common':
                         toogle_dirty(ctx, update)
                 else:
-                    item = get_datablock(update,ctx)
+                    item = get_datablock_from_update(update,ctx)
                     #get parent authority
                     
                     if hasattr(item,"id"):
@@ -609,24 +580,13 @@ def depsgraph_update(scene):
                             logger.info("APPEND {}".format(key))
                         else:
                             try:
-                                item = get_datablock(update,ctx)
-                                print(item)
                                 getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__]).remove(item)
                             except:
                                 pass
                             break
 
-            update_selected_object(ctx)   
-                # if update.id.id == username or update.id.id == 'Common' or update.id.id == 'None':
-                #     # TODO: handle errors
-                #     data_ref = get_datablock(update,context)
-                    
-                #     if data_ref:
-                #         logger.info(update.id.bl_rna.__class__.__name__)
-                #         data_ref.is_dirty= True
-                # elif update.id.id != username:
-                #     history.put("undo")
-                        
+            update_client_selected_object(ctx)   
+
 
 def register():
     from bpy.utils import register_class
