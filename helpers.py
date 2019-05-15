@@ -9,11 +9,9 @@ import mathutils
 from . import draw
 from .libs import dump_anything
 
-CORRESPONDANCE = {'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
+# TODO: replace hardcoded values...
+BPY_TYPES = {'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
                   'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
-
-SUPPORTED_TYPES = ['Curve', 'Material', 'Texture', 'Light', 'Camera', 'Mesh',
-                   'Armature', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -69,16 +67,6 @@ def get_selected_objects(scene):
     return selected_objects
 
 
-def get_all_datablocks():
-    datas = []
-    for datatype in SUPPORTED_TYPES:
-        for item in getattr(bpy.data, CORRESPONDANCE[datatype]):
-            item.id = bpy.context.window_manager.session_settings.username
-            datas.append("{}/{}".format(datatype, item.name))
-
-    return datas
-
-
 #    LOAD HELPERS
 def load(key, value):
     target = resolve_bpy_path(key)
@@ -129,7 +117,7 @@ def resolve_bpy_path(path):
 
     try:
         path = path.split('/')
-        item = getattr(bpy.data, CORRESPONDANCE[path[0]])[path[1]]
+        item = getattr(bpy.data, BPY_TYPES[path[0]])[path[1]]
 
     except:
         pass
@@ -140,7 +128,7 @@ def resolve_bpy_path(path):
 def load_client(client=None, data=None):
     C = bpy.context
     D = bpy.data
-    net_settings = C.window_manager.session_settings
+    net_settings = C.window_manager.session
 
     if client and data:
         if net_settings.enable_draw:
@@ -275,7 +263,7 @@ def load_object(target=None, data=None, create=False):
 
         target.id = data['id']
 
-        client = bpy.context.window_manager.session_settings.username
+        client = bpy.context.window_manager.session.username
 
         if target.id == client:
             target.hide_select = False
@@ -342,7 +330,7 @@ def load_collection(target=None, data=None, create=False):
 
         target.id = data['id']
 
-        client = bpy.context.window_manager.session_settings.username
+        client = bpy.context.window_manager.session.username
 
         if target.id == client:
             target.hide_select = False
@@ -525,7 +513,7 @@ def load_light(target=None, data=None, create=False, type=None):
 def load_default(target=None, data=None, create=False, type=None):
     try:
         if target is None and create:
-            target = getattr(bpy.data, CORRESPONDANCE[type]).new(data["name"])
+            target = getattr(bpy.data, BPY_TYPES[type]).new(data["name"])
 
         dump_anything.load(target, data)
 
@@ -623,7 +611,7 @@ def init_client(key=None):
     client_dict = {}
 
     C = bpy.context
-    Net = C.window_manager.session_settings
+    Net = C.window_manager.session
     client_dict['uuid'] = str(uuid4())
     client_dict['location'] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     client_dict['color'] = [Net.client_color.r,

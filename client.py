@@ -468,8 +468,8 @@ def watchdog_worker(serial_feed,interval, stop_event):
     logger.info("watchdog thread launched with {} sec of interval".format(interval))
     while not stop_event.is_set():
 
-        for datatype in helpers.SUPPORTED_TYPES:
-            for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
+        for datatype in helpers.BPY_TYPES.keys():
+            for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
                 key = "{}/{}".format(datatype, item.name)
                 try:
                     if item.is_dirty:

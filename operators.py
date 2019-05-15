@@ -1,22 +1,16 @@
 import asyncio
 import logging
 import os
-import queue
 import random
 import string
 import subprocess
 import time
 from operator import itemgetter
-import queue
 
 
 import bpy
 import mathutils
-from bpy_extras import view3d_utils
-from gpu_extras.batch import batch_for_shader
 from pathlib import Path
-
-
 
 from . import client, draw, helpers, ui
 from .libs import umsgpack
@@ -28,32 +22,13 @@ client_keys = None
 client_state = 1
 server = None
 context = None
-update_list = {}
-history = queue.Queue()
-
-# UTILITY FUNCTIONS
-def client_list_callback(scene, context):
-    global client_keys
-    items = [("Common", "Common", "")]
-
-    username = bpy.context.window_manager.session_settings.username 
-
-    if client_keys:
-        for k in client_keys:
-            if 'Client' in k[0]:
-                name = k[1]
-                
-                if name == username:
-                    name += " (self)"
-
-                items.append((name, name, ""))
-
-    return items
 
 
-def clean_scene(elements=helpers.SUPPORTED_TYPES):
+
+
+def clean_scene(elements=helpers.BPY_TYPES.keys()):
     for datablock in elements:
-        datablock_ref =getattr(bpy.data, helpers.CORRESPONDANCE[datablock])
+        datablock_ref =getattr(bpy.data, helpers.BPY_TYPES[datablock])
         for item in datablock_ref:
             try:
                 datablock_ref.remove(item)
@@ -62,23 +37,10 @@ def clean_scene(elements=helpers.SUPPORTED_TYPES):
                 pass
 
 
-def randomStringDigits(stringLength=6):
-    """Generate a random string of letters and digits """
-    lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
-
-
-def randomColor():
-    r = random.random()
-    v = random.random()
-    b = random.random()
-    return [r, v, b]
-
-
 def upload_client_instance_position():
     global client_instance
 
-    username = bpy.context.window_manager.session_settings.username
+    username = bpy.context.window_manager.session.username
     if client_instance:
 
         key = "Client/{}".format(username)
@@ -96,9 +58,9 @@ def upload_client_instance_position():
 
 def update_client_selected_object(context):
     global client_instance
-    session = bpy.context.window_manager.session_settings
+    session = bpy.context.window_manager.session
 
-    username = bpy.context.window_manager.session_settings.username
+    username = bpy.context.window_manager.session.username
     client_key = "Client/{}".format(username)
     client_data = client_instance.get(client_key)
 
@@ -117,13 +79,13 @@ def update_client_selected_object(context):
         client_data[0][1]['active_objects'] = []
         client_instance.set(client_key, client_data[0][1])
 
-# Init configuration
+#TODO: cleanup
 def init_datablocks():
     global client_instance
 
-    for datatype in helpers.SUPPORTED_TYPES:
-        for item in getattr(bpy.data, helpers.CORRESPONDANCE[datatype]):
-            item.id = bpy.context.window_manager.session_settings.username
+    for datatype in helpers.BPY_TYPES.keys():
+        for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
+            item.id = bpy.context.window_manager.session.username
             key = "{}/{}".format(datatype, item.name)
             client_instance.set(key)
 
@@ -159,7 +121,7 @@ def unregister_ticks():
 
     
 # OPERATORS
-class session_join(bpy.types.Operator):
+class SessionJoinOperator(bpy.types.Operator):
     bl_idname = "session.join"
     bl_label = "join"
     bl_description = "connect to a net server"
@@ -172,7 +134,7 @@ class session_join(bpy.types.Operator):
     def execute(self, context):
         global client_instance
 
-        net_settings = context.window_manager.session_settings
+        net_settings = context.window_manager.session
         # Scene setup
         if net_settings.clear_scene:
             clean_scene()
@@ -182,7 +144,7 @@ class session_join(bpy.types.Operator):
             net_settings.username = "{}_{}".format(
                 net_settings.username, randomStringDigits())
 
-        username = str(context.window_manager.session_settings.username)
+        username = str(context.window_manager.session.username)
 
         if len(net_settings.ip) < 1:
             net_settings.ip = "127.0.0.1"
@@ -202,7 +164,7 @@ class session_join(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_refresh(bpy.types.Operator):
+class SessionRefreshOperator(bpy.types.Operator):
     bl_idname = "session.refresh"
     bl_label = "refresh"
     bl_description = "refresh client ui keys "
@@ -218,7 +180,7 @@ class session_refresh(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_add_property(bpy.types.Operator):
+class SessionPropertyAddOperator(bpy.types.Operator):
     bl_idname = "session.add_prop"
     bl_label = "add"
     bl_description = "broadcast a property to connected client_instances"
@@ -239,7 +201,7 @@ class session_add_property(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_get_property(bpy.types.Operator):
+class SessionPropertyGetOperator(bpy.types.Operator):
     bl_idname = "session.get_prop"
     bl_label = "get"
     bl_description = "broadcast a property to connected client_instances"
@@ -257,7 +219,7 @@ class session_get_property(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_remove_property(bpy.types.Operator):
+class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
     bl_label = "remove"
     bl_description = "broadcast a property to connected client_instances"
@@ -280,7 +242,7 @@ class session_remove_property(bpy.types.Operator):
             return {"CANCELED"}
 
 
-class session_create(bpy.types.Operator):
+class SessionHostOperator(bpy.types.Operator):
     bl_idname = "session.create"
     bl_label = "create"
     bl_description = "create to a net session"
@@ -294,7 +256,7 @@ class session_create(bpy.types.Operator):
         global server
         global client_instance
 
-        net_settings = context.window_manager.session_settings
+        net_settings = context.window_manager.session
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"server.py")
 
@@ -315,7 +277,7 @@ class session_create(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_stop(bpy.types.Operator):
+class SessionStopOperator(bpy.types.Operator):
     bl_idname = "session.stop"
     bl_label = "close"
     bl_description = "stop net service"
@@ -329,7 +291,7 @@ class session_stop(bpy.types.Operator):
         global server
         global client_instance, client_keys, client_state
 
-        net_settings = context.window_manager.session_settings
+        net_settings = context.window_manager.session
 
         if server:
             server.kill()
@@ -355,7 +317,7 @@ class session_stop(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_rights(bpy.types.Operator):
+class SessionPropertyRightOperator(bpy.types.Operator):
     bl_idname = "session.right"
     bl_label = "Change owner to"
     bl_description = "stop net service"
@@ -373,7 +335,7 @@ class session_rights(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        net_settings = context.window_manager.session_settings
+        net_settings = context.window_manager.session
 
         col = layout.column()
         col.prop(net_settings, "clients")
@@ -382,7 +344,7 @@ class session_rights(bpy.types.Operator):
         global server
         global client_instance, client_keys, client_state
 
-        net_settings = context.window_manager.session_settings
+        net_settings = context.window_manager.session
 
         if net_settings.is_admin:
             val = client_instance.get(self.key)
@@ -398,55 +360,7 @@ class session_rights(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class session_settings(bpy.types.PropertyGroup):
-    username = bpy.props.StringProperty(
-        name="Username",
-        default="user_{}".format(randomStringDigits())
-        )
-    ip = bpy.props.StringProperty(
-        name="ip",
-        description='Distant host ip',
-        default="127.0.0.1")
-    port = bpy.props.IntProperty(
-        name="port",
-        description='Distant host port',
-        default=5555)
-
-    add_property_depth = bpy.props.IntProperty(
-        name="add_property_depth",
-        default=1)
-    buffer = bpy.props.StringProperty(name="None")
-    is_admin = bpy.props.BoolProperty(name="is_admin", default=False)
-    load_data = bpy.props.BoolProperty(name="load_data", default=True)
-    init_scene = bpy.props.BoolProperty(name="load_data", default=True)
-    clear_scene = bpy.props.BoolProperty(name="clear_scene", default=True)
-    update_frequency = bpy.props.FloatProperty(
-        name="update_frequency", default=0.008)
-    active_object = bpy.props.PointerProperty(
-        name="active_object", type=bpy.types.Object)
-    session_mode = bpy.props.EnumProperty(
-        name='session_mode',
-        description='session mode',
-        items={
-            ('HOST', 'hosting', 'host a session'),
-            ('CONNECT', 'connexion', 'connect to a session')},
-        default='HOST')
-    client_color = bpy.props.FloatVectorProperty(
-        name="client_instance_color",
-        subtype='COLOR',
-        default=randomColor())
-    clients = bpy.props.EnumProperty(
-        name="clients",
-        description="client enum",
-        items=client_list_callback
-    )
-    enable_draw = bpy.props.BoolProperty(
-        name="enable_draw",
-        description='Enable overlay drawing module',
-        default=True)
-
-
-class session_snapview(bpy.types.Operator):
+class SessionSnapUserOperator(bpy.types.Operator):
     bl_idname = "session.snapview"
     bl_label = "draw client_instances"
     bl_description = "Description that shows in blender tooltips"
@@ -477,16 +391,15 @@ class session_snapview(bpy.types.Operator):
 
 # TODO: Rename to match official blender convention
 classes = (
-    session_join,
-    session_refresh,
-    session_add_property,
-    session_get_property,
-    session_stop,
-    session_create,
-    session_settings,
-    session_remove_property,
-    session_snapview,
-    session_rights,
+    SessionJoinOperator,
+    SessionRefreshOperator,
+    SessionPropertyAddOperator,
+    SessionPropertyGetOperator,
+    SessionStopOperator,
+    SessionHostOperator,
+    SessionPropertyRemoveOperator,
+    SessionSnapUserOperator,
+    SessionPropertyRightOperator,
 )
 
 
@@ -513,6 +426,7 @@ def is_replicated(update):
         logger.info("{} Not rep".format(key))
         return False
 
+
 def get_datablock_from_update(update,context):
     item_type = update.id.__class__.__name__
     item_id = update.id.name
@@ -521,8 +435,8 @@ def get_datablock_from_update(update,context):
 
     if item_id == 'Master Collection':
         datablock_ref= bpy.context.scene
-    elif item_type in helpers.CORRESPONDANCE.keys():
-        datablock_ref = getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__])[update.id.name]
+    elif item_type in helpers.BPY_TYPES.keys():
+        datablock_ref = getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__])[update.id.name]
     else:
         if item_id in bpy.data.lights.keys():
             datablock_ref = bpy.data.lights[item_id]
@@ -530,12 +444,14 @@ def get_datablock_from_update(update,context):
 
     return datablock_ref
 
+
 def toogle_update_dirty(context, update):
     data_ref = get_datablock_from_update(update,context)
                     
     if data_ref:
         logger.info(update.id.bl_rna.__class__.__name__)
         data_ref.is_dirty= True
+
 
 def depsgraph_update(scene):
     global client_instance
@@ -548,7 +464,7 @@ def depsgraph_update(scene):
        
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = ctx.depsgraph.updates
-            username = ctx.window_manager.session_settings.username
+            username = ctx.window_manager.session.username
             
 
             selected_objects = helpers.get_selected_objects(scene)
@@ -577,7 +493,7 @@ def depsgraph_update(scene):
                             logger.info("APPEND {}".format(key))
                         else:
                             try:
-                                getattr(bpy.data, helpers.CORRESPONDANCE[update.id.__class__.__name__]).remove(item)
+                                getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__]).remove(item)
                             except:
                                 pass
                             break
@@ -589,10 +505,7 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    bpy.types.ID.id = bpy.props.StringProperty(default="None")
-    bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
-    bpy.types.WindowManager.session_settings = bpy.props.PointerProperty(
-        type=session_settings)
+   
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
     draw.register()
 
@@ -603,8 +516,8 @@ def unregister():
 
     draw.unregister()
 
- 
-    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+    if  bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
+        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
 
     if server:
         server.kill()
@@ -620,10 +533,6 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-
-    del bpy.types.WindowManager.session_settings
-    del bpy.types.ID.id
-    del bpy.types.ID.is_dirty
 
 
 if __name__ == "__main__":

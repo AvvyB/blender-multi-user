@@ -5,6 +5,7 @@ from operator import itemgetter
 
 import zmq
 import message
+
 logger = logging.getLogger("Server")
 logging.basicConfig(level=logging.DEBUG)
 

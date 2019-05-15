@@ -7,9 +7,7 @@ from . import client, operators
 ICONS = {'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
                   'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'Grease Pencil': 'GREASEPENCIL'}
 
-
-class SessionSettingsPanel(bpy.types.Panel):
-    """Creates a Panel in the scene context of the properties editor"""
+class SESSION_PT_settings(bpy.types.Panel):
     bl_label = "NET settings"
     bl_idname = "SCENE_PT_SessionSettings"
     bl_space_type = 'PROPERTIES'
@@ -19,8 +17,8 @@ class SessionSettingsPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if hasattr(context.window_manager, 'session_settings'):
-            net_settings = context.window_manager.session_settings
+        if hasattr(context.window_manager, 'session'):
+            net_settings = context.window_manager.session
             window_manager = context.window_manager
 
             row = layout.row()
@@ -30,10 +28,10 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row = box.row()
                 row.label(text="USER", icon='TRIA_RIGHT')
                 row = box.row()
-                row.prop(window_manager.session_settings, "username", text="id")
+                row.prop(window_manager.session, "username", text="id")
                 
                 row = box.row()
-                row.prop(window_manager.session_settings, "client_color", text="color") 
+                row.prop(window_manager.session, "client_color", text="color") 
                 row = box.row()
 
                 row = layout.row()
@@ -48,16 +46,13 @@ class SessionSettingsPanel(bpy.types.Panel):
                 row.label(text="clear blend:")
                 row.prop(net_settings, "clear_scene", text="")
                 row = box.row()
-                
-
+            
                 row = box.row()
                 row.prop(net_settings, "session_mode", expand=True)
                 row = box.row()
-                
+    
 
-                
-
-                if window_manager.session_settings.session_mode == 'HOST':
+                if window_manager.session.session_mode == 'HOST':
                     box = row.box()
                     row = box.row()
                     row.label(text="init scene:")
@@ -70,7 +65,7 @@ class SessionSettingsPanel(bpy.types.Panel):
                     row.prop(net_settings, "ip", text="ip")
                     row = box.row()
                     row.label(text="port:")
-                    row.prop(window_manager.session_settings, "port", text="")
+                    row.prop(window_manager.session, "port", text="")
                     row = box.row()
                     row.label(text="load data:")
                     row.prop(net_settings, "load_data", text="")
@@ -85,13 +80,6 @@ class SessionSettingsPanel(bpy.types.Panel):
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
-
-                    # row = layout.row()
-                    # row.label(text="serial ",icon="KEYTYPE_EXTREME_VEC")
-                    # row = layout.row()
-                    # row.label(text="serial ",icon="KEYTYPE_BREAKDOWN_VEC")
-                    # row = layout.row()
-                    # row.label(text="serial ",icon="KEYTYPE_JITTER_VEC")
 
                     box = row.box()
                     row = box.row()
@@ -110,8 +98,7 @@ class SessionSettingsPanel(bpy.types.Panel):
             row = layout.row()
 
 
-class SessionUsersPanel(bpy.types.Panel):
-    """Creates a Panel in the scene context of the properties editor"""
+class SESSION_PT_user(bpy.types.Panel):
     bl_label = "NET users"
     bl_idname = "SCENE_PT_SessionUsers"
     bl_space_type = 'PROPERTIES'
@@ -126,7 +113,7 @@ class SessionUsersPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        net_settings = context.window_manager.session_settings
+        net_settings = context.window_manager.session
         scene = context.window_manager
         # Create a simple row.
         row = layout.row()
@@ -156,8 +143,7 @@ class SessionUsersPanel(bpy.types.Panel):
 def get_client_key(item):
     return item[0]
 
-class SessionPropertiesPanel(bpy.types.Panel):
-    """Creates a Panel in the scene context of the properties editor"""
+class SESSION_PT_properties(bpy.types.Panel):
     bl_label = "NET properties"
     bl_idname = "SCENE_PT_SessionProps"
     bl_space_type = 'PROPERTIES'
@@ -171,10 +157,10 @@ class SessionPropertiesPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if hasattr(context.window_manager,'session_settings'):
-            net_settings = context.window_manager.session_settings
+        if hasattr(context.window_manager,'session'):
+            net_settings = context.window_manager.session
             scene = context.window_manager
-            # Create a simple row.
+
             row = layout.row()
 
             row = layout.row(align=True)
@@ -185,6 +171,7 @@ class SessionPropertiesPanel(bpy.types.Panel):
             add.property_path = net_settings.buffer
             add.depth = net_settings.add_property_depth
             row = layout.row()
+
             # Property area
             area_msg = row.box()
             area_msg.operator("session.refresh", text="",
@@ -203,14 +190,8 @@ class SessionPropertiesPanel(bpy.types.Panel):
                     item_box = area_msg.box()
                     
                     detail_item_box = item_box.row(align = True)
-
-                    # detail_item_box = item_box.row()
                     detail_item_box.label(text="",icon=ICONS[store_type])
-
                     detail_item_box.label(text="{} ".format(store_name))
-
-                    # detail_item_box.prop(net_settings, "clients", text="")
-
                     detail_item_box.label(text="{} ".format(owner))
 
                     right_icon = "DECORATE_UNLOCKED"
@@ -229,9 +210,9 @@ class SessionPropertiesPanel(bpy.types.Panel):
 
 
 classes = (
-    SessionSettingsPanel,
-    SessionUsersPanel,
-    SessionPropertiesPanel,
+    SESSION_PT_settings,
+    SESSION_PT_user,
+    SESSION_PT_properties,
 
 )
 
