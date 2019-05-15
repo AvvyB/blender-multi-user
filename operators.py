@@ -16,8 +16,7 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from pathlib import Path
 
-python_path = Path(bpy.app.binary_path_python)
-cwd_for_subprocesses = python_path.parent
+
 
 from . import client, draw, helpers, ui
 from .libs import umsgpack
@@ -74,11 +73,6 @@ def randomColor():
     v = random.random()
     b = random.random()
     return [r, v, b]
-
-
-def refresh_window():
-    import bpy
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 
 def upload_client_instance_position():
@@ -303,6 +297,9 @@ class session_create(bpy.types.Operator):
         net_settings = context.window_manager.session_settings
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"server.py")
+
+        python_path = Path(bpy.app.binary_path_python)
+        cwd_for_subprocesses = python_path.parent
 
         server = subprocess.Popen(
             [str(python_path),script_dir],shell=False, stdout=subprocess.PIPE)
@@ -533,7 +530,7 @@ def get_datablock_from_update(update,context):
 
     return datablock_ref
 
-def toogle_dirty(context, update):
+def toogle_update_dirty(context, update):
     data_ref = get_datablock_from_update(update,context)
                     
     if data_ref:
@@ -559,7 +556,7 @@ def depsgraph_update(scene):
             for update in reversed(updates):
                 if is_replicated(update):
                     if update.id.id == username or update.id.id == 'Common':
-                        toogle_dirty(ctx, update)
+                        toogle_update_dirty(ctx, update)
                 else:
                     item = get_datablock_from_update(update,ctx)
                     #get parent authority
@@ -606,10 +603,8 @@ def unregister():
 
     draw.unregister()
 
-    try:
-        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
-    except:
-        pass
+ 
+    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
 
     if server:
         server.kill()
