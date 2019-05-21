@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 SUPPORTED_TYPES = ['Client','Curve','Material','Texture', 'Light', 'Camera', 'Mesh','Armature', 'Grease Pencil', 'Object', 'Action', 'Collection', 'Scene']
                    
-class RCFServerAgent():
+class ServerAgent():
     def __init__(self, context=zmq.Context.instance(), id="admin"):
         self.context = context
 
@@ -80,18 +80,18 @@ class RCFServerAgent():
                     self.request_sock.send(identity, zmq.SNDMORE)
                     v.send(self.request_sock)
 
-                msg_end_snapshot = message.RCFMessage(key="SNAPSHOT_END", id=identity)
+                msg_end_snapshot = message.Message(key="SNAPSHOT_END", id=identity)
                 self.request_sock.send(identity, zmq.SNDMORE)
                 msg_end_snapshot.send(self.request_sock)
                 logger.info("done")
 
             # Regular update routing (Clients / Client)
             elif self.collector_sock in socks:
-                msg = message.RCFMessage.recv(self.collector_sock)
+                msg = message.Message.recv(self.collector_sock)
                 # logger.info("received object")
                 # Update all clients
                 msg.store(self.property_map)
                 msg.send(self.pub_sock)
 
-server = RCFServerAgent()
+server = ServerAgent()
 

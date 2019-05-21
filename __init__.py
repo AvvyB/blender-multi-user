@@ -1,23 +1,21 @@
+from pathlib import Path
+import addon_utils
+import random
+import string
+import subprocess
+import sys
+import os
+import bpy
 bl_info = {
-    "name" : "rcf",
-    "author" : "CUBE",
-    "description" : "",
-    "blender" : (2, 80, 0),
-    "location" : "",
-    "warning" : "",
-    "category" : "Collaboration"
+    "name": "Multi-User ",
+    "author": "CUBE",
+    "description": "",
+    "blender": (2, 80, 0),
+    "location": "",
+    "warning": "",
+    "category": "Collaboration"
 }
 
-
-import bpy
-import os
-import sys
-import subprocess
-import string
-import random
-import bpy
-import addon_utils
-from pathlib import Path
 
 python_path = Path(bpy.app.binary_path_python)
 cwd_for_subprocesses = python_path.parent
@@ -28,13 +26,13 @@ def client_list_callback(scene, context):
     global client_keys
     items = [("Common", "Common", "")]
 
-    username = bpy.context.window_manager.session.username 
+    username = bpy.context.window_manager.session.username
 
     if client_keys:
         for k in client_keys:
             if 'Client' in k[0]:
                 name = k[1]
-                
+
                 if name == username:
                     name += " (self)"
 
@@ -62,11 +60,11 @@ def get_package_install_directory():
             return path
 
 
-class RCFSessionProps(bpy.types.PropertyGroup):
+class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
         default="user_{}".format(randomStringDigits())
-        )
+    )
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
@@ -109,16 +107,19 @@ class RCFSessionProps(bpy.types.PropertyGroup):
         description='Enable overlay drawing module',
         default=True)
 
+
 classes = {
-    RCFSessionProps,
+    SessionProps,
 }
+
 
 def register():
     try:
         import zmq
     except:
         target = get_package_install_directory()
-        subprocess.run([str(python_path), "-m", "pip", "install", "zmq", '--target', target], cwd=cwd_for_subprocesses)
+        subprocess.run([str(python_path), "-m", "pip", "install",
+                        "zmq", '--target', target], cwd=cwd_for_subprocesses)
 
     from . import operators
     from . import ui
@@ -129,7 +130,7 @@ def register():
     bpy.types.ID.id = bpy.props.StringProperty(default="None")
     bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
-        type=RCFSessionProps)
+        type=SessionProps)
 
     operators.register()
     ui.register()
@@ -138,7 +139,7 @@ def register():
 def unregister():
     from . import operators
     from . import ui
-    
+
     ui.unregister()
     operators.unregister()
 

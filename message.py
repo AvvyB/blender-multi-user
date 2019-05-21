@@ -11,7 +11,7 @@ import zmq
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-class RCFMessage(object):
+class Message(object):
     """
     Message is formatted on wire as 2 frames:
     frame 0: key (0MQ string) // property path

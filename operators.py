@@ -149,7 +149,7 @@ class SessionJoinOperator(bpy.types.Operator):
         if len(net_settings.ip) < 1:
             net_settings.ip = "127.0.0.1"
 
-        client_instance = client.RCFClient()
+        client_instance = client.Client()
         client_instance.connect(net_settings.username,
                                 net_settings.ip, net_settings.port)
 
@@ -463,7 +463,7 @@ def depsgraph_update(scene):
     if client_state == 3:
        
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
-            updates = ctx.depsgraph.updates
+            updates = ctx.view_layer.depsgraph.updates
             username = ctx.window_manager.session.username
             
 
