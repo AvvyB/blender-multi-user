@@ -104,8 +104,8 @@ def refresh_session_data():
 
 
 def default_tick():
-    refresh_session_data()
-    upload_client_instance_position()
+    # refresh_session_data()
+    # upload_client_instance_position()
 
     return .2
 
@@ -475,8 +475,8 @@ def depsgraph_update(scene):
                         toogle_update_dirty(ctx, update)
                 else:
                     item = get_datablock_from_update(update,ctx)
-                    #get parent authority
                     
+                    #get parent authority
                     if hasattr(item,"id"):
                         parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
 

@@ -23,13 +23,14 @@ cwd_for_subprocesses = python_path.parent
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
-    global client_keys
+    from . import operators
+    
     items = [("Common", "Common", "")]
 
     username = bpy.context.window_manager.session.username
 
-    if client_keys:
-        for k in client_keys:
+    if operators.client_keys:
+        for k in operators.client_keys:
             if 'Client' in k[0]:
                 name = k[1]
 
