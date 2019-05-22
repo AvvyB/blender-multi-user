@@ -22,7 +22,7 @@ class SESSION_PT_settings(bpy.types.Panel):
             window_manager = context.window_manager
 
             row = layout.row()
-            if operators.client_instance is None:
+            if operators.client_state == 1:
                 row = layout.row()
                 box = row.box()
                 row = box.row()
@@ -85,11 +85,11 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row = box.row()
                     row.label(text="", icon='INFO')
                     row = box.row()
-                    row.label(text="Sync tasks: {}".format(operators.client_instance.active_tasks))
+                    row.label(text="Sync tasks: {}".format(client.instance.active_tasks))
                 else:
                     status = "connecting..."
                     if net_settings.is_admin:
-                        status =  "init scene...({} tasks remaining)".format(operators.client_instance.active_tasks)
+                        status =  "init scene...({} tasks remaining)".format(client.instance.active_tasks)
                     row.label(text=status)
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")

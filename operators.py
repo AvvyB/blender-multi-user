@@ -17,7 +17,7 @@ from .libs import umsgpack
 
 logger = logging.getLogger(__name__)
 
-client_instance = None
+# client_instance = None
 client_keys = None
 client_state = 1
 server = None
@@ -38,31 +38,27 @@ def clean_scene(elements=helpers.BPY_TYPES.keys()):
 
 
 def upload_client_instance_position():
-    global client_instance
-
     username = bpy.context.window_manager.session.username
-    if client_instance:
+    if client.instance:
 
         key = "Client/{}".format(username)
 
-        try:
-            current_coords = draw.get_client_view_rect()
-            client = client_instance.get(key)
+        
+        current_coords = draw.get_client_view_rect()
+        client_list = client.instance.get(key)
 
-            if current_coords != client[0][1]['location']:
-                client[0][1]['location'] = current_coords
-                client_instance.set(key, client[0][1])
-        except:
-            pass
-
+        if current_coords and client_list:
+            if current_coords != client_list[0][1]['location']:
+                client_list[0][1]['location'] = current_coords
+                client.instance.set(key, client_list[0][1])
+        
 
 def update_client_selected_object(context):
-    global client_instance
     session = bpy.context.window_manager.session
 
     username = bpy.context.window_manager.session.username
     client_key = "Client/{}".format(username)
-    client_data = client_instance.get(client_key)
+    client_data = client.instance.get(client_key)
 
     selected_objects = helpers.get_selected_objects(context.scene)
 
@@ -72,41 +68,39 @@ def update_client_selected_object(context):
             # if obj not in client_data[0][1]['active_objects']:
             client_data[0][1]['active_objects'] = selected_objects
 
-            client_instance.set(client_key, client_data[0][1])
+            client.instance.set(client_key, client_data[0][1])
             break
 
     elif client_data and client_data[0][1]['active_objects']:
         client_data[0][1]['active_objects'] = []
-        client_instance.set(client_key, client_data[0][1])
+        client.instance.set(client_key, client_data[0][1])
 
 #TODO: cleanup
 def init_datablocks():
-    global client_instance
-
     for datatype in helpers.BPY_TYPES.keys():
         for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
             item.id = bpy.context.window_manager.session.username
             key = "{}/{}".format(datatype, item.name)
-            client_instance.set(key)
+            client.instance.set(key)
 
 
 def refresh_session_data():
-    global client_instance, client_keys, client_state
+    global client_keys, client_state
 
-    keys = client_instance.list()
+    keys = client.instance.list()
 
     if keys:
         client_keys = keys
-    state = client_instance.state()
+    state = client.instance.state()
 
     if state:
         client_state = state
 
 
-def default_tick():
-    # refresh_session_data()
-    # upload_client_instance_position()
-
+def default_tick():    
+    refresh_session_data()
+    upload_client_instance_position()
+    
     return .2
 
 
@@ -117,8 +111,10 @@ def register_ticks():
 
 def unregister_ticks():
     # REGISTER Updaters
-    bpy.app.timers.unregister(default_tick)
-
+    try:
+        bpy.app.timers.unregister(default_tick)
+    except:
+        pass
     
 # OPERATORS
 class SessionJoinOperator(bpy.types.Operator):
@@ -132,8 +128,6 @@ class SessionJoinOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance
-
         net_settings = context.window_manager.session
         # Scene setup
         if net_settings.clear_scene:
@@ -149,8 +143,8 @@ class SessionJoinOperator(bpy.types.Operator):
         if len(net_settings.ip) < 1:
             net_settings.ip = "127.0.0.1"
 
-        client_instance = client.Client()
-        client_instance.connect(net_settings.username,
+        client.instance = client.Client()
+        client.instance.connect(net_settings.username,
                                 net_settings.ip, net_settings.port)
 
         # net_settings.is_running = True
@@ -194,9 +188,8 @@ class SessionPropertyAddOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance
 
-        client_instance.add(self.property_path)
+        client.instance.add(self.property_path)
 
         return {"FINISHED"}
 
@@ -214,7 +207,7 @@ class SessionPropertyGetOperator(bpy.types.Operator):
     def execute(self, context):
         global client_instance
 
-        client_instance.get("client")
+        client.instance.get("client")
 
         return {"FINISHED"}
 
@@ -232,10 +225,8 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance
-
         try:
-            del client_instance.property_map[self.property_path]
+            del client.instance.property_map[self.property_path]
 
             return {"FINISHED"}
         except:
@@ -254,7 +245,6 @@ class SessionHostOperator(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_instance
 
         net_settings = context.window_manager.session
 
@@ -289,7 +279,7 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_instance, client_keys, client_state
+        global client_keys, client_state
 
         net_settings = context.window_manager.session
 
@@ -299,12 +289,12 @@ class SessionStopOperator(bpy.types.Operator):
 
             server = None
 
-        if client_instance:
-            client_instance.exit()
+        if client.instance:
+            client.instance.exit()
             time.sleep(0.25)
-            del client_instance
+            # del client_instance
 
-            client_instance = None
+            # client_instance = None
             client_keys = None
             net_settings.is_admin = False
             client_state = 1
@@ -342,15 +332,15 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_instance, client_keys, client_state
+        global client_keys, client_state
 
         net_settings = context.window_manager.session
 
         if net_settings.is_admin:
-            val = client_instance.get(self.key)
+            val = client.instance.get(self.key)
             val[0][1]['id'] = net_settings.clients
 
-            client_instance.set(key=self.key, value=val[0][1], override=True)
+            client.instance.set(key=self.key, value=val[0][1], override=True)
 
             print("Updating {} rights to {}".format(
                 self.key, net_settings.clients))
@@ -373,11 +363,9 @@ class SessionSnapUserOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client_instance
-
         area, region, rv3d = draw.view3d_find()
 
-        client = client_instance.get("Client/{}".format(self.target_client))
+        client = client.instance.get("Client/{}".format(self.target_client))
         if client:
             rv3d.view_location = client[0][1]['location'][0]
             rv3d.view_distance = 30.0
@@ -406,8 +394,6 @@ classes = (
 def is_replicated(update):
     # global client_keys
     # dickt = dict(client_keys)
-    global client_instance
-
     object_type = update.id.bl_rna.name
     object_name = update.id.name
 
@@ -420,7 +406,7 @@ def is_replicated(update):
         
     key = "{}/{}".format(object_type, object_name)
 
-    if client_instance.exist(key):
+    if client.instance.exist(key):
         return True
     else:
         logger.info("{} Not rep".format(key))
@@ -454,7 +440,6 @@ def toogle_update_dirty(context, update):
 
 
 def depsgraph_update(scene):
-    global client_instance
     global client_keys
     global client_state
     
@@ -489,8 +474,7 @@ def depsgraph_update(scene):
                                 item_type = 'Light'
                                 
                             key = "{}/{}".format(item_type , item.name)
-                            client_instance.set(key)
-                            logger.info("APPEND {}".format(key))
+                            client.instance.set(key)
                         else:
                             try:
                                 getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__]).remove(item)
@@ -512,7 +496,7 @@ def register():
 
 def unregister():
     global server
-    global client_instance, client_keys
+    global client_keys
 
     draw.unregister()
 
@@ -524,10 +508,9 @@ def unregister():
         server = None
         del server
 
-    if client_instance:
-        client_instance.exit()
-        client_instance = None
-        del client_instance
+    if client.instance:
+        client.instance.exit()
+        client.instance = None
         del client_keys
 
     from bpy.utils import unregister_class

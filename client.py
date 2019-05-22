@@ -14,9 +14,7 @@ import zmq
 from . import helpers, message
 from .libs import dump_anything, umsgpack
 
-# import zmq
 lock = threading.Lock()
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -26,6 +24,7 @@ WAITING_TIME = 0.001
 SERVER_MAX = 1
 DUMP_AGENTS_NUMBER = 1
 
+instance = None 
 
 class State(Enum):
     INITIAL = 1

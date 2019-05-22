@@ -6,6 +6,7 @@ import subprocess
 import sys
 import os
 import bpy
+
 bl_info = {
     "name": "Multi-User ",
     "author": "CUBE",
@@ -17,8 +18,7 @@ bl_info = {
 }
 
 
-python_path = Path(bpy.app.binary_path_python)
-cwd_for_subprocesses = python_path.parent
+
 
 
 # UTILITY FUNCTIONS
@@ -118,6 +118,9 @@ def register():
     try:
         import zmq
     except:
+        python_path = Path(bpy.app.binary_path_python)
+        cwd_for_subprocesses = python_path.parent
+
         target = get_package_install_directory()
         subprocess.run([str(python_path), "-m", "pip", "install",
                         "zmq", '--target', target], cwd=cwd_for_subprocesses)
