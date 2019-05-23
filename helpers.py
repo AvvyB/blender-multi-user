@@ -87,7 +87,7 @@ def load(key, value):
     elif target_type == 'Material':
         load_material(target=target, data=value,
                       create=True)
-    elif target_type == 'Grease Pencil':
+    elif target_type == 'GreasePencil':
         load_gpencil(target=target, data=value,
                      create=True)
     elif target_type == 'Scene':
@@ -530,7 +530,7 @@ def dump(key):
     if target_type == 'Material':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(target, ['node_tree'], 7, data)
-    elif target_type == 'Grease Pencil':
+    elif target_type == 'GreasePencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
             target, ['layers'], 9, data)

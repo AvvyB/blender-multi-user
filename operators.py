@@ -365,9 +365,9 @@ class SessionSnapUserOperator(bpy.types.Operator):
     def execute(self, context):
         area, region, rv3d = draw.view3d_find()
 
-        client = client.instance.get("Client/{}".format(self.target_client))
-        if client:
-            rv3d.view_location = client[0][1]['location'][0]
+        target_client = client.instance.get("Client/{}".format(self.target_client))
+        if target_client:
+            rv3d.view_location = target_client[0][1]['location'][0]
             rv3d.view_distance = 30.0
 
             return {"FINISHED"}
