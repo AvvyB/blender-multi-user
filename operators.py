@@ -394,7 +394,7 @@ classes = (
 def is_replicated(update):
     # global client_keys
     # dickt = dict(client_keys)
-    object_type = update.id.bl_rna.name
+    object_type = update.id.bl_rna.__class__.__name__
     object_name = update.id.name
 
     #Master collection special cae

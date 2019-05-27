@@ -10,8 +10,8 @@ from . import draw
 from .libs import dump_anything
 
 # TODO: replace hardcoded values...
-BPY_TYPES = {'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 'Material': 'materials',
-                  'Texture': 'textures', 'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
+BPY_TYPES = {'Texture': 'textures','Material': 'materials', 'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 
+                  'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -72,6 +72,7 @@ def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
+    logger.info("load {}".format(key))
     if value == "None":
         return
 
@@ -237,7 +238,7 @@ def load_object(target=None, data=None, create=False):
     try:
         if target is None and create:
             pointer = None
-
+            
             # Object specific constructor...
             if data["data"] in bpy.data.meshes.keys():
                 pointer = bpy.data.meshes[data["data"]]
@@ -325,8 +326,18 @@ def load_collection(target=None, data=None, create=False):
         # Link childrens
         for collection in data["children"]:
             if collection not in target.children.keys():
-                target.children.link(
+                if bpy.data.collections.find(collection) == -1:
+                    target.children.link(
+                        bpy.data.collections[collection])
+                else:
+                    logger.info(target.name)
+        
+        for collection in target.children.keys():
+            if collection not in data["children"]:
+                target.collection.children.unlink(
                     bpy.data.collections[collection])
+        
+        
 
         target.id = data['id']
 
@@ -360,14 +371,14 @@ def load_scene(target=None, data=None, create=False):
 
         # load collections
         # TODO: Recursive link
-        logger.info("check for new collections")
+        logger.info("check for scene childs")
         for collection in data["collection"]["children"]:
             logger.debug(collection)
             if collection not in target.collection.children.keys():
                 target.collection.children.link(
                     bpy.data.collections[collection])
 
-        logger.info("check for collection to remove")
+        logger.info("check for scene child to remove")
         for collection in target.collection.children.keys():
             if collection not in data["collection"]["children"]:
                 target.collection.children.unlink(
