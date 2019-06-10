@@ -1,6 +1,6 @@
 import bpy
-
-from . import client, operators
+from . import client
+from . import operators
 
 
 
@@ -22,7 +22,7 @@ class SESSION_PT_settings(bpy.types.Panel):
             window_manager = context.window_manager
 
             row = layout.row()
-            if operators.client_state == 1:
+            if not client.instance or (client.instance and client.instance.state() == 1):
                 row = layout.row()
                 box = row.box()
                 row = box.row()
@@ -75,7 +75,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.operator("session.join", text="CONNECT")
 
             else:
-                if operators.client_state == 3:
+                if client.instance.state() ==  3:
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
@@ -107,7 +107,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return operators.client_state == 3
+        return  client.instance and client.instance.state() == 3
  
 
     def draw(self, context):
@@ -117,8 +117,9 @@ class SESSION_PT_user(bpy.types.Panel):
         scene = context.window_manager
         # Create a simple row.
         row = layout.row()
-        if operators.client_keys and len(operators.client_keys) > 0:
-            for key in operators.client_keys:
+        client_keys = client.instance.list()
+        if client_keys and len(client_keys) > 0:
+            for key in client_keys:
                 if 'Client' in key[0]:
                     info = ""
                     item_box = row.box()
@@ -152,7 +153,7 @@ class SESSION_PT_properties(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return operators.client_state == 3
+        return  client.instance and client.instance.state() == 3
 
     def draw(self, context):
         layout = self.layout
@@ -174,11 +175,10 @@ class SESSION_PT_properties(bpy.types.Panel):
 
             # Property area
             area_msg = row.box()
-            area_msg.operator("session.refresh", text="",
-                        icon="UV_SYNC_SELECT")
-            if operators.client_keys and len(operators.client_keys) > 0:
+            client_keys = client.instance.list()
+            if client_keys and len(client_keys) > 0:
 
-                for item in sorted(operators.client_keys, key=get_client_key):
+                for item in sorted(client_keys, key=get_client_key):
                     owner = 'toto'
                     try:
                         owner =  item[1]

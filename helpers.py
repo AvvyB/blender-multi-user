@@ -72,7 +72,7 @@ def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
-    logger.info("load {}".format(key))
+    logger.debug("load {}".format(key))
     if value == "None":
         return
 
@@ -176,7 +176,7 @@ def load_armature(target=None, data=None, create=False):
                             target_new_b = target.edit_bones.new[eb]
                             dump_anything.load(target_new_b, data['bones'][eb])
 
-                        logger.info(eb)
+                        logger.debug(eb)
 
                     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
             fp.close()
@@ -330,7 +330,7 @@ def load_collection(target=None, data=None, create=False):
                     target.children.link(
                         bpy.data.collections[collection])
                 else:
-                    logger.info(target.name)
+                    logger.debug(target.name)
         
         for collection in target.children.keys():
             if collection not in data["children"]:
@@ -371,14 +371,14 @@ def load_scene(target=None, data=None, create=False):
 
         # load collections
         # TODO: Recursive link
-        logger.info("check for scene childs")
+        logger.debug("check for scene childs")
         for collection in data["collection"]["children"]:
             logger.debug(collection)
             if collection not in target.collection.children.keys():
                 target.collection.children.link(
                     bpy.data.collections[collection])
 
-        logger.info("check for scene child to remove")
+        logger.debug("check for scene child to remove")
         for collection in target.collection.children.keys():
             if collection not in data["collection"]["children"]:
                 target.collection.children.unlink(

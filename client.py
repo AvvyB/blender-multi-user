@@ -14,17 +14,17 @@ import zmq
 from . import helpers, message
 from .libs import dump_anything, umsgpack
 
-lock = threading.Lock()
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
-
 CONNECT_TIMEOUT = 2
+WATCH_FREQUENCY = 0.1
 WAITING_TIME = 0.001
 SERVER_MAX = 1
 DUMP_AGENTS_NUMBER = 1
 
+lock = threading.Lock()
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 instance = None 
+
 
 class State(Enum):
     INITIAL = 1
@@ -61,10 +61,10 @@ class Client(object):
         self.ctx = zmq.Context()
         self.pipe, peer = zpipe(self.ctx)
         self.store = {}
-
         self.serial_product = queue.Queue()
         self.serial_feed = queue.Queue()
         self.stop_event = threading.Event()
+
         # Net agent
         self.net_agent = threading.Thread(
             target=net_worker,
@@ -83,7 +83,7 @@ class Client(object):
 
         # Sync agent
         self.watchdog_agent = threading.Thread(
-            target=watchdog_worker, args=(self.serial_feed, 0.2, self.stop_event), name="watchdog-agent")
+            target=watchdog_worker, args=(self.serial_feed,WATCH_FREQUENCY, self.stop_event), name="watchdog-agent")
         self.watchdog_agent.daemon = True
         self.watchdog_agent.start()
 
@@ -147,7 +147,6 @@ class Client(object):
             self.serial_feed.put(('STOP', None, None))
 
     # READ-ONLY FUNCTIONS
-
     def get(self, key):
         """Lookup value in distributed hash table
         Sends [GET][key] to the agent and waits for a value response
@@ -185,16 +184,24 @@ class Client(object):
         return dump_list
 
     def state(self):
-        if not self.is_busy():
-            self.pipe.send_multipart([b"STATE"])
-            try:
-                reply = self.pipe.recv_multipart()
-            except KeyboardInterrupt:
-                return
-            else:
-                return umsgpack.unpackb(reply[0])
+        if self.net_agent is None or not self.net_agent.is_alive():
+            return 1 #State.INITIAL
+        elif self.net_agent.is_alive() and self.store.keys():
+            return 3 # State.ACTIVE
         else:
-            return None
+            return 2 #State.SYNCING
+        
+        # # return self.state
+        # if not self.is_busy():
+        #     self.pipe.send_multipart([b"STATE"])
+        #     try:
+        #         reply = self.pipe.recv_multipart()
+        #     except KeyboardInterrupt:
+        #         return
+        #     else:
+        #         return umsgpack.unpackb(reply[0])
+        # else:
+        #     return None
 
 
 class Server(object):
@@ -223,7 +230,7 @@ class ClientAgent(object):
     property_map = None
     publisher = None
     id = None
-    state = State.INITIAL
+    state = None
     server = None
     serial = None
     serialisation_agent = None

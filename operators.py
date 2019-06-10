@@ -18,12 +18,9 @@ from .libs import umsgpack
 logger = logging.getLogger(__name__)
 
 # client_instance = None
-client_keys = None
-client_state = 1
+
 server = None
 context = None
-
-
 
 
 def clean_scene(elements=helpers.BPY_TYPES.keys()):
@@ -84,21 +81,8 @@ def init_datablocks():
             client.instance.set(key)
 
 
-def refresh_session_data():
-    global client_keys, client_state
-
-    keys = client.instance.list()
-
-    if keys:
-        client_keys = keys
-    state = client.instance.state()
-
-    if state:
-        client_state = state
-
 
 def default_tick():    
-    refresh_session_data()
     upload_client_instance_position()
     
     return .2
@@ -154,22 +138,6 @@ class SessionJoinOperator(bpy.types.Operator):
         # Launch drawing module
         if net_settings.enable_draw:
             draw.renderer.run()
-
-        return {"FINISHED"}
-
-
-class SessionRefreshOperator(bpy.types.Operator):
-    bl_idname = "session.refresh"
-    bl_label = "refresh"
-    bl_description = "refresh client ui keys "
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        refresh_session_data()
 
         return {"FINISHED"}
 
@@ -279,7 +247,6 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_keys, client_state
 
         net_settings = context.window_manager.session
 
@@ -295,9 +262,8 @@ class SessionStopOperator(bpy.types.Operator):
             # del client_instance
 
             # client_instance = None
-            client_keys = None
             net_settings.is_admin = False
-            client_state = 1
+
 
             unregister_ticks()
             draw.renderer.stop()
@@ -332,7 +298,6 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
     def execute(self, context):
         global server
-        global client_keys, client_state
 
         net_settings = context.window_manager.session
 
@@ -380,7 +345,6 @@ class SessionSnapUserOperator(bpy.types.Operator):
 # TODO: Rename to match official blender convention
 classes = (
     SessionJoinOperator,
-    SessionRefreshOperator,
     SessionPropertyAddOperator,
     SessionPropertyGetOperator,
     SessionStopOperator,
@@ -392,8 +356,6 @@ classes = (
 
 
 def is_replicated(update):
-    # global client_keys
-    # dickt = dict(client_keys)
     object_type = update.id.bl_rna.__class__.__name__
     object_name = update.id.name
 
@@ -409,7 +371,7 @@ def is_replicated(update):
     if client.instance.exist(key):
         return True
     else:
-        logger.info("{} Not rep".format(key))
+        logger.debug("{} Not rep".format(key))
         return False
 
 
@@ -435,17 +397,14 @@ def toogle_update_dirty(context, update):
     data_ref = get_datablock_from_update(update,context)
                     
     if data_ref:
-        logger.info(update.id.bl_rna.__class__.__name__)
+        logger.debug(update.id.bl_rna.__class__.__name__)
         data_ref.is_dirty= True
 
 
 def depsgraph_update(scene):
-    global client_keys
-    global client_state
-    
     ctx = bpy.context
 
-    if client_state == 3:
+    if client.instance.state() == 3:
        
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = ctx.view_layer.depsgraph.updates
@@ -496,7 +455,6 @@ def register():
 
 def unregister():
     global server
-    global client_keys
 
     draw.unregister()
 
@@ -511,7 +469,6 @@ def unregister():
     if client.instance:
         client.instance.exit()
         client.instance = None
-        del client_keys
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
