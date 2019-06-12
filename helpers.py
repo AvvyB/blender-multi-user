@@ -16,8 +16,6 @@ BPY_TYPES = {'Texture': 'textures','Material': 'materials', 'GreasePencil': 'gre
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 # UTILITY FUNCTIONS
-
-
 def revers(d):
     l = []
     for i in d:
@@ -134,6 +132,7 @@ def load_client(client=None, data=None):
     if client and data:
         if net_settings.enable_draw:
             draw.renderer.draw_client(data)
+
             draw.renderer.draw_client_selected_objects(data)
 
 

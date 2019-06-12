@@ -125,6 +125,14 @@ class DrawFactory(object):
             local_username = bpy.context.window_manager.session.username
 
             if name != local_username:
+                key_to_remove = []
+                for k in self.d3d_items.keys():
+                    if "{}/".format(client['id']) in k:
+                        key_to_remove.append(k)
+                print(key_to_remove)
+                for k in key_to_remove:
+                    del self.d3d_items[k]
+
                 if client['active_objects']:
                     for select_ob in client['active_objects']:
                         indices = (
@@ -154,13 +162,7 @@ class DrawFactory(object):
                         self.d3d_items["{}/{}".format(client['id'],
                                                     select_ob)] = (shader, batch, color)
                 else:
-                    key_to_remove = []
-                    for k in self.d3d_items.keys():
-                        if "{}/".format(client['id']) in k:
-                            key_to_remove.append(k)
-                            
-                    for k in key_to_remove:
-                        del self.d3d_items[k]
+                    pass
     
     def draw_client(self, client):
         if client:

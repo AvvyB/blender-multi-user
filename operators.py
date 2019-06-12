@@ -52,13 +52,11 @@ def upload_client_instance_position():
 
 def update_client_selected_object(context):
     session = bpy.context.window_manager.session
-
     username = bpy.context.window_manager.session.username
     client_key = "Client/{}".format(username)
     client_data = client.instance.get(client_key)
 
     selected_objects = helpers.get_selected_objects(context.scene)
-
     if len(selected_objects) > 0:
 
         for obj in selected_objects:
@@ -79,7 +77,6 @@ def init_datablocks():
             item.id = bpy.context.window_manager.session.username
             key = "{}/{}".format(datatype, item.name)
             client.instance.set(key)
-
 
 
 def default_tick():    
@@ -404,8 +401,7 @@ def toogle_update_dirty(context, update):
 def depsgraph_update(scene):
     ctx = bpy.context
 
-    if client.instance.state() == 3:
-       
+    if client.instance and client.instance.state() == 3:
         if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
             updates = ctx.view_layer.depsgraph.updates
             username = ctx.window_manager.session.username

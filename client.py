@@ -484,3 +484,5 @@ def watchdog_worker(serial_feed, interval, stop_event):
         time.sleep(interval)
 
     logger.info("watchdog thread stopped")
+
+
