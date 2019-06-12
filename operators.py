@@ -5,6 +5,7 @@ import random
 import string
 import subprocess
 import time
+import queue
 from operator import itemgetter
 
 
@@ -21,7 +22,19 @@ logger = logging.getLogger(__name__)
 
 server = None
 context = None
+execution_queue = queue.Queue()
 
+# This function can savely be called in another thread.
+# The function will be executed when the timer runs the next time.
+def run_in_main_thread(function,args):
+    execution_queue.put(function)
+
+def execute_queued_functions():
+    while not execution_queue.empty():
+        function, args = execution_queue.get()
+        logger.info(args[0])
+        function(args[0],args[1])
+    return .1
 
 def clean_scene(elements=helpers.BPY_TYPES.keys()):
     for datablock in elements:
@@ -88,12 +101,13 @@ def default_tick():
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(default_tick)
-    
+    bpy.app.timers.register(execute_queued_functions)
 
 def unregister_ticks():
     # REGISTER Updaters
     try:
         bpy.app.timers.unregister(default_tick)
+        bpy.app.timers.unregister(execute_queued_functions)
     except:
         pass
     
@@ -109,6 +123,7 @@ class SessionJoinOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        global execution_queue
         net_settings = context.window_manager.session
         # Scene setup
         if net_settings.clear_scene:
@@ -124,9 +139,10 @@ class SessionJoinOperator(bpy.types.Operator):
         if len(net_settings.ip) < 1:
             net_settings.ip = "127.0.0.1"
 
-        client.instance = client.Client()
+        client.instance = client.Client(execution_queue)
         client.instance.connect(net_settings.username,
-                                net_settings.ip, net_settings.port)
+                                net_settings.ip,
+                                net_settings.port)
 
         # net_settings.is_running = True
         # bpy.ops.session.refresh()

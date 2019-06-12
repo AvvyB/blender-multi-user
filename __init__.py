@@ -87,7 +87,7 @@ class SessionProps(bpy.types.PropertyGroup):
     is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
     load_data: bpy.props.BoolProperty(name="load_data", default=True)
     init_scene: bpy.props.BoolProperty(name="load_data", default=True)
-    clear_scene: bpy.props.BoolProperty(name="clear_scene", default=True)
+    clear_scene: bpy.props.BoolProperty(name="clear_scene", default=False)
     update_frequency: bpy.props.FloatProperty(
         name="update_frequency", default=0.008)
     active_object: bpy.props.PointerProperty(

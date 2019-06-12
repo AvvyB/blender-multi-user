@@ -57,18 +57,19 @@ class Client(object):
     store = None
     active_tasks = None
 
-    def __init__(self):
+    def __init__(self, executor):
         self.ctx = zmq.Context()
         self.pipe, peer = zpipe(self.ctx)
         self.store = {}
         self.serial_product = queue.Queue()
         self.serial_feed = queue.Queue()
         self.stop_event = threading.Event()
+        self.external_tasks = executor
 
         # Net agent
         self.net_agent = threading.Thread(
             target=net_worker,
-            args=(self.ctx, self.store, peer, self.serial_product, self.serial_feed, self.stop_event), name="net-agent")
+            args=(self.ctx, self.store, peer, self.serial_product, self.serial_feed, self.stop_event,self.external_tasks), name="net-agent")
         self.net_agent.daemon = True
         self.net_agent.start()
 
@@ -351,12 +352,12 @@ class ClientAgent(object):
             self.pipe.send(umsgpack.packb(self.state.value))
 
 
-def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event):
+def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event,external_executor):
     agent = ClientAgent(ctx, store, pipe)
     server = None
     net_feed = serial_product
     net_product = serial_feed
-
+    external_executor = external_executor
     while not stop_event.is_set():
         poller = zmq.Poller()
         poller.register(agent.pipe, zmq.POLLIN)
@@ -407,6 +408,7 @@ def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event):
                     logger.debug("snapshot complete")
                 else:
                     net_product.put(('LOAD', msg.key, msg.body))
+                    
                     # helpers.load(msg.key, msg.body)
                     msg.store(agent.property_map)
                     logger.debug("snapshot from {} stored".format(msg.id))
@@ -416,7 +418,11 @@ def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event):
                     # with lock:
                     #     helpers.load(msg.key, msg.body)
                     msg.store(agent.property_map)
-                    net_product.put(('LOAD', msg.key, msg.body))
+                    # net_product.put(('LOAD', msg.key, msg.body))
+                    params = []
+                    params.append(msg.key)
+                    params.append(msg.body)
+                    external_executor.put((helpers.load,params))
                 else:
                     logger.debug("{} nothing to do".format(agent.id))
 

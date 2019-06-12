@@ -129,7 +129,7 @@ class DrawFactory(object):
                 for k in self.d3d_items.keys():
                     if "{}/".format(client['id']) in k:
                         key_to_remove.append(k)
-                print(key_to_remove)
+
                 for k in key_to_remove:
                     del self.d3d_items[k]
 
