@@ -220,7 +220,6 @@ def load_mesh(target=None, data=None, create=False):
 
         material_to_load = []
         material_to_load = revers(data["materials"])
-
         target.materials.clear()
         # SLots
         i = 0
@@ -265,11 +264,11 @@ def load_object(target=None, data=None, create=False):
 
         client = bpy.context.window_manager.session.username
 
-        if target.id == client:
+        if target.id == client or target.id == "Common":
             target.hide_select = False
         else:
             target.hide_select = True
-
+    
     except Exception as e:
         logger.error("Object {} loading error: {} ".format(data["name"], e))
 
@@ -342,7 +341,7 @@ def load_collection(target=None, data=None, create=False):
 
         client = bpy.context.window_manager.session.username
 
-        if target.id == client:
+        if target.id == client or target.id == "Common":
             target.hide_select = False
         else:
             target.hide_select = True

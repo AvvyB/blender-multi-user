@@ -28,14 +28,15 @@ def module_can_be_imported(name):
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
-    from . import operators
+    from . import client
     
     items = [("Common", "Common", "")]
 
     username = bpy.context.window_manager.session.username
 
-    if operators.client_keys:
-        for k in operators.client_keys:
+    if client.instance:
+        client_keys = client.instance.list()
+        for k in client_keys:
             if 'Client' in k[0]:
                 name = k[1]
 

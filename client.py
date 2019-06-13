@@ -10,6 +10,7 @@ import time
 from enum import Enum
 from random import randint
 import zmq
+import json
 
 from . import helpers, message
 from .libs import dump_anything, umsgpack
@@ -204,6 +205,12 @@ class Client(object):
         # else:
         #     return None
 
+    # SAVING FUNCTIONS
+    def dump(self, filepath):
+        with open('result.json',"w") as fp:
+            for key, value in self.store.items():
+                line = json.dumps(value.body)
+                fp.write(line)
 
 class Server(object):
     address = None          # Server address

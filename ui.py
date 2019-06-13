@@ -8,11 +8,11 @@ ICONS = {'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', '
                   'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA','AreaLight':'LIGHT_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'GreasePencil': 'GREASEPENCIL'}
 
 class SESSION_PT_settings(bpy.types.Panel):
-    bl_label = "NET settings"
-    bl_idname = "SCENE_PT_SessionSettings"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "scene"
+    bl_idname = "MULTIUSER_SETTINGS_PT_panel"
+    bl_label = "Network"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
 
     def draw(self, context):
         layout = self.layout
@@ -79,6 +79,10 @@ class SESSION_PT_settings(bpy.types.Panel):
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
+                    row = layout.row(align=True)
+
+                    row.operator("session.dump", icon='QUIT', text="Dump")
+                    row.operator("session.dump", icon='QUIT', text="Load")
                     row = layout.row()
 
                     box = row.box()
@@ -99,12 +103,11 @@ class SESSION_PT_settings(bpy.types.Panel):
 
 
 class SESSION_PT_user(bpy.types.Panel):
-    bl_label = "NET users"
-    bl_idname = "SCENE_PT_SessionUsers"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "scene"
-
+    bl_idname = "MULTIUSER_USER_PT_panel"
+    bl_label = "Users online"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
     @classmethod
     def poll(cls, context):
         return  client.instance and client.instance.state() == 3
@@ -145,11 +148,11 @@ def get_client_key(item):
     return item[0]
 
 class SESSION_PT_properties(bpy.types.Panel):
-    bl_label = "NET properties"
-    bl_idname = "SCENE_PT_SessionProps"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "scene"
+    bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
+    bl_label = "Replicated properties"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
 
     @classmethod
     def poll(cls, context):

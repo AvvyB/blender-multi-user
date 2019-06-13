@@ -10,6 +10,7 @@ from operator import itemgetter
 
 
 import bpy
+from bpy_extras.io_utils import ExportHelper
 import mathutils
 from pathlib import Path
 
@@ -26,23 +27,26 @@ execution_queue = queue.Queue()
 
 # This function can savely be called in another thread.
 # The function will be executed when the timer runs the next time.
-def run_in_main_thread(function,args):
+
+
+def run_in_main_thread(function, args):
     execution_queue.put(function)
+
 
 def execute_queued_functions():
     while not execution_queue.empty():
         function, args = execution_queue.get()
-        logger.info(args[0])
-        function(args[0],args[1])
+        function(args[0], args[1])
     return .1
+
 
 def clean_scene(elements=helpers.BPY_TYPES.keys()):
     for datablock in elements:
-        datablock_ref =getattr(bpy.data, helpers.BPY_TYPES[datablock])
+        datablock_ref = getattr(bpy.data, helpers.BPY_TYPES[datablock])
         for item in datablock_ref:
             try:
                 datablock_ref.remove(item)
-            #Catch last scene remove
+            # Catch last scene remove
             except RuntimeError:
                 pass
 
@@ -53,7 +57,6 @@ def upload_client_instance_position():
 
         key = "Client/{}".format(username)
 
-        
         current_coords = draw.get_client_view_rect()
         client_list = client.instance.get(key)
 
@@ -61,7 +64,7 @@ def upload_client_instance_position():
             if current_coords != client_list[0][1]['location']:
                 client_list[0][1]['location'] = current_coords
                 client.instance.set(key, client_list[0][1])
-        
+
 
 def update_client_selected_object(context):
     session = bpy.context.window_manager.session
@@ -70,7 +73,7 @@ def update_client_selected_object(context):
     client_data = client.instance.get(client_key)
 
     selected_objects = helpers.get_selected_objects(context.scene)
-    if len(selected_objects) > 0:
+    if len(selected_objects) > 0 and len(client_data) > 0:
 
         for obj in selected_objects:
             # if obj not in client_data[0][1]['active_objects']:
@@ -83,7 +86,9 @@ def update_client_selected_object(context):
         client_data[0][1]['active_objects'] = []
         client.instance.set(client_key, client_data[0][1])
 
-#TODO: cleanup
+# TODO: cleanup
+
+
 def init_datablocks():
     for datatype in helpers.BPY_TYPES.keys():
         for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
@@ -92,16 +97,17 @@ def init_datablocks():
             client.instance.set(key)
 
 
-def default_tick():    
+def default_tick():
     upload_client_instance_position()
-    
-    return .2
+
+    return .1
 
 
 def register_ticks():
     # REGISTER Updaters
     bpy.app.timers.register(default_tick)
     bpy.app.timers.register(execute_queued_functions)
+
 
 def unregister_ticks():
     # REGISTER Updaters
@@ -110,8 +116,10 @@ def unregister_ticks():
         bpy.app.timers.unregister(execute_queued_functions)
     except:
         pass
-    
+
 # OPERATORS
+
+
 class SessionJoinOperator(bpy.types.Operator):
     bl_idname = "session.join"
     bl_label = "join"
@@ -229,13 +237,14 @@ class SessionHostOperator(bpy.types.Operator):
 
         net_settings = context.window_manager.session
 
-        script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"server.py")
+        script_dir = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), "server.py")
 
         python_path = Path(bpy.app.binary_path_python)
         cwd_for_subprocesses = python_path.parent
 
         server = subprocess.Popen(
-            [str(python_path),script_dir],shell=False, stdout=subprocess.PIPE)
+            [str(python_path), script_dir], shell=False, stdout=subprocess.PIPE)
 
         bpy.ops.session.join()
 
@@ -276,7 +285,6 @@ class SessionStopOperator(bpy.types.Operator):
 
             # client_instance = None
             net_settings.is_admin = False
-
 
             unregister_ticks()
             draw.renderer.stop()
@@ -319,9 +327,11 @@ class SessionPropertyRightOperator(bpy.types.Operator):
             val[0][1]['id'] = net_settings.clients
 
             client.instance.set(key=self.key, value=val[0][1], override=True)
-
-            print("Updating {} rights to {}".format(
-                self.key, net_settings.clients))
+            item = helpers.resolve_bpy_path(self.key)
+            if item:
+                item.id = net_settings.clients
+                logger.info("Updating {} rights to {}".format(
+                    self.key, net_settings.clients))
         else:
             print("Not admin")
 
@@ -343,7 +353,8 @@ class SessionSnapUserOperator(bpy.types.Operator):
     def execute(self, context):
         area, region, rv3d = draw.view3d_find()
 
-        target_client = client.instance.get("Client/{}".format(self.target_client))
+        target_client = client.instance.get(
+            "Client/{}".format(self.target_client))
         if target_client:
             rv3d.view_location = target_client[0][1]['location'][0]
             rv3d.view_distance = 30.0
@@ -355,6 +366,34 @@ class SessionSnapUserOperator(bpy.types.Operator):
         pass
 
 
+class SessionDumpDatabase(bpy.types.Operator, ExportHelper):
+    bl_idname = "session.dump"
+    bl_label = "dump json data"
+    bl_description = "dump session stored data to a json file"
+    bl_options = {"REGISTER"}
+
+    # ExportHelper mixin class uses this
+    filename_ext = ".json"
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.json",
+        options={'HIDDEN'},
+        maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        print(self.filepath)
+        if client.instance and client.instance.state() == 3:
+            client.instance.dump(self.filepath)
+            return {"FINISHED"}
+
+        return {"CANCELLED"}
+
+        pass
 # TODO: Rename to match official blender convention
 classes = (
     SessionJoinOperator,
@@ -365,6 +404,7 @@ classes = (
     SessionPropertyRemoveOperator,
     SessionSnapUserOperator,
     SessionPropertyRightOperator,
+    SessionDumpDatabase,
 )
 
 
@@ -372,7 +412,7 @@ def is_replicated(update):
     object_type = update.id.bl_rna.__class__.__name__
     object_name = update.id.name
 
-    #Master collection special cae
+    # Master collection special cae
     if  update.id.name == 'Master Collection':
         object_type = 'Scene' 
         object_name = bpy.context.scene.name
@@ -432,7 +472,7 @@ def depsgraph_update(scene):
                 else:
                     item = get_datablock_from_update(update,ctx)
                     
-                    #get parent authority
+                    # get parent authority
                     if hasattr(item,"id"):
                         parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
 
