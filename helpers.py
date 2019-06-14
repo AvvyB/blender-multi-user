@@ -191,7 +191,8 @@ def load_mesh(target=None, data=None, create=False):
         mesh_buffer = bmesh.new()
 
         for i in data["vertices"]:
-            mesh_buffer.verts.new(data["vertices"][i]["co"])
+           v =  mesh_buffer.verts.new(data["vertices"][i]["co"])
+           v.normal = data["vertices"][i]["normal"]
 
         mesh_buffer.verts.ensure_lookup_table()
 
