@@ -79,7 +79,7 @@ class SessionProps(bpy.types.PropertyGroup):
     port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',
-        default=5555)
+        default=5554)
 
     add_property_depth: bpy.props.IntProperty(
         name="add_property_depth",

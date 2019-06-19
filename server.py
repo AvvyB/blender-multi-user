@@ -32,19 +32,19 @@ class ServerAgent():
         # Update all clients
         self.pub_sock = self.context.socket(zmq.PUB)
         self.pub_sock.setsockopt(zmq.SNDHWM, 60)
-        self.pub_sock.bind("tcp://*:5556")
+        self.pub_sock.bind("tcp://*:5555")
         time.sleep(0.2)
 
         # Update request
         self.request_sock = self.context.socket(zmq.ROUTER)
         self.request_sock.setsockopt(zmq.IDENTITY, b'SERVER')
         self.request_sock.setsockopt(zmq.RCVHWM, 60)
-        self.request_sock.bind("tcp://*:5555")
+        self.request_sock.bind("tcp://*:5554")
 
         # Update collector
         self.collector_sock = self.context.socket(zmq.PULL)
         self.collector_sock.setsockopt(zmq.RCVHWM, 60)
-        self.collector_sock.bind("tcp://*:5557")
+        self.collector_sock.bind("tcp://*:5556")
 
         # poller for socket aggregation
         self.poller = zmq.Poller()
