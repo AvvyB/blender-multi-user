@@ -16,11 +16,13 @@ SUBPROCESS_DIR = None
 
 
 def load_config():
-    logger.info("loading config")
-    with open(CONFIG, 'r') as config_file:
-        return yaml.safe_load(config_file)
+    try:
+        with open(CONFIG, 'r') as config_file:
+            return yaml.safe_load(config_file)
+    except FileNotFoundError:
+        logger.info("no config")
 
-    return None
+    return {}
 
 def save_config(config):
     logger.info("saving config")

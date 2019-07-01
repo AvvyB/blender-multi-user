@@ -70,7 +70,7 @@ def save_session_config(self,context):
         config["port"] = self.port 
         config["start_empty"] = self.start_empty 
         config["enable_presence"] = self.enable_presence  
-
+        config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
         environment.save_config(config)
 
 class SessionProps(bpy.types.PropertyGroup):
@@ -91,7 +91,6 @@ class SessionProps(bpy.types.PropertyGroup):
         default=5555,
         update=save_session_config
         )
-
     add_property_depth: bpy.props.IntProperty(
         name="add_property_depth",
         default=1
@@ -100,7 +99,11 @@ class SessionProps(bpy.types.PropertyGroup):
     is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
     load_data: bpy.props.BoolProperty(name="load_data", default=True)
     init_scene: bpy.props.BoolProperty(name="load_data", default=True)
-    start_empty: bpy.props.BoolProperty(name="start_empty", default=False)
+    start_empty: bpy.props.BoolProperty(
+        name="start_empty",
+        default=False,
+        update=save_session_config
+        )
     update_frequency: bpy.props.FloatProperty(
         name="update_frequency",
         default=0.008
@@ -139,6 +142,7 @@ class SessionProps(bpy.types.PropertyGroup):
             self.port = config["port"]
             self.start_empty = config["start_empty"]
             self.enable_presence = config["enable_presence"]
+            self.client_color =  config["client_color"]
         else:
             logger.error("Fail to read config")
 
