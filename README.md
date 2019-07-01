@@ -1,8 +1,10 @@
 # Realtime Collaborative Framework experiments
-
+> Blender multiuser addon 
 
 ## Dependencies
 
-| Dependency | Version | Needed |
-| ---------- | :-----: | -----: |
-| ZeroMQ     |   3.2   |    yes |
+| Dependencies | Version | Needed |
+|--------------|:-------:|-------:|
+| ZeroMQ       | latest  |    yes |
+| umsgpack     | latest  |    yes |
+| PyYAML       | latest  |    yes |
