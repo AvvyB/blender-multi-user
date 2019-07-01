@@ -16,7 +16,7 @@ class ServerAgent():
     def __init__(self, context=zmq.Context.instance(), id="admin"):
         self.context = context
         self.config = environment.load_config()
-        self.port = int(self.config['port'])
+        self.port = int(self.config['port']) if "port" in self.config.keys() else 5555
         self.pub_sock = None
         self.request_sock = None
         self.collector_sock = None
