@@ -4,3 +4,4 @@ __pycache__/
 *$py.classs
 *.blend1
 .vscode
+cache

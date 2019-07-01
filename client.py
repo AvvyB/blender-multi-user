@@ -23,7 +23,7 @@ DUMP_AGENTS_NUMBER = 1
 
 lock = threading.Lock()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 instance = None 
 
 
@@ -52,6 +52,7 @@ def zpipe(ctx):
 
 
 class Client(object):
+    
     ctx = None
     pipe = None
     net_agent = None
@@ -193,17 +194,6 @@ class Client(object):
         else:
             return 2 #State.SYNCING
         
-        # # return self.state
-        # if not self.is_busy():
-        #     self.pipe.send_multipart([b"STATE"])
-        #     try:
-        #         reply = self.pipe.recv_multipart()
-        #     except KeyboardInterrupt:
-        #         return
-        #     else:
-        #         return umsgpack.unpackb(reply[0])
-        # else:
-        #     return None
 
     # SAVING FUNCTIONS
     def dump(self, filepath):

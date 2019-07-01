@@ -14,7 +14,7 @@ BPY_TYPES = {'Texture': 'textures','Material': 'materials', 'GreasePencil': 'gre
                   'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 # UTILITY FUNCTIONS
 def revers(d):
     l = []

@@ -1,15 +1,7 @@
-from pathlib import Path
-import addon_utils
-import random
-import string
-import subprocess
-import sys
-import os
-import bpy
 
 bl_info = {
-    "name": "Multi-User ",
-    "author": "CUBE",
+    "name": "Multi-User",
+    "author": "CUBE CREATIVE",
     "description": "",
     "blender": (2, 80, 0),
     "location": "",
@@ -18,13 +10,21 @@ bl_info = {
 }
 
 
+import addon_utils
+import random
+import string
+import sys
+import os
+import bpy
+from . import environment 
 
-def module_can_be_imported(name):
-    try:
-        __import__(name)
-        return True
-    except ModuleNotFoundError:
-        return False
+
+DEPENDENCIES = {
+    "zmq",
+    "umsgpack",
+    "PyYAML"
+}
+
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
@@ -59,12 +59,6 @@ def randomColor():
     v = random.random()
     b = random.random()
     return [r, v, b]
-
-
-def get_package_install_directory():
-    for path in sys.path:
-        if os.path.basename(path) in ("dist-packages", "site-packages"):
-            return path
 
 
 class SessionProps(bpy.types.PropertyGroup):
@@ -120,29 +114,8 @@ classes = {
 }
 
 
-python_path = Path(bpy.app.binary_path_python)
-cwd_for_subprocesses = python_path.parent
-target = get_package_install_directory()
-
-
-def install_pip():
-    # pip can not necessarily be imported into Blender after this
-    get_pip_path = Path(__file__).parent / "libs" / "get-pip.py"
-    subprocess.run([str(python_path), str(get_pip_path)], cwd=cwd_for_subprocesses)
-
-
-def install_package(name):
-    target = get_package_install_directory()
-    subprocess.run([str(python_path), "-m", "pip", "install", name, '--target', target], cwd=cwd_for_subprocesses)
-
-
 def register():
-    if not module_can_be_imported("pip"):
-        install_pip()
-       
-    if not module_can_be_imported("zmq"):
-        subprocess.run([str(python_path), "-m", "pip", "install",
-                        "zmq", '--target', target], cwd=cwd_for_subprocesses)
+    environment.setup(DEPENDENCIES)
 
     from . import operators
     from . import ui

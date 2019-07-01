@@ -9,7 +9,7 @@ except:
 import zmq
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 class Message(object):
     """
