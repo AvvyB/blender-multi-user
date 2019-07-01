@@ -1,4 +1,3 @@
-
 bl_info = {
     "name": "Multi-User",
     "author": "CUBE CREATIVE",

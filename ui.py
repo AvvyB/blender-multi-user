@@ -79,11 +79,10 @@ class SESSION_PT_settings(bpy.types.Panel):
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
-                    row = layout.row(align=True)
-
-                    row.operator("session.dump", icon='QUIT', text="Dump")
-                    row.operator("session.dump", icon='QUIT', text="Load")
-                    row = layout.row()
+                    # row = layout.row(align=True)
+                    # row.operator("session.dump", icon='QUIT', text="Dump")
+                    # row.operator("session.dump", icon='QUIT', text="Load")
+                    # row = layout.row()
 
                     box = row.box()
                     row = box.row()
@@ -143,6 +142,7 @@ class SESSION_PT_user(bpy.types.Panel):
             row.label(text="Empty")
 
         row = layout.row()
+
 
 def get_client_key(item):
     return item[0]

@@ -15,3 +15,12 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Chat mecanism ( Will come back after the complete modularity refactoring)
 - Unused files and sub-modules
+
+## [v0.0.5]
+### Added
+
+- queued communication between threads
+- various fixes
+- multithreaded archiecture
+- curve, gpencil support
+- rightmanagment
