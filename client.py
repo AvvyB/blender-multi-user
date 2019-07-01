@@ -12,7 +12,7 @@ from random import randint
 import zmq
 import json
 
-from . import helpers, message
+from . import environment, helpers, message
 from .libs import dump_anything, umsgpack
 
 CONNECT_TIMEOUT = 2
@@ -23,7 +23,7 @@ DUMP_AGENTS_NUMBER = 1
 
 lock = threading.Lock()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=environment)
 instance = None 
 
 
@@ -201,6 +201,7 @@ class Client(object):
             for key, value in self.store.items():
                 line = json.dumps(value.body)
                 fp.write(line)
+
 
 class Server(object):
     address = None          # Server address

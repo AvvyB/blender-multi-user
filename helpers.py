@@ -130,7 +130,7 @@ def load_client(client=None, data=None):
     net_settings = C.window_manager.session
 
     if client and data:
-        if net_settings.enable_draw:
+        if net_settings.enable_presence:
             draw.renderer.draw_client(data)
 
             draw.renderer.draw_client_selected_objects(data)

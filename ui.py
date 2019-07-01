@@ -9,10 +9,14 @@ ICONS = {'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', '
 
 class SESSION_PT_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
-    bl_label = "Network"
+    bl_label = "Settings"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
+
+    def draw_header(self, context):
+        self.layout.label(text="", icon='TOOL_SETTINGS')
+
 
     def draw(self, context):
         layout = self.layout
@@ -41,10 +45,10 @@ class SESSION_PT_settings(bpy.types.Panel):
                 
                 row = box.row()
                 row.label(text="draw overlay:")
-                row.prop(net_settings, "enable_draw", text="")
+                row.prop(net_settings, "enable_presence", text="")
                 row = box.row()
                 row.label(text="clear blend:")
-                row.prop(net_settings, "clear_scene", text="")
+                row.prop(net_settings, "start_empty", text="")
                 row = box.row()
             
                 row = box.row()
@@ -82,7 +86,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     # row = layout.row(align=True)
                     # row.operator("session.dump", icon='QUIT', text="Dump")
                     # row.operator("session.dump", icon='QUIT', text="Load")
-                    # row = layout.row()
+                    row = layout.row()
 
                     box = row.box()
                     row = box.row()
@@ -157,6 +161,9 @@ class SESSION_PT_properties(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return  client.instance and client.instance.state() == 3
+
+    def draw_header(self, context):
+        self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
 
     def draw(self, context):
         layout = self.layout

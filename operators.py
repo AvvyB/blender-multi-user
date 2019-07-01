@@ -88,7 +88,6 @@ def update_client_selected_object(context):
 
 # TODO: cleanup
 
-
 def init_datablocks():
     for datatype in helpers.BPY_TYPES.keys():
         for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
@@ -134,7 +133,7 @@ class SessionJoinOperator(bpy.types.Operator):
         global execution_queue
         net_settings = context.window_manager.session
         # Scene setup
-        if net_settings.clear_scene:
+        if net_settings.start_empty:
             clean_scene()
 
         # Session setup
@@ -157,7 +156,7 @@ class SessionJoinOperator(bpy.types.Operator):
         register_ticks()
 
         # Launch drawing module
-        if net_settings.enable_draw:
+        if net_settings.enable_presence:
             draw.renderer.run()
 
         return {"FINISHED"}
@@ -394,7 +393,22 @@ class SessionDumpDatabase(bpy.types.Operator, ExportHelper):
         return {"CANCELLED"}
 
         pass
-# TODO: Rename to match official blender convention
+
+
+class SessionSaveConfig(bpy.types.Operator):
+    bl_idname = "session.save"
+    bl_label = "Save session configuration"
+    bl_description = "Save session configuration"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        context.window_manager.session.save()
+
+
 classes = (
     SessionJoinOperator,
     SessionPropertyAddOperator,
@@ -405,6 +419,7 @@ classes = (
     SessionSnapUserOperator,
     SessionPropertyRightOperator,
     SessionDumpDatabase,
+    SessionSaveConfig,
 )
 
 

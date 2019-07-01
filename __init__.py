@@ -10,6 +10,7 @@ bl_info = {
 
 
 import addon_utils
+import logging
 import random
 import string
 import sys
@@ -24,6 +25,8 @@ DEPENDENCIES = {
     "PyYAML"
 }
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
@@ -59,31 +62,49 @@ def randomColor():
     b = random.random()
     return [r, v, b]
 
+def save_session_config(self,context):
+        config = environment.load_config()
+
+        config["username"] = self.username 
+        config["ip"] = self.ip
+        config["port"] = self.port 
+        config["start_empty"] = self.start_empty 
+        config["enable_presence"] = self.enable_presence  
+
+        environment.save_config(config)
 
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
-        default="user_{}".format(randomStringDigits())
+        default="user_{}".format(randomStringDigits()),
+        update=save_session_config
     )
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
-        default="127.0.0.1")
+        default="127.0.0.1",
+        update=save_session_config
+        )
     port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',
-        default=5554)
+        default=5555,
+        update=save_session_config
+        )
 
     add_property_depth: bpy.props.IntProperty(
         name="add_property_depth",
-        default=1)
+        default=1
+        )
     buffer: bpy.props.StringProperty(name="None")
     is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
     load_data: bpy.props.BoolProperty(name="load_data", default=True)
     init_scene: bpy.props.BoolProperty(name="load_data", default=True)
-    clear_scene: bpy.props.BoolProperty(name="clear_scene", default=False)
+    start_empty: bpy.props.BoolProperty(name="start_empty", default=False)
     update_frequency: bpy.props.FloatProperty(
-        name="update_frequency", default=0.008)
+        name="update_frequency",
+        default=0.008
+        )
     active_object: bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
     session_mode: bpy.props.EnumProperty(
@@ -102,11 +123,26 @@ class SessionProps(bpy.types.PropertyGroup):
         description="client enum",
         items=client_list_callback
     )
-    enable_draw: bpy.props.BoolProperty(
-        name="enable_draw",
+    enable_presence: bpy.props.BoolProperty(
+        name="enable_presence",
         description='Enable overlay drawing module',
-        default=True)
+        default=True,
+        update=save_session_config
+        )
 
+    def load(self):
+        config = environment.load_config()
+        logger.info(config)
+        if config:
+            self.username = config["username"]
+            self.ip = config["ip"]
+            self.port = config["port"]
+            self.start_empty = config["start_empty"]
+            self.enable_presence = config["enable_presence"]
+        else:
+            logger.error("Fail to read config")
+
+    
 
 classes = {
     SessionProps,
@@ -114,7 +150,7 @@ classes = {
 
 
 def register():
-    environment.setup(DEPENDENCIES)
+    environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
     from . import operators
     from . import ui
@@ -126,6 +162,8 @@ def register():
     bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
+
+    bpy.context.window_manager.session.load()
 
     operators.register()
     ui.register()

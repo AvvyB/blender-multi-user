@@ -1,14 +1,32 @@
-import sys
-import subprocess
 import os
+import subprocess
+import sys
 from pathlib import Path
-import bpy
+import logging
+import yaml
 
-CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),"config")
-APP_CONFIG =  os.path.join(CONFIG_DIR,"config.yaml")
-THIRD_PARTY =  os.path.join(os.path.dirname(os.path.abspath(__file__)),"libs")
-PYTHON_PATH = Path(bpy.app.binary_path_python)
-SUBPROCESS_DIR = PYTHON_PATH.parent
+logger = logging.getLogger(__name__)
+
+CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
+CONFIG = os.path.join(CONFIG_DIR, "app.yaml")
+
+THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
+PYTHON_PATH = None
+SUBPROCESS_DIR = None
+
+
+def load_config():
+    logger.info("loading config")
+    with open(CONFIG, 'r') as config_file:
+        return yaml.safe_load(config_file)
+
+    return None
+
+def save_config(config):
+    logger.info("saving config")
+    with open(CONFIG, 'w') as outfile:
+        yaml.dump(config, outfile, default_flow_style=False)
+
 
 def module_can_be_imported(name):
     try:
@@ -32,11 +50,17 @@ def install_pip():
 
 def install_package(name):
     target = get_package_install_directory()
-    
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install",
-                        name, '--target', target], cwd=SUBPROCESS_DIR)
 
-def setup(dependencies):
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install",
+                    name, '--target', target], cwd=SUBPROCESS_DIR)
+
+
+def setup(dependencies, python_path):
+    global PYTHON_PATH, SUBPROCESS_DIR
+
+    PYTHON_PATH = Path(python_path)
+    SUBPROCESS_DIR = PYTHON_PATH.parent
+
     if not module_can_be_imported("pip"):
         install_pip()
 

@@ -1,5 +1,6 @@
 import logging
 import time 
+import environment
 from operator import itemgetter
 
 
@@ -14,7 +15,8 @@ SUPPORTED_TYPES = ['Client','Curve','Material','Texture', 'Light', 'Camera', 'Me
 class ServerAgent():
     def __init__(self, context=zmq.Context.instance(), id="admin"):
         self.context = context
-
+        self.config = environment.load_config()
+        self.port = int(self.config['port'])
         self.pub_sock = None
         self.request_sock = None
         self.collector_sock = None
@@ -32,19 +34,19 @@ class ServerAgent():
         # Update all clients
         self.pub_sock = self.context.socket(zmq.PUB)
         self.pub_sock.setsockopt(zmq.SNDHWM, 60)
-        self.pub_sock.bind("tcp://*:5555")
+        self.pub_sock.bind("tcp://*:"+str(self.port+1))
         time.sleep(0.2)
 
         # Update request
         self.request_sock = self.context.socket(zmq.ROUTER)
         self.request_sock.setsockopt(zmq.IDENTITY, b'SERVER')
         self.request_sock.setsockopt(zmq.RCVHWM, 60)
-        self.request_sock.bind("tcp://*:5554")
+        self.request_sock.bind("tcp://*:"+str(self.port))
 
         # Update collector
         self.collector_sock = self.context.socket(zmq.PULL)
         self.collector_sock.setsockopt(zmq.RCVHWM, 60)
-        self.collector_sock.bind("tcp://*:5556")
+        self.collector_sock.bind("tcp://*:"+str(self.port+2))
 
         # poller for socket aggregation
         self.poller = zmq.Poller()
