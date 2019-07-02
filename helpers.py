@@ -10,7 +10,7 @@ from . import draw
 from .libs import dump_anything
 
 # TODO: replace hardcoded values...
-BPY_TYPES = {'Texture': 'textures','Material': 'materials', 'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 
+BPY_TYPES = {'Image':'images', 'Texture': 'textures','Material': 'materials', 'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 
                   'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
 
 logger = logging.getLogger(__name__)
@@ -135,6 +135,8 @@ def load_client(client=None, data=None):
 
             draw.renderer.draw_client_selected_objects(data)
 
+def load_image(target=None, data=None):
+    pass
 
 def load_armature(target=None, data=None, create=False):
     file = "cache_{}.json".format(data['name'])
@@ -537,7 +539,9 @@ def dump(key):
     target_type = key.split('/')[0]
     data = None
 
-    if target_type == 'Material':
+    if target_type == 'Image':
+        data = dump_datablock(target, 1)
+    elif target_type == 'Material':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(target, ['node_tree'], 7, data)
     elif target_type == 'GreasePencil':

@@ -132,6 +132,9 @@ class SessionJoinOperator(bpy.types.Operator):
     def execute(self, context):
         global execution_queue
         net_settings = context.window_manager.session
+        # save config
+        net_settings.save(context)
+        
         # Scene setup
         if net_settings.start_empty:
             clean_scene()

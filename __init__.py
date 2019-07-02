@@ -76,9 +76,9 @@ def save_session_config(self,context):
         
         rep_type = {}
         for bloc in self.supported_datablock:
-            rep_type[bloc.type_name] = bloc.is_replicated
+            config["replicated_types"][bloc.type_name] = bloc.is_replicated
 
-        config["replicated_types"] = rep_type
+        # config["replicated_types"] = rep_type
         
         environment.save_config(config)
 
@@ -148,7 +148,8 @@ class SessionProps(bpy.types.PropertyGroup):
         update=save_session_config
         )
     supported_datablock: bpy.props.CollectionProperty(
-        type=ReplicatedDatablock
+        type=ReplicatedDatablock,
+       
         )
 
     def load(self):
@@ -166,11 +167,28 @@ class SessionProps(bpy.types.PropertyGroup):
         
         if len(self.supported_datablock)>0:
             self.supported_datablock.clear()
-        for datablock, enabled in config["replicated_types"].items():
+        for datablock,enabled in config["replicated_types"].items():
             rep_value = self.supported_datablock.add()
             rep_value.type_name = datablock
             rep_value.is_replicated = enabled
+
+    def save(self,context):
+        config = environment.load_config()
+
+        config["username"] = self.username
+        config["ip"] = self.ip
+        config["port"] = self.port
+        config["start_empty"] = self.start_empty
+        config["enable_presence"] = self.enable_presence
+        config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
         
+        rep_type = {}
+        for bloc in self.supported_datablock:
+            print(bloc.type_name)
+            config["replicated_types"][bloc.type_name] = bloc.is_replicated
+
+        
+        environment.save_config(config)    
 
 
         
@@ -198,7 +216,7 @@ def register():
         type=SessionProps)
 
     bpy.context.window_manager.session.load()
-
+    save_session_config(bpy.context.window_manager.session,bpy.context)
     operators.register()
     ui.register()
 
