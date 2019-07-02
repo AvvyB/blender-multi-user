@@ -22,8 +22,9 @@ from . import environment
 DEPENDENCIES = {
     "zmq",
     "umsgpack",
-    "PyYAML"
+    "yaml"
 }
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -75,7 +76,7 @@ def save_session_config(self,context):
         
         rep_type = {}
         for bloc in self.supported_datablock:
-            rep_type[bloc.id] = bloc.is_replicated
+            rep_type[bloc.type_name] = bloc.is_replicated
 
         config["replicated_types"] = rep_type
         
@@ -83,8 +84,8 @@ def save_session_config(self,context):
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     '''name = StringProperty() '''
-    id = bpy.props.StringProperty()
-    is_replicated = bpy.props.BoolProperty()
+    type_name: bpy.props.StringProperty()
+    is_replicated: bpy.props.BoolProperty()
 
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
@@ -159,13 +160,15 @@ class SessionProps(bpy.types.PropertyGroup):
             self.port = config["port"]
             self.start_empty = config["start_empty"]
             self.enable_presence = config["enable_presence"]
-            self.client_color =  config["client_color"]
+            self.client_color = config["client_color"]
         else:
             logger.error("Fail to read user config")
         
+        if len(self.supported_datablock)>0:
+            self.supported_datablock.clear()
         for datablock, enabled in config["replicated_types"].items():
             rep_value = self.supported_datablock.add()
-            rep_value.id = datablock
+            rep_value.type_name = datablock
             rep_value.is_replicated = enabled
         
 
@@ -173,11 +176,11 @@ class SessionProps(bpy.types.PropertyGroup):
         
     
 
-classes = {
+classes = (
     ReplicatedDatablock,
-    SessionProps,
+    SessionProps
 
-}
+)
 
 
 def register():
@@ -211,5 +214,5 @@ def unregister():
     del bpy.types.ID.id
     del bpy.types.ID.is_dirty
 
-    for cls in classes:
+    for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

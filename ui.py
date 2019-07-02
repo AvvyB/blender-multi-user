@@ -5,9 +5,10 @@ from . import operators
 
 
 ICONS = {'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
-                  'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA','AreaLight':'LIGHT_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION_DATA', 'Armature': 'ARMATURE_DATA', 'GreasePencil': 'GREASEPENCIL'}
+                  'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA','AreaLight':'LIGHT_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION', 'Armature': 'ARMATURE_DATA', 'GreasePencil': 'GREASEPENCIL'}
 
 class SESSION_PT_settings(bpy.types.Panel):
+    """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
     bl_label = "Settings"
     bl_space_type = 'VIEW_3D'
@@ -28,6 +29,8 @@ class SESSION_PT_settings(bpy.types.Panel):
             row = layout.row()
             if not client.instance or (client.instance and client.instance.state() == 1):
                 row = layout.row()
+
+                # USER SETTINGS
                 box = row.box()
                 row = box.row()
                 row.label(text="USER", icon='TRIA_RIGHT')
@@ -38,6 +41,10 @@ class SESSION_PT_settings(bpy.types.Panel):
                 row.prop(window_manager.session, "client_color", text="color") 
                 row = box.row()
 
+                
+
+
+                # NETWORK SETTINGS
                 row = layout.row()
                 box = row.box()
                 row = box.row()
@@ -54,14 +61,13 @@ class SESSION_PT_settings(bpy.types.Panel):
                 row = box.row()
                 row.prop(net_settings, "session_mode", expand=True)
                 row = box.row()
-    
 
                 if window_manager.session.session_mode == 'HOST':
                     box = row.box()
                     row = box.row()
                     row.label(text="init scene:")
                     row.prop(net_settings, "init_scene", text="")
-                    row = layout.row()
+                    row = box.row()
                     row.operator("session.create", text="HOST")
                 else:
                     box = row.box()
@@ -75,8 +81,23 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.prop(net_settings, "load_data", text="")
                     
 
-                    row = layout.row()
+                    row = box.row()
                     row.operator("session.join", text="CONNECT")
+
+                # REPLICATION SETTINGS
+                row = layout.row()
+                box = row.box()
+                row = box.row()
+                row.label(text="REPLICATION", icon='TRIA_RIGHT')
+                row = box.row()    
+                
+                for item in window_manager.session.supported_datablock:
+                    row.label(text=item.type_name,icon=ICONS[item.type_name])
+                    row.prop(item, "is_replicated", text="") 
+                    row = box.row()
+
+
+                
 
             else:
                 if client.instance.state() ==  3:
