@@ -77,6 +77,8 @@ def load(key, value):
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
+    if target_type == 'Image':
+        load_object(target=target, data=value)
     elif target_type == 'Mesh':
         load_mesh(target=target, data=value,
                   create=True)
@@ -136,7 +138,19 @@ def load_client(client=None, data=None):
             draw.renderer.draw_client_selected_objects(data)
 
 def load_image(target=None, data=None):
-    pass
+    if not target:
+        image = bpy.data.image.new(
+            name=data['name'],
+            width=data['width'],
+            height=data['height'],
+            alpha=data['alpha'],
+            float_buffer=data['float_buffer']
+        )
+    else:
+        image = target
+    
+    dump_anything.load(target, data)
+        
 
 def load_armature(target=None, data=None, create=False):
     file = "cache_{}.json".format(data['name'])
@@ -540,7 +554,9 @@ def dump(key):
     data = None
 
     if target_type == 'Image':
-        data = dump_datablock(target, 1)
+        data = dump_datablock(target, 2)
+        data['pixels'] = dump_image(target)
+        print(data['name'])
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(target, ['node_tree'], 7, data)
@@ -619,6 +635,19 @@ def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
                 pass
 
         return data
+
+
+def dump_image(image):
+    pixels = []
+    for x in range(image.size[0]*image.size[1]):
+        px = [
+            image.pixels[x],
+            image.pixels[x+1],
+            image.pixels[x+2],
+            image.pixels[x+3]
+            ]
+        pixels.append(px)
+    return pixels
 
 
 def init_client(key=None):
