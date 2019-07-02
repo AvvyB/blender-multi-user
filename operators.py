@@ -250,7 +250,6 @@ class SessionHostOperator(bpy.types.Operator):
         if net_settings.init_scene:
             init_datablocks()
 
-        # client_instance.init()
         net_settings.is_admin = True
 
         return {"FINISHED"}

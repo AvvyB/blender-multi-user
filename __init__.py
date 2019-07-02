@@ -16,7 +16,7 @@ import string
 import sys
 import os
 import bpy
-from . import environment 
+from . import environment
 
 
 DEPENDENCIES = {
@@ -62,16 +62,29 @@ def randomColor():
     b = random.random()
     return [r, v, b]
 
+
 def save_session_config(self,context):
         config = environment.load_config()
 
-        config["username"] = self.username 
+        config["username"] = self.username
         config["ip"] = self.ip
-        config["port"] = self.port 
-        config["start_empty"] = self.start_empty 
-        config["enable_presence"] = self.enable_presence  
+        config["port"] = self.port
+        config["start_empty"] = self.start_empty
+        config["enable_presence"] = self.enable_presence
         config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
+        
+        rep_type = {}
+        for bloc in self.supported_datablock:
+            rep_type[bloc.id] = bloc.is_replicated
+
+        config["replicated_types"] = rep_type
+        
         environment.save_config(config)
+
+class ReplicatedDatablock(bpy.types.PropertyGroup):
+    '''name = StringProperty() '''
+    id = bpy.props.StringProperty()
+    is_replicated = bpy.props.BoolProperty()
 
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
@@ -120,7 +133,8 @@ class SessionProps(bpy.types.PropertyGroup):
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
         subtype='COLOR',
-        default=randomColor())
+        default=randomColor(),
+        update=save_session_config)
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
@@ -132,11 +146,14 @@ class SessionProps(bpy.types.PropertyGroup):
         default=True,
         update=save_session_config
         )
+    supported_datablock: bpy.props.CollectionProperty(
+        type=ReplicatedDatablock
+        )
 
     def load(self):
         config = environment.load_config()
         logger.info(config)
-        if config:
+        if "username" in config:
             self.username = config["username"]
             self.ip = config["ip"]
             self.port = config["port"]
@@ -144,12 +161,22 @@ class SessionProps(bpy.types.PropertyGroup):
             self.enable_presence = config["enable_presence"]
             self.client_color =  config["client_color"]
         else:
-            logger.error("Fail to read config")
+            logger.error("Fail to read user config")
+        
+        for datablock, enabled in config["replicated_types"].items():
+            rep_value = self.supported_datablock.add()
+            rep_value.id = datablock
+            rep_value.is_replicated = enabled
+        
 
+
+        
     
 
 classes = {
+    ReplicatedDatablock,
     SessionProps,
+
 }
 
 

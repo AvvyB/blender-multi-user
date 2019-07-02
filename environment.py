@@ -13,6 +13,23 @@ CONFIG = os.path.join(CONFIG_DIR, "app.yaml")
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 PYTHON_PATH = None
 SUBPROCESS_DIR = None
+DEFAULT_CONFIG = {
+    "replicated_types" : {
+        'Client':True,
+        'Texture':True,
+        'Curve':True,
+        'Material':True,
+        'Light':True,
+        'Camera':True,
+        'Mesh':True,
+        'Armature':True,
+        'GreasePencil':True,
+        'Object':True,
+        'Action':True,
+        'Collection':True,
+        'Scene':True
+        }
+    }
 
 
 def load_config():
@@ -21,8 +38,8 @@ def load_config():
             return yaml.safe_load(config_file)
     except FileNotFoundError:
         logger.info("no config")
-
-    return {}
+    
+    return DEFAULT_CONFIG
 
 def save_config(config):
     logger.info("saving config")
