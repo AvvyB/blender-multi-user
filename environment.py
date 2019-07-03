@@ -38,6 +38,27 @@ DEFAULT_CONFIG = {
     }
 }
 
+ORDERED_TYPES = [
+        'Image',
+        'Texture',
+        'Curve',
+        'Material',
+        'Light',
+        'SunLight',
+        'SpotLight',
+        'AreaLight',
+        'PointLight',
+        'Camera',
+        'Mesh',
+        'Armature',
+        'GreasePencil',
+        'Object',
+        'Action',
+        'Collection',
+        'Scene',
+]
+
+rtypes = []
 
 def load_config():
     try:
@@ -47,6 +68,11 @@ def load_config():
         logger.info("no config")
 
     return DEFAULT_CONFIG
+
+def genereate_replicated_types(replicated_types):
+    for t in ORDERED_TYPES:
+        if replicated_types[t]:
+            rtypes.append(t)
 
 
 def save_config(config):

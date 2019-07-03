@@ -11,7 +11,7 @@ from .libs import dump_anything
 
 # TODO: replace hardcoded values...
 BPY_TYPES = {'Image':'images', 'Texture': 'textures','Material': 'materials', 'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 
-                  'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures', 'Grease Pencil': 'grease_pencils'}
+                  'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures'}
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)

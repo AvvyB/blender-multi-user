@@ -78,14 +78,18 @@ def save_session_config(self,context):
         for bloc in self.supported_datablock:
             config["replicated_types"][bloc.type_name] = bloc.is_replicated
 
-        # config["replicated_types"] = rep_type
+        # Generate ordered replicate types
+        environment.genereate_replicated_types(config["replicated_types"])
         
+        # Save out the configuration file
         environment.save_config(config)
+
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     '''name = StringProperty() '''
     type_name: bpy.props.StringProperty()
     is_replicated: bpy.props.BoolProperty()
+
 
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
@@ -190,9 +194,6 @@ class SessionProps(bpy.types.PropertyGroup):
         
         environment.save_config(config)    
 
-
-        
-    
 
 classes = (
     ReplicatedDatablock,
