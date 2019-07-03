@@ -23,8 +23,22 @@ class Data(object):
 
     def __init__(self,  uuid=None, owner=None,  data=None):
         self.key = str(uuid.uuid4())
-        self.data = data
+        self.pointer = data
         self.id = id
+
+    def send(self, socket):
+        """
+        Here we serialize all kind of data
+        """
+        pass
+    
+    @classmethod
+    def recv(cls, socket):
+        """
+        Here we deserialize the data
+
+        """
+        pass
 
     
 
