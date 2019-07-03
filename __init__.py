@@ -167,8 +167,10 @@ class SessionProps(bpy.types.PropertyGroup):
         
         if len(self.supported_datablock)>0:
             self.supported_datablock.clear()
+
         for datablock,enabled in config["replicated_types"].items():
             rep_value = self.supported_datablock.add()
+            rep_value.name = datablock
             rep_value.type_name = datablock
             rep_value.is_replicated = enabled
 
@@ -182,11 +184,9 @@ class SessionProps(bpy.types.PropertyGroup):
         config["enable_presence"] = self.enable_presence
         config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
         
-        rep_type = {}
-        for bloc in self.supported_datablock:
-            print(bloc.type_name)
-            config["replicated_types"][bloc.type_name] = bloc.is_replicated
 
+        for bloc in self.supported_datablock:
+            config["replicated_types"][bloc.type_name] = bloc.is_replicated
         
         environment.save_config(config)    
 

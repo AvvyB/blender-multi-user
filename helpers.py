@@ -6,7 +6,7 @@ import json
 import bpy
 import mathutils
 
-from . import draw
+from . import draw, environment
 from .libs import dump_anything
 
 # TODO: replace hardcoded values...

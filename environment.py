@@ -18,10 +18,15 @@ SUBPROCESS_DIR = None
 DEFAULT_CONFIG = {
     "replicated_types": {
         'Client': True,
+        'Image': True,
         'Texture': True,
         'Curve': True,
         'Material': True,
         'Light': True,
+        'SunLight': True,
+        'SpotLight': True,
+        'AreaLight': True,
+        'PointLight': True,
         'Camera': True,
         'Mesh': True,
         'Armature': True,
