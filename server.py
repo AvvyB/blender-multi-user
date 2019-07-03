@@ -54,7 +54,7 @@ class ServerAgent():
         self.poller.register(self.collector_sock, zmq.POLLIN)
 
     def tick(self):
-        logger.info("{} server launched".format(id))
+        logger.info("{} server launched on {}".format(id,self.port))
 
         while True:
             # Non blocking poller

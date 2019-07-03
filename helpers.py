@@ -118,7 +118,7 @@ def resolve_bpy_path(path):
 
     try:
         path = path.split('/')
-        item = getattr(bpy.data, BPY_TYPES[path[0]])[path[1]]
+        item = getattr(bpy.data,BPY_TYPES[path[0]])[path[1]]
 
     except:
         pass
@@ -556,7 +556,6 @@ def dump(key):
     if target_type == 'Image':
         data = dump_datablock(target, 2)
         data['pixels'] = dump_image(target)
-        print(data['name'])
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(target, ['node_tree'], 7, data)
@@ -639,14 +638,14 @@ def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
 
 def dump_image(image):
     pixels = []
-    for x in range(image.size[0]*image.size[1]):
-        px = [
-            image.pixels[x],
-            image.pixels[x+1],
-            image.pixels[x+2],
-            image.pixels[x+3]
-            ]
-        pixels.append(px)
+    # for x in range(image.size[0]*image.size[1]):
+    #     px = [
+    #         image.pixels[x],
+    #         image.pixels[x+1],
+    #         image.pixels[x+2],
+    #         image.pixels[x+3]
+    #         ]
+    #     pixels.append(px)
     return pixels
 
 

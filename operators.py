@@ -14,7 +14,7 @@ from bpy_extras.io_utils import ExportHelper
 import mathutils
 from pathlib import Path
 
-from . import client, draw, helpers, ui
+from . import environment, client, draw, helpers, ui
 from .libs import umsgpack
 
 logger = logging.getLogger(__name__)
@@ -40,9 +40,9 @@ def execute_queued_functions():
     return .1
 
 
-def clean_scene(elements=helpers.BPY_TYPES.keys()):
+def clean_scene(elements=environment.rtypes):
     for datablock in elements:
-        datablock_ref = getattr(bpy.data, helpers.BPY_TYPES[datablock])
+        datablock_ref = getattr(bpy.data,  helpers.BPY_TYPES[datablock])
         for item in datablock_ref:
             try:
                 datablock_ref.remove(item)
@@ -89,7 +89,7 @@ def update_client_selected_object(context):
 # TODO: cleanup
 
 def init_datablocks():
-    for datatype in helpers.BPY_TYPES.keys():
+    for datatype in environment.rtypes:
         if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
             for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
                 item.id = bpy.context.window_manager.session.username
