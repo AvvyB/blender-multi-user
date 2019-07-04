@@ -13,35 +13,39 @@ import zmq
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+
 class ReplicatedDatablock(object):
     """
     Datablock used for replication 
     """
     uuid = None  # key (string)
-    data = None  # data blob
     pointer = None # dcc data reference
+    data = None  # data blob (json)
+    deps = []
 
-    def __init__(self, owner=None,  data=None):
+    def __init__(self, owner=None, data=None):
         self.uuid = str(uuid4())
         assert(owner)
+
         self.pointer = data
         
 
     def push(self, socket):
         """
-        Here send data over the wire
+        Here send data over the wire:
+            - serialize the data
+            - send them as a multipart frame
         """
         pass
    
     @classmethod
     def pull(cls, socket):
         """
-        Here we reeceive data from the wire
+        Here we reeceive data from the wire:
+            - read data from the socket
+            - reconstruct an instance
         """
-        uuid, owner,  body = socket.recv_multipart(zmq.NOBLOCK)
-        key = key.decode() if key else None
-        id = id if id else None
-        body = umsgpack.unpackb(body) if body else None
+        pass
 
     def store(self, dict, persistent=False): 
         """
@@ -56,64 +60,59 @@ class ReplicatedDatablock(object):
                 dict[self.uuid] = self
         pass
 
-    def decode_data(self):
+    def deserialize(self):
         """
         I want to apply changes into the DCC
         """
         raise NotImplementedError
    
     
-    def encode_data(self):
+    def serialize(self):
         """
         I want to load data from DCC
         """
         raise NotImplementedError
 
-class RpTest(ReplicatedDatablock):
-    def decode_data(self):
-        test_data = {}
+    
+import bpy, mathutils
 
-
-# class RpObject(ReplicatedDatablock):
-#     def decode_data(self):
-#         try:
-#             if self.pointer is None:
-#                 pointer = None
+class RepObject(ReplicatedDatablock):
+    def deserialize(self):
+        try:
+            if self.pointer is None:
+                pointer = None
                 
-#                 # Object specific constructor...
-#                 if data["data"] in bpy.data.meshes.keys():
-#                     pointer = bpy.data.meshes[data["data"]]
-#                 elif data["data"] in bpy.data.lights.keys():
-#                     pointer = bpy.data.lights[data["data"]]
-#                 elif data["data"] in bpy.data.cameras.keys():
-#                     pointer = bpy.data.cameras[data["data"]]
-#                 elif data["data"] in bpy.data.curves.keys():
-#                     pointer = bpy.data.curves[data["data"]]
-#                 elif data["data"] in bpy.data.armatures.keys():
-#                     pointer = bpy.data.armatures[data["data"]]
-#                 elif data["data"] in bpy.data.grease_pencils.keys():
-#                     pointer = bpy.data.grease_pencils[data["data"]]
-#                 elif data["data"] in bpy.data.curves.keys():
-#                     pointer = bpy.data.curves[data["data"]]
+                # Object specific constructor...
+                if self.data["data"] in bpy.data.meshes.keys():
+                    pointer = bpy.data.meshes[self.data["data"]]
+                elif self.data["data"] in bpy.data.lights.keys():
+                    pointer = bpy.data.lights[self.data["data"]]
+                elif self.data["data"] in bpy.data.cameras.keys():
+                    pointer = bpy.data.cameras[self.data["data"]]
+                elif self.data["data"] in bpy.data.curves.keys():
+                    pointer = bpy.data.curves[self.data["data"]]
+                elif self.data["data"] in bpy.data.armatures.keys():
+                    pointer = bpy.data.armatures[self.data["data"]]
+                elif self.data["data"] in bpy.data.grease_pencils.keys():
+                    pointer = bpy.data.grease_pencils[self.data["data"]]
+                elif self.data["data"] in bpy.data.curves.keys():
+                    pointer = bpy.data.curves[self.data["data"]]
 
-#                 self.pointer = bpy.data.objects.new(data["name"], pointer)
+                self.pointer = bpy.data.objects.new(self.data["name"], pointer)
 
-#             self.pointer.matrix_world = mathutils.Matrix(data["matrix_world"])
+            self.pointer.matrix_world = mathutils.Matrix(self.data["matrix_world"])
 
-#             self.pointer.id = data['id']
+            self.pointer.id = self.data['id']
 
-#             client = bpy.context.window_manager.session.username
+            client = bpy.context.window_manager.session.username
 
-#             if self.pointer.id == client or self.pointer.id == "Common":
-#                 self.pointer.hide_select = False
-#             else:
-#                 self.pointer.hide_select = True
+            if self.pointer.id == client or self.pointer.id == "Common":
+                self.pointer.hide_select = False
+            else:
+                self.pointer.hide_select = True
         
-#         except Exception as e:
-#             logger.error("Object {} loading error: {} ".format(data["name"], e))
+        except Exception as e:
+            logger.error("Object {} loading error: {} ".format(self.data["name"], e))
 
-#     def encode_data(self):
-#         self.data = dump_datablock(self.pointer, 1)
-
-
-o = BpyObject("toto")
+    def deserialize(self):
+        self.data = dump_datablock(self.pointer, 1)

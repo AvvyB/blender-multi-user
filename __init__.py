@@ -22,7 +22,8 @@ from . import environment
 DEPENDENCIES = {
     "zmq",
     "umsgpack",
-    "yaml"
+    "yaml",
+    "esper"
 }
 
 

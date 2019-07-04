@@ -12,7 +12,7 @@ from random import randint
 import zmq
 import json
 
-from . import environment, helpers, message
+from . import environment,replication, helpers, message
 from .libs import dump_anything, umsgpack
 
 CONNECT_TIMEOUT = 2
@@ -98,6 +98,15 @@ class Client(object):
             id, str) else id), (address.encode() if isinstance(
                 address, str) else address), b'%d' % port])
 
+    def replicate(self, py_object):
+        """Entry point for python object replication
+            - Create object replication structure
+            - Add it to the distributed hash table
+        """
+        pass
+        # node = Factory(py_object)
+
+        # self.store
     def init(self):
         """
         Scene initialisation
@@ -129,7 +138,6 @@ class Client(object):
 
     def add(self, key, value=None):
         """Set new value in distributed hash table
-        Sends [SET][key][value] to the agent
         """
         self.serial_feed.put(key)
 
