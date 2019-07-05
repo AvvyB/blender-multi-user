@@ -22,7 +22,7 @@ class ReplicatedDataFactory(object):
         """
         Register a new replicated datatype implementation 
         """
-        types.append((supported_types, implementation))
+        self.supported_types.append((dtype, implementation))
 
     def match_type(self,data):
         for stypes, implementation in self.supported_types: 
