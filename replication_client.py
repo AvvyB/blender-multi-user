@@ -2,6 +2,7 @@ import threading
 import logging
 import zmq
 import time
+import replication
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -46,8 +47,6 @@ class ClientNetService(threading.Thread):
 
 
     def run(self):
-        log.debug("Running Net service")
-
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.subscriber, zmq.POLLIN)
@@ -60,6 +59,12 @@ class ClientNetService(threading.Thread):
 
             if not items:
                 log.error("No request ")
+
+            time.sleep(1)
+    
+    def send(data):
+        assert(issubclass(data, ReplicatedDatablock))
+        data.push(self.publish)
 
     def stop(self):
         self.exit_event.set()
@@ -119,8 +124,6 @@ class ServerNetService(threading.Thread):
         self.state = 0
 
     def run(self):
-        log.debug("Running Server Net service")
-
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.pull, zmq.POLLIN)
@@ -131,4 +134,6 @@ class ServerNetService(threading.Thread):
             items = dict(poller.poll(10))
 
             if not items:
-                log.info("No request ")
+               pass
+
+            time.sleep(1)
