@@ -12,7 +12,29 @@ import zmq
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
+class ReplicatedDataFactory(object):
+    """
+    Manage the data types implamentations 
+    """
+    def __init__(self):
+        self.supported_types = []
+    
+    def register_type(dtype, implementation):
+        """
+        Register a new replicated datatype implementation 
+        """
+        types.append((supported_types, implementation))
 
+    def match_type(data):
+        for stypes, implementation in self.supported_types: 
+            if isinstance(data, stypes):
+                return implementation
+        
+        print("type not supported for replication")
+        raise NotImplementedError
+
+    def construct():
+        return 
 
 class ReplicatedDatablock(object):
     """
@@ -21,14 +43,14 @@ class ReplicatedDatablock(object):
     uuid = None  # key (string)
     pointer = None # dcc data reference
     data = None  # data blob (json)
-    deps = []
+    deps = None
 
     def __init__(self, owner=None, data=None):
         self.uuid = str(uuid4())
         assert(owner)
-
         self.pointer = data
         
+    def load_serial(self):
 
     def push(self, socket):
         """
@@ -76,6 +98,10 @@ class ReplicatedDatablock(object):
     
 import bpy, mathutils
 
+
+class BlenderTypesFactory():
+
+
 class RepObject(ReplicatedDatablock):
     def deserialize(self):
         try:
@@ -116,3 +142,5 @@ class RepObject(ReplicatedDatablock):
 
     def deserialize(self):
         self.data = dump_datablock(self.pointer, 1)
+
+
