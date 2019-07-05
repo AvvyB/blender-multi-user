@@ -221,7 +221,7 @@ class Server(object):
         self.address = address
         self.port = port
         self.snapshot = ctx.socket(zmq.DEALER)
-        self.snapshot.linger = 0
+        self.snapshot = self.context.socket(zmq.DEALER)
         self.snapshot.setsockopt(zmq.IDENTITY, id)
         self.snapshot.connect("tcp://{}:{}".format(address.decode(), port))
         self.subscriber = ctx.socket(zmq.SUB)

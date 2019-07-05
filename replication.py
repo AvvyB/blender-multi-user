@@ -1,5 +1,4 @@
 import logging
-from .libs.dump_anything import dump_datablock
 from uuid import uuid4
 try:
     from .libs import umsgpack
@@ -19,13 +18,13 @@ class ReplicatedDataFactory(object):
     def __init__(self):
         self.supported_types = []
     
-    def register_type(dtype, implementation):
+    def register_type(self,dtype, implementation):
         """
         Register a new replicated datatype implementation 
         """
         types.append((supported_types, implementation))
 
-    def match_type(data):
+    def match_type(self,data):
         for stypes, implementation in self.supported_types: 
             if isinstance(data, stypes):
                 return implementation
@@ -33,8 +32,9 @@ class ReplicatedDataFactory(object):
         print("type not supported for replication")
         raise NotImplementedError
 
-    def construct():
-        return 
+    def construct(self,data):
+        implementation = self.match_type(data)
+        return implementation
 
 class ReplicatedDatablock(object):
     """
@@ -43,14 +43,13 @@ class ReplicatedDatablock(object):
     uuid = None  # key (string)
     pointer = None # dcc data reference
     data = None  # data blob (json)
-    deps = None
+    deps = None # dependencies references
 
     def __init__(self, owner=None, data=None):
         self.uuid = str(uuid4())
         assert(owner)
         self.pointer = data
         
-    def load_serial(self):
 
     def push(self, socket):
         """
@@ -58,7 +57,12 @@ class ReplicatedDatablock(object):
             - serialize the data
             - send them as a multipart frame
         """
-        pass
+        data = self.serialize(self.pointer)
+        assert(isinstance(data, bytes))
+
+        key = self.uuid.encode()
+        
+        socket.send_multipart([])
    
     @classmethod
     def pull(cls, socket):
@@ -82,65 +86,65 @@ class ReplicatedDatablock(object):
                 dict[self.uuid] = self
         pass
 
-    def deserialize(self):
+    def deserialize(self,data):
         """
         I want to apply changes into the DCC
+
+        MUST RETURN AN OBJECT INSTANCE
         """
         raise NotImplementedError
    
     
-    def serialize(self):
+    def serialize(self,data):
         """
         I want to load data from DCC
+
+        MUST RETURN A BYTE ARRAY
         """
         raise NotImplementedError
 
-    
-import bpy, mathutils
 
 
-class BlenderTypesFactory():
 
-
-class RepObject(ReplicatedDatablock):
-    def deserialize(self):
-        try:
-            if self.pointer is None:
-                pointer = None
+# class RepObject(ReplicatedDatablock):
+#     def deserialize(self):
+#         try:
+#             if self.pointer is None:
+#                 pointer = None
                 
-                # Object specific constructor...
-                if self.data["data"] in bpy.data.meshes.keys():
-                    pointer = bpy.data.meshes[self.data["data"]]
-                elif self.data["data"] in bpy.data.lights.keys():
-                    pointer = bpy.data.lights[self.data["data"]]
-                elif self.data["data"] in bpy.data.cameras.keys():
-                    pointer = bpy.data.cameras[self.data["data"]]
-                elif self.data["data"] in bpy.data.curves.keys():
-                    pointer = bpy.data.curves[self.data["data"]]
-                elif self.data["data"] in bpy.data.armatures.keys():
-                    pointer = bpy.data.armatures[self.data["data"]]
-                elif self.data["data"] in bpy.data.grease_pencils.keys():
-                    pointer = bpy.data.grease_pencils[self.data["data"]]
-                elif self.data["data"] in bpy.data.curves.keys():
-                    pointer = bpy.data.curves[self.data["data"]]
+#                 # Object specific constructor...
+#                 if self.data["data"] in bpy.data.meshes.keys():
+#                     pointer = bpy.data.meshes[self.data["data"]]
+#                 elif self.data["data"] in bpy.data.lights.keys():
+#                     pointer = bpy.data.lights[self.data["data"]]
+#                 elif self.data["data"] in bpy.data.cameras.keys():
+#                     pointer = bpy.data.cameras[self.data["data"]]
+#                 elif self.data["data"] in bpy.data.curves.keys():
+#                     pointer = bpy.data.curves[self.data["data"]]
+#                 elif self.data["data"] in bpy.data.armatures.keys():
+#                     pointer = bpy.data.armatures[self.data["data"]]
+#                 elif self.data["data"] in bpy.data.grease_pencils.keys():
+#                     pointer = bpy.data.grease_pencils[self.data["data"]]
+#                 elif self.data["data"] in bpy.data.curves.keys():
+#                     pointer = bpy.data.curves[self.data["data"]]
 
-                self.pointer = bpy.data.objects.new(self.data["name"], pointer)
+#                 self.pointer = bpy.data.objects.new(self.data["name"], pointer)
 
-            self.pointer.matrix_world = mathutils.Matrix(self.data["matrix_world"])
+#             self.pointer.matrix_world = mathutils.Matrix(self.data["matrix_world"])
 
-            self.pointer.id = self.data['id']
+#             self.pointer.id = self.data['id']
 
-            client = bpy.context.window_manager.session.username
+#             client = bpy.context.window_manager.session.username
 
-            if self.pointer.id == client or self.pointer.id == "Common":
-                self.pointer.hide_select = False
-            else:
-                self.pointer.hide_select = True
+#             if self.pointer.id == client or self.pointer.id == "Common":
+#                 self.pointer.hide_select = False
+#             else:
+#                 self.pointer.hide_select = True
         
-        except Exception as e:
-            logger.error("Object {} loading error: {} ".format(self.data["name"], e))
+#         except Exception as e:
+#             logger.error("Object {} loading error: {} ".format(self.data["name"], e))
 
-    def deserialize(self):
-        self.data = dump_datablock(self.pointer, 1)
+#     def deserialize(self):
+#         self.data = dump_datablock(self.pointer, 1)
 
 
