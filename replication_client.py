@@ -8,12 +8,18 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 class Client(object):
-    def __init__(self,config=None):
+    def __init__(self,factory=None, config=None):
         self.rep_store = {}
         self.net = ClientNetService(self.rep_store)
+        self.factory = factory
 
     def connect(self):
         self.net.start()
+
+    def replicate(self, object):
+        new_item = self.factory.construct(object)(owner="client")
+
+        new_item.store(self.rep_store)
 
     def state(self):
         return self.net.state
@@ -77,6 +83,7 @@ class Server():
     def __init__(self,config=None):
         self.rep_store = {}
         self.net = ServerNetService(self.rep_store)
+        # self.serve()
 
     def serve(self):
         self.net.start()
@@ -116,10 +123,6 @@ class ServerNetService(threading.Thread):
         self.pull.setsockopt(zmq.RCVHWM, 60)
         self.pull.bind("tcp://*:5562")
 
-        # poller for socket aggregation
-        self.poller = zmq.Poller()
-        self.poller.register(self.snapshot, zmq.POLLIN)
-        self.poller.register(self.pull, zmq.POLLIN)
 
         self.state = 0
 
@@ -136,4 +139,4 @@ class ServerNetService(threading.Thread):
             if not items:
                pass
 
-            time.sleep(1)
+            time.sleep(.1)

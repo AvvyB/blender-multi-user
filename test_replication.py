@@ -31,33 +31,46 @@ class RepSampleData(ReplicatedDatablock):
 class TestData(unittest.TestCase):
     def setUp(self):
         self.map = {}
-        self.client_api = Client()
-        self.server_api = Server()
 
-    def test_server_launching(self):
-        log.info("test_server_launching")
-        self.server_api.serve()
-        time.sleep(1)
-        self.assertEqual(self.server_api.state(),1)
+    # def test_server_launching(self):
+    #     log.info("test_server_launching")
+    #     self.server_api.serve()
+    #     time.sleep(1)
+    #     self.assertEqual(self.server_api.state(),1)
+
+    # def test_server_stop(self):
+    #     log.info("test_server_launching")
+    #     self.server_api.stop()
+    #     time.sleep(1)
+    #     self.assertEqual(self.server_api.state(),0)
 
     def test_setup_data_factory(self):
-        factory = ReplicatedDataFactory()
-        factory.register_type(SampleData, RepSampleData)
+        self.factory = ReplicatedDataFactory()
+        self.factory.register_type(SampleData, RepSampleData)
 
         data_sample = SampleData()
-        rep_sample =  factory.construct(data_sample)(owner="toto")
+        rep_sample =  self.factory.construct(data_sample)(owner="toto")
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
-    def test_client_connect(self):
-        log.info("test_client_connect")
+    def test_setup_net(self):
+        self.server_api = Server()
+        self.server_api.serve()
+        self.client_api = Client()
         self.client_api.connect()
-        time.sleep(1)
-        self.assertEqual(self.client_api.state(),1)
+
+    def test_push_data(self):
+        self.
+
+    # def test_client_connect(self):
+    #     log.info("test_client_connect")
+    #     self.client_api.connect()
+    #     time.sleep(1)
+    #     self.assertEqual(self.client_api.state(),1)
     
-    def test_client_stop(self):
-        self.client_api.stop()
-        time.sleep(1)
-        self.assertEqual(self.client_api.state(),0)
+    # def test_client_stop(self):
+    #     self.client_api.stop()
+    #     time.sleep(1)
+    #     self.assertEqual(self.client_api.state(),0)
 
  
     
