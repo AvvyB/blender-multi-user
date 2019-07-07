@@ -9,29 +9,42 @@ log = logging.getLogger(__name__)
 
 class Client(object):
     def __init__(self,factory=None, config=None):
-        self.rep_store = {}
-        self.net = ClientNetService(self.rep_store)
-        self.factory = factory
+        self._rep_store = {}
+        self._net = ClientNetService(self._rep_store)
+        assert(factory)
+        self._factory = factory
 
     def connect(self):
-        self.net.start()
+        self._net.start()
 
-    def replicate(self, object):
-        new_item = self.factory.construct(object)(owner="client")
+    def disconnect(self):
+        self._net.stop()
 
-        new_item.store(self.rep_store)
+    def register(self, object):
+        """
+        Register a new item for replication
+        """
+        assert(object)
 
-    def state(self):
-        return self.net.state
+        new_item = self._factory.construct(object)(owner="client")
+        new_item.store(self._rep_store)
 
-    def stop(self):
-        self.net.stop()
+        return new_item.uuid
+
+    def get(self,object=None):
+        pass
+        
+
+    def unregister(self,object):
+        pass
+    
+    
     
 class ClientNetService(threading.Thread):
     def __init__(self,store_reference=None):
         # Threading
         threading.Thread.__init__(self)
-        self.name = "NetLink"
+        self.name = "ClientNetLink"
         self.daemon = True
         self.exit_event = threading.Event()
 
@@ -53,6 +66,7 @@ class ClientNetService(threading.Thread):
 
 
     def run(self):
+        log.info("Client is listening")
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.subscriber, zmq.POLLIN)
@@ -74,6 +88,10 @@ class ClientNetService(threading.Thread):
 
     def stop(self):
         self.exit_event.set()
+
+        self.snapshot.close()
+        self.subscriber.close()
+        self.publish.close()
 
         self.state = 0
 
@@ -99,34 +117,44 @@ class ServerNetService(threading.Thread):
     def __init__(self,store_reference=None):
         # Threading
         threading.Thread.__init__(self)
-        self.name = "NetLink"
+        self.name = "ServerNetLink"
         self.daemon = True
         self.exit_event = threading.Event()
         self.store =  store_reference
 
         self.context = zmq.Context.instance()
-
-        # Update request
-        self.snapshot = self.context.socket(zmq.ROUTER)
-        self.snapshot.setsockopt(zmq.IDENTITY, b'SERVER')
-        self.snapshot.setsockopt(zmq.RCVHWM, 60)
-        self.snapshot.bind("tcp://*:5560")
-
-        # Update all clients
-        self.publisher = self.context.socket(zmq.PUB)
-        self.publisher.setsockopt(zmq.SNDHWM, 60)
-        self.publisher.bind("tcp://*:5561")
-        time.sleep(0.2)
-
-        # Update collector
-        self.pull = self.context.socket(zmq.PULL)
-        self.pull.setsockopt(zmq.RCVHWM, 60)
-        self.pull.bind("tcp://*:5562")
-
-
+        self.snapshot = None
+        self.publisher = None
+        self.pull = None
         self.state = 0
 
+        self.bind_ports()
+
+    def bind_ports(self):
+        try:
+            # Update request
+            self.snapshot = self.context.socket(zmq.ROUTER)
+            self.snapshot.setsockopt(zmq.IDENTITY, b'SERVER')
+            self.snapshot.setsockopt(zmq.RCVHWM, 60)
+            self.snapshot.bind("tcp://*:5560")
+
+            # Update all clients
+            self.publisher = self.context.socket(zmq.PUB)
+            self.publisher.setsockopt(zmq.SNDHWM, 60)
+            self.publisher.bind("tcp://*:5561")
+            time.sleep(0.2)
+
+            # Update collector
+            self.pull = self.context.socket(zmq.PULL)
+            self.pull.setsockopt(zmq.RCVHWM, 60)
+            self.pull.bind("tcp://*:5562")
+            
+        except zmq.error.ZMQError:
+            log.error("Address already in use, change net config")
+    
+
     def run(self):
+        log.info("Server is listening")
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.pull, zmq.POLLIN)
@@ -140,3 +168,12 @@ class ServerNetService(threading.Thread):
                pass
 
             time.sleep(.1)
+    
+    def stop(self):
+        self.exit_event.set()
+
+        self.snapshot.close()
+        self.pull.close()
+        self.publisher.close()
+
+        self.state = 0

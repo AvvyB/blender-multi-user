@@ -28,10 +28,26 @@ class RepSampleData(ReplicatedDatablock):
 
         return pickle.load(data)
 
-class TestData(unittest.TestCase):
-    def setUp(self):
-        self.map = {}
 
+# class TestClient(unittest.TestCase):
+#     def setUp(self):
+#         factory = ReplicatedDataFactory()
+#         self.client_api = Client(factory=factory)
+
+#     def test_client_connect(self):
+#         self.client_api.connect()
+#         time.sleep(1)
+#         self.assertEqual(self.client_api._net.state,1)
+        
+
+#     def test_client_disconnect(self):
+#         self.client_api.disconnect()
+#         time.sleep(1)
+#         self.assertEqual(self.client_api._net.state,0)
+
+
+
+class TestDataReplication(unittest.TestCase):
     # def test_server_launching(self):
     #     log.info("test_server_launching")
     #     self.server_api.serve()
@@ -45,21 +61,28 @@ class TestData(unittest.TestCase):
     #     self.assertEqual(self.server_api.state(),0)
 
     def test_setup_data_factory(self):
-        self.factory = ReplicatedDataFactory()
-        self.factory.register_type(SampleData, RepSampleData)
-
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
         data_sample = SampleData()
-        rep_sample =  self.factory.construct(data_sample)(owner="toto")
+        rep_sample = factory.construct(data_sample)(owner="toto")
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
-    def test_setup_net(self):
-        self.server_api = Server()
-        self.server_api.serve()
-        self.client_api = Client()
-        self.client_api.connect()
+    def test_replicate_client_data(self):        
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
 
-    def test_push_data(self):
-        self.
+        server_api = Server()
+        server_api.serve()
+        client_api = Client(factory=factory)
+        client_api.connect()
+
+        data_sample = SampleData()
+        data_sample_key = client_api.register(data_sample)
+
+
+        self.assertEqual(data_sample_key)
+
+
 
     # def test_client_connect(self):
     #     log.info("test_client_connect")

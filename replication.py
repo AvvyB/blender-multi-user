@@ -84,7 +84,8 @@ class ReplicatedDatablock(object):
                 del dict[self.uuid]
             else:
                 dict[self.uuid] = self
-        pass
+                
+            return self.uuid
 
     def deserialize(self,data):
         """
