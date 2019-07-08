@@ -211,7 +211,7 @@ def load_mesh(target=None, data=None, create=False):
     import bmesh
 
     if not target or not target.is_editmode:
-        # LOAD GEOMETRY
+        # 1 - LOAD GEOMETRY
         mesh_buffer = bmesh.new()
 
         for i in data["vertices"]:
@@ -235,14 +235,18 @@ def load_mesh(target=None, data=None, create=False):
                 f = mesh_buffer.faces.new(verts)
                 f.material_index = data["polygons"][p]['material_index']
 
+        for l in data["uv_layers"]:
+            pass
+            
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
 
         mesh_buffer.to_mesh(target)
 
-        # LOAD METADATA
+        # 2 - LOAD METADATA
         dump_anything.load(target, data)
 
+        # 3 - LOAD MATERIAL SLOTS
         material_to_load = []
         material_to_load = revers(data["materials"])
         target.materials.clear()
