@@ -486,6 +486,9 @@ def load_material(target=None, data=None, create=False):
                 dump_anything.load(
                     target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
 
+                if data["node_tree"]["nodes"][node]['type'] == 'TEX_IMAGE':
+                    target.node_tree.nodes[index].image = bpy.data.images[data["node_tree"]["nodes"][node]['image']['name']]
+
                 for input in data["node_tree"]["nodes"][node]["inputs"]:
 
                     try:
