@@ -23,7 +23,7 @@ DUMP_AGENTS_NUMBER = 1
 
 lock = threading.Lock()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=environment)
+logging.basicConfig(level=logging.DEBUG)
 instance = None 
 
 
@@ -412,22 +412,21 @@ def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event,externa
                     logger.debug("snapshot from {} stored".format(msg.id))
             elif agent.state == State.ACTIVE:
                 if msg.id != agent.id:
+                    logger.debug("PULL: {} from {}".format(msg.key,msg.id))
 
-                    # with lock:
-                    #     helpers.load(msg.key, msg.body)
                     msg.store(agent.property_map)
-                    # net_product.put(('LOAD', msg.key, msg.body))
+
                     params = []
                     params.append(msg.key)
                     params.append(msg.body)
                     external_executor.put((helpers.load,params))
-                else:
-                    logger.debug("{} nothing to do".format(agent.id))
-
+        
         # Serialisation thread  => Net thread
         if not net_feed.empty():
             key, value = net_feed.get()
             if value:
+                logger.debug("SERIAL => NET: {} ".format(key))
+
                 # Stamp with id
                 value['id'] = agent.id.decode()
 
