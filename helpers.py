@@ -237,7 +237,7 @@ def load_mesh(target=None, data=None, create=False):
 
         for l in data["uv_layers"]:
             pass
-            
+
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
 
@@ -668,6 +668,55 @@ def dump_image(image):
         logger.error("image format not supported")
     return pixels
 
+def dump_mesh(mesh, data={}):
+    import bmesh
+
+    mesh_data = data
+    mesh_buffer = bmesh.new()
+
+    mesh_buffer.from_mesh(mesh)
+
+    uv_layer = mesh_buffer.loops.layers.uv.verify()
+    bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
+    skin_layer = mesh_buffer.verts.layers.skin.verify()
+    
+    verts = {}
+    for vert in mesh_buffer.verts:
+        verts[vert.index]['co'] = vert.co.xyz
+
+        # vert metadata
+        verts[vert.index]['bevel'] = vert[bevel_layer]
+        verts[vert.index]['skin'] = vert[skin_layer]
+
+    mesh_data["verts"] = verts
+
+    edges = {}
+    for edge in mesh_buffer.edges:
+        edges[edge.index]["verts"] = [edge.verts[0].index,edge.verts[1].index]
+
+        # Edge metadata
+        edges[edge.index]["smooth"] = edge.smooth
+    
+    mesh_data["edges"] = edges
+    
+    faces = {}
+    for face in mesh_buffer.faces:
+        fverts = []
+        for vert in face.verts:
+            fverts.append(vert.index)
+
+        faces[face.index]["verts"] = fverts
+
+        # Face metadata
+        for loop in face.loops:
+            loop_uv = loop[uv_layer]
+            
+            faces[face.index]["uv"]
+            faces[face.index]["uv"] = loop_uv.uv
+            
+            print(loop_uv.uv)
+
+    return mesh_data
 
 def init_client(key=None):
     client_dict = {}
