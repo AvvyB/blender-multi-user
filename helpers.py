@@ -248,7 +248,28 @@ def load_mesh(target=None, data=None, create=False):
 
         mesh_buffer.to_mesh(target)
 
+        mesh_buffer.from_mesh(target)
+
         # 2 - LOAD METADATA
+        
+        ## uv's
+        for uv_layer in data['uv_layers']:
+            target.uv_layers.new(name=uv_layer)
+
+        uv_layer = mesh_buffer.loops.layers.uv.verify()
+        bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
+        skin_layer = mesh_buffer.verts.layers.skin.verify()
+
+        for face in mesh_buffer.faces:
+
+            # Face metadata
+            for loop in face.loops:
+                loop_uv = loop[uv_layer]
+                loop_uv.uv = data['faces'][face.index]["uv"]
+        
+
+        
+
         dump_anything.load(target, data)
 
         # 3 - LOAD MATERIAL SLOTS
@@ -730,6 +751,12 @@ def dump_mesh(mesh, data={}):
         faces[face.index] = f
     
     mesh_data["faces"] = faces
+
+    uv_layers = []
+    for uv_layer in mesh.uv_layers:
+        uv_layers.append(uv_layer.name)
+
+    mesh_data["uv_layers"] = uv_layers
     return mesh_data
 
 def init_client(key=None):
