@@ -416,11 +416,11 @@ def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event,externa
 
                     msg.store(agent.property_map)
 
-                    # params = []
-                    # params.append(msg.key)
-                    # params.append(msg.body)
-                    # external_executor.put((helpers.load,params))
-                    net_product.put(('LOAD', msg.key, msg.body))
+                    params = []
+                    params.append(msg.key)
+                    params.append(msg.body)
+                    external_executor.put((helpers.load,params))
+                    # net_product.put(('LOAD', msg.key, msg.body))
         
         # Serialisation thread  => Net thread
         if not net_feed.empty():
