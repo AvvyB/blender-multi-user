@@ -10,7 +10,26 @@ import message
 logger = logging.getLogger("Server")
 logging.basicConfig(level=logging.DEBUG)
 
-SUPPORTED_TYPES = ['Image','Client','Curve','Material','Texture', 'Light', 'Camera', 'Mesh','Armature', 'GreasePencil', 'Object', 'Action', 'Collection', 'Scene']
+SUPPORTED_TYPES = [
+        'Client',
+        'Image',
+        'Texture',
+        'Curve',
+        'Material',
+        'Light',
+        'SunLight',
+        'SpotLight',
+        'AreaLight',
+        'PointLight',
+        'Camera',
+        'Mesh',
+        'Armature',
+        'GreasePencil',
+        'Object',
+        'Action',
+        'Collection',
+        'Scene',
+]
                    
 class ServerAgent():
     def __init__(self, context=zmq.Context.instance(), id="admin"):

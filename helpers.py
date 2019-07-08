@@ -238,17 +238,24 @@ def load_mesh(target=None, data=None, create=False):
 
             if len(verts) > 0:
                 f = mesh_buffer.faces.new(verts)
+
+                uv_layer = mesh_buffer.loops.layers.uv.verify()
+
                 f.material_index = data["faces"][p]['material_index']
 
-        for l in data["uv_layers"]:
-            pass
+                # UV loading
+                for i,loop in enumerate(f.loops):
+                    loop_uv = loop[uv_layer]
+                    loop_uv.uv = data["faces"][p]["uv"][i]
+
+                    print(loop_uv.uv)
 
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
 
         mesh_buffer.to_mesh(target)
 
-        mesh_buffer.from_mesh(target)
+        # mesh_buffer.from_mesh(target)
 
         # 2 - LOAD METADATA
         
@@ -256,16 +263,16 @@ def load_mesh(target=None, data=None, create=False):
         for uv_layer in data['uv_layers']:
             target.uv_layers.new(name=uv_layer)
 
-        uv_layer = mesh_buffer.loops.layers.uv.verify()
+       
         bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
         skin_layer = mesh_buffer.verts.layers.skin.verify()
 
-        for face in mesh_buffer.faces:
+        # for face in mesh_buffer.faces:
 
-            # Face metadata
-            for loop in face.loops:
-                loop_uv = loop[uv_layer]
-                loop_uv.uv = data['faces'][face.index]["uv"]
+        #     # Face metadata
+        #     for loop in face.loops:
+        #         loop_uv = loop[uv_layer]
+        #         loop_uv.uv = data['faces'][face.index]["uv"]
         
 
         
@@ -742,12 +749,14 @@ def dump_mesh(mesh, data={}):
         f["verts"] = fverts
         f["material_index"] = face.material_index
 
+        uvs = []
         # Face metadata
         for loop in face.loops:
             loop_uv = loop[uv_layer]
 
-            f["uv"] = list(loop_uv.uv)
+            uvs.append(list(loop_uv.uv))
 
+        f["uv"] = uvs
         faces[face.index] = f
     
     mesh_data["faces"] = faces
