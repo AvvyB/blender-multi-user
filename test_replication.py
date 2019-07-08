@@ -65,6 +65,7 @@ class TestDataReplication(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
         data_sample = SampleData()
         rep_sample = factory.construct(data_sample)(owner="toto")
+        
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
     def test_replicate_client_data(self):        
@@ -77,25 +78,11 @@ class TestDataReplication(unittest.TestCase):
         client_api.connect()
 
         data_sample = SampleData()
-        data_sample_key = client_api.register(data_sample)
+        data_sample_key = client_api.add(data_sample)
 
+        
+        self.assertNotEqual(client_api._rep_store[data_sample_key],None)
 
-        self.assertEqual(data_sample_key)
-
-
-
-    # def test_client_connect(self):
-    #     log.info("test_client_connect")
-    #     self.client_api.connect()
-    #     time.sleep(1)
-    #     self.assertEqual(self.client_api.state(),1)
-    
-    # def test_client_stop(self):
-    #     self.client_api.stop()
-    #     time.sleep(1)
-    #     self.assertEqual(self.client_api.state(),0)
-
- 
     
 
 

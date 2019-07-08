@@ -2,10 +2,15 @@ import threading
 import logging
 import zmq
 import time
-import replication
+from replication import ReplicatedDatablock
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
+
+STATE_INITIAL = 0
+STATE_SYNCING = 1
+STATE_ACTIVE = 2
+
 
 class Client(object):
     def __init__(self,factory=None, config=None):
@@ -20,20 +25,22 @@ class Client(object):
     def disconnect(self):
         self._net.stop()
 
-    def register(self, object):
+    def add(self, object):
         """
         Register a new item for replication
         """
         assert(object)
-
+        
         new_item = self._factory.construct(object)(owner="client")
         new_item.store(self._rep_store)
+        log.info("Registering {} on {}".format(object,new_item.uuid))
 
+        new_item.push(self._net.publish)
         return new_item.uuid
 
-    def get(self,object=None):
+    def pull(self,object=None):
         pass
-        
+    
 
     def unregister(self,object):
         pass
@@ -62,7 +69,7 @@ class ClientNetService(threading.Thread):
         self.publish = self.context.socket(zmq.PUSH)
         self.publish.connect("tcp://127.0.0.1:5562")
 
-        self.state = 0
+        self.state = STATE_INITIAL
 
 
     def run(self):
@@ -82,9 +89,6 @@ class ClientNetService(threading.Thread):
 
             time.sleep(1)
     
-    def send(data):
-        assert(issubclass(data, ReplicatedDatablock))
-        data.push(self.publish)
 
     def stop(self):
         self.exit_event.set()
@@ -159,16 +163,52 @@ class ServerNetService(threading.Thread):
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.pull, zmq.POLLIN)
 
-        self.state = 1
+        self.state = STATE_ACTIVE
 
         while not self.exit_event.is_set():
-            items = dict(poller.poll(10))
+            # Non blocking poller
+            socks = dict(poller.poll(1000))
 
-            if not items:
-               pass
+            # Snapshot system for late join (Server - Client)
+            # if self.snapshot in socks:
+                # msg = self.snapshot.recv_multipart(zmq.DONTWAIT)
 
-            time.sleep(.1)
+                # identity = msg[0]
+                # request = msg[1]
+
+                # if request == b"SNAPSHOT_REQUEST":
+                #     pass
+                # else:
+                #     logger.info("Bad snapshot request")
+                #     break
+
+                # ordered_props = [(SUPPORTED_TYPES.index(k.split('/')[0]),k,v) for k, v in self.property_map.items()]
+                # ordered_props.sort(key=itemgetter(0))
+
+                # for i, k, v in ordered_props:
+                #     logger.info(
+                #         "Sending {} snapshot to {}".format(k, identity))
+                #     self.request_sock.send(identity, zmq.SNDMORE)
+                #     v.send(self.request_sock)
+
+                # msg_end_snapshot = message.Message(key="SNAPSHOT_END", id=identity)
+                # self.request_sock.send(identity, zmq.SNDMORE)
+                # msg_end_snapshot.send(self.request_sock)
+                # logger.info("done")
+
+            # Regular update routing (Clients / Client)
+            if self.pull in socks:
+                log.info("Receiving changes from client")
+                msg = ReplicatedDatablock.pull(self.pull)
+
+                msg.store(self.store)
+                # msg = message.Message.recv(self.collector_sock)
+                # # logger.info("received object")
+                # # Update all clients
+                # msg.store(self.store)
+                # msg.send(self.pub_sock)
     
+
     def stop(self):
         self.exit_event.set()
 

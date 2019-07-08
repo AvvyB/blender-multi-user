@@ -62,7 +62,7 @@ class ReplicatedDatablock(object):
 
         key = self.uuid.encode()
         
-        socket.send_multipart([])
+        socket.send_multipart([key,data])
    
     @classmethod
     def pull(cls, socket):
@@ -71,7 +71,7 @@ class ReplicatedDatablock(object):
             - read data from the socket
             - reconstruct an instance
         """
-        pass
+        uuid, data = socket.recv_multipart(zmq.NOBLOCK)
 
     def store(self, dict, persistent=False): 
         """
