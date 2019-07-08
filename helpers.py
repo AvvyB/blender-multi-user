@@ -2,6 +2,7 @@ import logging
 import sys
 from uuid import uuid4
 import json
+import os
 
 import bpy
 import mathutils
@@ -70,7 +71,7 @@ def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
-    logger.debug("load {}".format(key))
+    logger.debug("load{}, {}".format(target_type, key))
     if value == "None":
         return
 
@@ -78,7 +79,7 @@ def load(key, value):
         load_object(target=target, data=value,
                     create=True)
     if target_type == 'Image':
-        load_object(target=target, data=value)
+        load_image(target=target, data=value)
     elif target_type == 'Mesh':
         load_mesh(target=target, data=value,
                   create=True)
@@ -137,19 +138,26 @@ def load_client(client=None, data=None):
 
             draw.renderer.draw_client_selected_objects(data)
 
+
 def load_image(target=None, data=None):
-    if not target:
-        image = bpy.data.image.new(
-            name=data['name'],
-            width=data['width'],
-            height=data['height'],
-            alpha=data['alpha'],
-            float_buffer=data['float_buffer']
-        )
-    else:
-        image = target
-    
-    dump_anything.load(target, data)
+    try:
+        if not target:
+            image = bpy.data.image.new(
+                name=data['name'],
+                width=data['width'],
+                height=data['height'],
+                alpha=data['alpha'],
+                float_buffer=data['float_buffer']
+            )
+        else:
+            image = target
+
+        image.source = 'FILE'
+        image.filepath = data['filepath']
+
+        # dump_anything.load(target, data)
+    except Exception as e:
+        log.error(e)
         
 
 def load_armature(target=None, data=None, create=False):
@@ -246,7 +254,7 @@ def load_mesh(target=None, data=None, create=False):
 
         target.id = data['id']
     else:
-        logger.debug("Mesh can't be loaded")
+        logger.error("Mesh can't be loaded")
 
 
 def load_object(target=None, data=None, create=False):
@@ -556,9 +564,11 @@ def dump(key):
     if target_type == 'Image':
         data = dump_datablock(target, 2)
         data['pixels'] = dump_image(target)
+        data = dump_datablock_attibute(target,['filepath','source'], 2, data)
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
-        dump_datablock_attibute(target, ['node_tree'], 7, data)
+        dump_datablock_attibute(target.node_tree, ["nodes","links"] , 3, data['node_tree'])
+        logger.debug("Material {} dumped".format(key))
     elif target_type == 'GreasePencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
@@ -637,15 +647,21 @@ def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
 
 
 def dump_image(image):
-    pixels = []
-    # for x in range(image.size[0]*image.size[1]):
-    #     px = [
-    #         image.pixels[x],
-    #         image.pixels[x+1],
-    #         image.pixels[x+2],
-    #         image.pixels[x+3]
-    #         ]
-    #     pixels.append(px)
+    pixels = None
+    if image.source == "GENERATED":
+        img_name = "{}.png".format(image.name)
+        
+        image.filepath_raw = os.path.join(environment.CACHE_DIR,img_name)
+        image.file_format = "PNG"
+        image.save()
+
+    if image.source == "FILE":
+        
+        file = open(image.filepath_raw, "rb")
+        pixels = file.read()
+        logger.debug("Reading image file {}".format(image.name))
+    else:
+        logger.error("image format not supported")
     return pixels
 
 

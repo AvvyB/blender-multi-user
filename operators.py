@@ -91,6 +91,7 @@ def update_client_selected_object(context):
 def init_datablocks():
     for datatype in environment.rtypes:
         if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
+            logger.debug("INIT: {}".format(datatype))
             for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
                 item.id = bpy.context.window_manager.session.username
                 key = "{}/{}".format(datatype, item.name)

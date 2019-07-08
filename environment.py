@@ -3,7 +3,6 @@ import subprocess
 import sys
 from pathlib import Path
 import logging
-import yaml
 import collections
 
 logger = logging.getLogger(__name__)
@@ -61,6 +60,8 @@ ORDERED_TYPES = [
 rtypes = []
 
 def load_config():
+    import yaml
+
     try:
         with open(CONFIG, 'r') as config_file:
             return yaml.safe_load(config_file)
@@ -70,12 +71,16 @@ def load_config():
     return DEFAULT_CONFIG
 
 def genereate_replicated_types(replicated_types):
+    rtypes.clear()
+    
     for t in ORDERED_TYPES:
         if replicated_types[t]:
             rtypes.append(t)
 
 
 def save_config(config):
+    import yaml
+
     logger.info("saving config")
     with open(CONFIG, 'w') as outfile:
         yaml.dump(config, outfile, default_flow_style=False)
