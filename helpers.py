@@ -483,7 +483,7 @@ def load_material(target=None, data=None, create=False):
 
                     target.node_tree.nodes.new(type=node_type)
 
-                dump_anything.load(
+                dump_anything.load( 
                     target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
 
                 if data["node_tree"]["nodes"][node]['type'] == 'TEX_IMAGE':

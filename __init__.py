@@ -207,6 +207,7 @@ classes = (
 def load_handler(dummy):
     import bpy
     bpy.context.window_manager.session.load()
+    save_session_config(bpy.context.window_manager.session,bpy.context)
 
 
 def register():
@@ -225,7 +226,7 @@ def register():
 
     bpy.app.handlers.load_post.append(load_handler)
     
-    save_session_config(bpy.context.window_manager.session,bpy.context)
+    
     operators.register()
     ui.register()
 
