@@ -17,6 +17,7 @@ import sys
 import os
 import bpy
 from . import environment
+from bpy.app.handlers import persistent
 
 
 DEPENDENCIES = {
@@ -202,6 +203,12 @@ classes = (
 )
 
 
+@persistent
+def load_handler(dummy):
+    import bpy
+    bpy.context.window_manager.session.load()
+
+
 def register():
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
@@ -216,7 +223,8 @@ def register():
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
 
-    bpy.context.window_manager.session.load()
+    bpy.app.handlers.load_post.append(load_handler)
+    
     save_session_config(bpy.context.window_manager.session,bpy.context)
     operators.register()
     ui.register()
