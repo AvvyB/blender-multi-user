@@ -142,22 +142,28 @@ def load_client(client=None, data=None):
 def load_image(target=None, data=None):
     try:
         if not target:
-            image = bpy.data.image.new(
+            image = bpy.data.images.new(
                 name=data['name'],
-                width=data['width'],
-                height=data['height'],
-                alpha=data['alpha'],
-                float_buffer=data['float_buffer']
+                width=data['size'][0],
+                height=data['size'][1]
             )
         else:
             image = target
+        
+        img_name = "{}.png".format(image.name)
+        
+        logger.info("updating {} cache file".format(image.name))
+        img_path = os.path.join(environment.CACHE_DIR,img_name)
+
+        file = open(img_path,'wb')
+        file.write(data["pixels"])
+        file.close()
 
         image.source = 'FILE'
-        image.filepath = data['filepath']
-
+        image.filepath = img_path
         # dump_anything.load(target, data)
     except Exception as e:
-        log.error(e)
+        logger.error(e)
         
 
 def load_armature(target=None, data=None, create=False):
@@ -214,26 +220,25 @@ def load_mesh(target=None, data=None, create=False):
         # 1 - LOAD GEOMETRY
         mesh_buffer = bmesh.new()
 
-        for i in data["vertices"]:
-           v =  mesh_buffer.verts.new(data["vertices"][i]["co"])
-           v.normal = data["vertices"][i]["normal"]
+        for i in data["verts"]:
+           v =  mesh_buffer.verts.new(data["verts"][i]["co"])
 
         mesh_buffer.verts.ensure_lookup_table()
 
         for i in data["edges"]:
             verts = mesh_buffer.verts
-            v1 = data["edges"][i]["vertices"][0]
-            v2 = data["edges"][i]["vertices"][1]
+            v1 = data["edges"][i]["verts"][0]
+            v2 = data["edges"][i]["verts"][1]
             mesh_buffer.edges.new([verts[v1], verts[v2]])
 
-        for p in data["polygons"]:
+        for p in data["faces"]:
             verts = []
-            for v in data["polygons"][p]["vertices"]:
+            for v in data["faces"][p]["verts"]:
                 verts.append(mesh_buffer.verts[v])
 
             if len(verts) > 0:
                 f = mesh_buffer.faces.new(verts)
-                f.material_index = data["polygons"][p]['material_index']
+                f.material_index = data["faces"][p]['material_index']
 
         for l in data["uv_layers"]:
             pass
@@ -566,9 +571,10 @@ def dump(key):
     data = None
 
     if target_type == 'Image':
-        data = dump_datablock(target, 2)
+        data = {}
         data['pixels'] = dump_image(target)
-        data = dump_datablock_attibute(target,['filepath','source'], 2, data)
+        dump_datablock_attibute(target,[], 2,data)
+        data = dump_datablock_attibute(target,["name",'size','height','alpha','float_buffer','filepath','source'], 2, data)
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(target.node_tree, ["nodes","links"] , 3, data['node_tree'])
@@ -661,7 +667,7 @@ def dump_image(image):
         image.save()
 
     if image.source == "FILE":
-        
+        image.save()
         file = open(image.filepath_raw, "rb")
         pixels = file.read()
         logger.debug("Reading image file {}".format(image.name))
@@ -713,6 +719,7 @@ def dump_mesh(mesh, data={}):
             fverts.append(vert.index)
 
         f["verts"] = fverts
+        f["material_index"] = face.material_index
 
         # Face metadata
         for loop in face.loops:
