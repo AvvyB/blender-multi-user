@@ -583,8 +583,9 @@ def dump(key):
         data = dump_datablock(target, 1)
     elif target_type == 'Mesh':
         data = dump_datablock(target, 2)
-        dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
+        data = dump_mesh(target,data)
+        # dump_datablock_attibute(
+            # target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
         
         # Fix material index
         m_list = []
@@ -682,40 +683,46 @@ def dump_mesh(mesh, data={}):
     
     verts = {}
     for vert in mesh_buffer.verts:
-        verts[vert.index]['co'] = vert.co.xyz
+        v = {}
+        v["co"] = list(vert.co)
 
         # vert metadata
-        verts[vert.index]['bevel'] = vert[bevel_layer]
-        verts[vert.index]['skin'] = vert[skin_layer]
+        v['bevel'] = vert[bevel_layer]
+        # v['skin'] = list(vert[skin_layer])
+
+        verts[str(vert.index)] =  v
 
     mesh_data["verts"] = verts
 
     edges = {}
     for edge in mesh_buffer.edges:
-        edges[edge.index]["verts"] = [edge.verts[0].index,edge.verts[1].index]
+        e = {}
+        e["verts"] = [edge.verts[0].index,edge.verts[1].index]
 
         # Edge metadata
-        edges[edge.index]["smooth"] = edge.smooth
-    
+        e["smooth"] = edge.smooth
+
+        edges[edge.index] = e
     mesh_data["edges"] = edges
     
     faces = {}
     for face in mesh_buffer.faces:
+        f = {}
         fverts = []
         for vert in face.verts:
             fverts.append(vert.index)
 
-        faces[face.index]["verts"] = fverts
+        f["verts"] = fverts
 
         # Face metadata
         for loop in face.loops:
             loop_uv = loop[uv_layer]
-            
-            faces[face.index]["uv"]
-            faces[face.index]["uv"] = loop_uv.uv
-            
-            print(loop_uv.uv)
 
+            f["uv"] = list(loop_uv.uv)
+
+        faces[face.index] = f
+    
+    mesh_data["faces"] = faces
     return mesh_data
 
 def init_client(key=None):
