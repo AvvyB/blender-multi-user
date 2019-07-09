@@ -568,7 +568,7 @@ def load_gpencil(target=None, data=None, create=False):
 
         target.id = data['id']
     except:
-        logger.error("default loading error")
+        logger.error("default loadi\ng error")
 
 
 def load_light(target=None, data=None, create=False, type=None):
