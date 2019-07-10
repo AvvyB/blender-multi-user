@@ -248,7 +248,6 @@ def load_mesh(target=None, data=None, create=False):
                     loop_uv = loop[uv_layer]
                     loop_uv.uv = data["faces"][p]["uv"][i]
 
-                    print(loop_uv.uv)
 
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
