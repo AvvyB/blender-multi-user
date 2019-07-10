@@ -23,7 +23,7 @@ from bpy.app.handlers import persistent
 DEPENDENCIES = {
     "zmq",
     "umsgpack",
-    "pyyaml"
+    "yaml"
 }
 
 
@@ -225,7 +225,6 @@ def register():
         type=SessionProps)
 
     bpy.app.handlers.load_post.append(load_handler)
-    
     
     operators.register()
     ui.register()

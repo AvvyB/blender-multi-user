@@ -13,6 +13,7 @@ import bpy
 from bpy_extras.io_utils import ExportHelper
 import mathutils
 from pathlib import Path
+from bpy.app.handlers import persistent
 
 from . import environment, client, draw, helpers, ui
 from .libs import umsgpack
@@ -88,6 +89,7 @@ def update_client_selected_object(context):
 
 # TODO: cleanup
 
+
 def init_datablocks():
     for datatype in environment.rtypes:
         if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
@@ -136,7 +138,7 @@ class SessionJoinOperator(bpy.types.Operator):
         net_settings = context.window_manager.session
         # save config
         net_settings.save(context)
-        
+
         # Scene setup
         if net_settings.start_empty:
             clean_scene()
@@ -347,7 +349,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
     bl_description = "Description that shows in blender tooltips"
     bl_options = {"REGISTER"}
 
-    target_client = bpy.props.StringProperty()
+    target_client: bpy.props.StringProperty(default="None")
 
     @classmethod
     def poll(cls, context):
@@ -432,12 +434,12 @@ def is_replicated(update):
     object_name = update.id.name
 
     # Master collection special cae
-    if  update.id.name == 'Master Collection':
-        object_type = 'Scene' 
+    if update.id.name == 'Master Collection':
+        object_type = 'Scene'
         object_name = bpy.context.scene.name
     if 'Light' in update.id.bl_rna.name:
-        object_type = 'Light' 
-        
+        object_type = 'Light'
+
     key = "{}/{}".format(object_type, object_name)
 
     if client.instance.exist(key):
@@ -447,40 +449,40 @@ def is_replicated(update):
         return False
 
 
-def get_datablock_from_update(update,context):
+def get_datablock_from_update(update, context):
     item_type = update.id.__class__.__name__
     item_id = update.id.name
-   
+
     datablock_ref = None
 
     if item_id == 'Master Collection':
-        datablock_ref= bpy.context.scene
+        datablock_ref = bpy.context.scene
     elif item_type in helpers.BPY_TYPES.keys():
-        datablock_ref = getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__])[update.id.name]
+        datablock_ref = getattr(
+            bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__])[update.id.name]
     else:
         if item_id in bpy.data.lights.keys():
             datablock_ref = bpy.data.lights[item_id]
-    
 
     return datablock_ref
 
 
 def toogle_update_dirty(context, update):
-    data_ref = get_datablock_from_update(update,context)
-                    
+    data_ref = get_datablock_from_update(update, context)
+
     if data_ref:
         logger.debug(update.id.bl_rna.__class__.__name__)
-        data_ref.is_dirty= True
+        data_ref.is_dirty = True
 
 
+@persistent
 def depsgraph_update(scene):
     ctx = bpy.context
 
     if client.instance and client.instance.state() == 3:
-        if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
+        if ctx.mode in ['OBJECT', 'PAINT_GPENCIL']:
             updates = ctx.view_layer.depsgraph.updates
             username = ctx.window_manager.session.username
-            
 
             selected_objects = helpers.get_selected_objects(scene)
 
@@ -489,37 +491,38 @@ def depsgraph_update(scene):
                     if update.id.id == username or update.id.id == 'Common':
                         toogle_update_dirty(ctx, update)
                 else:
-                    item = get_datablock_from_update(update,ctx)
-                    
+                    item = get_datablock_from_update(update, ctx)
+
                     # get parent authority
-                    if hasattr(item,"id"):
-                        parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
+                    if hasattr(item, "id"):
+                        parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id
 
                         if parent_id == username or parent_id == 'Common':
                             item.id = username
 
                             item_type = item.__class__.__name__
-                            
+
                             if 'Light'in item.__class__.__name__:
                                 item_type = 'Light'
-                                
-                            key = "{}/{}".format(item_type , item.name)
+
+                            key = "{}/{}".format(item_type, item.name)
                             client.instance.set(key)
                         else:
                             try:
-                                getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__]).remove(item)
+                                getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__]).remove(
+                                    item)
                             except:
                                 pass
                             break
 
-            update_client_selected_object(ctx)   
+            update_client_selected_object(ctx)
 
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-   
+
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
     draw.register()
 
@@ -529,7 +532,7 @@ def unregister():
 
     draw.unregister()
 
-    if  bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
+    if bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
 
     if server:
