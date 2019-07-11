@@ -41,7 +41,7 @@ def execute_queued_functions():
     return .1
 
 
-def clean_scene(elements=environment.rtypes):
+def clean_scene(elements=environment.get_replicated_types()):
     for datablock in elements:
         datablock_ref = getattr(bpy.data,  helpers.BPY_TYPES[datablock])
         for item in datablock_ref:

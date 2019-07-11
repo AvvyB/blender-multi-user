@@ -208,6 +208,8 @@ classes = (
 def load_handler(dummy):
     import bpy
     bpy.context.window_manager.session.load()
+    # Generate ordered replicate types
+    
     save_session_config(bpy.context.window_manager.session,bpy.context)
 
 

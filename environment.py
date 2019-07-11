@@ -70,6 +70,17 @@ def load_config():
 
     return DEFAULT_CONFIG
 
+def get_replicated_types():
+    config = load_config()
+    rtpyes = config["replicated_types"]
+    tlist = []
+
+    for t in ORDERED_TYPES:
+        if rtpyes[t]:
+            tlist.append(t)
+
+    return tlist
+
 def genereate_replicated_types(replicated_types):
     rtypes.clear()
     

@@ -67,6 +67,18 @@ def get_selected_objects(scene):
 
 
 #    LOAD HELPERS
+
+def load_dict(src_dict, target):
+    try:
+        for item in src_dict:
+            # attr = 
+            setattr(target,item,src_dict[item])
+
+    except Exception as e:
+        logger.error(e)
+        pass
+        
+
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -465,11 +477,10 @@ def load_material(target=None, data=None, create=False):
 
             dump_anything.load(target.grease_pencil, data['grease_pencil'])
 
-        # Load other meshes metadata
-        dump_anything.load(target, data)
+            load_dict(data['grease_pencil'], target.grease_pencil)
 
-        # load nodes
-        if data["use_nodes"]:
+
+        elif data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
             
@@ -478,7 +489,6 @@ def load_material(target=None, data=None, create=False):
             for node in data["node_tree"]["nodes"]:
                 # fix None node tree error
                
-
                 
                 index = target.node_tree.nodes.find(node)
 
@@ -514,6 +524,11 @@ def load_material(target=None, data=None, create=False):
                                                        ['name']].outputs[current_link['from_socket']['name']]
 
                 target.node_tree.links.new(input_socket, output_socket)
+
+
+        # Load other meshes metadata
+        # dump_anything.load(target, data)
+
 
         target.id = data['id']
 
@@ -616,6 +631,8 @@ def dump(key):
         data = dump_datablock(target, 2)
         if target.node_tree:
             dump_datablock_attibute(target.node_tree, ["nodes","links"] , 5, data['node_tree'])
+        elif target.grease_pencil:
+            dump_datablock_attibute(target, ["grease_pencil"] , 3, data)
     elif target_type == 'GreasePencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
