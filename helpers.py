@@ -470,11 +470,16 @@ def load_material(target=None, data=None, create=False):
 
         # load nodes
         if data["use_nodes"]:
+            if target.node_tree is None:
+                target.use_nodes = True
+            
+            target.node_tree.nodes.clear()
+
             for node in data["node_tree"]["nodes"]:
                 # fix None node tree error
-                if target.node_tree is None:
-                    target.use_nodes = True
+               
 
+                
                 index = target.node_tree.nodes.find(node)
 
                 if index is -1:
