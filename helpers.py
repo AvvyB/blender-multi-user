@@ -494,12 +494,14 @@ def load_material(target=None, data=None, create=False):
                     target.node_tree.nodes[index].image = bpy.data.images[data["node_tree"]["nodes"][node]['image']['name']]
 
                 for input in data["node_tree"]["nodes"][node]["inputs"]:
-
+                        
                     try:
-                        target.node_tree.nodes[index].inputs[input].default_value = data[
-                            "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
-                    except:
-                        pass
+                        if hasattr(target.node_tree.nodes[index].inputs[input],"default_value"):
+                            target.node_tree.nodes[index].inputs[input].default_value = data[
+                                "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
+                    except Exception as e:
+                        logger.error("Fail loading {} node value from {} ({}) ".format(target.name, target.node_tree.nodes[index].inputs[input].default_value,e))
+                        continue
 
             # Load nodes links
             target.node_tree.links.clear()
@@ -613,7 +615,7 @@ def dump(key):
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
         if target.node_tree:
-            dump_datablock_attibute(target.node_tree, ["nodes","links"] , 3, data['node_tree'])
+            dump_datablock_attibute(target.node_tree, ["nodes","links"] , 5, data['node_tree'])
     elif target_type == 'GreasePencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
