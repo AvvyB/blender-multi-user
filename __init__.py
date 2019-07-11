@@ -44,10 +44,11 @@ def client_list_callback(scene, context):
             if 'Client' in k[0]:
                 name = k[1]
 
+                name_desc = name
                 if name == username:
-                    name += " (self)"
+                    name_desc += " (self)"
 
-                items.append((name, name, ""))
+                items.append((name, name_desc, ""))
 
     return items
 
