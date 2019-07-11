@@ -87,8 +87,6 @@ def update_client_selected_object(context):
         client_data[0][1]['active_objects'] = []
         client.instance.set(client_key, client_data[0][1])
 
-# TODO: cleanup
-
 
 def init_datablocks():
     for datatype in environment.rtypes:
@@ -471,7 +469,6 @@ def toogle_update_dirty(context, update):
     data_ref = get_datablock_from_update(update, context)
 
     if data_ref:
-        logger.debug(update.id.bl_rna.__class__.__name__)
         data_ref.is_dirty = True
 
 

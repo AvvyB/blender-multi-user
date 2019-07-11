@@ -607,8 +607,8 @@ def dump(key):
         data = dump_datablock_attibute(target,["name",'size','height','alpha','float_buffer','filepath','source'], 2, data)
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
-        dump_datablock_attibute(target.node_tree, ["nodes","links"] , 3, data['node_tree'])
-        logger.debug("Material {} dumped".format(key))
+        if target.node_tree:
+            dump_datablock_attibute(target.node_tree, ["nodes","links"] , 3, data['node_tree'])
     elif target_type == 'GreasePencil':
         data = dump_datablock(target, 2)
         dump_datablock_attibute(
