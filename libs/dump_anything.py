@@ -137,7 +137,6 @@ class Dumper:
         return list(vector)
 
     def _dump_color_as_leaf(self, color, depth):
-        print(color)
         return list(color)
 
     def _dump_default_as_branch(self, default, depth):
