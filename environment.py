@@ -6,6 +6,7 @@ import logging
 import collections
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 CONFIG = os.path.join(CONFIG_DIR, "app.yaml")

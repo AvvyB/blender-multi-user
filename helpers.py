@@ -15,7 +15,8 @@ BPY_TYPES = {'Image': 'images', 'Texture': 'textures', 'Material': 'materials', 
              'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures'}
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger.setLevel(logging.ERROR)
+
 # UTILITY FUNCTIONS
 
 
@@ -152,7 +153,6 @@ def load_client(client=None, data=None):
     if client and data:
         if net_settings.enable_presence:
             draw.renderer.draw_client(data)
-
             draw.renderer.draw_client_selected_objects(data)
 
 
@@ -597,8 +597,6 @@ def load_light(target=None, data=None, create=False, type=None):
 
         target.id = data['id']
 
-        # Tmp color fix
-        # setattr(target,"color",data['color']['owner'])
         
     except Exception as e:
         logger.error("light loading error: {}".format(e))

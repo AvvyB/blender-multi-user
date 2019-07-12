@@ -20,6 +20,8 @@ def _is_dictionnary(v):
 def _dump_filter_type(t):
     return lambda x: isinstance(x, t)
 
+def _dump_filter_type_by_name(t_name):
+    return lambda x: t_name == x.__class__.__name__
 
 def _dump_filter_array(array):
     # only primitive type array
@@ -55,6 +57,8 @@ def _load_filter_array(array):
         return False
     return True
 
+def _load_filter_color(color):
+    return color.__class__.__name__ == 'Color'
 
 def _load_filter_default(default):
     if default.read() is None:
@@ -81,7 +85,9 @@ class Dumper:
 
     def _dump_any(self, any, depth):
         for filter_function, dump_function in self.type_subset:
+
             if filter_function(any):
+                # print(any)
                 return dump_function[not (depth >= self.depth)](any, depth + 1)
 
     def _build_inline_dump_functions(self):
@@ -92,6 +98,7 @@ class Dumper:
         self._dump_matrix = (self._dump_matrix_as_leaf, self._dump_matrix_as_leaf)
         self._dump_vector = (self._dump_vector_as_leaf, self._dump_vector_as_leaf)
         self._dump_default = (self._dump_default_as_leaf, self._dump_default_as_branch)
+        self._dump_color = (self._dump_color_as_leaf, self._dump_color_as_leaf)
 
     def _build_match_elements(self):
         self._match_type_bool = (_dump_filter_type(bool), self._dump_identity)
@@ -103,6 +110,7 @@ class Dumper:
         self._match_type_array = (_dump_filter_array, self._dump_array)
         self._match_type_matrix = (_dump_filter_type(mathutils.Matrix), self._dump_matrix)
         self._match_type_vector = (_dump_filter_type(mathutils.Vector), self._dump_vector)
+        self._match_type_color = (_dump_filter_type_by_name("Color"), self._dump_color)
         self._match_default = (_dump_filter_default, self._dump_default)
 
     def _dump_collection_as_branch(self, collection, depth):
@@ -127,6 +135,10 @@ class Dumper:
 
     def _dump_vector_as_leaf(self, vector, depth):
         return list(vector)
+
+    def _dump_color_as_leaf(self, color, depth):
+        print(color)
+        return list(color)
 
     def _dump_default_as_branch(self, default, depth):
         def is_valid_property(p):
@@ -162,6 +174,8 @@ class Dumper:
             self._match_type_array,
             self._match_type_matrix,
             self._match_type_vector,
+            self._match_type_color,
+            self._match_type_color,
             self._match_default
         ]
 
@@ -324,7 +338,8 @@ class Loader:
             (_load_filter_type(T.PointerProperty), self._load_pointer),
             (_load_filter_array, self._load_array),
             (_load_filter_type(T.CollectionProperty), self._load_collection),
-            (_load_filter_default, self._load_default)
+            (_load_filter_default, self._load_default),
+            (_load_filter_color, self._load_identity),
         ]
 
 

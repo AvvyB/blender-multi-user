@@ -23,7 +23,8 @@ DUMP_AGENTS_NUMBER = 1
 
 lock = threading.Lock()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger.setLevel(logging.ERROR)
+
 instance = None 
 
 
