@@ -81,7 +81,7 @@ def save_session_config(self,context):
             config["replicated_types"][bloc.type_name] = bloc.is_replicated
 
         # Generate ordered replicate types
-        environment.genereate_replicated_types(config["replicated_types"])
+        environment.genererate_replicated_types()
         
         # Save out the configuration file
         environment.save_config(config)

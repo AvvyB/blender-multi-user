@@ -71,9 +71,6 @@ def get_selected_objects(scene):
 
 #    LOAD HELPERS
 
-# def load_color(color_dict, target_color_attribute):
-#     target_color_attribute
-
 def load_dict(src_dict, target):
     try:
         for item in src_dict:
@@ -96,7 +93,7 @@ def load(key, value):
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
-    if target_type == 'Image':
+    elif target_type == 'Image':
         load_image(target=target, data=value)
     elif target_type == 'Mesh':
         load_mesh(target=target, data=value,
@@ -328,7 +325,7 @@ def load_object(target=None, data=None, create=False):
 
             target = bpy.data.objects.new(data["name"], pointer)
 
-            # Load other meshes metadata
+        # Load other meshes metadata
         # dump_anything.load(target, data)
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
@@ -336,6 +333,21 @@ def load_object(target=None, data=None, create=False):
         target.id = data['id']
 
         client = bpy.context.window_manager.session.username
+
+        # Load modifiers
+        if hasattr(target,'modifiers'):
+            for local_modifier in target.modifiers:
+                if local_modifier.name not in data['modifiers']:
+                    target.modifiers.remove(local_modifier)
+            for modifier in data['modifiers']:
+                target_modifier = target.modifiers.get(modifier)
+
+                if not target_modifier:
+                    target_modifier = target.modifiers.new(data['modifiers'][modifier]['name'],data['modifiers'][modifier]['type'])
+               
+                dump_anything.load(target_modifier, data['modifiers'][modifier])
+
+
 
         if target.id == client or target.id == "Common":
             target.hide_select = False
@@ -615,8 +627,6 @@ def load_default(target=None, data=None, create=False, type=None):
         logger.error("default loading error {}".format(e))
 
 # DUMP HELPERS
-
-
 def dump(key):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
@@ -667,6 +677,10 @@ def dump(key):
         #                                                               "radius_interpolation", "resolution_v", "use_bezier_u", "use_bezier_v", "use_cyclic_u", "use_cyclic_v", "use_endpoint_u", "use_endpoint_v"], 3)
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
+
+        if hasattr(target,'modifiers'):
+            dump_datablock_attibutes(
+                target, ['modifiers'], 3, data)
     elif target_type == 'Collection':
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':

@@ -82,9 +82,11 @@ def get_replicated_types():
 
     return tlist
 
-def genereate_replicated_types(replicated_types):
+def genererate_replicated_types():
     rtypes.clear()
     
+    cfg = load_config()
+    replicated_types = cfg['replicated_types']
     for t in ORDERED_TYPES:
         if replicated_types[t]:
             rtypes.append(t)
