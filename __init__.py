@@ -23,7 +23,7 @@ from bpy.app.handlers import persistent
 DEPENDENCIES = {
     "zmq",
     "umsgpack",
-    "yaml"
+    "pyyaml"
 }
 
 
