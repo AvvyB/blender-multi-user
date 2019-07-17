@@ -35,6 +35,11 @@ class ReplicatedDataFactory(object):
         print("type not supported for replication")
         raise NotImplementedError
 
+    def match_type_by_name(self,type_name):
+        for stypes, implementation in self.supported_types: 
+            if type_name == implementation.__class__.__name__:
+                return implementation
+
     def construct_from_dcc(self,data):
         implementation = self.match_type_by_instance(data)
         return implementation
@@ -61,9 +66,7 @@ class ReplicatedDatablock(object):
         assert(owner)
         self.owner = owner
         self.pointer = data
-
-        if data:
-            self.str_type = self.data.__class__.__name__
+        self.str_type = self.data.__class__.__name__
         
 
     def push(self, socket):
@@ -76,8 +79,9 @@ class ReplicatedDatablock(object):
         assert(isinstance(data, bytes))
         owner = self.owner.encode()
         key = self.uuid.encode()
-        
-        socket.send_multipart([key,owner,data])
+        type = self.str_type.encode()
+
+        socket.send_multipart([key,owner,str_type,data])
    
     @classmethod
     def pull(cls, socket, factory):
@@ -86,9 +90,9 @@ class ReplicatedDatablock(object):
             - read data from the socket
             - reconstruct an instance
         """
-        uuid, owner, data = socket.recv_multipart(zmq.NOBLOCK)
+        uuid, owner,str_type, data = socket.recv_multipart(zmq.NOBLOCK)
 
-        instance = factory.construct_from_net(data)(owner=owner.decode(), uuid=uuid.decode())
+        instance = factory.construct_from_net(str_type.decode())(owner=owner.decode(), uuid=uuid.decode())
 
         instance.data = instance.deserialize(data)
         return instance

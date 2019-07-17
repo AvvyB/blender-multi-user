@@ -31,7 +31,7 @@ class Client(object):
         """
         assert(object)
         
-        new_item = self._factory.construct_from_dcc(object)(owner="client")
+        new_item = self._factory.construct_from_dcc(object)(owner="client", data=object)
 
         if new_item:
             log.info("Registering {} on {}".format(object,new_item.uuid))
@@ -107,9 +107,9 @@ class ClientNetService(threading.Thread):
 
 
 class Server():
-    def __init__(self,config=None):
+    def __init__(self,config=None, factory=None):
         self.rep_store = {}
-        self.net = ServerNetService(self.rep_store)
+        self.net = ServerNetService(store_reference=self.rep_store, factory=factory)
         # self.serve()
 
     def serve(self):
@@ -205,7 +205,7 @@ class ServerNetService(threading.Thread):
             # Regular update routing (Clients / Client)
             if self.pull in socks:
                 log.info("Receiving changes from client")
-                msg = ReplicatedDatablock.pull(self.pull)
+                msg = ReplicatedDatablock.pull(self.pull, self.factory)
 
                 msg.store(self.store)
                 # msg = message.Message.recv(self.collector_sock)

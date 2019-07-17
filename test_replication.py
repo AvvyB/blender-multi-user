@@ -72,7 +72,7 @@ class TestDataReplication(unittest.TestCase):
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
 
-        server_api = Server()
+        server_api = Server(factory=factory)
         server_api.serve()
         client_api = Client(factory=factory)
         client_api.connect()
