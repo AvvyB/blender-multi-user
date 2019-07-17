@@ -24,17 +24,26 @@ class ReplicatedDataFactory(object):
         """
         self.supported_types.append((dtype, implementation))
 
-    def match_type(self,data):
+    def match_type_by_instance(self,data):
+        """
+        Find corresponding type to the given datablock
+        """
         for stypes, implementation in self.supported_types: 
             if isinstance(data, stypes):
                 return implementation
-        
+    
         print("type not supported for replication")
         raise NotImplementedError
 
-    def construct(self,data):
-        implementation = self.match_type(data)
+    def construct_from_dcc(self,data):
+        implementation = self.match_type_by_instance(data)
         return implementation
+
+    def construct_from_net(self, type_name):
+        """
+        Reconstruct a new replicated value from serialized data
+        """
+        return self.match_type_by_name(data)
 
 class ReplicatedDatablock(object):
     """
@@ -43,12 +52,18 @@ class ReplicatedDatablock(object):
     uuid = None  # key (string)
     pointer = None # dcc data reference
     data = None  # data blob (json)
+    str_type = None # data type name (for deserialization)
     deps = None # dependencies references
+    owner = None
 
-    def __init__(self, owner=None, data=None):
-        self.uuid = str(uuid4())
+    def __init__(self, owner=None, data=None, uuid=None):
+        self.uuid = uuid if uuid else str(uuid4())
         assert(owner)
+        self.owner = owner
         self.pointer = data
+
+        if data:
+            self.str_type = self.data.__class__.__name__
         
 
     def push(self, socket):
@@ -59,19 +74,25 @@ class ReplicatedDatablock(object):
         """
         data = self.serialize(self.pointer)
         assert(isinstance(data, bytes))
-
+        owner = self.owner.encode()
         key = self.uuid.encode()
         
-        socket.send_multipart([key,data])
+        socket.send_multipart([key,owner,data])
    
     @classmethod
-    def pull(cls, socket):
+    def pull(cls, socket, factory):
         """
         Here we reeceive data from the wire:
             - read data from the socket
             - reconstruct an instance
         """
-        uuid, data = socket.recv_multipart(zmq.NOBLOCK)
+        uuid, owner, data = socket.recv_multipart(zmq.NOBLOCK)
+
+        instance = factory.construct_from_net(data)(owner=owner.decode(), uuid=uuid.decode())
+
+        instance.data = instance.deserialize(data)
+        return instance
+
 
     def store(self, dict, persistent=False): 
         """

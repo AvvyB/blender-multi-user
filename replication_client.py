@@ -25,18 +25,23 @@ class Client(object):
     def disconnect(self):
         self._net.stop()
 
-    def add(self, object):
+    def register(self, object):
         """
         Register a new item for replication
         """
         assert(object)
         
-        new_item = self._factory.construct(object)(owner="client")
-        new_item.store(self._rep_store)
-        log.info("Registering {} on {}".format(object,new_item.uuid))
+        new_item = self._factory.construct_from_dcc(object)(owner="client")
 
-        new_item.push(self._net.publish)
-        return new_item.uuid
+        if new_item:
+            log.info("Registering {} on {}".format(object,new_item.uuid))
+            new_item.store(self._rep_store)
+            
+            log.info("Pushing changes...")
+            new_item.push(self._net.publish)
+            return new_item.uuid
+        else:
+            raise TypeError("Type not supported")
 
     def pull(self,object=None):
         pass
@@ -118,7 +123,7 @@ class Server():
 
 
 class ServerNetService(threading.Thread):
-    def __init__(self,store_reference=None):
+    def __init__(self,store_reference=None, factory=None):
         # Threading
         threading.Thread.__init__(self)
         self.name = "ServerNetLink"
@@ -131,6 +136,7 @@ class ServerNetService(threading.Thread):
         self.publisher = None
         self.pull = None
         self.state = 0
+        self.factory = factory
 
         self.bind_ports()
 

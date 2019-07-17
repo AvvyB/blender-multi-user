@@ -64,7 +64,7 @@ class TestDataReplication(unittest.TestCase):
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
         data_sample = SampleData()
-        rep_sample = factory.construct(data_sample)(owner="toto")
+        rep_sample = factory.construct_from_dcc(data_sample)(owner="toto")
         
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
@@ -78,7 +78,7 @@ class TestDataReplication(unittest.TestCase):
         client_api.connect()
 
         data_sample = SampleData()
-        data_sample_key = client_api.add(data_sample)
+        data_sample_key = client_api.register(data_sample)
 
         
         self.assertNotEqual(client_api._rep_store[data_sample_key],None)
