@@ -13,13 +13,14 @@ STATE_ACTIVE = 2
 
 
 class Client(object):
-    def __init__(self,factory=None, config=None):
+    def __init__(self,factory=None, id='default'):
         assert(factory)
 
         self._rep_store = {}
         self._net_client = ClientNetService(
             store_reference=self._rep_store,
-            factory=factory)
+            factory=factory,
+            id=id)
         self._factory = factory
 
     def connect(self):
@@ -58,7 +59,7 @@ class Client(object):
         pass
 
 class ClientNetService(threading.Thread):
-    def __init__(self,store_reference=None, factory=None):
+    def __init__(self,store_reference=None, factory=None,id="default"):
 
         # Threading
         threading.Thread.__init__(self)
@@ -68,6 +69,7 @@ class ClientNetService(threading.Thread):
         self._exit_event = threading.Event()
         self._factory = factory
         self._store_reference = store_reference
+        self._id = id
 
         assert(self._factory)
 
@@ -75,7 +77,7 @@ class ClientNetService(threading.Thread):
         self.context = zmq.Context.instance()
 
         self.snapshot = self.context.socket(zmq.DEALER)
-        self.snapshot.setsockopt(zmq.IDENTITY, b'SERVER')
+        self.snapshot.setsockopt(zmq.IDENTITY, self._id.encode())
         self.snapshot.connect("tcp://127.0.0.1:5560")
         
         self.subscriber = self.context.socket(zmq.SUB)
@@ -90,7 +92,7 @@ class ClientNetService(threading.Thread):
 
 
     def run(self):
-        logger.info("Client is online")
+        logger.info("{} online".format(self._id))
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.subscriber, zmq.POLLIN)
@@ -103,6 +105,7 @@ class ClientNetService(threading.Thread):
                 ACTIVE : Do nothing 
             """
             if self.state == STATE_INITIAL:
+                logger.debug('{} : request snapshot'.format(self._id))
                 self.snapshot.send(b"SNAPSHOT_REQUEST")
                 self.state = STATE_SYNCING
             
@@ -112,19 +115,22 @@ class ClientNetService(threading.Thread):
                 SYNCING : Ask for snapshots
                 ACTIVE : Do nothing 
             """
-            items = dict(poller.poll(1))
+            items = dict(poller.poll(10))
 
             if self.snapshot in items:
                 if self.state == STATE_SYNCING:
                     datablock = ReplicatedDatablock.pull(self.snapshot, self._factory)
 
-                    if isinstance(datablock, RepCommand):
-                        
+                    if datablock.buffer == 'SNAPSHOT_END':
+                        self.state = STATE_ACTIVE
+                        logger.debug('{} : snapshot done'.format(self._id))
+
+
 
             # We receive updates from the server !
             if self.subscriber in items:
                 if self.state == STATE_ACTIVE:
-                    logger.debug("Receiving changes from server")
+                    logger.debug("{} : Receiving changes from server".format(self._id))
                     datablock = ReplicatedDatablock.pull(self.subscriber, self._factory)
                     datablock.store(self._store_reference)
 
@@ -216,7 +222,7 @@ class ServerNetService(threading.Thread):
 
         while not self._exit_event.is_set():
             # Non blocking poller
-            socks = dict(poller.poll())
+            socks = dict(poller.poll(10))
 
             # Snapshot system for late join (Server - Client)
             if self.snapshot in socks:

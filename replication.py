@@ -72,7 +72,7 @@ class ReplicatedDatablock(object):
     """
     uuid = None     # uuid used as key      (string)
     pointer = None  # dcc data ref          (DCC type)
-    buffer = None   # data blob             (json)
+    buffer = None   # raw data              (json)
     str_type = None # data type name        (string)
     deps = [None]   # dependencies array    (string)
     owner = None    # Data owner            (string)
@@ -82,8 +82,13 @@ class ReplicatedDatablock(object):
         self.uuid = uuid if uuid else str(uuid4())
         assert(owner)
         self.owner = owner
-        self.pointer = data
-        self.buffer = buffer if buffer else None
+
+        if data:
+            self.pointer = data
+        elif buffer:
+            self.buffer = self.deserialize(buffer)
+        else:
+            raise ValueError("Not enought parameter in constructor")
         self.str_type = type(self).__name__
 
     def push(self, socket):
@@ -112,7 +117,6 @@ class ReplicatedDatablock(object):
         str_type = str_type.decode()
         owner = owner.decode()
         uuid = uuid.decode()
-        data = self.deserialize(data)
 
         instance = factory.construct_from_net(str_type)(owner=owner, uuid=uuid, buffer=data)
 
@@ -176,7 +180,7 @@ class RepCommand(ReplicatedDatablock):
         return pickle.dumps(data)
 
     def deserialize(self,data):
-        return pickle.load(data)
+        return pickle.loads(data)
     
     def apply(self,data,target):
         target = data

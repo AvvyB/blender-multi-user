@@ -26,57 +26,70 @@ class RepSampleData(ReplicatedDatablock):
     def deserialize(self,data):
         import pickle
 
-        return pickle.load(data)
+        return pickle.loads(data)
 
-class TestDataReplication(unittest.TestCase):
-
+class TestDataFactory(unittest.TestCase):
     def test_data_factory(self):
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
         data_sample = SampleData()
-        rep_sample = factory.construct_from_dcc(data_sample)(owner="toto")
+        rep_sample = factory.construct_from_dcc(data_sample)(owner="toto", data=data_sample)
         
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
-    def test_basic_client_start(self):
-        factory = ReplicatedDataFactory()
-        factory.register_type(SampleData, RepSampleData)
 
-        server = Server(factory=factory)
-        server.serve()
+class TestDataReplication(unittest.TestCase):
+    def __init__(self,methodName='runTest'):
+        unittest.TestCase.__init__(self, methodName)
 
-        client = Client(factory=factory)
-        client.connect()
+        self.factory = ReplicatedDataFactory()
+        self.factory.register_type(SampleData, RepSampleData)
 
-        time.sleep(1)
+        self.server = Server(factory=self.factory)
+        self.server.serve()
 
-        self.assertEqual(client.state(), 2)
+        self.client = Client(factory=self.factory, id="client_1")
+        self.client.connect()
 
-    # def test_register_client_data(self):
-    #     # Setup data factory        
-    #     factory = ReplicatedDataFactory()
-    #     factory.register_type(SampleData, RepSampleData)
+        self.client2 = Client(factory=self.factory, id="client_2")
+        self.client2.connect()
 
-    #     server = Server(factory=factory)
-    #     server.serve()
 
-    #     client = Client(factory=factory)
-    #     client.connect()
+    def test_register_client_data(self):
+        data_sample_key = self.client.register(SampleData())
 
-    #     client2 = Client(factory=factory)
-    #     client2.connect()
+        #Waiting for server to receive the datas
+        time.sleep(2)
 
-    #     data_sample_key = client.register(SampleData())
+        test_key = self.client2._rep_store[data_sample_key]
 
-    #     #Waiting for server to receive the datas
-    #     time.sleep(1)
+        #Check if the server receive them
+        self.assertNotEqual(test_key, None)
+    
+    def test_register_client_data2(self):
+        data_sample_key = self.client.register(SampleData())
 
-    #     #Check if the server receive them
-    #     self.assertNotEqual(client2._rep_store[data_sample_key],None)
+        #Waiting for server to receive the datas
+        time.sleep(2)
 
+        test_key = self.client2._rep_store[data_sample_key]
+
+        #Check if the server receive them
+        self.assertNotEqual(test_key, None)
+    
     
 
+        
 
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(TestDataFactory('test_data_factory'))
+    suite.addTest(TestDataReplication('test_register_client_data'))
+    suite.addTest(TestDataReplication('test_register_client_data2'))
+
+    return suite
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
+    runner = unittest.TextTestRunner(failfast=True)
+    runner.run(suite())
