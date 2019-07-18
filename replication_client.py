@@ -2,10 +2,10 @@ import threading
 import logging
 import zmq
 import time
-from replication import ReplicatedDatablock
+from replication import ReplicatedDatablock, RepCommand
 
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 STATE_INITIAL = 0
 STATE_SYNCING = 1
@@ -14,16 +14,22 @@ STATE_ACTIVE = 2
 
 class Client(object):
     def __init__(self,factory=None, config=None):
-        self._rep_store = {}
-        self._net = ClientNetService(self._rep_store)
         assert(factory)
+
+        self._rep_store = {}
+        self._net_client = ClientNetService(
+            store_reference=self._rep_store,
+            factory=factory)
         self._factory = factory
 
     def connect(self):
-        self._net.start()
+        self._net_client.start()
 
     def disconnect(self):
-        self._net.stop()
+        self._net_client.stop()
+
+    def state(self):
+        return self._net_client.state
 
     def register(self, object):
         """
@@ -34,12 +40,13 @@ class Client(object):
         new_item = self._factory.construct_from_dcc(object)(owner="client", data=object)
 
         if new_item:
-            log.info("Registering {} on {}".format(object,new_item.uuid))
+            logger.info("Registering {} on {}".format(object,new_item.uuid))
             new_item.store(self._rep_store)
             
-            log.info("Pushing changes...")
-            new_item.push(self._net.publish)
+            logger.info("Pushing changes...")
+            new_item.push(self._net_client.publish)
             return new_item.uuid
+            
         else:
             raise TypeError("Type not supported")
 
@@ -49,21 +56,26 @@ class Client(object):
 
     def unregister(self,object):
         pass
-    
-    
-    
+
 class ClientNetService(threading.Thread):
-    def __init__(self,store_reference=None):
+    def __init__(self,store_reference=None, factory=None):
+
         # Threading
         threading.Thread.__init__(self)
         self.name = "ClientNetLink"
         self.daemon = True
-        self.exit_event = threading.Event()
+        
+        self._exit_event = threading.Event()
+        self._factory = factory
+        self._store_reference = store_reference
+
+        assert(self._factory)
 
         # Networking
         self.context = zmq.Context.instance()
 
         self.snapshot = self.context.socket(zmq.DEALER)
+        self.snapshot.setsockopt(zmq.IDENTITY, b'SERVER')
         self.snapshot.connect("tcp://127.0.0.1:5560")
         
         self.subscriber = self.context.socket(zmq.SUB)
@@ -78,25 +90,55 @@ class ClientNetService(threading.Thread):
 
 
     def run(self):
-        log.info("Client is listening")
+        logger.info("Client is online")
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.subscriber, zmq.POLLIN)
         poller.register(self.publish, zmq.POLLOUT)
 
-        self.state = 1
+        while not self._exit_event.is_set():
+            """NET OUT 
+                Given the net state we do something:
+                SYNCING : Ask for snapshots
+                ACTIVE : Do nothing 
+            """
+            if self.state == STATE_INITIAL:
+                self.snapshot.send(b"SNAPSHOT_REQUEST")
+                self.state = STATE_SYNCING
+            
 
-        while not self.exit_event.is_set():
-            items = dict(poller.poll(10))
+            """NET IN 
+                Given the net state we do something:
+                SYNCING : Ask for snapshots
+                ACTIVE : Do nothing 
+            """
+            items = dict(poller.poll(1))
+
+            if self.snapshot in items:
+                if self.state == STATE_SYNCING:
+                    datablock = ReplicatedDatablock.pull(self.snapshot, self._factory)
+
+                    if isinstance(datablock, RepCommand):
+                        
+
+            # We receive updates from the server !
+            if self.subscriber in items:
+                if self.state == STATE_ACTIVE:
+                    logger.debug("Receiving changes from server")
+                    datablock = ReplicatedDatablock.pull(self.subscriber, self._factory)
+                    datablock.store(self._store_reference)
 
             if not items:
-                log.error("No request ")
+                logger.error("No request ")
+                
 
             time.sleep(1)
     
+    def setup(self,id="Client"):
+        pass
 
     def stop(self):
-        self.exit_event.set()
+        self._exit_event.set()
 
         self.snapshot.close()
         self.subscriber.close()
@@ -110,7 +152,6 @@ class Server():
     def __init__(self,config=None, factory=None):
         self._rep_store = {}
         self._net = ServerNetService(store_reference=self._rep_store, factory=factory)
-        # self.serve()
 
     def serve(self):
         self._net.start()
@@ -128,7 +169,9 @@ class ServerNetService(threading.Thread):
         threading.Thread.__init__(self)
         self.name = "ServerNetLink"
         self.daemon = True
-        self.exit_event = threading.Event()
+        self._exit_event = threading.Event()
+
+        # Networking
         self._rep_store =  store_reference
 
         self.context = zmq.Context.instance()
@@ -160,33 +203,41 @@ class ServerNetService(threading.Thread):
             self.pull.bind("tcp://*:5562")
             
         except zmq.error.ZMQError:
-            log.error("Address already in use, change net config")
+            logger.error("Address already in use, change net config")
     
 
     def run(self):
-        log.info("Server is listening")
+        logger.debug("Server is online")
         poller = zmq.Poller()
         poller.register(self.snapshot, zmq.POLLIN)
         poller.register(self.pull, zmq.POLLIN)
 
         self.state = STATE_ACTIVE
 
-        while not self.exit_event.is_set():
+        while not self._exit_event.is_set():
             # Non blocking poller
-            socks = dict(poller.poll(1000))
+            socks = dict(poller.poll())
 
             # Snapshot system for late join (Server - Client)
-            # if self.snapshot in socks:
-                # msg = self.snapshot.recv_multipart(zmq.DONTWAIT)
+            if self.snapshot in socks:
+                msg = self.snapshot.recv_multipart(zmq.DONTWAIT)
 
-                # identity = msg[0]
-                # request = msg[1]
+                identity = msg[0]
+                request = msg[1]
 
-                # if request == b"SNAPSHOT_REQUEST":
-                #     pass
-                # else:
-                #     logger.info("Bad snapshot request")
-                #     break
+                if request == b"SNAPSHOT_REQUEST":
+                    pass
+                else:
+                    logger.info("Bad snapshot request")
+                    break
+
+                for key, item in self._rep_store:
+                    self.snapshot.send(identity, zmq.SNDMORE)
+                    item.push(self.snapshot)
+                
+                self.snapshot.send(identity, zmq.SNDMORE)
+                RepCommand(owner='server',data='SNAPSHOT_END').push(self.snapshot)
+                
 
                 # ordered_props = [(SUPPORTED_TYPES.index(k.split('/')[0]),k,v) for k, v in self.property_map.items()]
                 # ordered_props.sort(key=itemgetter(0))
@@ -204,19 +255,17 @@ class ServerNetService(threading.Thread):
 
             # Regular update routing (Clients / Client)
             if self.pull in socks:
-                log.info("Receiving changes from client")
-                msg = ReplicatedDatablock.pull(self.pull, self.factory)
+                logger.debug("Receiving changes from client")
+                datablock = ReplicatedDatablock.pull(self.pull, self.factory)
 
-                msg.store(self._rep_store)
-                # msg = message.Message.recv(self.collector_sock)
-                # # logger.info("received object")
-                # # Update all clients
-                # msg.store(self.store)
-                # msg.send(self.pub_sock)
+                datablock.store(self._rep_store)
+                
+                # Update all clients
+                datablock.push(self.publisher)
     
 
     def stop(self):
-        self.exit_event.set()
+        self._exit_event.set()
 
         self.snapshot.close()
         self.pull.close()

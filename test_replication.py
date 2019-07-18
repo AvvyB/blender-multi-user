@@ -30,7 +30,7 @@ class RepSampleData(ReplicatedDatablock):
 
 class TestDataReplication(unittest.TestCase):
 
-    def test_setup_data_factory(self):
+    def test_data_factory(self):
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
         data_sample = SampleData()
@@ -38,23 +38,41 @@ class TestDataReplication(unittest.TestCase):
         
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
-    def test_replicate_client_data(self):        
+    def test_basic_client_start(self):
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
 
-        server_api = Server(factory=factory)
-        server_api.serve()
-        client_api = Client(factory=factory)
-        client_api.connect()
+        server = Server(factory=factory)
+        server.serve()
 
-        data_sample = SampleData()
-        data_sample_key = client_api.register(data_sample)
+        client = Client(factory=factory)
+        client.connect()
 
-        #Waiting for server to receive the datas
-        time.sleep(.1)
+        time.sleep(1)
 
-        #Check if if receive them
-        self.assertNotEqual(server_api._rep_store[data_sample_key],None)
+        self.assertEqual(client.state(), 2)
+
+    # def test_register_client_data(self):
+    #     # Setup data factory        
+    #     factory = ReplicatedDataFactory()
+    #     factory.register_type(SampleData, RepSampleData)
+
+    #     server = Server(factory=factory)
+    #     server.serve()
+
+    #     client = Client(factory=factory)
+    #     client.connect()
+
+    #     client2 = Client(factory=factory)
+    #     client2.connect()
+
+    #     data_sample_key = client.register(SampleData())
+
+    #     #Waiting for server to receive the datas
+    #     time.sleep(1)
+
+    #     #Check if the server receive them
+    #     self.assertNotEqual(client2._rep_store[data_sample_key],None)
 
     
 

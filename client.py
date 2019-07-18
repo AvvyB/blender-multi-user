@@ -52,7 +52,6 @@ def zpipe(ctx):
 
 
 class Client(object):
-    
     ctx = None
     pipe = None
     net_agent = None
@@ -205,7 +204,7 @@ class Client(object):
 
     # SAVING FUNCTIONS
     def dump(self, filepath):
-        with open('dump.json',"w") as fp:
+        with open('dump.json', "w") as fp:
             for key, value in self.store.items():
                 line = json.dumps(value.body)
                 fp.write(line)
