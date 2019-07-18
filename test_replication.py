@@ -28,37 +28,7 @@ class RepSampleData(ReplicatedDatablock):
 
         return pickle.load(data)
 
-
-# class TestClient(unittest.TestCase):
-#     def setUp(self):
-#         factory = ReplicatedDataFactory()
-#         self.client_api = Client(factory=factory)
-
-#     def test_client_connect(self):
-#         self.client_api.connect()
-#         time.sleep(1)
-#         self.assertEqual(self.client_api._net.state,1)
-        
-
-#     def test_client_disconnect(self):
-#         self.client_api.disconnect()
-#         time.sleep(1)
-#         self.assertEqual(self.client_api._net.state,0)
-
-
-
 class TestDataReplication(unittest.TestCase):
-    # def test_server_launching(self):
-    #     log.info("test_server_launching")
-    #     self.server_api.serve()
-    #     time.sleep(1)
-    #     self.assertEqual(self.server_api.state(),1)
-
-    # def test_server_stop(self):
-    #     log.info("test_server_launching")
-    #     self.server_api.stop()
-    #     time.sleep(1)
-    #     self.assertEqual(self.server_api.state(),0)
 
     def test_setup_data_factory(self):
         factory = ReplicatedDataFactory()
@@ -80,8 +50,11 @@ class TestDataReplication(unittest.TestCase):
         data_sample = SampleData()
         data_sample_key = client_api.register(data_sample)
 
-        
-        self.assertNotEqual(client_api._rep_store[data_sample_key],None)
+        #Waiting for server to receive the datas
+        time.sleep(.1)
+
+        #Check if if receive them
+        self.assertNotEqual(server_api._rep_store[data_sample_key],None)
 
     
 

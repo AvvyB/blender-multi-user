@@ -37,8 +37,10 @@ class ReplicatedDataFactory(object):
 
     def match_type_by_name(self,type_name):
         for stypes, implementation in self.supported_types: 
-            if type_name == implementation.__class__.__name__:
+            if type_name == stypes.__name__:
                 return implementation
+        
+        return None
 
     def construct_from_dcc(self,data):
         implementation = self.match_type_by_instance(data)
@@ -48,7 +50,7 @@ class ReplicatedDataFactory(object):
         """
         Reconstruct a new replicated value from serialized data
         """
-        return self.match_type_by_name(data)
+        return self.match_type_by_name(type_name)
 
 class ReplicatedDatablock(object):
     """
@@ -66,7 +68,7 @@ class ReplicatedDatablock(object):
         assert(owner)
         self.owner = owner
         self.pointer = data
-        self.str_type = self.data.__class__.__name__
+        self.str_type = type(data).__name__
         
 
     def push(self, socket):
@@ -81,8 +83,8 @@ class ReplicatedDatablock(object):
         key = self.uuid.encode()
         type = self.str_type.encode()
 
-        socket.send_multipart([key,owner,str_type,data])
-   
+        socket.send_multipart([key,owner,type,data])
+  
     @classmethod
     def pull(cls, socket, factory):
         """
@@ -92,9 +94,14 @@ class ReplicatedDatablock(object):
         """
         uuid, owner,str_type, data = socket.recv_multipart(zmq.NOBLOCK)
 
-        instance = factory.construct_from_net(str_type.decode())(owner=owner.decode(), uuid=uuid.decode())
 
-        instance.data = instance.deserialize(data)
+        str_type = str_type.decode()
+        owner=owner.decode()
+        uuid=uuid.decode()
+
+        instance = factory.construct_from_net(str_type)(owner=owner, uuid=uuid)
+
+        # instance.data = instance.deserialize(data)
         return instance
 
 

@@ -108,18 +108,18 @@ class ClientNetService(threading.Thread):
 
 class Server():
     def __init__(self,config=None, factory=None):
-        self.rep_store = {}
-        self.net = ServerNetService(store_reference=self.rep_store, factory=factory)
+        self._rep_store = {}
+        self._net = ServerNetService(store_reference=self._rep_store, factory=factory)
         # self.serve()
 
     def serve(self):
-        self.net.start()
+        self._net.start()
 
     def state(self):
-        return self.net.state
+        return self._net.state
 
     def stop(self):
-        self.net.stop()
+        self._net.stop()
 
 
 class ServerNetService(threading.Thread):
@@ -129,7 +129,7 @@ class ServerNetService(threading.Thread):
         self.name = "ServerNetLink"
         self.daemon = True
         self.exit_event = threading.Event()
-        self.store =  store_reference
+        self._rep_store =  store_reference
 
         self.context = zmq.Context.instance()
         self.snapshot = None
@@ -207,7 +207,7 @@ class ServerNetService(threading.Thread):
                 log.info("Receiving changes from client")
                 msg = ReplicatedDatablock.pull(self.pull, self.factory)
 
-                msg.store(self.store)
+                msg.store(self._rep_store)
                 # msg = message.Message.recv(self.collector_sock)
                 # # logger.info("received object")
                 # # Update all clients
