@@ -78,11 +78,10 @@ class TestClient(unittest.TestCase):
         client2.connect(port=5560)
        
         # Test the key registering
-        time.sleep(1)
         data_sample_key = client.register(SampleData())
 
         #Waiting for server to receive the datas
-        time.sleep(2)
+        time.sleep(.2)
 
         rep_test_key = client2._rep_store[data_sample_key].uuid
 
@@ -103,5 +102,5 @@ def suite():
     return suite
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(failfast=True)
+    runner = unittest.TextTestRunner(failfast=True,verbosity=2)
     runner.run(suite())
