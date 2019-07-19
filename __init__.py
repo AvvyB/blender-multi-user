@@ -28,7 +28,7 @@ DEPENDENCIES = {
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):

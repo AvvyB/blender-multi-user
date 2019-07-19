@@ -15,7 +15,7 @@ BPY_TYPES = {'Image': 'images', 'Texture': 'textures', 'Material': 'materials', 
              'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures'}
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # UTILITY FUNCTIONS
 

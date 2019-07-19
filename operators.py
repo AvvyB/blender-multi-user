@@ -19,7 +19,7 @@ from . import environment, client, draw, helpers, ui
 from .libs import umsgpack
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # client_instance = None
 
