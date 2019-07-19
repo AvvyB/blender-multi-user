@@ -113,7 +113,7 @@ class Client(object):
         self.pipe.send_multipart(
             [b"DISCONNECT"])
 
-    def set(self, key, value=None, override=False):
+    def set(self, key, value=None, override=False, id=False):
         """Set new value in distributed hash table
         Sends [SET][key][value] to the agent
         """
@@ -126,7 +126,7 @@ class Client(object):
             self.pipe.send_multipart(
                 [b"SET", key, value, override])
         else:
-            self.serial_feed.put(('DUMP', key, None))
+            self.serial_feed.put(('DUMP', key, None, id))
 
     def add(self, key, value=None):
         """Set new value in distributed hash table
@@ -148,7 +148,7 @@ class Client(object):
         self.stop_event.set()
 
         for a in range(0, DUMP_AGENTS_NUMBER):
-            self.serial_feed.put(('STOP', None, None))
+            self.serial_feed.put(('STOP', None, None,None))
 
     # READ-ONLY FUNCTIONS
     def get(self, key):
@@ -406,7 +406,7 @@ def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event,externa
                     agent.state = State.ACTIVE
                     logger.debug("snapshot complete")
                 else:
-                    net_product.put(('LOAD', msg.key, msg.body))
+                    net_product.put(('LOAD', msg.key, msg.body,False))
                     
                     # helpers.load(msg.key, msg.body)
                     msg.store(agent.property_map)
@@ -425,12 +425,14 @@ def net_worker(ctx, store, pipe, serial_product, serial_feed, stop_event,externa
         
         # Serialisation thread  => Net thread
         if not net_feed.empty():
-            key, value = net_feed.get()
+            key, value, id = net_feed.get()
             if value:
                 logger.debug("SERIAL => NET: {} ".format(key))
-
-                # Stamp with id
-                value['id'] = agent.id.decode()
+                
+                if id is None:
+                    # Stamp with id
+                    value['id'] = agent.id.decode()
+               
 
                 # Format massage
                 msg = message.Message(
@@ -448,7 +450,7 @@ def serial_worker(serial_product,  serial_feed):
     logger.info("serial thread launched")
 
     while True:
-        command, key, value = serial_feed.get()
+        command, key, value, id = serial_feed.get()
 
         if command == 'STOP':
             break
@@ -457,7 +459,7 @@ def serial_worker(serial_product,  serial_feed):
                 value = helpers.dump(key)
 
                 if value:
-                    serial_product.put((key, value))
+                    serial_product.put((key, value, id))
             except Exception as e:
                 logger.error("{}".format(e))
         elif command == 'LOAD':
@@ -482,7 +484,7 @@ def watchdog_worker(serial_feed, interval, stop_event):
                 try:
                     if item.is_dirty:
                         logger.debug("{} needs update".format(key))
-                        serial_feed.put(('DUMP', key, None))
+                        serial_feed.put(('DUMP', key, None, False))
                         item.is_dirty = False
                 except:
                     pass

@@ -68,6 +68,9 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.label(text="init scene:")
                     row.prop(net_settings, "init_scene", text="")
                     row = box.row()
+                    row.label(text="reset rights:")
+                    row.prop(net_settings, "reset_rights", text="")
+                    row = box.row()
                     row.operator("session.create", text="HOST")
                 else:
                     box = row.box()

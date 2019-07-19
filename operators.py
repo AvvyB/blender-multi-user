@@ -90,14 +90,21 @@ def update_client_selected_object(context):
 
 
 def init_datablocks():
+    session =  bpy.context.window_manager.session
     environment.genererate_replicated_types()
     for datatype in environment.rtypes:
-        if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
+        if session.supported_datablock[datatype].is_replicated:
             logger.debug("INIT: {}".format(datatype))
             for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
-                item.id = bpy.context.window_manager.session.username
+                
                 key = "{}/{}".format(datatype, item.name)
-                client.instance.set(key)
+
+                if item.id != 'None' and not session.reset_rights:
+                    client.instance.set(key,id=session.reset_rights)
+                else:
+                    item.id = bpy.context.window_manager.session.username
+                    client.instance.set(key)
+                
 
 
 def default_tick():
