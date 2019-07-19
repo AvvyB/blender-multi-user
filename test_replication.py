@@ -42,50 +42,60 @@ class TestDataReplication(unittest.TestCase):
     def __init__(self,methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
 
-        self.factory = ReplicatedDataFactory()
-        self.factory.register_type(SampleData, RepSampleData)
+    def test_empty_snapshot(self):
+        # Setup
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
 
-        self.server = Server(factory=self.factory)
-        self.server.serve()
+        server = Server(factory=factory)
+        client = Client(factory=factory, id="client_test_callback")
 
-        self.client = Client(factory=self.factory, id="client_1")
-        self.client.connect()
+        server.serve(port=5570)
+        client.connect(port=5570)
 
-        self.client2 = Client(factory=self.factory, id="client_2")
-        self.client2.connect()
+        test_state = client.state
+        
+        server.stop()
+        client.disconnect()
+
+        self.assertNotEqual(test_state, 2)
 
 
     def test_register_client_data(self):
-        data_sample_key = self.client.register(SampleData())
+        # Setup
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
+
+        server = Server(factory=factory)
+        server.serve(port=5560)
+
+        client = Client(factory=factory, id="client_1")
+        client.connect(port=5560)
+
+        client2 = Client(factory=factory, id="client_2")
+        client2.connect(port=5560)
+       
+        time.sleep(1)
+        data_sample_key = client.register(SampleData())
 
         #Waiting for server to receive the datas
         time.sleep(2)
 
-        test_key = self.client2._rep_store[data_sample_key]
-
-        #Check if the server receive them
-        self.assertNotEqual(test_key, None)
-    
-    def test_register_client_data2(self):
-        data_sample_key = self.client.register(SampleData())
-
-        #Waiting for server to receive the datas
-        time.sleep(2)
-
-        test_key = self.client2._rep_store[data_sample_key]
-
-        #Check if the server receive them
-        self.assertNotEqual(test_key, None)
-    
-    
+        test_key = client2._rep_store[data_sample_key]
 
         
+        client.disconnect()
+        client2.disconnect()
+        server.stop()
+
+        #Check if the server receive them
+        self.assertNotEqual(test_key, None)
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestDataFactory('test_data_factory'))
+    suite.addTest(TestDataReplication('test_empty_snapshot'))
     suite.addTest(TestDataReplication('test_register_client_data'))
-    suite.addTest(TestDataReplication('test_register_client_data2'))
 
     return suite
 
