@@ -271,7 +271,7 @@ class ServerNetService(threading.Thread):
             if self.pull in socks:
                 logger.debug("Receiving changes from client")
                 datablock = ReplicatedDatablock.pull(self.pull, self.factory)
-
+                
                 datablock.store(self._rep_store)
                 
                 # Update all clients

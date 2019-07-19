@@ -17,6 +17,7 @@ class SampleData():
             "sample":"data"
             }
 
+
 class RepSampleData(ReplicatedDatablock):
     def serialize(self,data):
         import pickle
@@ -28,6 +29,7 @@ class RepSampleData(ReplicatedDatablock):
 
         return pickle.loads(data)
 
+
 class TestDataFactory(unittest.TestCase):
     def test_data_factory(self):
         factory = ReplicatedDataFactory()
@@ -38,7 +40,7 @@ class TestDataFactory(unittest.TestCase):
         self.assertEqual(isinstance(rep_sample,RepSampleData), True)
 
 
-class TestDataReplication(unittest.TestCase):
+class TestClient(unittest.TestCase):
     def __init__(self,methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
 
@@ -62,7 +64,7 @@ class TestDataReplication(unittest.TestCase):
 
 
     def test_register_client_data(self):
-        # Setup
+        # Setup environment
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
 
@@ -75,31 +77,31 @@ class TestDataReplication(unittest.TestCase):
         client2 = Client(factory=factory, id="client_2")
         client2.connect(port=5560)
        
+        # Test the key registering
         time.sleep(1)
         data_sample_key = client.register(SampleData())
 
         #Waiting for server to receive the datas
         time.sleep(2)
 
-        test_key = client2._rep_store[data_sample_key]
+        rep_test_key = client2._rep_store[data_sample_key].uuid
 
         
         client.disconnect()
         client2.disconnect()
         server.stop()
 
-        #Check if the server receive them
-        self.assertNotEqual(test_key, None)
+
+        self.assertEqual(rep_test_key, data_sample_key)
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestDataFactory('test_data_factory'))
-    suite.addTest(TestDataReplication('test_empty_snapshot'))
-    suite.addTest(TestDataReplication('test_register_client_data'))
+    suite.addTest(TestClient('test_empty_snapshot'))
+    suite.addTest(TestClient('test_register_client_data'))
 
     return suite
 
 if __name__ == '__main__':
-    # unittest.main()
     runner = unittest.TextTestRunner(failfast=True)
     runner.run(suite())
