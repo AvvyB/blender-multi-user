@@ -81,7 +81,7 @@ class TestClient(unittest.TestCase):
         data_sample_key = client.register(SampleData())
 
         #Waiting for server to receive the datas
-        time.sleep(.2)
+        time.sleep(.5)
 
         rep_test_key = client2._rep_store[data_sample_key].uuid
 

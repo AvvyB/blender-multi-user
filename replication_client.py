@@ -194,6 +194,7 @@ class ServerNetService(threading.Thread):
         self.pull = None
         self.state = 0
         self.factory = factory
+        self.clients = []
 
     
     def listen(self, port=5560):
@@ -206,6 +207,7 @@ class ServerNetService(threading.Thread):
 
             # Update all clients
             self.publisher = self.context.socket(zmq.PUB)
+            # self.publisher.setsockopt(zmq.IDENTITY,b'SERVER')
             self.publisher.setsockopt(zmq.SNDHWM, 60)
             self.publisher.bind("tcp://*:{}".format(port+1))
             time.sleep(0.2)
@@ -240,32 +242,16 @@ class ServerNetService(threading.Thread):
                 request = msg[1]
 
                 if request == b"SNAPSHOT_REQUEST":
-                    pass
-                else:
-                    logger.info("Bad snapshot request")
-                    break
-
-                for key, item in self._rep_store:
+                    # Sending snapshots
+                    for key, item in self._rep_store:
+                        self.snapshot.send(identity, zmq.SNDMORE)
+                        item.push(self.snapshot)
+                    
+                    # Snapshot end
                     self.snapshot.send(identity, zmq.SNDMORE)
-                    item.push(self.snapshot)
-                
-                self.snapshot.send(identity, zmq.SNDMORE)
-                RepCommand(owner='server',data='SNAPSHOT_END').push(self.snapshot)
+                    RepCommand(owner='server',data='SNAPSHOT_END').push(self.snapshot)
                 
 
-                # ordered_props = [(SUPPORTED_TYPES.index(k.split('/')[0]),k,v) for k, v in self.property_map.items()]
-                # ordered_props.sort(key=itemgetter(0))
-
-                # for i, k, v in ordered_props:
-                #     logger.info(
-                #         "Sending {} snapshot to {}".format(k, identity))
-                #     self.request_sock.send(identity, zmq.SNDMORE)
-                #     v.send(self.request_sock)
-
-                # msg_end_snapshot = message.Message(key="SNAPSHOT_END", id=identity)
-                # self.request_sock.send(identity, zmq.SNDMORE)
-                # msg_end_snapshot.send(self.request_sock)
-                # logger.info("done")
 
             # Regular update routing (Clients / Client)
             if self.pull in socks:
