@@ -243,7 +243,7 @@ class ServerNetService(threading.Thread):
 
                 if request == b"SNAPSHOT_REQUEST":
                     # Sending snapshots
-                    for key, item in self._rep_store:
+                    for key, item in self._rep_store.items():
                         self.snapshot.send(identity, zmq.SNDMORE)
                         item.push(self.snapshot)
                     
