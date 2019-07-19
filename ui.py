@@ -175,6 +175,7 @@ class SESSION_PT_user(bpy.types.Panel):
 def get_client_key(item):
     return item[0]
 
+
 class SESSION_PT_properties(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
     bl_label = "Replicated properties"
@@ -211,7 +212,6 @@ class SESSION_PT_properties(bpy.types.Panel):
             area_msg = row.box()
             client_keys = client.instance.list()
             if client_keys and len(client_keys) > 0:
-
                 for item in sorted(client_keys, key=get_client_key):
                     owner = 'toto'
                     try:
@@ -229,7 +229,7 @@ class SESSION_PT_properties(bpy.types.Panel):
                     detail_item_box.label(text="{} ".format(owner))
 
                     right_icon = "DECORATE_UNLOCKED"
-                    if owner == net_settings.username:
+                    if owner == net_settings.username or owner == "Common" :
                         right_icon="DECORATE_UNLOCKED"
                     else:
                         
@@ -237,8 +237,6 @@ class SESSION_PT_properties(bpy.types.Panel):
                     
                     ro = detail_item_box.operator("session.right", text="",emboss=net_settings.is_admin, icon=right_icon)
                     ro.key = item[0]
-                    # detail_item_box.operator(
-                    #     "session.remove_prop", text="", icon="X").property_path = key
             else:
                 area_msg.label(text="Empty")
 

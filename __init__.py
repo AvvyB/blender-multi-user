@@ -75,7 +75,7 @@ def save_session_config(self,context):
         config["start_empty"] = self.start_empty
         config["enable_presence"] = self.enable_presence
         config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
-        
+    
         rep_type = {}
         for bloc in self.supported_datablock:
             config["replicated_types"][bloc.type_name] = bloc.is_replicated
