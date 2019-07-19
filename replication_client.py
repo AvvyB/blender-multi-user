@@ -119,7 +119,7 @@ class ClientNetService(threading.Thread):
                 SYNCING : Ask for snapshots
                 ACTIVE : Do nothing 
             """
-            items = dict(poller.poll(10))
+            items = dict(poller.poll(1))
 
             if self.snapshot in items:
                 if self.state == STATE_SYNCING:
@@ -129,7 +129,7 @@ class ClientNetService(threading.Thread):
                         self.state = STATE_ACTIVE
                         logger.debug('{} : snapshot done'.format(self._id))
 
-
+                    datablock.store(self._store_reference)
 
             # We receive updates from the server !
             if self.subscriber in items:

@@ -9,13 +9,8 @@ import time
 log = logging.getLogger(__name__)
 
 class SampleData():
-    def __init__(self):
-        self.map = {
-            "sample":"data",
-            "sample":"data",
-            "sample":"data",
-            "sample":"data"
-            }
+    def __init__(self, map={"sample":"data"}):
+        self.map = map
 
 
 class RepSampleData(ReplicatedDatablock):
@@ -62,6 +57,32 @@ class TestClient(unittest.TestCase):
 
         self.assertNotEqual(test_state, 2)
 
+    def test_filled_snapshot(self):
+        # Setup
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
+
+        server = Server(factory=factory)
+        client = Client(factory=factory, id="client_test_callback")
+        client2 = Client(factory=factory, id="client_2")
+        
+        server.serve(port=5575)
+        client.connect(port=5575)
+
+        # Test the key registering
+        data_sample_key = client.register(SampleData())
+        time.sleep(2)
+
+        
+        client2.connect(port=5575)
+        time.sleep(0.2)
+        rep_test_key = client2._rep_store[data_sample_key].uuid
+
+        server.stop()
+        client.disconnect()
+        client2.disconnect()
+
+        self.assertEqual(data_sample_key, rep_test_key)
 
     def test_register_client_data(self):
         # Setup environment
@@ -93,10 +114,43 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(rep_test_key, data_sample_key)
 
+    def test_client_data_intergity(self):
+        # Setup environment
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
+
+        server = Server(factory=factory)
+        server.serve(port=5560)
+
+        client = Client(factory=factory, id="client_1")
+        client.connect(port=5560)
+
+        client2 = Client(factory=factory, id="client_2")
+        client2.connect(port=5560)
+       
+        test_map = {"toto":"test"}
+        # Test the key registering
+        client.register(SampleData(map=test_map))
+
+        test_map_result = {}
+        #Waiting for server to receive the datas
+        time.sleep(.5)
+
+        rep_test_key = client2._rep_store[data_sample_key].uuid
+
+        
+        client.disconnect()
+        client2.disconnect()
+        server.stop()
+
+
+        self.assertEqual(rep_test_key, data_sample_key)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestDataFactory('test_data_factory'))
     suite.addTest(TestClient('test_empty_snapshot'))
+    suite.addTest(TestClient('test_filled_snapshot'))
     suite.addTest(TestClient('test_register_client_data'))
 
     return suite

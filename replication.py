@@ -89,6 +89,7 @@ class ReplicatedDatablock(object):
             self.buffer = self.deserialize(buffer)
         else:
             raise ValueError("Not enought parameter in constructor")
+
         self.str_type = type(self).__name__
 
     def push(self, socket):
@@ -119,7 +120,6 @@ class ReplicatedDatablock(object):
         uuid = uuid.decode()
 
         instance = factory.construct_from_net(str_type)(owner=owner, uuid=uuid, buffer=data)
-
         # instance.data = instance.deserialize(data)
         return instance
 
@@ -155,7 +155,7 @@ class ReplicatedDatablock(object):
         raise NotImplementedError
     
 
-    def apply(self,data,target):
+    def apply(self,target=None):
         """
         JSON -> DCC
         """
@@ -182,8 +182,8 @@ class RepCommand(ReplicatedDatablock):
     def deserialize(self,data):
         return pickle.loads(data)
     
-    def apply(self,data,target):
-        target = data
+    def apply(self,target):
+        target = self.pointer
 
 # class RepObject(ReplicatedDatablock):
 #     def deserialize(self):
