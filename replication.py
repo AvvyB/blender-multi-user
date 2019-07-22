@@ -1,5 +1,6 @@
 import logging
 from uuid import uuid4
+import json
 try:
     from .libs import umsgpack
 
@@ -78,17 +79,16 @@ class ReplicatedDatablock(object):
     owner = None    # Data owner            (string)
     state = None    # Data state            (RepState)
 
-    def __init__(self, owner=None, data=None, uuid=None, buffer=None):
+    def __init__(self, owner=None, pointer=None, uuid=None, buffer=None):
         self.uuid = uuid if uuid else str(uuid4())
         assert(owner)
         self.owner = owner
 
-        if data:
-            self.pointer = data
+        if pointer:
+            self.pointer = pointer
+            self.buffer = self.dump()
         elif buffer:
-            self.buffer = self.deserialize(buffer)
-        else:
-            raise ValueError("Not enought parameter in constructor")
+            self.buffer = buffer
 
         self.str_type = type(self).__name__
 
@@ -96,9 +96,11 @@ class ReplicatedDatablock(object):
         """
         Here send data over the wire:
             - serialize the data
-            - send them as a multipart frame
+            - send them as a multipart frame thought the given socket
         """
-        data = self.serialize(self.pointer)
+        assert(self.buffer)
+
+        data = self.serialize(self.buffer)
         assert(isinstance(data, bytes))
         owner = self.owner.encode()
         key = self.uuid.encode()
@@ -119,9 +121,11 @@ class ReplicatedDatablock(object):
         owner = owner.decode()
         uuid = uuid.decode()
 
-        instance = factory.construct_from_net(str_type)(owner=owner, uuid=uuid, buffer=data)
-        # instance.data = instance.deserialize(data)
+        instance = factory.construct_from_net(str_type)(owner=owner, uuid=uuid)
+        instance.buffer = instance.deserialize(data) 
+
         return instance
+
 
     def store(self, dict, persistent=False):
         """
@@ -137,6 +141,7 @@ class ReplicatedDatablock(object):
 
             return self.uuid
 
+
     def deserialize(self, data):
         """
         BUFFER -> JSON
@@ -146,16 +151,21 @@ class ReplicatedDatablock(object):
 
     def serialize(self, data):
         """
-        I want to load data from DCC
-
-        DCC -> JSON
-
-        MUST RETURN A BYTE ARRAY
+        JSON -> BUFFER
         """
         raise NotImplementedError
     
 
-    def apply(self,target=None):
+    def dump(self):
+        """
+        DCC -> JSON
+        """
+        assert(self.pointer)
+
+        return json.dumps(self.pointer)
+
+
+    def load(self,target=None):
         """
         JSON -> DCC
         """
@@ -171,18 +181,15 @@ class ReplicatedDatablock(object):
         raise NotImplementedError
 
 
-    def dump(self):
-        return self.deserialize(self.buffer)
 
 class RepCommand(ReplicatedDatablock):
-    
     def serialize(self,data):
         return pickle.dumps(data)
 
     def deserialize(self,data):
         return pickle.loads(data)
     
-    def apply(self,target):
+    def load(self,target):
         target = self.pointer
 
 # class RepObject(ReplicatedDatablock):
