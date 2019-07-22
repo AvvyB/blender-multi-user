@@ -34,7 +34,8 @@ class RepSampleData(ReplicatedDatablock):
         
 
     def load(self,target=None):
-        target = self.buffer
+        import json
+        target.map = json.loads(self.buffer['map'])
 
 
 class TestDataFactory(unittest.TestCase):
@@ -83,7 +84,6 @@ class TestClient(unittest.TestCase):
 
         # Test the key registering
         data_sample_key = client.register(SampleData())
-        time.sleep(2)
 
         
         client2.connect(port=5575)
@@ -115,7 +115,7 @@ class TestClient(unittest.TestCase):
         # Test the key registering
         data_sample_key = client.register(SampleData())
  
-        time.sleep(4)
+        time.sleep(0.3)
         #Waiting for server to receive the datas
         rep_test_key = client2._rep_store[data_sample_key].uuid
         
@@ -145,7 +145,7 @@ class TestClient(unittest.TestCase):
         # Test the key registering
         data_sample_key = client.register(SampleData(map=test_map))
 
-        test_map_result = {}
+        test_map_result = SampleData()
         #Waiting for server to receive the datas
         time.sleep(1)
 
@@ -157,7 +157,7 @@ class TestClient(unittest.TestCase):
         server.stop()
 
 
-        self.assertEqual(test_map_result["toto"], test_map["toto"])
+        self.assertEqual(test_map_result.map["toto"], test_map["toto"])
 
 def suite():
     suite = unittest.TestSuite()
@@ -165,7 +165,7 @@ def suite():
     suite.addTest(TestClient('test_empty_snapshot'))
     suite.addTest(TestClient('test_filled_snapshot'))
     suite.addTest(TestClient('test_register_client_data'))
-    # suite.addTest(TestClient('test_client_data_intergity'))
+    suite.addTest(TestClient('test_client_data_intergity'))
     return suite
 
 if __name__ == '__main__':
