@@ -159,13 +159,19 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(test_map_result.map["toto"], test_map["toto"])
 
+
 def suite():
     suite = unittest.TestSuite()
+
+    # Data factory
     suite.addTest(TestDataFactory('test_data_factory'))
+    
+    # Client 
     suite.addTest(TestClient('test_empty_snapshot'))
     suite.addTest(TestClient('test_filled_snapshot'))
     suite.addTest(TestClient('test_register_client_data'))
     suite.addTest(TestClient('test_client_data_intergity'))
+    
     return suite
 
 if __name__ == '__main__':

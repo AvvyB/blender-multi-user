@@ -25,13 +25,25 @@ class Client(object):
         self._factory = factory
 
     def connect(self,address="127.0.0.1",port=5560):
+        """
+        Connect to the server
+        """
         self._net_client.connect(address=address,port=port)
 
     def disconnect(self):
+        """
+        Disconnect from server, reset the client
+        """
         self._net_client.stop()
 
     @property
     def state(self):
+        """
+        Return the client state
+        0: STATE_INITIAL
+        1: STATE_SYNCING
+        2: STATE_ACTIVE
+        """
         return self._net_client.state
 
     def register(self, object):
@@ -49,7 +61,7 @@ class Client(object):
             logger.info("Registering {} on {}".format(object,new_item.uuid))
             new_item.store(self._rep_store)
             
-            logger.info("Pushing changes...")
+            logger.info("Pushing new registered value")
             new_item.push(self._net_client.publish)
             return new_item.uuid
             
@@ -57,9 +69,17 @@ class Client(object):
             raise TypeError("Type not supported")
 
     def pull(self,object=None):
+        """
+        Asynchonous pull
+        Here we want to pull all waiting changes and apply them
+        """
         pass
     
-    def unregister(self,object):
+    def unregister(self,object_uuid):
+        """
+        Unregister for replication the given
+        object
+        """
         pass
 
 class ClientNetService(threading.Thread):
@@ -259,7 +279,7 @@ class ServerNetService(threading.Thread):
                     # Snapshot end
                     self.snapshot.send(identity, zmq.SNDMORE)
                     RepCommand(owner='server',pointer='SNAPSHOT_END').push(self.snapshot)              
-
+                    
 
             # Regular update routing (Clients / Server / Clients)
             if self.pull in socks:
