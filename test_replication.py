@@ -210,6 +210,38 @@ class TestClient(unittest.TestCase):
     def test_client_change_rights(self):
         pass
 
+
+class TestStressClient(unittest.TestCase):
+    def test_stress_register(self):
+        total_time = 0
+     # Setup
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
+
+        server = Server(factory=factory)
+        client = Client(factory=factory, id="cli_test_filled_snapshot")
+        client2 = Client(factory=factory, id="client_2")
+        
+        server.serve(port=5575)
+        client.connect(port=5575)
+        client2.connect(port=5575)
+
+        # Test the key registering
+        for i in range(10000):
+            client.register(SampleData())
+
+        while len(client2._rep_store.keys()) < 10000:
+            time.sleep(0.001)
+            total_time+=0.001
+
+        # test_num_items = len(client2._rep_store.keys())
+        server.stop()
+        client.disconnect()
+        client2.disconnect()
+        logger.debug("{} s for 10000 values".format(total_time))
+
+        self.assertLess(total_time,1)
+
 def suite():
     suite = unittest.TestSuite()
 
@@ -222,6 +254,9 @@ def suite():
     suite.addTest(TestClient('test_register_client_data'))
     suite.addTest(TestClient('test_client_data_intergity'))
     
+    # Stress test
+    suite.addTest(TestStressClient('test_stress_register'))
+
     return suite
 
 if __name__ == '__main__':
