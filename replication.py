@@ -17,7 +17,8 @@ class RepState(Enum):
 
 class ReplicatedDataFactory(object):
     """
-    Manage the data types implementations 
+    Manage the data types implementations.
+    
     """
 
     def __init__(self):
@@ -64,7 +65,12 @@ class ReplicatedDataFactory(object):
 
 class ReplicatedDatablock(object):
     """
-    Datablock definition used for replication 
+    Datablock definition that handle object replication logic.
+    PUSH: send the object over the wire
+    STORE: register the object on the given replication graph
+    LOAD: apply loaded changes by reference on the local copy
+    DUMP: get local changes
+
     """
     uuid = None     # uuid used as key      (string)
     pointer = None  # dcc data ref          (DCC type)
