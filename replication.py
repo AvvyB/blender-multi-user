@@ -18,7 +18,7 @@ class RepState(Enum):
 class ReplicatedDataFactory(object):
     """
     Manage the data types implementations.
-    
+
     """
 
     def __init__(self):
@@ -206,45 +206,3 @@ class RepDeleteCommand(ReplicatedDatablock):
 
         if rep_store and self.buffer in rep_store.keys():
             del rep_store[self.buffer]
-
-
-# class RepObject(ReplicatedDatablock):
-#     def deserialize(self):
-#         try:
-#             if self.pointer is None:
-#                 pointer = None
-
-#                 # Object specific constructor...
-#                 if self.data["data"] in bpy.data.meshes.keys():
-#                     pointer = bpy.data.meshes[self.data["data"]]
-#                 elif self.data["data"] in bpy.data.lights.keys():
-#                     pointer = bpy.data.lights[self.data["data"]]
-#                 elif self.data["data"] in bpy.data.cameras.keys():
-#                     pointer = bpy.data.cameras[self.data["data"]]
-#                 elif self.data["data"] in bpy.data.curves.keys():
-#                     pointer = bpy.data.curves[self.data["data"]]
-#                 elif self.data["data"] in bpy.data.armatures.keys():
-#                     pointer = bpy.data.armatures[self.data["data"]]
-#                 elif self.data["data"] in bpy.data.grease_pencils.keys():
-#                     pointer = bpy.data.grease_pencils[self.data["data"]]
-#                 elif self.data["data"] in bpy.data.curves.keys():
-#                     pointer = bpy.data.curves[self.data["data"]]
-
-#                 self.pointer = bpy.data.objects.new(self.data["name"], pointer)
-
-#             self.pointer.matrix_world = mathutils.Matrix(self.data["matrix_world"])
-
-#             self.pointer.id = self.data['id']
-
-#             client = bpy.context.window_manager.session.username
-
-#             if self.pointer.id == client or self.pointer.id == "Common":
-#                 self.pointer.hide_select = False
-#             else:
-#                 self.pointer.hide_select = True
-
-#         except Exception as e:
-#             logger.error("Object {} loading error: {} ".format(self.data["name"], e))
-
-#     def deserialize(self):
-#         self.data = dump_datablock(self.pointer, 1)
