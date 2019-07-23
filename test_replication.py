@@ -35,6 +35,9 @@ class RepSampleData(ReplicatedDatablock):
 
     def load(self,target=None):
         import json
+        if target is None:
+            target =  SampleData()
+
         target.map = json.loads(self.buffer['map'])
 
 
@@ -159,6 +162,45 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(test_map_result.map["toto"], test_map["toto"])
 
+    def test_client_unregister_key(self):
+        # Setup environment
+        factory = ReplicatedDataFactory()
+        factory.register_type(SampleData, RepSampleData)
+
+        server = Server(factory=factory)
+        server.serve(port=5560)
+
+        client = Client(factory=factory, id="cli_test_client_data_intergity")
+        client.connect(port=5560)
+
+        client2 = Client(factory=factory, id="cli2_test_client_data_intergity")
+        client2.connect(port=5560)
+       
+        test_map = {"toto":"test"}
+        # Test the key registering
+        data_sample_key = client.register(SampleData(map=test_map))
+
+        test_map_result = SampleData()
+        
+        #Waiting for server to receive the datas
+        time.sleep(1)
+
+        client2._rep_store[data_sample_key].load(target=test_map_result)
+        
+        client.unregister(data_sample_key)
+
+        
+        client.disconnect()
+        client2.disconnect()
+        server.stop()
+
+        self.assertFalse(data_sample_key in client._rep_store)
+    
+    def test_client_disconnect(self):
+        pass
+
+    def test_client_change_rights(self):
+        pass
 
 def suite():
     suite = unittest.TestSuite()
@@ -175,6 +217,6 @@ def suite():
     return suite
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(failfast=True,verbosity=2)
+    runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
     

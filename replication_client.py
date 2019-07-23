@@ -2,7 +2,7 @@ import threading
 import logging
 import zmq
 import time
-from replication import ReplicatedDatablock, RepCommand
+from replication import ReplicatedDatablock, RepCommand,RepDeleteCommand
 from replication_graph import ReplicationGraph
 
 logging.basicConfig(level=logging.DEBUG)
@@ -75,12 +75,21 @@ class Client(object):
         """
         pass
     
-    def unregister(self,object_uuid):
+    def unregister(self,object_uuid,clean=False):
         """
         Unregister for replication the given
-        object
+        object.
+        The clean option purpose is to remove
+        the pointer data's
         """
-        pass
+
+        if object_uuid in self._rep_store.keys():
+            delete_command = RepDeleteCommand(owner='client', buffer=object_uuid)
+            delete_command.store(self._rep_store)
+            delete_command.push(self._net_client.publish)
+        else:
+            raise KeyError("Cannot unregister key")
+            
 
 class ClientNetService(threading.Thread):
     def __init__(self,store_reference=None, factory=None,id="default"):

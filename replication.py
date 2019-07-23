@@ -31,6 +31,8 @@ class ReplicatedDataFactory(object):
 
         # Default registered types
         self.register_type(str,RepCommand)
+        self.register_type(RepDeleteCommand, RepDeleteCommand)
+    
 
     def register_type(self, dtype, implementation):
         """
@@ -180,7 +182,12 @@ class ReplicatedDatablock(object):
         """
         raise NotImplementedError
 
-
+    def __repr__(self):
+        return "{uuid} - Owner: {owner} - ETA: {state} ".format(
+            uuid=self.uuid,
+            owner=self.owner,
+            state=self.state
+            ) 
 
 class RepCommand(ReplicatedDatablock):
     def serialize(self,data):
@@ -191,6 +198,21 @@ class RepCommand(ReplicatedDatablock):
     
     def load(self,target):
         target = self.pointer
+
+class RepDeleteCommand(ReplicatedDatablock):
+    def serialize(self,data):
+        return pickle.dumps(data)
+
+    def deserialize(self,data):
+        return pickle.loads(data)
+    
+    def store(self,rep_store):
+        assert(self.buffer)
+
+        if rep_store and self.buffer in rep_store.keys():
+            del rep_store[self.buffer]
+
+
 
 # class RepObject(ReplicatedDatablock):
 #     def deserialize(self):
