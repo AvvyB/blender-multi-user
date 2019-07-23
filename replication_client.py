@@ -94,6 +94,8 @@ class Client(object):
         """
         pass
 
+    def get(self, object_uuid):
+        pass
 
 class ClientNetService(threading.Thread):
     def __init__(self, store_reference=None, factory=None):
@@ -162,18 +164,21 @@ class ClientNetService(threading.Thread):
             """
             items = dict(poller.poll(1))
 
+            # COMMANDS
             if self.command in items:
-                if self.state == STATE_SYNCING:
-                    datablock = ReplicatedDatablock.pull(
+                datablock = ReplicatedDatablock.pull(
                         self.command, self._factory)
-
+                        
+                if self.state == STATE_SYNCING:
                     if 'SNAPSHOT_END' in datablock.buffer:
                         self.state = STATE_ACTIVE
                         logger.debug('{} : snapshot done'.format(self._id))
                     else:
                         datablock.store(self._store_reference)
 
-            # We receive updates from the server !
+                
+            
+            # DATA
             if self.subscriber in items:
                 if self.state == STATE_ACTIVE:
                     logger.debug(

@@ -13,8 +13,6 @@ from replication import ReplicatedDatablock, ReplicatedDataFactory
 from replication_client import Client, Server
 
 
-
-
 class SampleData():
     def __init__(self, map={"sample": "data"}):
         self.map = map
