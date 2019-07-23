@@ -1,45 +1,46 @@
-import unittest
-from replication import ReplicatedDatablock, ReplicatedDataFactory
-import umsgpack
-import logging
-from replication_client import Client, Server
-import time
 import cProfile
+import logging
 import re
+import time
+import unittest
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+from replication import ReplicatedDatablock, ReplicatedDataFactory
+from replication_client import Client, Server
+
+
+
+
 class SampleData():
-    def __init__(self, map={"sample":"data"}):
+    def __init__(self, map={"sample": "data"}):
         self.map = map
 
 
 class RepSampleData(ReplicatedDatablock):
-    def serialize(self,data):
+    def serialize(self, data):
         import pickle
-        
+
         return pickle.dumps(data)
 
-    def deserialize(self,data):
+    def deserialize(self, data):
         import pickle
 
         return pickle.loads(data)
-    
-    
+
     def dump(self):
         import json
         output = {}
         output['map'] = json.dumps(self.pointer.map)
         return output
-        
 
-    def load(self,target=None):
+    def load(self, target=None):
         import json
         if target is None:
-            target =  SampleData()
+            target = SampleData()
 
         target.map = json.loads(self.buffer['map'])
 
@@ -49,13 +50,14 @@ class TestDataFactory(unittest.TestCase):
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
         data_sample = SampleData()
-        rep_sample = factory.construct_from_dcc(data_sample)(owner="toto", pointer=data_sample)
-        
-        self.assertEqual(isinstance(rep_sample,RepSampleData), True)
+        rep_sample = factory.construct_from_dcc(
+            data_sample)(owner="toto", pointer=data_sample)
+
+        self.assertEqual(isinstance(rep_sample, RepSampleData), True)
 
 
 class TestClient(unittest.TestCase):
-    def __init__(self,methodName='runTest'):
+    def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
 
     def test_empty_snapshot(self):
@@ -70,7 +72,7 @@ class TestClient(unittest.TestCase):
         client.connect(port=5570)
 
         test_state = client.state
-        
+
         server.stop()
         client.disconnect()
 
@@ -84,14 +86,13 @@ class TestClient(unittest.TestCase):
         server = Server(factory=factory)
         client = Client(factory=factory, id="cli_test_filled_snapshot")
         client2 = Client(factory=factory, id="client_2")
-        
+
         server.serve(port=5575)
         client.connect(port=5575)
 
         # Test the key registering
         data_sample_key = client.register(SampleData())
 
-        
         client2.connect(port=5575)
         time.sleep(0.2)
         rep_test_key = client2._rep_store[data_sample_key].uuid
@@ -104,7 +105,7 @@ class TestClient(unittest.TestCase):
 
     def test_register_client_data(self):
         # Setup environment
-        
+
         factory = ReplicatedDataFactory()
         factory.register_type(SampleData, RepSampleData)
 
@@ -116,20 +117,17 @@ class TestClient(unittest.TestCase):
 
         client2 = Client(factory=factory, id="cli2_test_register_client_data")
         client2.connect(port=5560)
-        
-       
+
         # Test the key registering
         data_sample_key = client.register(SampleData())
- 
+
         time.sleep(0.3)
-        #Waiting for server to receive the datas
+        # Waiting for server to receive the datas
         rep_test_key = client2._rep_store[data_sample_key].uuid
-        
-        
+
         client.disconnect()
         client2.disconnect()
         server.stop()
-
 
         self.assertEqual(rep_test_key, data_sample_key)
 
@@ -146,22 +144,20 @@ class TestClient(unittest.TestCase):
 
         client2 = Client(factory=factory, id="cli2_test_client_data_intergity")
         client2.connect(port=5560)
-       
-        test_map = {"toto":"test"}
+
+        test_map = {"toto": "test"}
         # Test the key registering
         data_sample_key = client.register(SampleData(map=test_map))
 
         test_map_result = SampleData()
-        #Waiting for server to receive the datas
+        # Waiting for server to receive the datas
         time.sleep(1)
 
         client2._rep_store[data_sample_key].load(target=test_map_result)
 
-        
         client.disconnect()
         client2.disconnect()
         server.stop()
-
 
         self.assertEqual(test_map_result.map["toto"], test_map["toto"])
 
@@ -178,18 +174,18 @@ class TestClient(unittest.TestCase):
 
         client2 = Client(factory=factory, id="cli2_test_client_data_intergity")
         client2.connect(port=5560)
-       
-        test_map = {"toto":"test"}
+
+        test_map = {"toto": "test"}
         # Test the key registering
         data_sample_key = client.register(SampleData(map=test_map))
 
         test_map_result = SampleData()
-        
-        #Waiting for server to receive the datas
+
+        # Waiting for server to receive the datas
         time.sleep(.1)
 
         client2._rep_store[data_sample_key].load(target=test_map_result)
-        
+
         client.unregister(data_sample_key)
         time.sleep(.1)
 
@@ -205,7 +201,7 @@ class TestClient(unittest.TestCase):
         server.stop()
 
         self.assertFalse(data_sample_key in client._rep_store)
-    
+
     def test_client_disconnect(self):
         pass
 
@@ -223,7 +219,7 @@ class TestStressClient(unittest.TestCase):
         server = Server(factory=factory)
         client = Client(factory=factory, id="cli_test_filled_snapshot")
         client2 = Client(factory=factory, id="client_2")
-        
+
         server.serve(port=5575)
         client.connect(port=5575)
         client2.connect(port=5575)
@@ -234,7 +230,7 @@ class TestStressClient(unittest.TestCase):
 
         while len(client2._rep_store.keys()) < 10000:
             time.sleep(0.00001)
-            total_time+=0.00001
+            total_time += 0.00001
 
         # test_num_items = len(client2._rep_store.keys())
         server.stop()
@@ -242,26 +238,27 @@ class TestStressClient(unittest.TestCase):
         client2.disconnect()
         logger.info("{} s for 10000 values".format(total_time))
 
-        self.assertLess(total_time,1)
+        self.assertLess(total_time, 1)
+
 
 def suite():
     suite = unittest.TestSuite()
 
     # Data factory
     suite.addTest(TestDataFactory('test_data_factory'))
-    
-    # Client 
+
+    # Client
     suite.addTest(TestClient('test_empty_snapshot'))
     suite.addTest(TestClient('test_filled_snapshot'))
     suite.addTest(TestClient('test_register_client_data'))
     suite.addTest(TestClient('test_client_data_intergity'))
-    
+
     # Stress test
     suite.addTest(TestStressClient('test_stress_register'))
 
     return suite
 
+
 if __name__ == '__main__':
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
-    

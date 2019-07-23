@@ -1,8 +1,10 @@
-import threading
 import logging
-import zmq
+import threading
 import time
-from replication import ReplicatedDatablock, RepCommand,RepDeleteCommand
+
+import zmq
+
+from replication import RepCommand, RepDeleteCommand, ReplicatedDatablock
 from replication_graph import ReplicationGraph
 
 logger = logging.getLogger(__name__)
@@ -13,7 +15,7 @@ STATE_ACTIVE = 2
 
 
 class Client(object):
-    def __init__(self,factory=None, id='default'):
+    def __init__(self, factory=None, id='default'):
         assert(factory)
 
         self._rep_store = ReplicationGraph()
@@ -23,11 +25,11 @@ class Client(object):
             id=id)
         self._factory = factory
 
-    def connect(self,address="127.0.0.1",port=5560):
+    def connect(self, address="127.0.0.1", port=5560):
         """
         Connect to the server
         """
-        self._net_client.connect(address=address,port=port)
+        self._net_client.connect(address=address, port=port)
 
     def disconnect(self):
         """
@@ -52,22 +54,23 @@ class Client(object):
         find a better way to handle replication behavior
         """
         assert(object)
-        
+
         # Construct the coresponding replication type
-        new_item = self._factory.construct_from_dcc(object)(owner="client", pointer=object)
+        new_item = self._factory.construct_from_dcc(
+            object)(owner="client", pointer=object)
 
         if new_item:
-            logger.info("Registering {} on {}".format(object,new_item.uuid))
+            logger.info("Registering {} on {}".format(object, new_item.uuid))
             new_item.store(self._rep_store)
-            
+
             logger.info("Pushing new registered value")
             new_item.push(self._net_client.publish)
             return new_item.uuid
-            
+
         else:
             raise TypeError("Type not supported")
-    
-    def unregister(self,object_uuid,clean=False):
+
+    def unregister(self, object_uuid, clean=False):
         """
         Unregister for replication the given
         object.
@@ -76,27 +79,30 @@ class Client(object):
         """
 
         if object_uuid in self._rep_store.keys():
-            delete_command = RepDeleteCommand(owner='client', buffer=object_uuid)
+            delete_command = RepDeleteCommand(
+                owner='client', buffer=object_uuid)
+            # remove the key from our store
             delete_command.store(self._rep_store)
             delete_command.push(self._net_client.publish)
         else:
             raise KeyError("Cannot unregister key")
-    
-    def pull(self,object=None):
+
+    def pull(self, object=None):
         """
         Asynchonous pull
         Here we want to pull all waiting changes and apply them
         """
         pass
 
+
 class ClientNetService(threading.Thread):
-    def __init__(self,store_reference=None, factory=None,id="default"):
+    def __init__(self, store_reference=None, factory=None, id="default"):
 
         # Threading
         threading.Thread.__init__(self)
         self.name = "ClientNetLink"
         self.daemon = True
-        
+
         self._exit_event = threading.Event()
         self._factory = factory
         self._store_reference = store_reference
@@ -108,16 +114,16 @@ class ClientNetService(threading.Thread):
         self.context = zmq.Context.instance()
         self.state = STATE_INITIAL
 
-    def connect(self,address='127.0.0.1', port=5560):
+    def connect(self, address='127.0.0.1', port=5560):
         """
         Network socket setup
         """
         if self.state == STATE_INITIAL:
-            logger.debug("connecting on {}:{}".format(address,port))
+            logger.debug("connecting on {}:{}".format(address, port))
             self.snapshot = self.context.socket(zmq.DEALER)
             self.snapshot.setsockopt(zmq.IDENTITY, self._id.encode())
             self.snapshot.connect("tcp://{}:{}".format(address, port))
-            
+
             self.subscriber = self.context.socket(zmq.SUB)
             self.subscriber.setsockopt_string(zmq.SUBSCRIBE, '')
             # self.subscriber.setsockopt(zmq.IDENTITY, self._id.encode())
@@ -146,7 +152,6 @@ class ClientNetService(threading.Thread):
                 logger.debug('{} : request snapshot'.format(self._id))
                 self.snapshot.send(b"SNAPSHOT_REQUEST")
                 self.state = STATE_SYNCING
-            
 
             """NET IN 
                 Given the net state we do something:
@@ -157,7 +162,8 @@ class ClientNetService(threading.Thread):
 
             if self.snapshot in items:
                 if self.state == STATE_SYNCING:
-                    datablock = ReplicatedDatablock.pull(self.snapshot, self._factory)
+                    datablock = ReplicatedDatablock.pull(
+                        self.snapshot, self._factory)
 
                     if 'SNAPSHOT_END' in datablock.buffer:
                         self.state = STATE_ACTIVE
@@ -168,37 +174,38 @@ class ClientNetService(threading.Thread):
             # We receive updates from the server !
             if self.subscriber in items:
                 if self.state == STATE_ACTIVE:
-                    logger.debug("{} : Receiving changes from server".format(self._id))
-                    datablock = ReplicatedDatablock.pull(self.subscriber, self._factory)
+                    logger.debug(
+                        "{} : Receiving changes from server".format(self._id))
+                    datablock = ReplicatedDatablock.pull(
+                        self.subscriber, self._factory)
                     datablock.store(self._store_reference)
 
             if not items:
                 logger.error("No request ")
-                
 
         self.snapshot.close()
         self.subscriber.close()
         self.publish.close()
 
         self._exit_event.clear()
-    
+
     def stop(self):
         self._exit_event.set()
 
-        #Wait the end of the run
+        # Wait the end of the run
         while self._exit_event.is_set():
             time.sleep(.1)
 
         self.state = 0
 
 
-
 class Server():
-    def __init__(self,config=None, factory=None):
+    def __init__(self, config=None, factory=None):
         self._rep_store = {}
-        self._net = ServerNetService(store_reference=self._rep_store, factory=factory)
+        self._net = ServerNetService(
+            store_reference=self._rep_store, factory=factory)
 
-    def serve(self,port=5560):
+    def serve(self, port=5560):
         self._net.listen(port=port)
 
     def state(self):
@@ -209,7 +216,7 @@ class Server():
 
 
 class ServerNetService(threading.Thread):
-    def __init__(self,store_reference=None, factory=None):
+    def __init__(self, store_reference=None, factory=None):
         # Threading
         threading.Thread.__init__(self)
         self.name = "ServerNetLink"
@@ -217,7 +224,7 @@ class ServerNetService(threading.Thread):
         self._exit_event = threading.Event()
 
         # Networking
-        self._rep_store =  store_reference
+        self._rep_store = store_reference
 
         self.context = zmq.Context.instance()
         self.snapshot = None
@@ -227,7 +234,6 @@ class ServerNetService(threading.Thread):
         self.factory = factory
         self.clients = {}
 
-    
     def listen(self, port=5560):
         try:
             # Update request
@@ -249,7 +255,7 @@ class ServerNetService(threading.Thread):
             self.pull.setsockopt(zmq.RCVHWM, 60)
             self.pull.bind("tcp://*:{}".format(port+2))
 
-            self.start()    
+            self.start()
         except zmq.error.ZMQError:
             logger.error("Address already in use, change net config")
 
@@ -285,38 +291,37 @@ class ServerNetService(threading.Thread):
                     for key, item in self._rep_store.items():
                         self.snapshot.send(identity, zmq.SNDMORE)
                         item.push(self.snapshot)
-                    
+
                     # Snapshot end
                     self.snapshot.send(identity, zmq.SNDMORE)
-                    RepCommand(owner='server',pointer='SNAPSHOT_END').push(self.snapshot)              
-                    
+                    RepCommand(owner='server', pointer='SNAPSHOT_END').push(
+                        self.snapshot)
 
             # Regular update routing (Clients / Server / Clients)
             if self.pull in socks:
                 logger.debug("SERVER: Receiving changes from client")
                 datablock = ReplicatedDatablock.pull(self.pull, self.factory)
-                
+
                 datablock.store(self._rep_store)
-                
+
                 # Update all clients
                 # for cli_name,cli_id in self.clients.items():
                 #     logger.debug("SERVER: Broadcast changes to {}".format(cli_name))
                 #     self.publisher.send(cli_id, zmq.SNDMORE)
                 #     datablock.push(self.publisher)
-                
+
                 datablock.push(self.publisher)
-                
+
         self.snapshot.close()
         self.pull.close()
         self.publisher.close()
 
         self._exit_event.clear()
 
-
     def stop(self):
         self._exit_event.set()
 
-        #Wait the end of the run
+        # Wait the end of the run
         while self._exit_event.is_set():
             time.sleep(.1)
 

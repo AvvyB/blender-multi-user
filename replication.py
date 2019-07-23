@@ -1,18 +1,13 @@
-import logging
-from uuid import uuid4
 import json
-try:
-    from .libs import umsgpack
-
-except:
-    # Server import
-    from libs import umsgpack
-
-import zmq
+import logging
 import pickle
 from enum import Enum
+from uuid import uuid4
+
+import zmq
 
 logger = logging.getLogger(__name__)
+
 
 class RepState(Enum):
     ADDED = 0
@@ -29,9 +24,8 @@ class ReplicatedDataFactory(object):
         self.supported_types = []
 
         # Default registered types
-        self.register_type(str,RepCommand)
+        self.register_type(str, RepCommand)
         self.register_type(RepDeleteCommand, RepDeleteCommand)
-    
 
     def register_type(self, dtype, implementation):
         """
@@ -75,7 +69,7 @@ class ReplicatedDatablock(object):
     uuid = None     # uuid used as key      (string)
     pointer = None  # dcc data ref          (DCC type)
     buffer = None   # raw data              (json)
-    str_type = None # data type name        (string)
+    str_type = None  # data type name        (string)
     deps = [None]   # dependencies array    (string)
     owner = None    # Data owner            (string)
     state = None    # Data state            (RepState)
@@ -123,10 +117,9 @@ class ReplicatedDatablock(object):
         uuid = uuid.decode()
 
         instance = factory.construct_from_net(str_type)(owner=owner, uuid=uuid)
-        instance.buffer = instance.deserialize(data) 
+        instance.buffer = instance.deserialize(data)
 
         return instance
-
 
     def store(self, dict, persistent=False):
         """
@@ -142,20 +135,17 @@ class ReplicatedDatablock(object):
 
             return self.uuid
 
-
     def deserialize(self, data):
         """
         BUFFER -> JSON
         """
         raise NotImplementedError
 
-
     def serialize(self, data):
         """
         JSON -> BUFFER
         """
         raise NotImplementedError
-    
 
     def dump(self):
         """
@@ -165,13 +155,11 @@ class ReplicatedDatablock(object):
 
         return json.dumps(self.pointer)
 
-
-    def load(self,target=None):
+    def load(self, target=None):
         """
         JSON -> DCC
         """
         raise NotImplementedError
-    
 
     def resolve(self):
         """
@@ -181,37 +169,37 @@ class ReplicatedDatablock(object):
         """
         raise NotImplementedError
 
-
     def __repr__(self):
         return "{uuid} - owner: {owner} - type: {type}".format(
             uuid=self.uuid,
             owner=self.owner,
             type=self.str_type
-            ) 
+        )
+
 
 class RepCommand(ReplicatedDatablock):
-    def serialize(self,data):
+    def serialize(self, data):
         return pickle.dumps(data)
 
-    def deserialize(self,data):
+    def deserialize(self, data):
         return pickle.loads(data)
-    
-    def load(self,target):
+
+    def load(self, target):
         target = self.pointer
 
+
 class RepDeleteCommand(ReplicatedDatablock):
-    def serialize(self,data):
+    def serialize(self, data):
         return pickle.dumps(data)
 
-    def deserialize(self,data):
+    def deserialize(self, data):
         return pickle.loads(data)
-    
-    def store(self,rep_store):
+
+    def store(self, rep_store):
         assert(self.buffer)
 
         if rep_store and self.buffer in rep_store.keys():
             del rep_store[self.buffer]
-
 
 
 # class RepObject(ReplicatedDatablock):
