@@ -13,7 +13,6 @@ import pickle
 from enum import Enum
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 
 class RepState(Enum):
     ADDED = 0

@@ -7,8 +7,10 @@ import time
 import cProfile
 import re
 
-
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class SampleData():
     def __init__(self, map={"sample":"data"}):
@@ -231,14 +233,14 @@ class TestStressClient(unittest.TestCase):
             client.register(SampleData())
 
         while len(client2._rep_store.keys()) < 10000:
-            time.sleep(0.001)
-            total_time+=0.001
+            time.sleep(0.00001)
+            total_time+=0.00001
 
         # test_num_items = len(client2._rep_store.keys())
         server.stop()
         client.disconnect()
         client2.disconnect()
-        logger.debug("{} s for 10000 values".format(total_time))
+        logger.info("{} s for 10000 values".format(total_time))
 
         self.assertLess(total_time,1)
 

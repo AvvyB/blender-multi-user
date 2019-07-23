@@ -5,7 +5,6 @@ import time
 from replication import ReplicatedDatablock, RepCommand,RepDeleteCommand
 from replication_graph import ReplicationGraph
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 STATE_INITIAL = 0
