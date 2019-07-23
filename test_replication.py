@@ -183,13 +183,20 @@ class TestClient(unittest.TestCase):
         test_map_result = SampleData()
         
         #Waiting for server to receive the datas
-        time.sleep(1)
+        time.sleep(.1)
 
         client2._rep_store[data_sample_key].load(target=test_map_result)
         
         client.unregister(data_sample_key)
+        time.sleep(.1)
 
+        logger.debug("client store:")
         logger.debug(client._rep_store)
+        logger.debug("client2 store:")
+        logger.debug(client2._rep_store)
+        logger.debug("server store:")
+        logger.debug(server._rep_store)
+
         client.disconnect()
         client2.disconnect()
         server.stop()

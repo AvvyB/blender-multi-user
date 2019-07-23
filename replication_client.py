@@ -164,8 +164,8 @@ class ClientNetService(threading.Thread):
                     if 'SNAPSHOT_END' in datablock.buffer:
                         self.state = STATE_ACTIVE
                         logger.debug('{} : snapshot done'.format(self._id))
-
-                    datablock.store(self._store_reference)
+                    else:
+                        datablock.store(self._store_reference)
 
             # We receive updates from the server !
             if self.subscriber in items:
