@@ -25,6 +25,12 @@ class ReplicationGraph(collections.MutableMapping):
     def __len__(self):
         return len(self.store)
 
+    def __repr__(self):
+        str = "\n"
+        for key,item in self.store.items():
+            str+=repr(item)
+        return str
+
 
 
    

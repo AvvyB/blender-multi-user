@@ -183,10 +183,10 @@ class ReplicatedDatablock(object):
         raise NotImplementedError
 
     def __repr__(self):
-        return "{uuid} - Owner: {owner} - ETA: {state} ".format(
+        return "{uuid} - owner: {owner} - type: {type}".format(
             uuid=self.uuid,
             owner=self.owner,
-            state=self.state
+            type=self.str_type
             ) 
 
 class RepCommand(ReplicatedDatablock):

@@ -8,7 +8,7 @@ import cProfile
 import re
 
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class SampleData():
     def __init__(self, map={"sample":"data"}):
@@ -189,7 +189,7 @@ class TestClient(unittest.TestCase):
         
         client.unregister(data_sample_key)
 
-        
+        logger.debug(client._rep_store)
         client.disconnect()
         client2.disconnect()
         server.stop()
