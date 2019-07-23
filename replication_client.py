@@ -102,6 +102,9 @@ class ClientNetService(threading.Thread):
         self.state = STATE_INITIAL
 
     def connect(self,address='127.0.0.1', port=5560):
+        """
+        Network socket setup
+        """
         if self.state == STATE_INITIAL:
             logger.debug("connecting on {}:{}".format(address,port))
             self.snapshot = self.context.socket(zmq.DEALER)
