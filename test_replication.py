@@ -26,6 +26,7 @@ class RepSampleData(ReplicatedDatablock):
 
         return pickle.loads(data)
     
+    
     def dump(self):
         import json
         output = {}

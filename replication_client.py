@@ -67,13 +67,6 @@ class Client(object):
             
         else:
             raise TypeError("Type not supported")
-
-    def pull(self,object=None):
-        """
-        Asynchonous pull
-        Here we want to pull all waiting changes and apply them
-        """
-        pass
     
     def unregister(self,object_uuid,clean=False):
         """
@@ -89,7 +82,13 @@ class Client(object):
             delete_command.push(self._net_client.publish)
         else:
             raise KeyError("Cannot unregister key")
-            
+    
+    def pull(self,object=None):
+        """
+        Asynchonous pull
+        Here we want to pull all waiting changes and apply them
+        """
+        pass
 
 class ClientNetService(threading.Thread):
     def __init__(self,store_reference=None, factory=None,id="default"):

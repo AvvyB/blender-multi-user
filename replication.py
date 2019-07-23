@@ -71,7 +71,7 @@ class ReplicatedDataFactory(object):
 
 class ReplicatedDatablock(object):
     """
-    Datablock used for replication 
+    Datablock definition used for replication 
     """
     uuid = None     # uuid used as key      (string)
     pointer = None  # dcc data ref          (DCC type)
@@ -181,6 +181,7 @@ class ReplicatedDatablock(object):
 
         """
         raise NotImplementedError
+
 
     def __repr__(self):
         return "{uuid} - owner: {owner} - type: {type}".format(
