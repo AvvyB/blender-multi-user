@@ -66,10 +66,10 @@ class TestClient(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
 
         server = Server(factory=factory)
-        client = Client(factory=factory, id="client_test_callback")
+        client = Client(factory=factory)
 
         server.serve(port=5570)
-        client.connect(port=5570)
+        client.connect(port=5570, id="client_test_callback")
 
         test_state = client.state
 
@@ -84,16 +84,16 @@ class TestClient(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
 
         server = Server(factory=factory)
-        client = Client(factory=factory, id="cli_test_filled_snapshot")
-        client2 = Client(factory=factory, id="client_2")
+        client = Client(factory=factory)
+        client2 = Client(factory=factory)
 
         server.serve(port=5575)
-        client.connect(port=5575)
+        client.connect(port=5575,id="cli_test_filled_snapshot")
 
         # Test the key registering
         data_sample_key = client.register(SampleData())
 
-        client2.connect(port=5575)
+        client2.connect(port=5575, id="client_2")
         time.sleep(0.2)
         rep_test_key = client2._rep_store[data_sample_key].uuid
 
@@ -112,11 +112,11 @@ class TestClient(unittest.TestCase):
         server = Server(factory=factory)
         server.serve(port=5560)
 
-        client = Client(factory=factory, id="cli_test_register_client_data")
-        client.connect(port=5560)
+        client = Client(factory=factory)
+        client.connect(port=5560,id="cli_test_register_client_data")
 
-        client2 = Client(factory=factory, id="cli2_test_register_client_data")
-        client2.connect(port=5560)
+        client2 = Client(factory=factory)
+        client2.connect(port=5560, id="cli2_test_register_client_data")
 
         # Test the key registering
         data_sample_key = client.register(SampleData())
@@ -139,11 +139,11 @@ class TestClient(unittest.TestCase):
         server = Server(factory=factory)
         server.serve(port=5560)
 
-        client = Client(factory=factory, id="cli_test_client_data_intergity")
-        client.connect(port=5560)
+        client = Client(factory=factory)
+        client.connect(port=5560, id="cli_test_client_data_intergity")
 
-        client2 = Client(factory=factory, id="cli2_test_client_data_intergity")
-        client2.connect(port=5560)
+        client2 = Client(factory=factory)
+        client2.connect(port=5560, id="cli2_test_client_data_intergity")
 
         test_map = {"toto": "test"}
         # Test the key registering
@@ -169,11 +169,11 @@ class TestClient(unittest.TestCase):
         server = Server(factory=factory)
         server.serve(port=5560)
 
-        client = Client(factory=factory, id="cli_test_client_data_intergity")
-        client.connect(port=5560)
+        client = Client(factory=factory)
+        client.connect(port=5560, id="cli_test_client_data_intergity")
 
-        client2 = Client(factory=factory, id="cli2_test_client_data_intergity")
-        client2.connect(port=5560)
+        client2 = Client(factory=factory)
+        client2.connect(port=5560, id="cli2_test_client_data_intergity")
 
         test_map = {"toto": "test"}
         # Test the key registering
@@ -217,12 +217,12 @@ class TestStressClient(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
 
         server = Server(factory=factory)
-        client = Client(factory=factory, id="cli_test_filled_snapshot")
-        client2 = Client(factory=factory, id="client_2")
+        client = Client(factory=factory)
+        client2 = Client(factory=factory)
 
         server.serve(port=5575)
-        client.connect(port=5575)
-        client2.connect(port=5575)
+        client.connect(port=5575,id="cli_test_filled_snapshot")
+        client2.connect(port=5575,id="client_2")
 
         # Test the key registering
         for i in range(10000):

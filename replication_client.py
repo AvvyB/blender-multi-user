@@ -15,21 +15,21 @@ STATE_ACTIVE = 2
 
 
 class Client(object):
-    def __init__(self, factory=None, id='default'):
+    def __init__(self, factory=None, supervisor=False):
         assert(factory)
 
         self._rep_store = ReplicationGraph()
         self._net_client = ClientNetService(
             store_reference=self._rep_store,
-            factory=factory,
-            id=id)
+            factory=factory)
         self._factory = factory
+        self._is_supervisor = supervisor
 
-    def connect(self, address="127.0.0.1", port=5560):
+    def connect(self, id="Default", address="127.0.0.1", port=5560):
         """
         Connect to the server
         """
-        self._net_client.connect(address=address, port=port)
+        self._net_client.connect(id=id, address=address, port=port)
 
     def disconnect(self):
         """
@@ -96,7 +96,7 @@ class Client(object):
 
 
 class ClientNetService(threading.Thread):
-    def __init__(self, store_reference=None, factory=None, id="default"):
+    def __init__(self, store_reference=None, factory=None):
 
         # Threading
         threading.Thread.__init__(self)
@@ -106,7 +106,7 @@ class ClientNetService(threading.Thread):
         self._exit_event = threading.Event()
         self._factory = factory
         self._store_reference = store_reference
-        self._id = id
+        self._id = "None"
 
         assert(self._factory)
 
@@ -114,11 +114,13 @@ class ClientNetService(threading.Thread):
         self.context = zmq.Context.instance()
         self.state = STATE_INITIAL
 
-    def connect(self, address='127.0.0.1', port=5560):
+    def connect(self, id=None, address='127.0.0.1', port=5560):
         """
         Network socket setup
         """
+        assert(id)
         if self.state == STATE_INITIAL:
+            self._id = id
             logger.debug("connecting on {}:{}".format(address, port))
             self.command = self.context.socket(zmq.DEALER)
             self.command.setsockopt(zmq.IDENTITY, self._id.encode())
