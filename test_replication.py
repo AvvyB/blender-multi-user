@@ -3,6 +3,7 @@ import logging
 import re
 import time
 import unittest
+import umsgpack
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -14,7 +15,7 @@ from replication_client import Client, Server
 
 
 class SampleData():
-    def __init__(self, map={"sample": "data"}):
+    def __init__(self, map={"sample": bytearray(500000)}):
         self.map = map
 
 
@@ -32,7 +33,7 @@ class RepSampleData(ReplicatedDatablock):
     def dump(self):
         import json
         output = {}
-        output['map'] = json.dumps(self.pointer.map)
+        output['map'] = umsgpack.packb(self.pointer.map)
         return output
 
     def load(self, target=None):
@@ -40,7 +41,7 @@ class RepSampleData(ReplicatedDatablock):
         if target is None:
             target = SampleData()
 
-        target.map = json.loads(self.buffer['map'])
+        target.map = umsgpack.unpackb(self.buffer['map'])
 
 
 class TestDataFactory(unittest.TestCase):
@@ -108,13 +109,13 @@ class TestClient(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
 
         server = Server(factory=factory)
-        server.serve(port=5560)
+        server.serve(port=5580)
 
         client = Client(factory=factory)
-        client.connect(port=5560,id="cli_test_register_client_data")
+        client.connect(port=5580,id="cli_test_register_client_data")
 
         client2 = Client(factory=factory)
-        client2.connect(port=5560, id="cli2_test_register_client_data")
+        client2.connect(port=5580, id="cli2_test_register_client_data")
 
         # Test the key registering
         data_sample_key = client.register(SampleData())
@@ -135,13 +136,13 @@ class TestClient(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
 
         server = Server(factory=factory)
-        server.serve(port=5560)
+        server.serve(port=5585)
 
         client = Client(factory=factory)
-        client.connect(port=5560, id="cli_test_client_data_intergity")
+        client.connect(port=5585, id="cli_test_client_data_intergity")
 
         client2 = Client(factory=factory)
-        client2.connect(port=5560, id="cli2_test_client_data_intergity")
+        client2.connect(port=5585, id="cli2_test_client_data_intergity")
 
         test_map = {"toto": "test"}
         # Test the key registering
@@ -165,13 +166,13 @@ class TestClient(unittest.TestCase):
         factory.register_type(SampleData, RepSampleData)
 
         server = Server(factory=factory)
-        server.serve(port=5560)
+        server.serve(port=5590)
 
         client = Client(factory=factory)
-        client.connect(port=5560, id="cli_test_client_data_intergity")
+        client.connect(port=5590, id="cli_test_client_data_intergity")
 
         client2 = Client(factory=factory)
-        client2.connect(port=5560, id="cli2_test_client_data_intergity")
+        client2.connect(port=5590, id="cli2_test_client_data_intergity")
 
         test_map = {"toto": "test"}
         # Test the key registering
@@ -218,9 +219,9 @@ class TestStressClient(unittest.TestCase):
         client = Client(factory=factory)
         client2 = Client(factory=factory)
 
-        server.serve(port=5575)
-        client.connect(port=5575,id="cli_test_filled_snapshot")
-        client2.connect(port=5575,id="client_2")
+        server.serve(port=5595)
+        client.connect(port=5595,id="cli_test_filled_snapshot")
+        client2.connect(port=5595,id="client_2")
 
         # Test the key registering
         for i in range(10000):
