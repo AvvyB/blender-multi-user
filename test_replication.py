@@ -15,7 +15,7 @@ from replication_client import Client, Server
 
 
 class SampleData():
-    def __init__(self, map={"sample": bytearray(500000)}):
+    def __init__(self, map={"sample": bytearray(50000)}):
         self.map = map
 
 
