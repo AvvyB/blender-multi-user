@@ -14,12 +14,13 @@ from bpy_extras.io_utils import ExportHelper
 import mathutils
 from pathlib import Path
 
-from . import environment, client, draw, helpers, ui
+from . import environment, presence, ui
 from .libs import umsgpack
+from .libs.replication import client
 
 logger = logging.getLogger(__name__)
 
-# client_instance = None
+cli = None
 
 server = None
 context = None

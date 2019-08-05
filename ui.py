@@ -1,7 +1,5 @@
 import bpy
-from . import client
-from . import operators
-
+from .libs.replication import client
 
 
 ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
