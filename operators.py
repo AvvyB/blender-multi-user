@@ -16,7 +16,6 @@ from pathlib import Path
 
 from . import environment, presence, ui
 from .libs import umsgpack
-from .libs.replication import client
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ def upload_client_instance_position():
 
         key = "Client/{}".format(username)
 
-        current_coords = draw.get_client_view_rect()
+        current_coords = presence.get_client_view_rect()
         client_list = client.instance.get(key)
 
         if current_coords and client_list:
@@ -162,7 +161,7 @@ class SessionJoinOperator(bpy.types.Operator):
 
         # Launch drawing module
         if net_settings.enable_presence:
-            draw.renderer.run()
+            presence.renderer.run()
 
         return {"FINISHED"}
 
@@ -290,7 +289,7 @@ class SessionStopOperator(bpy.types.Operator):
             net_settings.is_admin = False
 
             unregister_ticks()
-            draw.renderer.stop()
+            presence.renderer.stop()
         else:
             logger.debug("No server/client_instance running.")
 
@@ -354,7 +353,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        area, region, rv3d = draw.view3d_find()
+        area, region, rv3d = presence.view3d_find()
 
         target_client = client.instance.get(
             "Client/{}".format(self.target_client))
@@ -521,13 +520,13 @@ def register():
         register_class(cls)
    
     bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
-    draw.register()
+    presence.register()
 
 
 def unregister():
     global server
 
-    draw.unregister()
+    presence.unregister()
 
     if  bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
         bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)

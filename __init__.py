@@ -202,8 +202,14 @@ classes = (
 
 )
 
+libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication"
 
-def register():    
+def register():
+    
+    if libs not in sys.path:
+        sys.path.append(libs)
+        print(libs)
+    
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
     from . import operators
