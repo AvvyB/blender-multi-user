@@ -17,6 +17,7 @@ from pathlib import Path
 from . import environment, presence, ui, utils
 from .libs import umsgpack
 from .libs.replication.client import Client
+from .libs.replication.data import ReplicatedDataFactory
 
 logger = logging.getLogger(__name__)
 
@@ -116,9 +117,8 @@ def unregister_ticks():
     except:
         pass
 
+
 # OPERATORS
-
-
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -142,20 +142,28 @@ class SessionStartOperator(bpy.types.Operator):
         if settings.start_empty:
             clean_scene()
 
-        # Session setup
-        if settings.username == "DefaultUser":
-            settings.username = "{}_{}".format(
-                settings.username, utils.random_string_digits())
+        # Setup data factory
+        bpy_factory = ReplicatedDataFactory()
 
-        
-        client = Client()
-        client.connect(settings.username,
-                                settings.ip,
-                                settings.port)
+        # Setup client
+        client = Client(factory=bpy_factory)
+
+        if self.host:
+            client.host(
+            id=settings.username,
+            address=settings.ip,
+            port=settings.port
+            )
+        else:
+            client.connect(
+                id=settings.username,
+                address=settings.ip,
+                port=settings.port
+                )
 
         # settings.is_running = True
         # bpy.ops.session.refresh()
-        register_ticks()
+        #register_ticks()
 
         # Launch drawing module
         if settings.enable_presence:
