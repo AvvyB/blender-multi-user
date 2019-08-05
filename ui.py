@@ -1,5 +1,5 @@
 import bpy
-from .libs.replication import client
+from . import operators
 
 
 ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
@@ -25,7 +25,7 @@ class SESSION_PT_settings(bpy.types.Panel):
             window_manager = context.window_manager
 
             row = layout.row()
-            if not client.instance or (client.instance and client.instance.state() == 1):
+            if not operators.client or (operators.client and operators.client.state() == 1):
                 row = layout.row()
 
                 # USER SETTINGS
@@ -98,7 +98,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                 
 
             else:
-                if client.instance.state() ==  3:
+                if operators.client.state() ==  3:
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
@@ -111,11 +111,11 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row = box.row()
                     row.label(text="", icon='INFO')
                     row = box.row()
-                    row.label(text="Sync tasks: {}".format(client.instance.active_tasks))
+                    row.label(text="Sync tasks: {}".format(operators.client.active_tasks))
                 else:
                     status = "connecting..."
                     if net_settings.is_admin:
-                        status =  "init scene...({} tasks remaining)".format(client.instance.active_tasks)
+                        status =  "init scene...({} tasks remaining)".format(operators.client.active_tasks)
                     row.label(text=status)
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
@@ -132,7 +132,7 @@ class SESSION_PT_user(bpy.types.Panel):
     bl_category = "Multiuser"
     @classmethod
     def poll(cls, context):
-        return  client.instance and client.instance.state() == 3
+        return  operators.client and operators.client.state() == 3
  
 
     def draw(self, context):
@@ -142,7 +142,7 @@ class SESSION_PT_user(bpy.types.Panel):
         scene = context.window_manager
         # Create a simple row.
         row = layout.row()
-        client_keys = client.instance.list()
+        client_keys = operators.client.list()
         if client_keys and len(client_keys) > 0:
             for key in client_keys:
                 if 'Client' in key[0]:
@@ -179,7 +179,7 @@ class SESSION_PT_properties(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return  client.instance and client.instance.state() == 3
+        return  operators.client and operators.client.state() == 3
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -204,7 +204,7 @@ class SESSION_PT_properties(bpy.types.Panel):
 
             # Property area
             area_msg = row.box()
-            client_keys = client.instance.list()
+            client_keys = operators.client.list()
             if client_keys and len(client_keys) > 0:
 
                 for item in sorted(client_keys, key=get_client_key):

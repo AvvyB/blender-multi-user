@@ -213,7 +213,7 @@ def register():
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
     from . import operators
-    # from . import ui
+    from . import ui
 
     for cls in classes:
         bpy.utils.register_class(cls)
@@ -226,14 +226,14 @@ def register():
     bpy.context.window_manager.session.load()
     save_session_config(bpy.context.window_manager.session,bpy.context)
     operators.register()
-    # ui.register()
+    ui.register()
 
 
 def unregister():
     from . import operators
-    # from . import ui
+    from . import ui
 
-    # ui.unregister()
+    ui.unregister()
     operators.unregister()
 
     del bpy.types.WindowManager.session
