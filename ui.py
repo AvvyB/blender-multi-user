@@ -66,7 +66,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.label(text="init scene:")
                     row.prop(net_settings, "init_scene", text="")
                     row = box.row()
-                    row.operator("session.create", text="HOST")
+                    row.operator("session.start", text="HOST").host = True
                 else:
                     box = row.box()
                     row = box.row()
@@ -80,7 +80,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     
 
                     row = box.row()
-                    row.operator("session.join", text="CONNECT")
+                    row.operator("session.start", text="CONNECT").host = False
 
                 # REPLICATION SETTINGS
                 row = layout.row()

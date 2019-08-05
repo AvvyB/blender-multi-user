@@ -14,7 +14,7 @@ from bpy_extras.io_utils import ExportHelper
 import mathutils
 from pathlib import Path
 
-from . import environment, presence, ui
+from . import environment, presence, ui, utils
 from .libs import umsgpack
 from .libs.replication.client import Client
 
@@ -42,7 +42,7 @@ def execute_queued_functions():
 
 def clean_scene(elements=environment.rtypes):
     for datablock in elements:
-        datablock_ref = getattr(bpy.data,  helpers.BPY_TYPES[datablock])
+        datablock_ref = getattr(bpy.data,  utils.BPY_TYPES[datablock])
         for item in datablock_ref:
             try:
                 datablock_ref.remove(item)
@@ -72,7 +72,7 @@ def update_client_selected_object(context):
     client_key = "Client/{}".format(username)
     client_data = client.get(client_key)
 
-    selected_objects = helpers.get_selected_objects(context.scene)
+    selected_objects = utils.get_selected_objects(context.scene)
     if len(selected_objects) > 0 and len(client_data) > 0:
 
         for obj in selected_objects:
@@ -87,11 +87,10 @@ def update_client_selected_object(context):
         client.set(client_key, client_data[0][1])
 
 # TODO: cleanup
-
 def init_datablocks():
     for datatype in environment.rtypes:
         if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
-            for item in getattr(bpy.data, helpers.BPY_TYPES[datatype]):
+            for item in getattr(bpy.data, utils.BPY_TYPES[datatype]):
                 item.id = bpy.context.window_manager.session.username
                 key = "{}/{}".format(datatype, item.name)
                 client.set(key)
@@ -120,47 +119,46 @@ def unregister_ticks():
 # OPERATORS
 
 
-class SessionJoinOperator(bpy.types.Operator):
-    bl_idname = "session.join"
-    bl_label = "join"
+class SessionStartOperator(bpy.types.Operator):
+    bl_idname = "session.start"
+    bl_label = "start"
     bl_description = "connect to a net server"
     bl_options = {"REGISTER"}
+
+    host: bpy.props.BoolProperty(default=False)
+
 
     @classmethod
     def poll(cls, context):
         return True
 
     def execute(self, context):
-        global execution_queue
-        net_settings = context.window_manager.session
+        global execution_queue, client
+        settings = context.window_manager.session
         # save config
-        net_settings.save(context)
+        settings.save(context)
         
         # Scene setup
-        if net_settings.start_empty:
+        if settings.start_empty:
             clean_scene()
 
         # Session setup
-        if net_settings.username == "DefaultUser":
-            net_settings.username = "{}_{}".format(
-                net_settings.username, randomStringDigits())
+        if settings.username == "DefaultUser":
+            settings.username = "{}_{}".format(
+                settings.username, utils.random_string_digits())
 
-        username = str(context.window_manager.session.username)
+        
+        client = Client()
+        client.connect(settings.username,
+                                settings.ip,
+                                settings.port)
 
-        if len(net_settings.ip) < 1:
-            net_settings.ip = "127.0.0.1"
-
-        client = client.Client(execution_queue)
-        client.connect(net_settings.username,
-                                net_settings.ip,
-                                net_settings.port)
-
-        # net_settings.is_running = True
+        # settings.is_running = True
         # bpy.ops.session.refresh()
         register_ticks()
 
         # Launch drawing module
-        if net_settings.enable_presence:
+        if settings.enable_presence:
             presence.renderer.run()
 
         return {"FINISHED"}
@@ -180,26 +178,9 @@ class SessionPropertyAddOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        global client
 
         client.add(self.property_path)
-
-        return {"FINISHED"}
-
-
-class SessionPropertyGetOperator(bpy.types.Operator):
-    bl_idname = "session.get_prop"
-    bl_label = "get"
-    bl_description = "broadcast a property to connected client_instances"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        global client_instance
-
-        client.get("client")
 
         return {"FINISHED"}
 
@@ -217,35 +198,13 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        global client
         try:
             del client.property_map[self.property_path]
 
             return {"FINISHED"}
         except:
             return {"CANCELED"}
-
-
-class SessionHostOperator(bpy.types.Operator):
-    bl_idname = "session.create"
-    bl_label = "create"
-    bl_description = "create to a net session"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        net_settings = context.window_manager.session
-
-        bpy.ops.session.join()
-
-        if net_settings.init_scene:
-            init_datablocks()
-
-        net_settings.is_admin = True
-
-        return {"FINISHED"}
 
 
 class SessionStopOperator(bpy.types.Operator):
@@ -260,7 +219,7 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
 
-        net_settings = context.window_manager.session
+        settings = context.window_manager.session
 
         if client:
             client.exit()
@@ -268,7 +227,7 @@ class SessionStopOperator(bpy.types.Operator):
             # del client_instance
 
             # client_instance = None
-            net_settings.is_admin = False
+            settings.is_admin = False
 
             unregister_ticks()
             presence.renderer.stop()
@@ -296,24 +255,24 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        net_settings = context.window_manager.session
+        settings = context.window_manager.session
 
         col = layout.column()
-        col.prop(net_settings, "clients")
+        col.prop(settings, "clients")
 
     def execute(self, context):
-        net_settings = context.window_manager.session
+        settings = context.window_manager.session
 
-        if net_settings.is_admin:
+        if settings.is_admin:
             val = client.get(self.key)
-            val[0][1]['id'] = net_settings.clients
+            val[0][1]['id'] = settings.clients
 
             client.set(key=self.key, value=val[0][1], override=True)
-            item = helpers.resolve_bpy_path(self.key)
+            item = utils.resolve_bpy_path(self.key)
             if item:
-                item.id = net_settings.clients
+                item.id = settings.clients
                 logger.info("Updating {} rights to {}".format(
-                    self.key, net_settings.clients))
+                    self.key, settings.clients))
         else:
             print("Not admin")
 
@@ -393,11 +352,9 @@ class SessionSaveConfig(bpy.types.Operator):
 
 
 classes = (
-    SessionJoinOperator,
+    SessionStartOperator,
     SessionPropertyAddOperator,
-    SessionPropertyGetOperator,
     SessionStopOperator,
-    SessionHostOperator,
     SessionPropertyRemoveOperator,
     SessionSnapUserOperator,
     SessionPropertyRightOperator,
@@ -405,27 +362,7 @@ classes = (
     SessionSaveConfig,
 )
 
-
-def is_replicated(update):
-    object_type = update.id.bl_rna.__class__.__name__
-    object_name = update.id.name
-
-    # Master collection special cae
-    if  update.id.name == 'Master Collection':
-        object_type = 'Scene' 
-        object_name = bpy.context.scene.name
-    if 'Light' in update.id.bl_rna.name:
-        object_type = 'Light' 
-        
-    key = "{}/{}".format(object_type, object_name)
-
-    if client.exist(key):
-        return True
-    else:
-        logger.debug("{} Not rep".format(key))
-        return False
-
-
+"""
 def get_datablock_from_update(update,context):
     item_type = update.id.__class__.__name__
     item_id = update.id.name
@@ -434,22 +371,14 @@ def get_datablock_from_update(update,context):
 
     if item_id == 'Master Collection':
         datablock_ref= bpy.context.scene
-    elif item_type in helpers.BPY_TYPES.keys():
-        datablock_ref = getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__])[update.id.name]
+    elif item_type in utils.BPY_TYPES.keys():
+        datablock_ref = getattr(bpy.data, utils.BPY_TYPES[update.id.__class__.__name__])[update.id.name]
     else:
         if item_id in bpy.data.lights.keys():
             datablock_ref = bpy.data.lights[item_id]
     
 
     return datablock_ref
-
-
-def toogle_update_dirty(context, update):
-    data_ref = get_datablock_from_update(update,context)
-                    
-    if data_ref:
-        logger.debug(update.id.bl_rna.__class__.__name__)
-        data_ref.is_dirty= True
 
 
 def depsgraph_update(scene):
@@ -461,7 +390,7 @@ def depsgraph_update(scene):
             username = ctx.window_manager.session.username
             
 
-            selected_objects = helpers.get_selected_objects(scene)
+            selected_objects = utils.get_selected_objects(scene)
 
             for update in reversed(updates):
                 if is_replicated(update):
@@ -486,20 +415,21 @@ def depsgraph_update(scene):
                             client.set(key)
                         else:
                             try:
-                                getattr(bpy.data, helpers.BPY_TYPES[update.id.__class__.__name__]).remove(item)
+                                getattr(bpy.data, utils.BPY_TYPES[update.id.__class__.__name__]).remove(item)
                             except:
                                 pass
                             break
 
             update_client_selected_object(ctx)   
 
+"""
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
    
-    bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
+    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
     presence.register()
 
 
@@ -508,8 +438,8 @@ def unregister():
 
     presence.unregister()
 
-    if  bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
-        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
+    # if  bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
+    #     bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
 
     if client:
         client.exit()

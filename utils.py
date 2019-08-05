@@ -2,11 +2,13 @@ import logging
 import sys
 from uuid import uuid4
 import json
+import string
+import random
 
 import bpy
 import mathutils
 
-from . import draw, environment
+from . import presence, environment
 from .libs import dump_anything
 
 # TODO: replace hardcoded values...
@@ -23,6 +25,10 @@ def revers(d):
 
     return l[::-1]
 
+def random_string_digits(stringLength=6):
+    """Generate a random string of letters and digits """
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
 def refresh_window():
     import bpy

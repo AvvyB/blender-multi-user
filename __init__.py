@@ -12,11 +12,10 @@ bl_info = {
 import addon_utils
 import logging
 import random
-import string
 import sys
 import os
 import bpy
-from . import environment
+from . import environment, utils
 
 
 DEPENDENCIES = {
@@ -50,12 +49,6 @@ def client_list_callback(scene, context):
                 items.append((name, name, ""))
 
     return items
-
-
-def randomStringDigits(stringLength=6):
-    """Generate a random string of letters and digits """
-    lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
 
 def randomColor():
@@ -95,7 +88,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
-        default="user_{}".format(randomStringDigits()),
+        default="user_{}".format(utils.random_string_digits()),
         update=save_session_config
     )
     ip: bpy.props.StringProperty(
