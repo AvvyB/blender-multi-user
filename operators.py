@@ -16,7 +16,7 @@ from pathlib import Path
 
 from . import environment, presence, ui, utils
 from .libs import umsgpack
-from .libs.replication.client import Client
+from .libs.replication.interface import Client
 from .libs.replication.data import ReplicatedDataFactory
 
 logger = logging.getLogger(__name__)
@@ -432,8 +432,7 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-   
-    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_update)
+
     presence.register()
 
 
@@ -441,9 +440,6 @@ def unregister():
     global client
 
     presence.unregister()
-
-    # if  bpy.app.handlers.depsgraph_update_post.count(depsgraph_update) > 0:
-    #     bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
 
     if client:
         client.disconnect()
