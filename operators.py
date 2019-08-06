@@ -30,92 +30,92 @@ execution_queue = queue.Queue()
 # The function will be executed when the timer runs the next time.
 
 
-def run_in_main_thread(function, args):
-    execution_queue.put(function)
+# def run_in_main_thread(function, args):
+#     execution_queue.put(function)
 
 
-def execute_queued_functions():
-    while not execution_queue.empty():
-        function, args = execution_queue.get()
-        function(args[0], args[1])
-    return .1
+# def execute_queued_functions():
+#     while not execution_queue.empty():
+#         function, args = execution_queue.get()
+#         function(args[0], args[1])
+#     return .1
 
 
-def clean_scene(elements=environment.rtypes):
-    for datablock in elements:
-        datablock_ref = getattr(bpy.data,  utils.BPY_TYPES[datablock])
-        for item in datablock_ref:
-            try:
-                datablock_ref.remove(item)
-            # Catch last scene remove
-            except RuntimeError:
-                pass
+# def clean_scene(elements=environment.rtypes):
+#     for datablock in elements:
+#         datablock_ref = getattr(bpy.data,  utils.BPY_TYPES[datablock])
+#         for item in datablock_ref:
+#             try:
+#                 datablock_ref.remove(item)
+#             # Catch last scene remove
+#             except RuntimeError:
+#                 pass
 
 
-def upload_client_instance_position():
-    username = bpy.context.window_manager.session.username
-    if client:
+# def upload_client_instance_position():
+#     username = bpy.context.window_manager.session.username
+#     if client:
 
-        key = "Client/{}".format(username)
+#         key = "Client/{}".format(username)
 
-        current_coords = presence.get_client_view_rect()
-        client_list = client.get(key)
+#         current_coords = presence.get_client_view_rect()
+#         client_list = client.get(key)
 
-        if current_coords and client_list:
-            if current_coords != client_list[0][1]['location']:
-                client_list[0][1]['location'] = current_coords
-                client.set(key, client_list[0][1])
+#         if current_coords and client_list:
+#             if current_coords != client_list[0][1]['location']:
+#                 client_list[0][1]['location'] = current_coords
+#                 client.set(key, client_list[0][1])
 
 
-def update_client_selected_object(context):
-    session = bpy.context.window_manager.session
-    username = bpy.context.window_manager.session.username
-    client_key = "Client/{}".format(username)
-    client_data = client.get(client_key)
+# def update_client_selected_object(context):
+    # session = bpy.context.window_manager.session
+    # username = bpy.context.window_manager.session.username
+    # client_key = "Client/{}".format(username)
+    # client_data = client.get(client_key)
 
-    selected_objects = utils.get_selected_objects(context.scene)
-    if len(selected_objects) > 0 and len(client_data) > 0:
+    # selected_objects = utils.get_selected_objects(context.scene)
+    # if len(selected_objects) > 0 and len(client_data) > 0:
 
-        for obj in selected_objects:
-            # if obj not in client_data[0][1]['active_objects']:
-            client_data[0][1]['active_objects'] = selected_objects
+    #     for obj in selected_objects:
+    #         # if obj not in client_data[0][1]['active_objects']:
+    #         client_data[0][1]['active_objects'] = selected_objects
 
-            client.set(client_key, client_data[0][1])
-            break
+    #         client.set(client_key, client_data[0][1])
+    #         break
 
-    elif client_data and client_data[0][1]['active_objects']:
-        client_data[0][1]['active_objects'] = []
-        client.set(client_key, client_data[0][1])
+    # elif client_data and client_data[0][1]['active_objects']:
+    #     client_data[0][1]['active_objects'] = []
+    #     client.set(client_key, client_data[0][1])
 
 # TODO: cleanup
-def init_datablocks():
-    for datatype in environment.rtypes:
-        if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
-            for item in getattr(bpy.data, utils.BPY_TYPES[datatype]):
-                item.id = bpy.context.window_manager.session.username
-                key = "{}/{}".format(datatype, item.name)
-                client.set(key)
+# def init_datablocks():
+#     for datatype in environment.rtypes:
+#         if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
+#             for item in getattr(bpy.data, utils.BPY_TYPES[datatype]):
+#                 item.id = bpy.context.window_manager.session.username
+#                 key = "{}/{}".format(datatype, item.name)
+#                 client.set(key)
 
 
-def default_tick():
-    upload_client_instance_position()
+# def default_tick():
+#     upload_client_instance_position()
 
-    return .1
+#     return .1
 
 
-def register_ticks():
+# def register_ticks():
+#     # REGISTER Updaters
+#     bpy.app.timers.register(default_tick)
+#     bpy.app.timers.register(execute_queued_functions)
+
+
+# def unregister_ticks():
     # REGISTER Updaters
-    bpy.app.timers.register(default_tick)
-    bpy.app.timers.register(execute_queued_functions)
-
-
-def unregister_ticks():
-    # REGISTER Updaters
-    try:
-        bpy.app.timers.unregister(default_tick)
-        bpy.app.timers.unregister(execute_queued_functions)
-    except:
-        pass
+    # try:
+    #     bpy.app.timers.unregister(default_tick)
+    #     bpy.app.timers.unregister(execute_queued_functions)
+    # except:
+    #     pass
 
 
 # OPERATORS
@@ -172,6 +172,32 @@ class SessionStartOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SessionStopOperator(bpy.types.Operator):
+    bl_idname = "session.stop"
+    bl_label = "close"
+    bl_description = "stop net service"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client
+
+        assert(client)
+        
+        client.disconnect()
+
+            # del client_instance
+
+
+            # unregister_ticks()
+            # presence.renderer.stop()
+
+        return {"FINISHED"}
+
+
 class SessionPropertyAddOperator(bpy.types.Operator):
     bl_idname = "session.add_prop"
     bl_label = "add"
@@ -213,36 +239,6 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
             return {"FINISHED"}
         except:
             return {"CANCELED"}
-
-
-class SessionStopOperator(bpy.types.Operator):
-    bl_idname = "session.stop"
-    bl_label = "close"
-    bl_description = "stop net service"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-
-        settings = context.window_manager.session
-
-        if client:
-            client.exit()
-            time.sleep(0.25)
-            # del client_instance
-
-            # client_instance = None
-            settings.is_admin = False
-
-            unregister_ticks()
-            presence.renderer.stop()
-        else:
-            logger.debug("No server/client_instance running.")
-
-        return {"FINISHED"}
 
 
 class SessionPropertyRightOperator(bpy.types.Operator):
@@ -450,7 +446,7 @@ def unregister():
     #     bpy.app.handlers.depsgraph_update_post.remove(depsgraph_update)
 
     if client:
-        client.exit()
+        client.disconnect()
         client = None
 
     from bpy.utils import unregister_class

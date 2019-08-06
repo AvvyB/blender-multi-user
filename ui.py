@@ -25,7 +25,8 @@ class SESSION_PT_settings(bpy.types.Panel):
             window_manager = context.window_manager
 
             row = layout.row()
-            if not operators.client or (operators.client and operators.client.state() == 1):
+            # STATE INITIAL
+            if not operators.client or (operators.client and operators.client.state == 0):
                 row = layout.row()
 
                 # USER SETTINGS
@@ -98,7 +99,8 @@ class SESSION_PT_settings(bpy.types.Panel):
                 
 
             else:
-                if operators.client.state() ==  3:
+                 # STATE ACTIVE
+                if operators.client.state ==  2:
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
@@ -107,12 +109,8 @@ class SESSION_PT_settings(bpy.types.Panel):
                     # row.operator("session.dump", icon='QUIT', text="Load")
                     row = layout.row()
 
-                    box = row.box()
-                    row = box.row()
-                    row.label(text="", icon='INFO')
-                    row = box.row()
-                    row.label(text="Sync tasks: {}".format(operators.client.active_tasks))
-                else:
+                # STATE SYNCING
+                else:    
                     status = "connecting..."
                     if net_settings.is_admin:
                         status =  "init scene...({} tasks remaining)".format(operators.client.active_tasks)
@@ -132,7 +130,7 @@ class SESSION_PT_user(bpy.types.Panel):
     bl_category = "Multiuser"
     @classmethod
     def poll(cls, context):
-        return  operators.client and operators.client.state() == 3
+        return  operators.client and operators.client.state == 2
  
 
     def draw(self, context):
@@ -179,14 +177,14 @@ class SESSION_PT_properties(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return  operators.client and operators.client.state() == 3
+        return  operators.client and operators.client.state == 2
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
-
+    
     def draw(self, context):
         layout = self.layout
-
+        
         if hasattr(context.window_manager,'session'):
             net_settings = context.window_manager.session
             scene = context.window_manager
