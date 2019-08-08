@@ -1,0 +1,50 @@
+import bpy
+import mathutils
+
+from .. import utils
+from ..libs.replication.data import ReplicatedDatablock
+
+class BlCurve(ReplicatedDatablock):
+    def __init__(self, *args, **kwargs):
+        self.icon = 'CURVE_DATA'
+
+        super().__init__( *args, **kwargs)
+        
+    def load(self, data, target):
+        if target is None:
+            target = bpy.data.curves.new(data["name"], 'CURVE')
+
+        utils.dump_anything.load(target, data)
+
+        target.splines.clear()
+        # load splines
+        for spline in data['splines']:
+            # Update existing..
+            # if spline in target.splines.keys():
+
+            new_spline = target.splines.new(data['splines'][spline]['type'])
+            utils.dump_anything.load(new_spline, data['splines'][spline])
+
+            # Load curve geometry data
+            for bezier_point_index in data['splines'][spline]["bezier_points"]:
+                new_spline.bezier_points.add(1)
+                utils.dump_anything.load(
+                    new_spline.bezier_points[bezier_point_index], data['splines'][spline]["bezier_points"][bezier_point_index])
+
+            for point_index in data['splines'][spline]["points"]:
+                new_spline.points.add(1)
+                utils.dump_anything.load(
+                    new_spline.points[point_index], data['splines'][spline]["points"][point_index])
+
+
+    def dump(self, pointer=None):
+        assert(pointer)
+        data = utils.dump_datablock(pointer, 1)
+        utils.dump_datablock_attibutes(
+            pointer, ['splines'], 5, data)
+        return data
+
+bl_id = "curves"
+bl_class = bpy.types.Curve
+bl_rep_class = BlCurve
+

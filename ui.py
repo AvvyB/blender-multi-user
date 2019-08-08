@@ -5,6 +5,11 @@ from . import operators
 ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
                   'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA','AreaLight':'LIGHT_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION', 'Armature': 'ARMATURE_DATA', 'GreasePencil': 'GREASEPENCIL'}
 
+PROP_STATES = [ 'ADDED',
+                'COMMITED',
+                'PUSHED',
+                'FETCHED',
+                'UP']
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
@@ -139,22 +144,23 @@ class SESSION_PT_user(bpy.types.Panel):
         client_keys = operators.client.list()
         if client_keys and len(client_keys) > 0:
             for key in client_keys:
-                if 'Client' in key[0]:
-                    info = ""
-                    item_box = row.box()
-                    detail_item_box = item_box.row()
+                pass
+                # if 'Client' in key[0]:
+                #     info = ""
+                #     item_box = row.box()
+                #     detail_item_box = item_box.row()
 
-                    username = key[0].split('/')[1]
-                    if username == net_settings.username:
-                        info = "(self)"
-                    # detail_item_box = item_box.row()
-                    detail_item_box.label(
-                        text="{} - {}".format(username, info))
+                #     username = key[0].split('/')[1]
+                #     if username == net_settings.username:
+                #         info = "(self)"
+                #     # detail_item_box = item_box.row()
+                #     detail_item_box.label(
+                #         text="{} - {}".format(username, info))
 
-                    if net_settings.username not in key[0]:
-                        detail_item_box.operator(
-                            "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
-                    row = layout.row()
+                #     if net_settings.username not in key[0]:
+                #         detail_item_box.operator(
+                #             "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
+                #     row = layout.row()
         else:
             row.label(text="Empty")
 
@@ -188,12 +194,6 @@ class SESSION_PT_outliner(bpy.types.Panel):
             row = layout.row()
 
             row = layout.row(align=True)
-            # row.prop(net_settings, "buffer", text="")
-            # row.prop(net_settings, "add_property_depth", text="")
-            # add = row.operator("session.add_prop", text="",
-            #             icon="ADD")
-            # add.property_path = net_settings.buffer
-            # add.depth = net_settings.add_property_depth
             area_msg = layout.row()
 
             # Property area
@@ -209,6 +209,8 @@ class SESSION_PT_outliner(bpy.types.Panel):
                     detail_item_box.label(text="",icon=item.icon)
                     detail_item_box.label(text="{} ".format(item.uuid))
                     detail_item_box.label(text="{} ".format(item.owner))
+                    detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
+
                     
                     # right_icon = "DECORATE_UNLOCKED"
                     # if owner == net_settings.username:
