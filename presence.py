@@ -81,6 +81,15 @@ def get_client_2d(coords):
     else:
         return (0, 0)
 
+class User():
+    def __init__(self, username=None, color=(0,0,0,1)):
+        self.name = username
+        self.color = color
+        self.location = (0,0,0)
+        self.active_object = ""
+    
+    
+
 
 class DrawFactory(object):
 

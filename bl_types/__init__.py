@@ -1,4 +1,5 @@
 __all__ = [
+    'bl_user',
     'bl_object',
     'bl_mesh',
 ]  # Order here defines execution order

@@ -69,9 +69,10 @@ def init_supported_datablocks(supported_types_id):
     global client
 
     for type_id in supported_types_id:
-        for item in getattr(bpy.data,type_id):
-            print(item)
-            client.add(item)
+        if hasattr(bpy.data,type_id):
+            for item in getattr(bpy.data,type_id):
+                print(item)
+                client.add(item)
 
 
 # def default_tick():
@@ -146,7 +147,13 @@ class SessionStartOperator(bpy.types.Operator):
                 address=settings.ip,
                 port=settings.port
             )
-
+        
+        usr = presence.User(
+            username=settings.username,
+            color=list(settings.client_color),
+        )
+        client.add(usr)
+        
         # settings.is_running = True
         # bpy.ops.session.refresh()
         #register_ticks()

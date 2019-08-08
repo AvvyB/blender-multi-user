@@ -188,27 +188,27 @@ class SESSION_PT_outliner(bpy.types.Panel):
             row = layout.row()
 
             row = layout.row(align=True)
-            row.prop(net_settings, "buffer", text="")
-            row.prop(net_settings, "add_property_depth", text="")
-            add = row.operator("session.add_prop", text="",
-                        icon="ADD")
-            add.property_path = net_settings.buffer
-            add.depth = net_settings.add_property_depth
-            row = layout.row()
+            # row.prop(net_settings, "buffer", text="")
+            # row.prop(net_settings, "add_property_depth", text="")
+            # add = row.operator("session.add_prop", text="",
+            #             icon="ADD")
+            # add.property_path = net_settings.buffer
+            # add.depth = net_settings.add_property_depth
+            area_msg = layout.row()
 
             # Property area
-            area_msg = row.box()
+            # area_msg = row.box()
             client_keys = operators.client.list()
             if client_keys and len(client_keys) > 0:
-
+                col = layout.column(align=True)
                 for item in sorted(client_keys, key=get_client_key):
+                    area_msg = col.row(align = True)
                     item_box = area_msg.box()
-                    
-                    detail_item_box = item_box.row(align = True)
+                    detail_item_box = item_box.row()
                     detail_item_box.label(text="",icon=item.icon)
                     detail_item_box.label(text="{} ".format(item.uuid))
                     detail_item_box.label(text="{} ".format(item.owner))
-
+                    
                     # right_icon = "DECORATE_UNLOCKED"
                     # if owner == net_settings.username:
                     #     right_icon="DECORATE_UNLOCKED"
