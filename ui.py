@@ -199,6 +199,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
             # Property area
             # area_msg = row.box()
             client_keys = operators.client.list()
+            client_keys = operators.client.list()
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
                 for item in sorted(client_keys, key=get_client_key):

@@ -64,6 +64,23 @@ context = None
     #     client_data[0][1]['active_objects'] = []
     #     client.set(client_key, client_data[0][1])
 
+def add_datablock(datablock):
+    global client
+    child=None
+
+    if hasattr(datablock,"data"):
+        child = add_datablock(datablock.data)
+    
+    if datablock.uuid and client.exist(datablock.uuid) :
+        return datablock.uuid
+    else:
+        new_uuid = client.add(datablock,childs=child)
+        datablock.uuid = new_uuid
+        return new_uuid
+    
+        
+        
+
 # TODO: cleanup
 def init_supported_datablocks(supported_types_id):
     global client
@@ -71,8 +88,7 @@ def init_supported_datablocks(supported_types_id):
     for type_id in supported_types_id:
         if hasattr(bpy.data,type_id):
             for item in getattr(bpy.data,type_id):
-                print(item)
-                client.add(item)
+                add_datablock(item)
 
 
 # def default_tick():

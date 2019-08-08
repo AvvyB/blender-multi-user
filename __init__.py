@@ -211,7 +211,7 @@ def register():
 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
-
+    bpy.types.ID.uuid = bpy.props.StringProperty(default="")
     bpy.context.window_manager.session.load()
     save_session_config(bpy.context.window_manager.session,bpy.context)
     operators.register()
