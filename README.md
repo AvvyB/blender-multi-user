@@ -1,5 +1,5 @@
-# Realtime Collaborative Framework experiments
-> Blender multiuser addon 
+# Multi-user blender addon
+> Enable realtime collaborative workflow inside blender  
 
 ## Dependencies
 
