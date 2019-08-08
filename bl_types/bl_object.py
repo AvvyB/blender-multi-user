@@ -8,7 +8,7 @@ class BlObject(ReplicatedDatablock):
     def load(self, data, target):
         if target is None:
             pointer = None
-            
+
             # Object specific constructor...
             if data["data"] in bpy.data.meshes.keys():
                 pointer = bpy.data.meshes[data["data"]]
@@ -27,14 +27,34 @@ class BlObject(ReplicatedDatablock):
 
             target = bpy.data.objects.new(data["name"], pointer)
 
-            # Load other meshes metadata
+        # Load other meshes metadata
+        # dump_anything.load(target, data)
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
+        # Load modifiers
+        if hasattr(target,'modifiers'):
+            for local_modifier in target.modifiers:
+                if local_modifier.name not in data['modifiers']:
+                    target.modifiers.remove(local_modifier)
+            for modifier in data['modifiers']:
+                target_modifier = target.modifiers.get(modifier)
+
+                if not target_modifier:
+                    target_modifier = target.modifiers.new(data['modifiers'][modifier]['name'],data['modifiers'][modifier]['type'])
+               
+                utils.dump_anything.load(target_modifier, data['modifiers'][modifier])
+
+
+
     def dump(self, pointer=None):
         assert(pointer)
-        return utils.dump_datablock(pointer, 1)
+        data = utils.dump_datablock(pointer, 1)
 
+        if hasattr(pointer,'modifiers'):
+            utils.dump_datablock_attibutes(
+                pointer, ['modifiers'], 3, data)
+        return data
 
 bl_id = "objects"
 bl_class = bpy.types.Object

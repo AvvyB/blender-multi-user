@@ -2,22 +2,24 @@ import logging
 import sys
 from uuid import uuid4
 import json
-import string
-import random
+import os
 
 import bpy
 import mathutils
 
-from . import presence, environment
+from . import draw, environment
 from .libs import dump_anything
 
 # TODO: replace hardcoded values...
-BPY_TYPES = {'Image':'images', 'Texture': 'textures','Material': 'materials', 'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects', 
-                  'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures'}
+BPY_TYPES = {'Image': 'images', 'Texture': 'textures', 'Material': 'materials', 'GreasePencil': 'grease_pencils', 'Curve': 'curves', 'Collection': 'collections', 'Mesh': 'meshes', 'Object': 'objects',
+             'Scene': 'scenes', 'Light': 'lights', 'SunLight': 'lights', 'SpotLight': 'lights', 'AreaLight': 'lights', 'PointLight': 'lights', 'Camera': 'cameras', 'Action': 'actions', 'Armature': 'armatures'}
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+
 # UTILITY FUNCTIONS
+
+
 def revers(d):
     l = []
     for i in d:
@@ -25,10 +27,6 @@ def revers(d):
 
     return l[::-1]
 
-def random_string_digits(stringLength=6):
-    """Generate a random string of letters and digits """
-    lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
 def refresh_window():
     import bpy
@@ -70,29 +68,33 @@ def get_selected_objects(scene):
 
     return selected_objects
 
-def clean_scene(elements=environment.rtypes):
-    for datablock in BPY_TYPES:
-        datablock_ref = getattr(bpy.data,  BPY_TYPES[datablock])
-        for item in datablock_ref:
-            try:
-                datablock_ref.remove(item)
-            # Catch last scene remove
-            except RuntimeError:
-                pass
+
 #    LOAD HELPERS
+
+def load_dict(src_dict, target):
+    try:
+        for item in src_dict:
+            # attr =
+            setattr(target, item, src_dict[item])
+
+    except Exception as e:
+        logger.error(e)
+        pass
+
+
 def load(key, value):
     target = resolve_bpy_path(key)
     target_type = key.split('/')[0]
 
-    logger.debug("load {}".format(key))
+    logger.debug("load{}, {}".format(target_type, key))
     if value == "None":
         return
 
     if target_type == 'Object':
         load_object(target=target, data=value,
                     create=True)
-    if target_type == 'Image':
-        load_object(target=target, data=value)
+    elif target_type == 'Image':
+        load_image(target=target, data=value)
     elif target_type == 'Mesh':
         load_mesh(target=target, data=value,
                   create=True)
@@ -132,7 +134,7 @@ def resolve_bpy_path(path):
 
     try:
         path = path.split('/')
-        item = getattr(bpy.data,BPY_TYPES[path[0]])[path[1]]
+        item = getattr(bpy.data, BPY_TYPES[path[0]])[path[1]]
 
     except:
         pass
@@ -148,23 +150,35 @@ def load_client(client=None, data=None):
     if client and data:
         if net_settings.enable_presence:
             draw.renderer.draw_client(data)
-
             draw.renderer.draw_client_selected_objects(data)
 
+
 def load_image(target=None, data=None):
-    if not target:
-        image = bpy.data.image.new(
-            name=data['name'],
-            width=data['width'],
-            height=data['height'],
-            alpha=data['alpha'],
-            float_buffer=data['float_buffer']
-        )
-    else:
-        image = target
-    
-    dump_anything.load(target, data)
-        
+    try:
+        if not target:
+            image = bpy.data.images.new(
+                name=data['name'],
+                width=data['size'][0],
+                height=data['size'][1]
+            )
+        else:
+            image = target
+
+        img_name = "{}.png".format(image.name)
+
+        logger.info("updating {} cache file".format(image.name))
+        img_path = os.path.join(environment.CACHE_DIR, img_name)
+
+        file = open(img_path, 'wb')
+        file.write(data["pixels"])
+        file.close()
+
+        image.source = 'FILE'
+        image.filepath = img_path
+        # dump_anything.load(target, data)
+    except Exception as e:
+        logger.error(e)
+
 
 def load_armature(target=None, data=None, create=False):
     file = "cache_{}.json".format(data['name'])
@@ -217,38 +231,63 @@ def load_mesh(target=None, data=None, create=False):
     import bmesh
 
     if not target or not target.is_editmode:
-        # LOAD GEOMETRY
+        # 1 - LOAD GEOMETRY
         mesh_buffer = bmesh.new()
 
-        for i in data["vertices"]:
-           v =  mesh_buffer.verts.new(data["vertices"][i]["co"])
-           v.normal = data["vertices"][i]["normal"]
+        for i in data["verts"]:
+            v = mesh_buffer.verts.new(data["verts"][i]["co"])
 
         mesh_buffer.verts.ensure_lookup_table()
 
         for i in data["edges"]:
             verts = mesh_buffer.verts
-            v1 = data["edges"][i]["vertices"][0]
-            v2 = data["edges"][i]["vertices"][1]
+            v1 = data["edges"][i]["verts"][0]
+            v2 = data["edges"][i]["verts"][1]
             mesh_buffer.edges.new([verts[v1], verts[v2]])
 
-        for p in data["polygons"]:
+        for p in data["faces"]:
             verts = []
-            for v in data["polygons"][p]["vertices"]:
+            for v in data["faces"][p]["verts"]:
                 verts.append(mesh_buffer.verts[v])
 
             if len(verts) > 0:
                 f = mesh_buffer.faces.new(verts)
-                f.material_index = data["polygons"][p]['material_index']
+
+                uv_layer = mesh_buffer.loops.layers.uv.verify()
+
+                f.material_index = data["faces"][p]['material_index']
+
+                # UV loading
+                for i, loop in enumerate(f.loops):
+                    loop_uv = loop[uv_layer]
+                    loop_uv.uv = data["faces"][p]["uv"][i]
 
         if target is None and create:
             target = bpy.data.meshes.new(data["name"])
 
         mesh_buffer.to_mesh(target)
 
-        # LOAD METADATA
+        # mesh_buffer.from_mesh(target)
+
+        # 2 - LOAD METADATA
+
+        # uv's
+        for uv_layer in data['uv_layers']:
+            target.uv_layers.new(name=uv_layer)
+
+        bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
+        skin_layer = mesh_buffer.verts.layers.skin.verify()
+
+        # for face in mesh_buffer.faces:
+
+        #     # Face metadata
+        #     for loop in face.loops:
+        #         loop_uv = loop[uv_layer]
+        #         loop_uv.uv = data['faces'][face.index]["uv"]
+
         dump_anything.load(target, data)
 
+        # 3 - LOAD MATERIAL SLOTS
         material_to_load = []
         material_to_load = revers(data["materials"])
         target.materials.clear()
@@ -260,14 +299,14 @@ def load_mesh(target=None, data=None, create=False):
 
         target.id = data['id']
     else:
-        logger.debug("Mesh can't be loaded")
+        logger.error("Mesh can't be loaded")
 
 
 def load_object(target=None, data=None, create=False):
     try:
         if target is None and create:
             pointer = None
-            
+
             # Object specific constructor...
             if data["data"] in bpy.data.meshes.keys():
                 pointer = bpy.data.meshes[data["data"]]
@@ -286,7 +325,7 @@ def load_object(target=None, data=None, create=False):
 
             target = bpy.data.objects.new(data["name"], pointer)
 
-            # Load other meshes metadata
+        # Load other meshes metadata
         # dump_anything.load(target, data)
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
@@ -295,11 +334,26 @@ def load_object(target=None, data=None, create=False):
 
         client = bpy.context.window_manager.session.username
 
+        # Load modifiers
+        if hasattr(target,'modifiers'):
+            for local_modifier in target.modifiers:
+                if local_modifier.name not in data['modifiers']:
+                    target.modifiers.remove(local_modifier)
+            for modifier in data['modifiers']:
+                target_modifier = target.modifiers.get(modifier)
+
+                if not target_modifier:
+                    target_modifier = target.modifiers.new(data['modifiers'][modifier]['name'],data['modifiers'][modifier]['type'])
+               
+                dump_anything.load(target_modifier, data['modifiers'][modifier])
+
+
+
         if target.id == client or target.id == "Common":
             target.hide_select = False
         else:
             target.hide_select = True
-    
+
     except Exception as e:
         logger.error("Object {} loading error: {} ".format(data["name"], e))
 
@@ -360,13 +414,11 @@ def load_collection(target=None, data=None, create=False):
                         bpy.data.collections[collection])
                 else:
                     logger.debug(target.name)
-        
+
         for collection in target.children.keys():
             if collection not in data["children"]:
                 target.collection.children.unlink(
                     bpy.data.collections[collection])
-        
-        
 
         target.id = data['id']
 
@@ -435,15 +487,16 @@ def load_material(target=None, data=None, create=False):
 
             dump_anything.load(target.grease_pencil, data['grease_pencil'])
 
-        # Load other meshes metadata
-        dump_anything.load(target, data)
+            load_dict(data['grease_pencil'], target.grease_pencil)
 
-        # load nodes
-        if data["use_nodes"]:
+        elif data["use_nodes"]:
+            if target.node_tree is None:
+                target.use_nodes = True
+
+            target.node_tree.nodes.clear()
+
             for node in data["node_tree"]["nodes"]:
                 # fix None node tree error
-                if target.node_tree is None:
-                    target.use_nodes = True
 
                 index = target.node_tree.nodes.find(node)
 
@@ -455,13 +508,20 @@ def load_material(target=None, data=None, create=False):
                 dump_anything.load(
                     target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
 
+                if data["node_tree"]["nodes"][node]['type'] == 'TEX_IMAGE':
+                    target.node_tree.nodes[index].image = bpy.data.images[data["node_tree"]
+                                                                          ["nodes"][node]['image']['name']]
+
                 for input in data["node_tree"]["nodes"][node]["inputs"]:
 
                     try:
-                        target.node_tree.nodes[index].inputs[input].default_value = data[
-                            "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
-                    except:
-                        pass
+                        if hasattr(target.node_tree.nodes[index].inputs[input], "default_value"):
+                            target.node_tree.nodes[index].inputs[input].default_value = data[
+                                "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
+                    except Exception as e:
+                        logger.error("Fail loading {} node value from {} ({}) ".format(
+                            target.name, target.node_tree.nodes[index].inputs[input].default_value, e))
+                        continue
 
             # Load nodes links
             target.node_tree.links.clear()
@@ -474,6 +534,9 @@ def load_material(target=None, data=None, create=False):
                                                        ['name']].outputs[current_link['from_socket']['name']]
 
                 target.node_tree.links.new(input_socket, output_socket)
+
+        # Load other meshes metadata
+        # dump_anything.load(target, data)
 
         target.id = data['id']
 
@@ -534,7 +597,7 @@ def load_gpencil(target=None, data=None, create=False):
 
         target.id = data['id']
     except:
-        logger.error("default loading error")
+        logger.error("default loadi\ng error")
 
 
 def load_light(target=None, data=None, create=False, type=None):
@@ -546,8 +609,10 @@ def load_light(target=None, data=None, create=False, type=None):
 
         target.id = data['id']
 
+        
     except Exception as e:
         logger.error("light loading error: {}".format(e))
+        pass
 
 
 def load_default(target=None, data=None, create=False, type=None):
@@ -568,24 +633,35 @@ def dump(key):
     data = None
 
     if target_type == 'Image':
-        data = dump_datablock(target, 2)
+        data = {}
         data['pixels'] = dump_image(target)
+        dump_datablock_attibutes(target, [], 2, data)
+        data = dump_datablock_attibutes(
+            target, 
+            ["name", 'size', 'height', 'alpha', 'float_buffer', 'filepath', 'source'],
+            2,
+            data)
     elif target_type == 'Material':
         data = dump_datablock(target, 2)
-        dump_datablock_attibute(target, ['node_tree'], 7, data)
+        if target.node_tree:
+            dump_datablock_attibutes(
+                target.node_tree, ["nodes", "links"], 5, data['node_tree'])
+        elif target.grease_pencil:
+            dump_datablock_attibutes(target, ["grease_pencil"], 3, data)
     elif target_type == 'GreasePencil':
         data = dump_datablock(target, 2)
-        dump_datablock_attibute(
+        dump_datablock_attibutes(
             target, ['layers'], 9, data)
     elif target_type == 'Camera':
         data = dump_datablock(target, 1)
     elif 'Light' in target_type:
-        data = dump_datablock(target, 1)
+        data = dump_datablock(target, 3)
     elif target_type == 'Mesh':
         data = dump_datablock(target, 2)
-        dump_datablock_attibute(
-            target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
-        
+        data = dump_mesh(target, data)
+        # dump_datablock_attibutes(
+        # target, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
+
         # Fix material index
         m_list = []
         for m in target.materials:
@@ -594,19 +670,23 @@ def dump(key):
         data['material_list'] = m_list
     elif target_type == 'Curve':
         data = dump_datablock(target, 1)
-        dump_datablock_attibute(
+        dump_datablock_attibutes(
             target, ['splines'], 5, data)
         # for index, spline in enumerate(target.splines):
-        #     data["splines"][index] = dump_datablock_attibute(target.splines[index],"Curve/{}".format(index), ["bezier_points", "material_index", "points", "order_u", "order_v", "point_count_u", "point_count_v",
+        #     data["splines"][index] = dump_datablock_attibutes(target.splines[index],"Curve/{}".format(index), ["bezier_points", "material_index", "points", "order_u", "order_v", "point_count_u", "point_count_v",
         #                                                               "radius_interpolation", "resolution_v", "use_bezier_u", "use_bezier_v", "use_cyclic_u", "use_cyclic_v", "use_endpoint_u", "use_endpoint_v"], 3)
     elif target_type == 'Object':
         data = dump_datablock(target, 1)
+
+        if hasattr(target,'modifiers'):
+            dump_datablock_attibutes(
+                target, ['modifiers'], 3, data)
     elif target_type == 'Collection':
         data = dump_datablock(target, 4)
     elif target_type == 'Scene':
-        data = dump_datablock_attibute(
+        data = dump_datablock_attibutes(
             target, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 2)
-        dump_datablock_attibute(
+        dump_datablock_attibutes(
             target, ['collection'], 4, data)
 
     # elif target_type == 'Armature':
@@ -628,7 +708,7 @@ def dump_datablock(datablock, depth):
         return data
 
 
-def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
+def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None):
     if datablock:
         dumper = dump_anything.Dumper()
         dumper.type_subset = dumper.match_subset_all
@@ -651,16 +731,88 @@ def dump_datablock_attibute(datablock=None, attributes=[], depth=1, dickt=None):
 
 
 def dump_image(image):
-    pixels = []
-    # for x in range(image.size[0]*image.size[1]):
-    #     px = [
-    #         image.pixels[x],
-    #         image.pixels[x+1],
-    #         image.pixels[x+2],
-    #         image.pixels[x+3]
-    #         ]
-    #     pixels.append(px)
+    pixels = None
+    if image.source == "GENERATED":
+        img_name = "{}.png".format(image.name)
+
+        image.filepath_raw = os.path.join(environment.CACHE_DIR, img_name)
+        image.file_format = "PNG"
+        image.save()
+
+    if image.source == "FILE":
+        image.save()
+        file = open(image.filepath_raw, "rb")
+        pixels = file.read()
+        logger.debug("Reading image file {}".format(image.name))
+    else:
+        logger.error("image format not supported")
     return pixels
+
+
+def dump_mesh(mesh, data={}):
+    import bmesh
+
+    mesh_data = data
+    mesh_buffer = bmesh.new()
+
+    mesh_buffer.from_mesh(mesh)
+
+    uv_layer = mesh_buffer.loops.layers.uv.verify()
+    bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
+    skin_layer = mesh_buffer.verts.layers.skin.verify()
+
+    verts = {}
+    for vert in mesh_buffer.verts:
+        v = {}
+        v["co"] = list(vert.co)
+
+        # vert metadata
+        v['bevel'] = vert[bevel_layer]
+        # v['skin'] = list(vert[skin_layer])
+
+        verts[str(vert.index)] = v
+
+    mesh_data["verts"] = verts
+
+    edges = {}
+    for edge in mesh_buffer.edges:
+        e = {}
+        e["verts"] = [edge.verts[0].index, edge.verts[1].index]
+
+        # Edge metadata
+        e["smooth"] = edge.smooth
+
+        edges[edge.index] = e
+    mesh_data["edges"] = edges
+
+    faces = {}
+    for face in mesh_buffer.faces:
+        f = {}
+        fverts = []
+        for vert in face.verts:
+            fverts.append(vert.index)
+
+        f["verts"] = fverts
+        f["material_index"] = face.material_index
+
+        uvs = []
+        # Face metadata
+        for loop in face.loops:
+            loop_uv = loop[uv_layer]
+
+            uvs.append(list(loop_uv.uv))
+
+        f["uv"] = uvs
+        faces[face.index] = f
+
+    mesh_data["faces"] = faces
+
+    uv_layers = []
+    for uv_layer in mesh.uv_layers:
+        uv_layers.append(uv_layer.name)
+
+    mesh_data["uv_layers"] = uv_layers
+    return mesh_data
 
 
 def init_client(key=None):
