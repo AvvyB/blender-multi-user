@@ -3,11 +3,13 @@ import sys
 from uuid import uuid4
 import json
 import os
+import string
+import random
 
 import bpy
 import mathutils
 
-from . import draw, environment
+from . import presence, environment
 from .libs import dump_anything
 
 # TODO: replace hardcoded values...
@@ -18,6 +20,24 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # UTILITY FUNCTIONS
+def random_string_digits(stringLength=6):
+    """Generate a random string of letters and digits """
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+
+
+def refresh_window():
+    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+
+def clean_scene():
+    for datablock in BPY_TYPES:
+        datablock_ref = getattr(bpy.data,  BPY_TYPES[datablock])
+        for item in datablock_ref:
+            try:
+                datablock_ref.remove(item)
+            # Catch last scene remove
+            except RuntimeError:
+                pass
 
 
 def revers(d):
@@ -26,12 +46,6 @@ def revers(d):
         l.append(i)
 
     return l[::-1]
-
-
-def refresh_window():
-    import bpy
-
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
 
 def get_armature_edition_context(armature):

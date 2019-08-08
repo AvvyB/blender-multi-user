@@ -43,8 +43,7 @@ class BlObject(ReplicatedDatablock):
                 if not target_modifier:
                     target_modifier = target.modifiers.new(data['modifiers'][modifier]['name'],data['modifiers'][modifier]['type'])
                
-                utils.dump_anything.load(target_modifier, data['modifiers'][modifier])
-
+               # utils.dump_anything.load(target_modifier, data['modifiers'][modifier])
 
 
     def dump(self, pointer=None):

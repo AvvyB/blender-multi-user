@@ -32,7 +32,7 @@ class BlMesh(ReplicatedDatablock):
                     f = mesh_buffer.faces.new(verts)
                     f.material_index = data["polygons"][p]['material_index']
     
-            if target is None and create:
+            if target is None:
                 target = bpy.data.meshes.new(data["name"])
     
             mesh_buffer.to_mesh(target)
@@ -55,7 +55,7 @@ class BlMesh(ReplicatedDatablock):
         assert(pointer)
 
         data = utils.dump_datablock(pointer, 2)
-        utils.dump_datablock_attibute(
+        utils.dump_datablock_attibutes(
             pointer, ['name', 'polygons', 'edges', 'vertices', 'id'], 6, data)
         
         # Fix material index
@@ -69,5 +69,5 @@ class BlMesh(ReplicatedDatablock):
 
 bl_id = "meshes"
 bl_class = bpy.types.Mesh
-bl_rep_class = BlMesh 
+bl_rep_class = BlMesh
 

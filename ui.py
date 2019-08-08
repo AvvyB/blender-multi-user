@@ -110,8 +110,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                 # STATE SYNCING
                 else:    
                     status = "connecting..."
-                    if net_settings.is_admin:
-                        status =  "init scene...({} tasks remaining)".format(operators.client.active_tasks)
                     row.label(text=status)
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")

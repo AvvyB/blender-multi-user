@@ -9,20 +9,19 @@ bl_info = {
 }
 
 
-import addon_utils
 import logging
 import random
 import sys
 import os
 import bpy
-from . import environment, utils
+from . import environment
+from . import utils
 
 
 DEPENDENCIES = {
     "zmq",
     "umsgpack",
-    "yaml",
-    "esper"
+    "yaml"
 }
 
 
@@ -31,24 +30,24 @@ logging.basicConfig(level=logging.INFO)
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
-    from operator import cli
+    # from operator import client
     
-    items = [("Common", "Common", "")]
+    # items = [("Common", "Common", "")]
 
-    username = bpy.context.window_manager.session.username
+    # username = bpy.context.window_manager.session.username
 
-    if cli:
-        client_keys = cli.list()
-        for k in client_keys:
-            if 'Client' in k[0]:
-                name = k[1]
+    # if cli:
+    #     client_keys = cli.list()
+    #     for k in client_keys:
+    #         if 'Client' in k[0]:
+    #             name = k[1]
 
-                if name == username:
-                    name += " (self)"
+    #             if name == username:
+    #                 name += " (self)"
 
-                items.append((name, name, ""))
+    #             items.append((name, name, ""))
 
-    return items
+    return [("Common", "Common", "")]
 
 
 def randomColor():
@@ -191,14 +190,13 @@ class SessionProps(bpy.types.PropertyGroup):
 
 classes = (
     ReplicatedDatablock,
-    SessionProps
+    SessionProps,
 
 )
 
 libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication"
 
 def register():
-    
     if libs not in sys.path:
         sys.path.append(libs)
         print(libs)
@@ -211,8 +209,6 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.ID.id = bpy.props.StringProperty(default="None")
-    bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
 
