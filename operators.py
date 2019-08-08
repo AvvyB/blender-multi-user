@@ -17,7 +17,7 @@ from . import environment, presence, ui, utils
 from .libs import umsgpack
 from .libs.replication.data import ReplicatedDataFactory
 from .libs.replication.interface import Client
-from .bl_types import bl_types_factory
+from . import bl_types
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +88,13 @@ execution_queue = queue.Queue()
     #     client.set(client_key, client_data[0][1])
 
 # TODO: cleanup
-def init_supported_datablocks(client, suported_types):
-    for type in suported_types:
-        for block in bpy.data[type.bl_idname]:
-            print(block)
-   
+def init_supported_datablocks(supported_types_id):
+    global client
+
+    for type_id in supported_types_id:
+        for item in getattr(bpy.data,type_id):
+            print(item)
+            client.register(item)
 
 
 # def default_tick():
@@ -140,31 +142,33 @@ class SessionStartOperator(bpy.types.Operator):
         # if settings.start_empty:
         #     clean_scene()
 
-        # Setup data factory
-       
+        bpy_factory = ReplicatedDataFactory()
+        supported_bl_types = []
+
+        # init the factory with supported types
+        for type in bl_types.types_to_register():
+            _type = getattr(bl_types,type)
+            supported_bl_types.append(_type.bl_id)
+            bpy_factory.register_type(_type.bl_class,_type.bl_rep_class)
         
-        # bpy_factory.register_type(bpy.types.Object,bl_object)
-
-
-
-        # Setup client
         client = Client(factory=bpy_factory)
 
-        if settings.init_scene:
-            init_supported_datablocks(client,["objects"])
 
         if self.host:
             client.host(
-            id=settings.username,
-            address=settings.ip,
-            port=settings.port
+                id=settings.username,
+                address=settings.ip,
+                port=settings.port
             )
+            
+            if settings.init_scene:
+                init_supported_datablocks(supported_bl_types)
         else:
             client.connect(
                 id=settings.username,
                 address=settings.ip,
                 port=settings.port
-                )
+            )
 
         # settings.is_running = True
         # bpy.ops.session.refresh()
@@ -384,7 +388,7 @@ def unregister():
 
     presence.unregister()
 
-    if client:
+    if client and client.state == 2:
         client.disconnect()
         client = None
 

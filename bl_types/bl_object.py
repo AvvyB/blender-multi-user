@@ -31,8 +31,9 @@ class BlObject(ReplicatedDatablock):
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
-    def dump(self, source):
-        return utils.dump_datablock(source, 1)
+    def dump(self, pointer=None):
+        assert(pointer)
+        return utils.dump_datablock(pointer, 1)
 
 
 bl_id = "objects"
