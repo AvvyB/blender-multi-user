@@ -41,8 +41,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                 row = box.row()
 
                 
-
-
                 # NETWORK SETTINGS
                 row = layout.row()
                 box = row.box()
@@ -84,16 +82,16 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.operator("session.start", text="CONNECT").host = False
 
                 # REPLICATION SETTINGS
-                row = layout.row()
-                box = row.box()
-                row = box.row()
-                row.label(text="REPLICATION", icon='TRIA_RIGHT')
-                row = box.row()    
+                # row = layout.row()
+                # box = row.box()
+                # row = box.row()
+                # row.label(text="REPLICATION", icon='TRIA_RIGHT')
+                # row = box.row()    
                 
-                for item in window_manager.session.supported_datablock:
-                    row.label(text=item.type_name,icon=ICONS[item.type_name])
-                    row.prop(item, "is_replicated", text="") 
-                    row = box.row()
+                # for item in window_manager.session.supported_datablock:
+                #     row.label(text=item.type_name,icon=ICONS[item.type_name])
+                #     row.prop(item, "is_replicated", text="") 
+                #     row = box.row()
 
 
                 
@@ -168,7 +166,7 @@ class SESSION_PT_user(bpy.types.Panel):
 def get_client_key(item):
     return item[0]
 
-class SESSION_PT_properties(bpy.types.Panel):
+class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
     bl_label = "Replicated properties"
     bl_space_type = 'VIEW_3D'
@@ -239,7 +237,7 @@ class SESSION_PT_properties(bpy.types.Panel):
 classes = (
     SESSION_PT_settings,
     SESSION_PT_user,
-    SESSION_PT_properties,
+    SESSION_PT_outliner,
 
 )
 

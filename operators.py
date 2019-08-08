@@ -41,15 +41,7 @@ execution_queue = queue.Queue()
 #     return .1
 
 
-# def clean_scene(elements=environment.rtypes):
-#     for datablock in elements:
-#         datablock_ref = getattr(bpy.data,  utils.BPY_TYPES[datablock])
-#         for item in datablock_ref:
-#             try:
-#                 datablock_ref.remove(item)
-#             # Catch last scene remove
-#             except RuntimeError:
-#                 pass
+
 
 
 # def upload_client_instance_position():
@@ -94,7 +86,7 @@ def init_supported_datablocks(supported_types_id):
     for type_id in supported_types_id:
         for item in getattr(bpy.data,type_id):
             print(item)
-            client.register(item)
+            client.add(item)
 
 
 # def default_tick():
@@ -139,8 +131,8 @@ class SessionStartOperator(bpy.types.Operator):
         settings.save(context)
         
         # Scene setup
-        # if settings.start_empty:
-        #     clean_scene()
+        if settings.start_empty:
+            utils.clean_scene()
 
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []

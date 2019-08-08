@@ -70,7 +70,15 @@ def get_selected_objects(scene):
 
     return selected_objects
 
-
+def clean_scene(elements=environment.rtypes):
+    for datablock in BPY_TYPES:
+        datablock_ref = getattr(bpy.data,  BPY_TYPES[datablock])
+        for item in datablock_ref:
+            try:
+                datablock_ref.remove(item)
+            # Catch last scene remove
+            except RuntimeError:
+                pass
 #    LOAD HELPERS
 def load(key, value):
     target = resolve_bpy_path(key)
