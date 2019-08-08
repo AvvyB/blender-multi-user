@@ -226,8 +226,6 @@ def unregister():
     operators.unregister()
 
     del bpy.types.WindowManager.session
-    del bpy.types.ID.id
-    del bpy.types.ID.is_dirty
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

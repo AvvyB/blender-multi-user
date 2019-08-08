@@ -162,7 +162,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
 
 def get_client_key(item):
-    return item[0]
+    return item.owner
 
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
@@ -202,30 +202,22 @@ class SESSION_PT_outliner(bpy.types.Panel):
             if client_keys and len(client_keys) > 0:
 
                 for item in sorted(client_keys, key=get_client_key):
-                    owner = 'toto'
-                    try:
-                        owner =  item[1]
-                    except:
-                        owner =  item[1].decode()
-                        pass
-                    
-                    store_type,store_name =  item[0].split('/')
                     item_box = area_msg.box()
                     
                     detail_item_box = item_box.row(align = True)
-                    detail_item_box.label(text="",icon=ICONS[store_type])
-                    detail_item_box.label(text="{} ".format(store_name))
-                    detail_item_box.label(text="{} ".format(owner))
+                    detail_item_box.label(text="",icon=item.icon)
+                    detail_item_box.label(text="{} ".format(item.uuid))
+                    detail_item_box.label(text="{} ".format(item.owner))
 
-                    right_icon = "DECORATE_UNLOCKED"
-                    if owner == net_settings.username:
-                        right_icon="DECORATE_UNLOCKED"
-                    else:
+                    # right_icon = "DECORATE_UNLOCKED"
+                    # if owner == net_settings.username:
+                    #     right_icon="DECORATE_UNLOCKED"
+                    # else:
                         
-                        right_icon="DECORATE_LOCKED"
+                    #     right_icon="DECORATE_LOCKED"
                     
-                    ro = detail_item_box.operator("session.right", text="",emboss=net_settings.is_admin, icon=right_icon)
-                    ro.key = item[0]
+                    # ro = detail_item_box.operator("session.right", text="",emboss=net_settings.is_admin, icon=right_icon)
+                    # ro.key = item[0]
                     # detail_item_box.operator(
                     #     "session.remove_prop", text="", icon="X").property_path = key
             else:

@@ -6,6 +6,11 @@ from .. import utils
 from ..libs.replication.data import ReplicatedDatablock
 
 class BlMesh(ReplicatedDatablock):
+    def __init__(self, *args, **kwargs):
+        self.icon = 'MESH_DATA'
+        
+        super().__init__( *args, **kwargs)
+        
     def load(self, data, target):
         if not target or not target.is_editmode:
             # LOAD GEOMETRY

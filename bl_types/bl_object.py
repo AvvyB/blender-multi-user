@@ -5,6 +5,11 @@ from .. import utils
 from ..libs.replication.data import ReplicatedDatablock
 
 class BlObject(ReplicatedDatablock):
+    def __init__(self, *args, **kwargs):
+        self.icon = 'OBJECT_DATA'
+
+        super().__init__( *args, **kwargs)
+        
     def load(self, data, target):
         if target is None:
             pointer = None
@@ -43,7 +48,7 @@ class BlObject(ReplicatedDatablock):
                 if not target_modifier:
                     target_modifier = target.modifiers.new(data['modifiers'][modifier]['name'],data['modifiers'][modifier]['type'])
                
-               # utils.dump_anything.load(target_modifier, data['modifiers'][modifier])
+                utils.dump_anything.load(target_modifier, data['modifiers'][modifier])
 
 
     def dump(self, pointer=None):

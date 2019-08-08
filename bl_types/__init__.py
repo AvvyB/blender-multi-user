@@ -1,5 +1,6 @@
 __all__ = [
     'bl_object',
+    'bl_mesh',
 ]  # Order here defines execution order
 
 from . import *

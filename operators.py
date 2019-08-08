@@ -24,21 +24,6 @@ logger = logging.getLogger(__name__)
 client = None
 
 context = None
-execution_queue = queue.Queue()
-
-# This function can savely be called in another thread.
-# The function will be executed when the timer runs the next time.
-
-
-# def run_in_main_thread(function, args):
-#     execution_queue.put(function)
-
-
-# def execute_queued_functions():
-#     while not execution_queue.empty():
-#         function, args = execution_queue.get()
-#         function(args[0], args[1])
-#     return .1
 
 
 
