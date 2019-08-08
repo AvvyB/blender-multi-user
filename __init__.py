@@ -110,7 +110,7 @@ class SessionProps(bpy.types.PropertyGroup):
     buffer: bpy.props.StringProperty(name="None")
     is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
     load_data: bpy.props.BoolProperty(name="load_data", default=True)
-    init_scene: bpy.props.BoolProperty(name="load_data", default=True)
+    init_scene: bpy.props.BoolProperty(name="init_scene", default=True)
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
         default=False,

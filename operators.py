@@ -1,23 +1,23 @@
 import asyncio
 import logging
 import os
+import queue
 import random
 import string
 import subprocess
 import time
-import queue
 from operator import itemgetter
-
+from pathlib import Path
 
 import bpy
-from bpy_extras.io_utils import ExportHelper
 import mathutils
-from pathlib import Path
+from bpy_extras.io_utils import ExportHelper
 
 from . import environment, presence, ui, utils
 from .libs import umsgpack
-from .libs.replication.interface import Client
 from .libs.replication.data import ReplicatedDataFactory
+from .libs.replication.interface import Client
+from .bl_types import bl_types_factory
 
 logger = logging.getLogger(__name__)
 
@@ -88,13 +88,11 @@ execution_queue = queue.Queue()
     #     client.set(client_key, client_data[0][1])
 
 # TODO: cleanup
-# def init_datablocks():
-#     for datatype in environment.rtypes:
-#         if bpy.context.window_manager.session.supported_datablock[datatype].is_replicated:
-#             for item in getattr(bpy.data, utils.BPY_TYPES[datatype]):
-#                 item.id = bpy.context.window_manager.session.username
-#                 key = "{}/{}".format(datatype, item.name)
-#                 client.set(key)
+def init_supported_datablocks(client, suported_types):
+    for type in suported_types:
+        for block in bpy.data[type.bl_idname]:
+            print(block)
+   
 
 
 # def default_tick():
@@ -139,14 +137,21 @@ class SessionStartOperator(bpy.types.Operator):
         settings.save(context)
         
         # Scene setup
-        if settings.start_empty:
-            clean_scene()
+        # if settings.start_empty:
+        #     clean_scene()
 
         # Setup data factory
-        bpy_factory = ReplicatedDataFactory()
+       
+        
+        # bpy_factory.register_type(bpy.types.Object,bl_object)
+
+
 
         # Setup client
         client = Client(factory=bpy_factory)
+
+        if settings.init_scene:
+            init_supported_datablocks(client,["objects"])
 
         if self.host:
             client.host(
@@ -365,68 +370,6 @@ classes = (
     SessionDumpDatabase,
     SessionSaveConfig,
 )
-
-"""
-def get_datablock_from_update(update,context):
-    item_type = update.id.__class__.__name__
-    item_id = update.id.name
-   
-    datablock_ref = None
-
-    if item_id == 'Master Collection':
-        datablock_ref= bpy.context.scene
-    elif item_type in utils.BPY_TYPES.keys():
-        datablock_ref = getattr(bpy.data, utils.BPY_TYPES[update.id.__class__.__name__])[update.id.name]
-    else:
-        if item_id in bpy.data.lights.keys():
-            datablock_ref = bpy.data.lights[item_id]
-    
-
-    return datablock_ref
-
-
-def depsgraph_update(scene):
-    ctx = bpy.context
-
-    if client and client.state() == 3:
-        if ctx.mode in ['OBJECT','PAINT_GPENCIL']:
-            updates = ctx.view_layer.depsgraph.updates
-            username = ctx.window_manager.session.username
-            
-
-            selected_objects = utils.get_selected_objects(scene)
-
-            for update in reversed(updates):
-                if is_replicated(update):
-                    if update.id.id == username or update.id.id == 'Common':
-                        toogle_update_dirty(ctx, update)
-                else:
-                    item = get_datablock_from_update(update,ctx)
-                    
-                    # get parent authority
-                    if hasattr(item,"id"):
-                        parent_id = ctx.collection.id if ctx.collection.id != 'None' else ctx.scene.id 
-
-                        if parent_id == username or parent_id == 'Common':
-                            item.id = username
-
-                            item_type = item.__class__.__name__
-                            
-                            if 'Light'in item.__class__.__name__:
-                                item_type = 'Light'
-                                
-                            key = "{}/{}".format(item_type , item.name)
-                            client.set(key)
-                        else:
-                            try:
-                                getattr(bpy.data, utils.BPY_TYPES[update.id.__class__.__name__]).remove(item)
-                            except:
-                                pass
-                            break
-
-            update_client_selected_object(ctx)   
-
-"""
 
 def register():
     from bpy.utils import register_class

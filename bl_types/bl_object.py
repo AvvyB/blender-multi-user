@@ -1,9 +1,10 @@
-from libs.replication.data import ReplicatedDatablock
 import bpy
 import mathutils
-import utils
 
-class RepObject(ReplicatedDatablock):
+from .. import utils
+from ..libs.replication.data import ReplicatedDatablock
+
+class BlObject(ReplicatedDatablock):
     def load(self, data, target):
         if target is None:
             pointer = None
@@ -32,3 +33,9 @@ class RepObject(ReplicatedDatablock):
 
     def dump(self, source):
         return utils.dump_datablock(source, 1)
+
+
+bl_id = "objects"
+bl_class = bpy.types.Object
+bl_rep_class = BlObject 
+
