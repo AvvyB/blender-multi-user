@@ -8,6 +8,8 @@ __all__ = [
     'bl_gpencil',
     'bl_image',
     'bl_light',
+    'bl_scene',
+    'bl_material',
 ]  # Order here defines execution order
 
 from . import *

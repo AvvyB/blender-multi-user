@@ -59,7 +59,12 @@ class BlObject(ReplicatedDatablock):
             utils.dump_datablock_attibutes(
                 pointer, ['modifiers'], 3, data)
         return data
-
+    
+    def resolve(self):
+        assert(self.buffer)
+        object_name = self.buffer['name']
+        
+        self.pointer = bpy.data.objects.get(object_name)
 bl_id = "objects"
 bl_class = bpy.types.Object
 bl_rep_class = BlObject 

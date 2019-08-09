@@ -38,7 +38,6 @@ class BlScene(ReplicatedDatablock):
                 target.collection.children.unlink(
                     bpy.data.collections[collection])
 
-
     def dump(self, pointer=None):
         assert(pointer)
         
@@ -48,6 +47,12 @@ class BlScene(ReplicatedDatablock):
             pointer, ['collection'], 4, data)
 
         return data
+
+    def resolve(self):
+        assert(self.buffer)
+        scene_name = self.buffer['name']
+        
+        self.pointer = bpy.data.scenes.get(scene_name)
 
 bl_id = "scenes"
 bl_class = bpy.types.Scene
