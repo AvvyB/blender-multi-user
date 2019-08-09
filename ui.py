@@ -59,7 +59,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
 
 
-            row = layout.row()
 
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
