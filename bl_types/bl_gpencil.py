@@ -32,7 +32,7 @@ def load_gpencil_layer(target=None, data=None, create=False):
 
 class BlGpencil(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
-        self.icon = 'CAMERA_DATA'
+        self.icon = 'GREASEPENCIL'
 
         super().__init__( *args, **kwargs)
         

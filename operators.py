@@ -319,7 +319,6 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
         pass
 
-
 class SessionDumpDatabase(bpy.types.Operator, ExportHelper):
     bl_idname = "session.dump"
     bl_label = "dump json data"

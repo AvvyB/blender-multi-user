@@ -106,19 +106,13 @@ class SessionProps(bpy.types.PropertyGroup):
         name="add_property_depth",
         default=1
         )
-    buffer: bpy.props.StringProperty(name="None")
+    outliner_filter: bpy.props.StringProperty(name="None")
     is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
-    load_data: bpy.props.BoolProperty(name="load_data", default=True)
     init_scene: bpy.props.BoolProperty(name="init_scene", default=True)
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
         default=False,
-        update=save_session_config
-        )
-    update_frequency: bpy.props.FloatProperty(
-        name="update_frequency",
-        default=0.008
-        )
+        update=save_session_config)
     active_object: bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
     session_mode: bpy.props.EnumProperty(
@@ -136,8 +130,7 @@ class SessionProps(bpy.types.PropertyGroup):
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
-        items=client_list_callback
-    )
+        items=client_list_callback)
     enable_presence: bpy.props.BoolProperty(
         name="enable_presence",
         description='Enable overlay drawing module',
@@ -146,7 +139,6 @@ class SessionProps(bpy.types.PropertyGroup):
         )
     supported_datablock: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
-       
         )
 
     def load(self):

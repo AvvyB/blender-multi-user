@@ -2,6 +2,12 @@ __all__ = [
     'bl_user',
     'bl_object',
     'bl_mesh',
+    'bl_camera',
+    'bl_collection',
+    'bl_curve',
+    'bl_gpencil',
+    'bl_image',
+    'bl_light',
 ]  # Order here defines execution order
 
 from . import *

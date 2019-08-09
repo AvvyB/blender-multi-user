@@ -26,7 +26,7 @@ class SESSION_PT_settings(bpy.types.Panel):
         layout = self.layout
 
         if hasattr(context.window_manager, 'session'):
-            net_settings = context.window_manager.session
+            settings = context.window_manager.session
             window_manager = context.window_manager
 
             row = layout.row()
@@ -54,33 +54,31 @@ class SESSION_PT_settings(bpy.types.Panel):
                 
                 row = box.row()
                 row.label(text="draw overlay:")
-                row.prop(net_settings, "enable_presence", text="")
+                row.prop(settings, "enable_presence", text="")
                 row = box.row()
                 row.label(text="clear blend:")
-                row.prop(net_settings, "start_empty", text="")
+                row.prop(settings, "start_empty", text="")
                 row = box.row()
             
                 row = box.row()
-                row.prop(net_settings, "session_mode", expand=True)
+                row.prop(settings, "session_mode", expand=True)
                 row = box.row()
 
                 if window_manager.session.session_mode == 'HOST':
                     box = row.box()
                     row = box.row()
                     row.label(text="init scene:")
-                    row.prop(net_settings, "init_scene", text="")
+                    row.prop(settings, "init_scene", text="")
                     row = box.row()
                     row.operator("session.start", text="HOST").host = True
                 else:
                     box = row.box()
                     row = box.row()
-                    row.prop(net_settings, "ip", text="ip")
+                    row.prop(settings, "ip", text="ip")
                     row = box.row()
                     row.label(text="port:")
                     row.prop(window_manager.session, "port", text="")
                     row = box.row()
-                    row.label(text="load data:")
-                    row.prop(net_settings, "load_data", text="")
                     
 
                     row = box.row()
@@ -107,9 +105,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
-                    # row = layout.row(align=True)
-                    # row.operator("session.dump", icon='QUIT', text="Dump")
-                    # row.operator("session.dump", icon='QUIT', text="Load")
                     row = layout.row()
 
                 # STATE SYNCING
@@ -125,7 +120,7 @@ class SESSION_PT_settings(bpy.types.Panel):
 
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
-    bl_label = "Users online"
+    bl_label = "Users"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
@@ -137,7 +132,7 @@ class SESSION_PT_user(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        net_settings = context.window_manager.session
+        settings = context.window_manager.session
         scene = context.window_manager
         # Create a simple row.
         row = layout.row()
@@ -151,13 +146,13 @@ class SESSION_PT_user(bpy.types.Panel):
                 #     detail_item_box = item_box.row()
 
                 #     username = key[0].split('/')[1]
-                #     if username == net_settings.username:
+                #     if username == settings.username:
                 #         info = "(self)"
                 #     # detail_item_box = item_box.row()
                 #     detail_item_box.label(
                 #         text="{} - {}".format(username, info))
 
-                #     if net_settings.username not in key[0]:
+                #     if settings.username not in key[0]:
                 #         detail_item_box.operator(
                 #             "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
                 #     row = layout.row()
@@ -172,7 +167,7 @@ def get_client_key(item):
 
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
-    bl_label = "Replicated properties"
+    bl_label = "Properties"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
@@ -188,17 +183,15 @@ class SESSION_PT_outliner(bpy.types.Panel):
         layout = self.layout
         
         if hasattr(context.window_manager,'session'):
-            net_settings = context.window_manager.session
+            settings = context.window_manager.session
             scene = context.window_manager
 
             row = layout.row()
+            row.prop(settings,'outliner_filter', text="")
 
             row = layout.row(align=True)
-            area_msg = layout.row()
-
             # Property area
             # area_msg = row.box()
-            client_keys = operators.client.list()
             client_keys = operators.client.list()
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
@@ -207,19 +200,19 @@ class SESSION_PT_outliner(bpy.types.Panel):
                     item_box = area_msg.box()
                     detail_item_box = item_box.row()
                     detail_item_box.label(text="",icon=item.icon)
-                    detail_item_box.label(text="{} ".format(item.uuid))
+                    detail_item_box.label(text="{} ".format(item.pointer.name))
                     detail_item_box.label(text="{} ".format(item.owner))
                     detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
-
+                        
                     
                     # right_icon = "DECORATE_UNLOCKED"
-                    # if owner == net_settings.username:
+                    # if owner == settings.username:
                     #     right_icon="DECORATE_UNLOCKED"
                     # else:
                         
                     #     right_icon="DECORATE_LOCKED"
                     
-                    # ro = detail_item_box.operator("session.right", text="",emboss=net_settings.is_admin, icon=right_icon)
+                    # ro = detail_item_box.operator("session.right", text="",emboss=settings.is_admin, icon=right_icon)
                     # ro.key = item[0]
                     # detail_item_box.operator(
                     #     "session.remove_prop", text="", icon="X").property_path = key

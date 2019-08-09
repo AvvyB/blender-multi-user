@@ -7,7 +7,7 @@ from ..libs.replication.data import ReplicatedDatablock
 
 class BlCollection(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
-        self.icon = 'CAMERA_DATA'
+        self.icon = 'FILE_FOLDER'
 
         super().__init__(*args, **kwargs)
 

@@ -6,7 +6,7 @@ from ..libs.replication.data import ReplicatedDatablock
 
 class BlMaterial(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
-        self.icon = 'CAMERA_DATA'
+        self.icon = 'MATERIAL_DATA'
 
         super().__init__( *args, **kwargs)
         

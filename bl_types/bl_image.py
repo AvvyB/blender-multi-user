@@ -7,7 +7,7 @@ from ..libs.replication.data import ReplicatedDatablock
 
 class BlImage(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
-        self.icon = 'CAMERA_DATA'
+        self.icon = 'IMAGE_DATA'
 
         super().__init__( *args, **kwargs)
         
