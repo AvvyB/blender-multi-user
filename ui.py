@@ -29,61 +29,9 @@ class SESSION_PT_settings(bpy.types.Panel):
             settings = context.window_manager.session
             window_manager = context.window_manager
 
-            row = layout.row()
             # STATE INITIAL
             if not operators.client or (operators.client and operators.client.state == 0):
-                row = layout.row()
-
-                # USER SETTINGS
-                box = row.box()
-                row = box.row()
-                row.label(text="USER", icon='TRIA_RIGHT')
-                row = box.row()
-                row.prop(window_manager.session, "username", text="id")
-                
-                row = box.row()
-                row.prop(window_manager.session, "client_color", text="color") 
-                row = box.row()
-
-                
-                # NETWORK SETTINGS
-                row = layout.row()
-                box = row.box()
-                row = box.row()
-                row.label(text="NETWORK", icon = "TRIA_RIGHT")
-                
-                row = box.row()
-                row.label(text="draw overlay:")
-                row.prop(settings, "enable_presence", text="")
-                row = box.row()
-                row.label(text="clear blend:")
-                row.prop(settings, "start_empty", text="")
-                row = box.row()
-            
-                row = box.row()
-                row.prop(settings, "session_mode", expand=True)
-                row = box.row()
-
-                if window_manager.session.session_mode == 'HOST':
-                    box = row.box()
-                    row = box.row()
-                    row.label(text="init scene:")
-                    row.prop(settings, "init_scene", text="")
-                    row = box.row()
-                    row.operator("session.start", text="HOST").host = True
-                else:
-                    box = row.box()
-                    row = box.row()
-                    row.prop(settings, "ip", text="ip")
-                    row = box.row()
-                    row.label(text="port:")
-                    row.prop(window_manager.session, "port", text="")
-                    row = box.row()
-                    
-
-                    row = box.row()
-                    row.operator("session.start", text="CONNECT").host = False
-
+                pass
                 # REPLICATION SETTINGS
                 # row = layout.row()
                 # box = row.box()
@@ -95,10 +43,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                 #     row.label(text=item.type_name,icon=ICONS[item.type_name])
                 #     row.prop(item, "is_replicated", text="") 
                 #     row = box.row()
-
-
-                
-
             else:
                  # STATE ACTIVE
                 if operators.client.state ==  2:
@@ -117,6 +61,80 @@ class SESSION_PT_settings(bpy.types.Panel):
 
             row = layout.row()
 
+class SESSION_PT_settings_network(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
+    bl_label = "Network"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    @classmethod
+    def poll(cls, context):
+        return  not operators.client or (operators.client and operators.client.state == 0)
+    
+    def draw(self, context):
+        layout = self.layout
+
+        settings = context.window_manager.session
+        scene = context.window_manager
+        row = layout.row()
+        # USER SETTINGS
+        row.label(text="draw overlay:")
+        row.prop(settings, "enable_presence", text="")
+        row = layout.row()
+        row.label(text="clear blend:")
+        row.prop(settings, "start_empty", text="")
+        row = layout.row()
+    
+        row = layout.row()
+        row.prop(settings, "session_mode", expand=True)
+        row = layout.row()
+
+        if settings.session_mode == 'HOST':
+            box = row.box()
+            row = box.row()
+            row.label(text="init scene:")
+            row.prop(settings, "init_scene", text="")
+            row = box.row()
+            row.operator("session.start", text="HOST").host = True
+        else:
+            box = row.box()
+            row = box.row()
+            row.prop(settings, "ip", text="ip")
+            row = box.row()
+            row.label(text="port:")
+            row.prop(settings, "port", text="")
+            row = box.row()
+            
+
+            row = box.row()
+            row.operator("session.start", text="CONNECT").host = False
+
+
+class SESSION_PT_settings_user(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
+    bl_label = "User"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    @classmethod
+    def poll(cls, context):
+        return  not operators.client or (operators.client and operators.client.state == 0)
+    
+    def draw(self, context):
+        layout = self.layout
+
+        settings = context.window_manager.session
+        scene = context.window_manager
+        row = layout.row()
+        # USER SETTINGS
+        row.prop(settings, "username", text="id")
+        
+        row = layout.row()
+        row.prop(settings, "client_color", text="color") 
+        row = layout.row()
+
 
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
@@ -124,6 +142,7 @@ class SESSION_PT_user(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
     @classmethod
     def poll(cls, context):
         return  operators.client and operators.client.state == 2
@@ -229,6 +248,8 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
 classes = (
     SESSION_PT_settings,
+    SESSION_PT_settings_user,
+    SESSION_PT_settings_network,
     SESSION_PT_user,
     SESSION_PT_outliner,
 
