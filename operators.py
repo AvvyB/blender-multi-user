@@ -62,10 +62,10 @@ context = None
 
 def add_datablock(datablock):
     global client
-    child=None
+    child=[]
 
     if hasattr(datablock,"data"):
-        child = add_datablock(datablock.data)
+        child.append(add_datablock(datablock.data))
     
     if datablock.uuid and client.exist(datablock.uuid) :
         return datablock.uuid

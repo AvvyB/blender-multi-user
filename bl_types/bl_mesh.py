@@ -158,6 +158,10 @@ class BlMesh(ReplicatedDatablock):
 
         return data
 
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.meshes.get(self.buffer['name'])
+
 bl_id = "meshes"
 bl_class = bpy.types.Mesh
 bl_rep_class = BlMesh

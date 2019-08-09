@@ -36,13 +36,16 @@ class BlCurve(ReplicatedDatablock):
                 utils.dump_anything.load(
                     new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
-
     def dump(self, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 1)
         utils.dump_datablock_attibutes(
             pointer, ['splines'], 5, data)
         return data
+
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.curves.get(self.buffer['name'])
 
 bl_id = "curves"
 bl_class = bpy.types.Curve

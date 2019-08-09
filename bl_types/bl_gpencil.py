@@ -67,6 +67,10 @@ class BlGpencil(ReplicatedDatablock):
         utils.dump_datablock_attibutes(
             pointer, ['layers'], 9, data)
         return data
+    
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.grease_pencils.get(self.buffer['name'])
 
 bl_id = "grease_pencils"
 bl_class = bpy.types.GreasePencil

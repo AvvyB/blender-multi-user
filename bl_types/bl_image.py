@@ -44,6 +44,10 @@ class BlImage(ReplicatedDatablock):
             2,
             data)
         return data
+    
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.images.get(self.buffer['name'])
 
 bl_id = "images"
 bl_class = bpy.types.Image

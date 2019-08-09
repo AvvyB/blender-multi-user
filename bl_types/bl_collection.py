@@ -46,6 +46,9 @@ class BlCollection(ReplicatedDatablock):
         assert(pointer)
         return utils.dump_datablock(pointer, 4)
 
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.collections.get(self.buffer['name'])
 
 bl_id = "collections"
 bl_class = bpy.types.Collection

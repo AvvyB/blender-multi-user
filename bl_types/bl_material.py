@@ -76,6 +76,10 @@ class BlMaterial(ReplicatedDatablock):
         elif pointer.grease_pencil:
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
+    
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.materials.get(self.buffer['name'])
 
 bl_id = "materials"
 bl_class = bpy.types.Material

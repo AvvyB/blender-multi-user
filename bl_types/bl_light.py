@@ -21,7 +21,11 @@ class BlLight(ReplicatedDatablock):
         assert(pointer)
         
         return utils.dump_datablock(pointer, 3)
-
+    
+    def resolve(self):
+        assert(self.buffer)      
+        self.pointer = bpy.data.lights.get(self.buffer['name'])
+        
 bl_id = "lights"
 bl_class = bpy.types.Light
 bl_rep_class = BlLight
