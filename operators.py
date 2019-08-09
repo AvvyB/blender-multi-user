@@ -359,6 +359,25 @@ class SessionSaveConfig(bpy.types.Operator):
     def execute(self, context):
         context.window_manager.session.save()
 
+class SessionApply(bpy.types.Operator):
+    bl_idname = "session.apply"
+    bl_label = "apply the target item into the blender data"
+    bl_description = "Apply target object into blender data"
+    bl_options = {"REGISTER"}
+
+    target = bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    
+    
+    def execute(self, context):
+        global client
+
+        client.apply(uuid=self.target)
+
+        return {"FINISHED"}
 
 classes = (
     SessionStartOperator,
@@ -369,6 +388,7 @@ classes = (
     SessionPropertyRightOperator,
     SessionDumpDatabase,
     SessionSaveConfig,
+    SessionApply,
 )
 
 def register():

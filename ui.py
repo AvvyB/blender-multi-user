@@ -1,5 +1,6 @@
 import bpy
 from . import operators
+from .libs.replication.constants import *
 
 
 ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
@@ -236,7 +237,11 @@ class SESSION_PT_outliner(bpy.types.Panel):
                     detail_item_box.label(text="",icon=item.icon)
                     detail_item_box.label(text="{} ".format(name))
                     detail_item_box.label(text="{} ".format(item.owner))
-                    detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
+
+                    if item.state == FETCHED:
+                        detail_item_box.operator("session.apply", text=PROP_STATES[item.state]).target = item.uuid
+                    else:
+                        detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
                         
                     
                     # right_icon = "DECORATE_UNLOCKED"
