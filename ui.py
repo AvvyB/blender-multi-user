@@ -198,9 +198,16 @@ class SESSION_PT_outliner(bpy.types.Panel):
                 for item in sorted(client_keys, key=get_client_key):
                     area_msg = col.row(align = True)
                     item_box = area_msg.box()
+                    name = "None"
+                    #TODO: refactor that...
+                    if hasattr(item.pointer,'name'):
+                        name = item.pointer.name
+                    else:
+                        name = item.buffer['name']
+
                     detail_item_box = item_box.row()
                     detail_item_box.label(text="",icon=item.icon)
-                    detail_item_box.label(text="{} ".format(item.pointer.name))
+                    detail_item_box.label(text="{} ".format(name))
                     detail_item_box.label(text="{} ".format(item.owner))
                     detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
                         

@@ -91,6 +91,7 @@ def init_supported_datablocks(supported_types_id):
                 add_datablock(item)
 
 
+
 # def default_tick():
 #     upload_client_instance_position()
 
@@ -169,6 +170,7 @@ class SessionStartOperator(bpy.types.Operator):
             color=list(settings.client_color),
         )
         client.add(usr)
+        client.push()
         
         # settings.is_running = True
         # bpy.ops.session.refresh()
