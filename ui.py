@@ -24,7 +24,7 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
+        row = layout.row()
         if hasattr(context.window_manager, 'session'):
             settings = context.window_manager.session
             window_manager = context.window_manager
@@ -154,35 +154,38 @@ class SESSION_PT_user(bpy.types.Panel):
         settings = context.window_manager.session
         scene = context.window_manager
         # Create a simple row.
-        row = layout.row()
-        client_keys = operators.client.list()
+        col = layout.column(align=True)
+        
+        client_keys = operators.client.list(filter='BlUser')
         if client_keys and len(client_keys) > 0:
             for key in client_keys:
-                pass
-                # if 'Client' in key[0]:
-                #     info = ""
-                #     item_box = row.box()
-                #     detail_item_box = item_box.row()
+                area_msg = col.row(align = True)
+                item_box = area_msg.box()
+                client = operators.client.get(key).buffer
+                info = ""
+                
+                detail_item_row = item_box.row(align = True)
 
-                #     username = key[0].split('/')[1]
-                #     if username == settings.username:
-                #         info = "(self)"
-                #     # detail_item_box = item_box.row()
-                #     detail_item_box.label(
-                #         text="{} - {}".format(username, info))
+                username = client['name']
 
-                #     if settings.username not in key[0]:
-                #         detail_item_box.operator(
-                #             "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
-                #     row = layout.row()
+
+                is_local_user =  username == settings.username
+                
+                if is_local_user: 
+                    info = "(self)"
+                
+                detail_item_row.label(
+                    text="{} {}".format(username, info))
+
+                if not is_local_user:
+                    detail_item_row.operator(
+                        "session.snapview", text="", icon='VIEW_CAMERA').target_client = key
+                row = layout.row()
         else:
             row.label(text="Empty")
 
         row = layout.row()
 
-
-def get_client_key(item):
-    return item.owner
 
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
@@ -212,9 +215,15 @@ class SESSION_PT_outliner(bpy.types.Panel):
             # Property area
             # area_msg = row.box()
             client_keys = operators.client.list()
+
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
-                for item in sorted(client_keys, key=get_client_key):
+                for key in client_keys:
+                    item = operators.client.get(key)
+
+                    if item.str_type == 'BlUser':
+                        continue
+
                     area_msg = col.row(align = True)
                     item_box = area_msg.box()
                     name = "None"

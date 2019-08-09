@@ -25,10 +25,6 @@ client = None
 
 context = None
 
-
-
-
-
 # def upload_client_instance_position():
 #     username = bpy.context.window_manager.session.username
 #     if client:
@@ -76,9 +72,7 @@ def add_datablock(datablock):
     else:
         new_uuid = client.add(datablock,childs=child)
         datablock.uuid = new_uuid
-        return new_uuid
-    
-        
+        return new_uuid        
         
 
 # TODO: cleanup
@@ -128,7 +122,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global execution_queue, client
+        global client
         settings = context.window_manager.session
         # save config
         settings.save(context)
@@ -321,6 +315,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
         pass
 
+        
 class SessionDumpDatabase(bpy.types.Operator, ExportHelper):
     bl_idname = "session.dump"
     bl_label = "dump json data"

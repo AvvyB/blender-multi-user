@@ -7,15 +7,20 @@ from ..libs.replication.data import ReplicatedDatablock
 
 class BlUser(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
+        super().__init__( *args, **kwargs)
+
         self.icon = 'CON_ARMATURE'
 
-        super().__init__( *args, **kwargs)
+        #TODO: investigate on empty buffer...
+        if self.buffer:
+            self.load(self.buffer, self.pointer)
     
     def load(self, data, target):
         if target is None:
             target = User()
         
-        utils.dump_anything.load(target,data)
+        target.name = data['name']
+        
     
     def dump(self,pointer=None):
         return utils.dump_anything.dump(pointer)
