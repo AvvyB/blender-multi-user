@@ -41,49 +41,48 @@ context = None
 
 
 # def update_client_selected_object(context):
-    # session = bpy.context.window_manager.session
-    # username = bpy.context.window_manager.session.username
-    # client_key = "Client/{}".format(username)
-    # client_data = client.get(client_key)
+# session = bpy.context.window_manager.session
+# username = bpy.context.window_manager.session.username
+# client_key = "Client/{}".format(username)
+# client_data = client.get(client_key)
 
-    # selected_objects = utils.get_selected_objects(context.scene)
-    # if len(selected_objects) > 0 and len(client_data) > 0:
+# selected_objects = utils.get_selected_objects(context.scene)
+# if len(selected_objects) > 0 and len(client_data) > 0:
 
-    #     for obj in selected_objects:
-    #         # if obj not in client_data[0][1]['active_objects']:
-    #         client_data[0][1]['active_objects'] = selected_objects
+#     for obj in selected_objects:
+#         # if obj not in client_data[0][1]['active_objects']:
+#         client_data[0][1]['active_objects'] = selected_objects
 
-    #         client.set(client_key, client_data[0][1])
-    #         break
+#         client.set(client_key, client_data[0][1])
+#         break
 
-    # elif client_data and client_data[0][1]['active_objects']:
-    #     client_data[0][1]['active_objects'] = []
-    #     client.set(client_key, client_data[0][1])
+# elif client_data and client_data[0][1]['active_objects']:
+#     client_data[0][1]['active_objects'] = []
+#     client.set(client_key, client_data[0][1])
 
 def add_datablock(datablock):
     global client
-    child=[]
+    child = []
 
-    if hasattr(datablock,"data"):
+    if hasattr(datablock, "data"):
         child.append(add_datablock(datablock.data))
-    
-    if datablock.uuid and client.exist(datablock.uuid) :
+
+    if datablock.uuid and client.exist(datablock.uuid):
         return datablock.uuid
     else:
-        new_uuid = client.add(datablock,childs=child)
+        new_uuid = client.add(datablock, childs=child)
         datablock.uuid = new_uuid
-        return new_uuid        
-        
+        return new_uuid
+
 
 # TODO: cleanup
 def init_supported_datablocks(supported_types_id):
     global client
 
     for type_id in supported_types_id:
-        if hasattr(bpy.data,type_id):
-            for item in getattr(bpy.data,type_id):
+        if hasattr(bpy.data, type_id):
+            for item in getattr(bpy.data, type_id):
                 add_datablock(item)
-
 
 
 # def default_tick():
@@ -116,7 +115,6 @@ class SessionStartOperator(bpy.types.Operator):
 
     host: bpy.props.BoolProperty(default=False)
 
-
     @classmethod
     def poll(cls, context):
         return True
@@ -126,7 +124,7 @@ class SessionStartOperator(bpy.types.Operator):
         settings = context.window_manager.session
         # save config
         settings.save(context)
-        
+
         # Scene setup
         if settings.start_empty:
             utils.clean_scene()
@@ -136,12 +134,11 @@ class SessionStartOperator(bpy.types.Operator):
 
         # init the factory with supported types
         for type in bl_types.types_to_register():
-            _type = getattr(bl_types,type)
+            _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
-            bpy_factory.register_type(_type.bl_class,_type.bl_rep_class)
-        
-        client = Client(factory=bpy_factory)
+            bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
 
+        client = Client(factory=bpy_factory)
 
         if self.host:
             client.host(
@@ -149,7 +146,7 @@ class SessionStartOperator(bpy.types.Operator):
                 address=settings.ip,
                 port=settings.port
             )
-            
+
             if settings.init_scene:
                 init_supported_datablocks(supported_bl_types)
         else:
@@ -158,17 +155,17 @@ class SessionStartOperator(bpy.types.Operator):
                 address=settings.ip,
                 port=settings.port
             )
-        
+
         usr = presence.User(
             username=settings.username,
             color=list(settings.client_color),
         )
         client.add(usr)
         client.push()
-        
+
         # settings.is_running = True
         # bpy.ops.session.refresh()
-        #register_ticks()
+        # register_ticks()
 
         # Launch drawing module
         if settings.enable_presence:
@@ -191,35 +188,13 @@ class SessionStopOperator(bpy.types.Operator):
         global client
 
         assert(client)
-        
+
         client.disconnect()
 
-            # del client_instance
+        # del client_instance
 
-
-            # unregister_ticks()
-            # presence.renderer.stop()
-
-        return {"FINISHED"}
-
-
-class SessionPropertyAddOperator(bpy.types.Operator):
-    bl_idname = "session.add_prop"
-    bl_label = "add"
-    bl_description = "broadcast a property to connected client_instances"
-    bl_options = {"REGISTER"}
-
-    property_path: bpy.props.StringProperty(default="None")
-    depth: bpy.props.IntProperty(default=1)
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        global client
-
-        client.add(self.property_path)
+        # unregister_ticks()
+        # presence.renderer.stop()
 
         return {"FINISHED"}
 
@@ -239,7 +214,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
     def execute(self, context):
         global client
         try:
-            del client.property_map[self.property_path]
+            client.remove(self.property_path)
 
             return {"FINISHED"}
         except:
@@ -315,36 +290,6 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
         pass
 
-        
-class SessionDumpDatabase(bpy.types.Operator, ExportHelper):
-    bl_idname = "session.dump"
-    bl_label = "dump json data"
-    bl_description = "dump session stored data to a json file"
-    bl_options = {"REGISTER"}
-
-    # ExportHelper mixin class uses this
-    filename_ext = ".json"
-
-    filter_glob: bpy.props.StringProperty(
-        default="*.json",
-        options={'HIDDEN'},
-        maxlen=255,  # Max internal buffer length, longer would be clamped.
-    )
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        print(self.filepath)
-        if client and client.state() == 3:
-            client.dump(self.filepath)
-            return {"FINISHED"}
-
-        return {"CANCELLED"}
-
-        pass
-
 
 class SessionSaveConfig(bpy.types.Operator):
     bl_idname = "session.save"
@@ -359,6 +304,7 @@ class SessionSaveConfig(bpy.types.Operator):
     def execute(self, context):
         context.window_manager.session.save()
 
+
 class SessionApply(bpy.types.Operator):
     bl_idname = "session.apply"
     bl_label = "apply the target item into the blender data"
@@ -370,8 +316,7 @@ class SessionApply(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return True
-    
-    
+
     def execute(self, context):
         global client
 
@@ -379,17 +324,17 @@ class SessionApply(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 classes = (
     SessionStartOperator,
-    SessionPropertyAddOperator,
     SessionStopOperator,
     SessionPropertyRemoveOperator,
     SessionSnapUserOperator,
     SessionPropertyRightOperator,
-    SessionDumpDatabase,
     SessionSaveConfig,
     SessionApply,
 )
+
 
 def register():
     from bpy.utils import register_class

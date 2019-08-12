@@ -60,7 +60,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
 
 
-
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
     bl_label = "Network"
@@ -242,7 +241,9 @@ class SESSION_PT_outliner(bpy.types.Panel):
                         detail_item_box.operator("session.apply", text=PROP_STATES[item.state]).target = item.uuid
                     else:
                         detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
-                        
+                    
+                    detail_item_box.operator(
+                        "session.remove_prop", text="", icon="X").property_path = key
                     
                     # right_icon = "DECORATE_UNLOCKED"
                     # if owner == settings.username:
@@ -253,8 +254,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
                     
                     # ro = detail_item_box.operator("session.right", text="",emboss=settings.is_admin, icon=right_icon)
                     # ro.key = item[0]
-                    # detail_item_box.operator(
-                    #     "session.remove_prop", text="", icon="X").property_path = key
+                  
             else:
                 area_msg.label(text="Empty")
 
