@@ -66,8 +66,19 @@ def add_datablock(datablock):
 
     if hasattr(datablock, "data"):
         child.append(add_datablock(datablock.data))
-
-    if datablock.uuid and client.exist(datablock.uuid):
+    if hasattr(datablock, "materials"):
+        for mat in datablock.materials:
+            child.append(add_datablock(mat))
+    if hasattr(datablock, "collection") and hasattr(datablock.collection, "children"):
+        for coll in datablock.collection.children:
+            child.append(add_datablock(coll))
+    if hasattr(datablock, "children"):
+        for coll in datablock.children:
+            child.append(add_datablock(coll))
+    if hasattr(datablock, "objects"):
+        for obj in datablock.objects:
+            child.append(add_datablock(obj))
+    if hasattr(datablock,'uuid') and datablock.uuid and client.exist(datablock.uuid):
         return datablock.uuid
     else:
         new_uuid = client.add(datablock, childs=child)
