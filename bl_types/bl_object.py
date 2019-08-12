@@ -65,6 +65,10 @@ class BlObject(ReplicatedDatablock):
         object_name = self.buffer['name']
         
         self.pointer = bpy.data.objects.get(object_name)
+    
+    def diff(self):
+        return self.pointer.location != self.buffer['location'] 
+    
 bl_id = "objects"
 bl_class = bpy.types.Object
 bl_rep_class = BlObject 

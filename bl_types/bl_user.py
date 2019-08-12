@@ -24,13 +24,9 @@ class BlUser(ReplicatedDatablock):
     
     def dump(self,pointer=None):
         return utils.dump_anything.dump(pointer)
-    # def load(self, data, target):
-    #    pass
 
-
-    # def dump(self, pointer=None):
-    #     pass
-        
+    def diff(self):
+        pass
 
 bl_id = "user"
 bl_class = User

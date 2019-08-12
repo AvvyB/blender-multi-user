@@ -147,7 +147,11 @@ class SessionStartOperator(bpy.types.Operator):
         for type in bl_types.types_to_register():
             _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
-            bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
+
+            if _type.bl_id == 'objects':#For testing
+                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=2,automatic=False)
+            else:
+                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
 
         client = Client(factory=bpy_factory)
 

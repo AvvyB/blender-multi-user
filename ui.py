@@ -1,6 +1,7 @@
 import bpy
 from . import operators
 from .libs.replication.constants import *
+from .bl_types.bl_user import BlUser
 
 
 ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
@@ -10,7 +11,8 @@ PROP_STATES = [ 'ADDED',
                 'COMMITED',
                 'PUSHED',
                 'FETCHED',
-                'UP']
+                'UP',
+                'CHANGED']
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
@@ -155,7 +157,7 @@ class SESSION_PT_user(bpy.types.Panel):
         # Create a simple row.
         col = layout.column(align=True)
         
-        client_keys = operators.client.list(filter='BlUser')
+        client_keys = operators.client.list(filter=BlUser)
         if client_keys and len(client_keys) > 0:
             for key in client_keys:
                 area_msg = col.row(align = True)
