@@ -5,6 +5,23 @@ import os
 from .. import utils, environment
 from ..libs.replication.data import ReplicatedDatablock
 
+def dump_image(image):
+    pixels = None
+    if image.source == "GENERATED":
+        img_name = "{}.png".format(image.name)
+
+        image.filepath_raw = os.path.join(environment.CACHE_DIR, img_name)
+        image.file_format = "PNG"
+        image.save()
+
+    if image.source == "FILE":
+        image.save()
+        file = open(image.filepath_raw, "rb")
+        pixels = file.read()
+    else:
+        print("Image format not supported ")
+    return pixels
+
 class BlImage(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'IMAGE_DATA'
@@ -36,7 +53,7 @@ class BlImage(ReplicatedDatablock):
     def dump(self, pointer=None):
         assert(pointer)
         data = {}
-        data['pixels'] = utils.dump_image(pointer)
+        data['pixels'] = dump_image(pointer)
         utils.dump_datablock_attibutes(pointer, [], 2, data)
         data = utils.dump_datablock_attibutes(
             pointer, 

@@ -13,7 +13,7 @@ import bpy
 import mathutils
 from bpy_extras.io_utils import ExportHelper
 
-from . import environment, presence, ui, utils
+from . import environment, presence, ui, utils, timer
 from .libs import umsgpack
 from .libs.replication.data import ReplicatedDataFactory
 from .libs.replication.interface import Client
@@ -149,7 +149,9 @@ class SessionStartOperator(bpy.types.Operator):
             supported_bl_types.append(_type.bl_id)
 
             if _type.bl_id == 'objects':#For testing
-                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=2,automatic=True)
+                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=0.16,automatic=True)
+                obj_timer = timer.ApplyTimer(timout=0.16,target_type=_type.bl_rep_class)
+                obj_timer.start()
             else:
                 bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
 
