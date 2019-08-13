@@ -4,22 +4,22 @@ import mathutils
 from .. import utils
 from ..presence import User
 from ..libs.replication.data import ReplicatedDatablock
+from ..libs.debug import draw_point
 
 class BlUser(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
         super().__init__( *args, **kwargs)
 
         self.icon = 'CON_ARMATURE'
-
-        #TODO: investigate on empty buffer...
+    
         if self.buffer:
             self.load(self.buffer, self.pointer)
-    
     def construct(self, name):
         return User()
     
     def load(self, data, target):      
-        # target.name = data['name']
+        target.name = data['name']
+        target.location = data['location']
         utils.dump_anything.load(target, data)
     
     def dump(self,pointer=None):

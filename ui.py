@@ -163,6 +163,7 @@ class SESSION_PT_user(bpy.types.Panel):
                 area_msg = col.row(align = True)
                 item_box = area_msg.box()
                 client = operators.client.get(key).buffer
+                pointer = operators.client.get(key).pointer
                 info = ""
                 
                 detail_item_row = item_box.row(align = True)
@@ -177,7 +178,7 @@ class SESSION_PT_user(bpy.types.Panel):
                 
                 detail_item_row.label(
                     text="{} {}".format(username, info))
-
+                detail_item_row.label(text=str(pointer))
                 if not is_local_user:
                     detail_item_row.operator(
                         "session.snapview", text="", icon='VIEW_CAMERA').target_client = key

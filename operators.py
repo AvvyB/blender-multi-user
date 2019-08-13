@@ -124,15 +124,11 @@ class SessionStartOperator(bpy.types.Operator):
         )
         
         settings.user_uuid = client.add(usr)
-        
+        delayables.append(delayable.DrawClients())
         delayables.append(delayable.ClientUpdate(client_uuid=settings.user_uuid))
         # Push all added values 
         client.push()
         
-
-        # settings.is_running = True
-        # bpy.ops.session.refresh()
-        # register_ticks()
 
         # Launch drawing module
         # if settings.enable_presence:
@@ -162,6 +158,8 @@ class SessionStopOperator(bpy.types.Operator):
 
         for d in delayables:
             d.unregister()
+        
+        
         # del client_instance
 
         # unregister_ticks()

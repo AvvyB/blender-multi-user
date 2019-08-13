@@ -7,9 +7,12 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
+# from .libs import debug
+# from .bl_types.bl_user import BlUser
+# from .delayable import Draw 
+
 global renderer
-
-
+            
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':

@@ -1,6 +1,8 @@
 import bpy
 from .libs.replication.constants import *
+from .libs import debug
 from . import operators
+from .bl_types.bl_user import BlUser
 
 class Delayable():
     def register(self):
@@ -33,7 +35,10 @@ class Timer(Delayable):
     def unregister(self):
         """Unnegister the timer of the blender timer system
         """
-        bpy.app.timers.unregister(self.execute)
+        try:
+            bpy.app.timers.unregister(self.execute)
+        except:
+            print("timer already unregistered")
 
 class ApplyTimer(Timer):
     def __init__(self, timout=1,target_type=None):
@@ -64,9 +69,12 @@ class Draw(Delayable):
         raise NotImplementedError()
     
     def unregister(self):
-        bpy.types.SpaceView3D.draw_handler_remove(
-                self._handler, "WINDOW")
-
+        try:
+            bpy.types.SpaceView3D.draw_handler_remove(
+                    self._handler, "WINDOW")
+        except:
+            print("draw already unregistered")
+            
 class ClientUpdate(Draw):
     def __init__(self, client_uuid=None):
         assert(client_uuid)
@@ -75,5 +83,16 @@ class ClientUpdate(Draw):
 
     def execute(self):
         if hasattr(operators,"client"):
-            operators.client.get(self._client_uuid).pointer.update_location()
-            print("update! ")
+            client = operators.client.get(self._client_uuid)
+
+            if client:
+                client.pointer.update_location()
+
+                
+class DrawClients(Draw):
+    def execute(self):
+        if operators.client:
+            users = operators.client.list(filter=BlUser)    
+            
+            [debug.draw_point(location=operators.client.get(u).buffer['location']) for u in users if operators.client.get(u)]
+
