@@ -96,3 +96,5 @@ class DrawClients(Draw):
             
             [debug.draw_point(location=operators.client.get(u).buffer['location']) for u in users if operators.client.get(u)]
 
+            
+

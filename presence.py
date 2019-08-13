@@ -4,6 +4,9 @@ import blf
 import gpu
 import mathutils
 
+import math
+
+
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
@@ -93,7 +96,9 @@ class User():
 
     def update_location(self):
         current_coords = get_client_view_rect()
+        area, region, rv3d = view3d_find()
 
+        current_coords = construct_camera(area)[0]
         if current_coords:
             self.location = current_coords
             
@@ -251,6 +256,36 @@ class DrawFactory(object):
             except Exception as e:
                 print("2D EXCEPTION")
 
+def construct_camera(area):
+    """
+    Construct the camera frustum as a box  
+    """
+    r3dv = area.spaces[0]
+    box = [[0, 0, 0] for i in range(8)]
+
+    aspx = area.width
+    aspy = area.height
+
+    ratiox = min(aspx / aspy, 1.0)
+    ratioy = min(aspy / aspx, 1.0)
+
+    angleofview = 2.0 * \
+        math.atan(36 / (2.0 * r3dv.lens))
+    oppositeclipsta = math.tan(angleofview / 2.0) * r3dv.clip_start
+    oppositeclipend = math.tan(angleofview / 2.0) * r3dv.clip_end
+
+    box[2][0] = box[1][0] = -oppositeclipsta * ratiox
+    box[0][0] = box[3][0] = -oppositeclipend * ratiox
+    box[5][0] = box[6][0] = +oppositeclipsta * ratiox
+    box[4][0] = box[7][0] = +oppositeclipend * ratiox
+    box[1][1] = box[5][1] = -oppositeclipsta * ratioy
+    box[0][1] = box[4][1] = -oppositeclipend * ratioy
+    box[2][1] = box[6][1] = +oppositeclipsta * ratioy
+    box[3][1] = box[7][1] = +oppositeclipend * ratioy
+    box[0][2] = box[3][2] = box[4][2] = box[7][2] = -r3dv.clip_end
+    box[1][2] = box[2][2] = box[5][2] = box[6][2] = -r3dv.clip_start
+
+    return [r3dv.view_matrix @ mathutils.Vector(i) for i in box]
 
 def register():
     global renderer
