@@ -10,10 +10,10 @@ class BlMaterial(ReplicatedDatablock):
 
         super().__init__( *args, **kwargs)
         
-    def load(self, data, target):
-        if target is None:
-            target = bpy.data.materials.new(data["name"])
+    def construct(self, data):
+        return bpy.data.materials.new(data["name"])
 
+    def load(self, data, target):
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
@@ -65,7 +65,6 @@ class BlMaterial(ReplicatedDatablock):
                                                        ['name']].outputs[current_link['from_socket']['name']]
 
                 target.node_tree.links.new(input_socket, output_socket)
-
 
     def dump(self, pointer=None):
         assert(pointer)

@@ -15,10 +15,10 @@ class BlUser(ReplicatedDatablock):
         if self.buffer:
             self.load(self.buffer, self.pointer)
     
-    def load(self, data, target):
-        if target is None:
-            target = User()
-        
+    def construct(self, name):
+        return User()
+    
+    def load(self, data, target):      
         target.name = data['name']
         
     

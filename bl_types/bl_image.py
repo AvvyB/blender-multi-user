@@ -10,16 +10,16 @@ class BlImage(ReplicatedDatablock):
         self.icon = 'IMAGE_DATA'
 
         super().__init__( *args, **kwargs)
-        
-    def load(self, data, target):
-        if not target:
-            image = bpy.data.images.new(
+    
+    def construct(self, data):
+        return bpy.data.images.new(
                 name=data['name'],
                 width=data['size'][0],
                 height=data['size'][1]
             )
-        else:
-            image = target
+
+    def load(self, data, target):
+        image = target
 
         img_name = "{}.png".format(image.name)
 

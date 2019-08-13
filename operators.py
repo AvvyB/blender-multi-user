@@ -149,7 +149,7 @@ class SessionStartOperator(bpy.types.Operator):
             supported_bl_types.append(_type.bl_id)
 
             if _type.bl_id == 'objects':#For testing
-                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=2,automatic=False)
+                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=2,automatic=True)
             else:
                 bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
 

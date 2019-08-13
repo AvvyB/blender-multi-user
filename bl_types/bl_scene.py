@@ -9,11 +9,12 @@ class BlScene(ReplicatedDatablock):
         self.icon = 'SCENE_DATA'
 
         super().__init__( *args, **kwargs)
-        
-    def load(self, data, target):
-        if target is None:
-            target = bpy.data.scenes.new(data["name"])
+    
+    def construct(self, data):
+        return bpy.data.scenes.new(data["name"])
 
+    def load(self, data, target):
+        target = self.pointer
         # Load other meshes metadata
         utils.dump_anything.load(target, data)
 

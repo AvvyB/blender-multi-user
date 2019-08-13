@@ -9,11 +9,11 @@ class BlLight(ReplicatedDatablock):
         self.icon = 'LIGHT_DATA'
 
         super().__init__( *args, **kwargs)
-        
+    
+    def construct(self, data):
+        return bpy.data.lights.new(data["name"], data["type"])
+    
     def load(self, data, target):
-        if target is None:
-            target = bpy.data.lights.new(data["name"], data["type"])
-
         utils.dump_anything.load(target, data)
 
 

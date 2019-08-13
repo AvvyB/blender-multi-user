@@ -9,11 +9,11 @@ class BlCurve(ReplicatedDatablock):
         self.icon = 'CURVE_DATA'
 
         super().__init__( *args, **kwargs)
-        
-    def load(self, data, target):
-        if target is None:
-            target = bpy.data.curves.new(data["name"], 'CURVE')
 
+    def construct(self, data):
+        return bpy.data.curves.new(data["name"], 'CURVE')
+
+    def load(self, data, target):
         utils.dump_anything.load(target, data)
 
         target.splines.clear()

@@ -75,7 +75,10 @@ class BlMesh(ReplicatedDatablock):
         self.icon = 'MESH_DATA'
         
         super().__init__( *args, **kwargs)
-        
+    
+    def construct(self, data):
+        return bpy.data.meshes.new(data["name"])
+
     def load(self, data, target):
         if not target or not target.is_editmode:
             # 1 - LOAD GEOMETRY
@@ -109,9 +112,7 @@ class BlMesh(ReplicatedDatablock):
                         loop_uv = loop[uv_layer]
                         loop_uv.uv = data["faces"][p]["uv"][i]
     
-            if target is None:
-                target = bpy.data.meshes.new(data["name"])
-    
+   
             mesh_buffer.to_mesh(target)
     
             # mesh_buffer.from_mesh(target)

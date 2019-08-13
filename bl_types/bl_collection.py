@@ -10,12 +10,11 @@ class BlCollection(ReplicatedDatablock):
         self.icon = 'FILE_FOLDER'
 
         super().__init__(*args, **kwargs)
+    
+    def construct(self,data):
+        return bpy.data.collections.new(data["name"])
 
     def load(self, data, target):
-
-        if target is None:
-            target = bpy.data.collections.new(data["name"])
-
         # Load other meshes metadata
         # dump_anything.load(target, data)
 

@@ -35,11 +35,11 @@ class BlGpencil(ReplicatedDatablock):
         self.icon = 'GREASEPENCIL'
 
         super().__init__( *args, **kwargs)
-        
+    
+    def construct(self,data):
+        return bpy.data.grease_pencils.new(data["name"])
+    
     def load(self, data, target):
-        if target is None:
-            target = bpy.data.grease_pencils.new(data["name"])
-
         for layer in target.layers:
             target.layers.remove(layer)
 

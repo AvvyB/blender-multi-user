@@ -11,11 +11,10 @@ class BlCamera(ReplicatedDatablock):
         super().__init__( *args, **kwargs)
         
     def load(self, data, target):
-        if target is None:
-            target = bpy.data.cameras.new(data["name"])
-
         utils.dump_anything.load(target, data)
 
+    def construct(self, data):
+        return bpy.data.cameras.new(data["name"])
 
     def dump(self, pointer=None):
         assert(pointer)

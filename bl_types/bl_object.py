@@ -9,29 +9,29 @@ class BlObject(ReplicatedDatablock):
         self.icon = 'OBJECT_DATA'
 
         super().__init__( *args, **kwargs)
-        
+    
+    def construct(self, data):
+        pointer = None
+
+        # Object specific constructor...
+        if data["data"] in bpy.data.meshes.keys():
+            pointer = bpy.data.meshes[data["data"]]
+        elif data["data"] in bpy.data.lights.keys():
+            pointer = bpy.data.lights[data["data"]]
+        elif data["data"] in bpy.data.cameras.keys():
+            pointer = bpy.data.cameras[data["data"]]
+        elif data["data"] in bpy.data.curves.keys():
+            pointer = bpy.data.curves[data["data"]]
+        elif data["data"] in bpy.data.armatures.keys():
+            pointer = bpy.data.armatures[data["data"]]
+        elif data["data"] in bpy.data.grease_pencils.keys():
+            pointer = bpy.data.grease_pencils[data["data"]]
+        elif data["data"] in bpy.data.curves.keys():
+            pointer = bpy.data.curves[data["data"]]
+
+        return bpy.data.objects.new(data["name"], pointer)
+
     def load(self, data, target):
-        if target is None:
-            pointer = None
-
-            # Object specific constructor...
-            if data["data"] in bpy.data.meshes.keys():
-                pointer = bpy.data.meshes[data["data"]]
-            elif data["data"] in bpy.data.lights.keys():
-                pointer = bpy.data.lights[data["data"]]
-            elif data["data"] in bpy.data.cameras.keys():
-                pointer = bpy.data.cameras[data["data"]]
-            elif data["data"] in bpy.data.curves.keys():
-                pointer = bpy.data.curves[data["data"]]
-            elif data["data"] in bpy.data.armatures.keys():
-                pointer = bpy.data.armatures[data["data"]]
-            elif data["data"] in bpy.data.grease_pencils.keys():
-                pointer = bpy.data.grease_pencils[data["data"]]
-            elif data["data"] in bpy.data.curves.keys():
-                pointer = bpy.data.curves[data["data"]]
-
-            target = bpy.data.objects.new(data["name"], pointer)
-
         # Load other meshes metadata
         # dump_anything.load(target, data)
 
@@ -67,7 +67,7 @@ class BlObject(ReplicatedDatablock):
         self.pointer = bpy.data.objects.get(object_name)
     
     def diff(self):
-        return self.pointer.location != self.buffer['location'] 
+        return self.dump(pointer=self.pointer)['location'] != self.buffer['location'] 
     
 bl_id = "objects"
 bl_class = bpy.types.Object
