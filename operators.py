@@ -13,7 +13,7 @@ import bpy
 import mathutils
 from bpy_extras.io_utils import ExportHelper
 
-from . import environment, presence, ui, utils, timer
+from . import environment, presence, ui, utils, delayable
 from .libs import umsgpack
 from .libs.replication.data import ReplicatedDataFactory
 from .libs.replication.interface import Client
@@ -22,43 +22,9 @@ from . import bl_types
 logger = logging.getLogger(__name__)
 
 client = None
-
+delayables = []
 context = None
 
-# def upload_client_instance_position():
-#     username = bpy.context.window_manager.session.username
-#     if client:
-
-#         key = "Client/{}".format(username)
-
-#         current_coords = presence.get_client_view_rect()
-#         client_list = client.get(key)
-
-#         if current_coords and client_list:
-#             if current_coords != client_list[0][1]['location']:
-#                 client_list[0][1]['location'] = current_coords
-#                 client.set(key, client_list[0][1])
-
-
-# def update_client_selected_object(context):
-# session = bpy.context.window_manager.session
-# username = bpy.context.window_manager.session.username
-# client_key = "Client/{}".format(username)
-# client_data = client.get(client_key)
-
-# selected_objects = utils.get_selected_objects(context.scene)
-# if len(selected_objects) > 0 and len(client_data) > 0:
-
-#     for obj in selected_objects:
-#         # if obj not in client_data[0][1]['active_objects']:
-#         client_data[0][1]['active_objects'] = selected_objects
-
-#         client.set(client_key, client_data[0][1])
-#         break
-
-# elif client_data and client_data[0][1]['active_objects']:
-#     client_data[0][1]['active_objects'] = []
-#     client.set(client_key, client_data[0][1])
 
 def add_datablock(datablock):
     global client
@@ -96,26 +62,6 @@ def init_supported_datablocks(supported_types_id):
                 add_datablock(item)
 
 
-# def default_tick():
-#     upload_client_instance_position()
-
-#     return .1
-
-
-# def register_ticks():
-#     # REGISTER Updaters
-#     bpy.app.timers.register(default_tick)
-#     bpy.app.timers.register(execute_queued_functions)
-
-
-# def unregister_ticks():
-    # REGISTER Updaters
-    # try:
-    #     bpy.app.timers.unregister(default_tick)
-    #     bpy.app.timers.unregister(execute_queued_functions)
-    # except:
-    #     pass
-
 
 # OPERATORS
 class SessionStartOperator(bpy.types.Operator):
@@ -131,7 +77,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client
+        global client, delayables
         settings = context.window_manager.session
         # save config
         settings.save(context)
@@ -148,10 +94,9 @@ class SessionStartOperator(bpy.types.Operator):
             _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
 
-            if _type.bl_id == 'objects':#For testing
-                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=0.16,automatic=True)
-                obj_timer = timer.ApplyTimer(timout=0.16,target_type=_type.bl_rep_class)
-                obj_timer.start()
+            if _type.bl_id == 'users':#For testing
+                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=0.1,automatic=True)
+                # delayables.append(delayable.ApplyTimer(timout=0.16,target_type=_type.bl_rep_class))
             else:
                 bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
 
@@ -177,17 +122,24 @@ class SessionStartOperator(bpy.types.Operator):
             username=settings.username,
             color=list(settings.client_color),
         )
-        client.add(usr)
+        
+        settings.user_uuid = client.add(usr)
+        
+        delayables.append(delayable.ClientUpdate(client_uuid=settings.user_uuid))
+        # Push all added values 
         client.push()
+        
 
         # settings.is_running = True
         # bpy.ops.session.refresh()
         # register_ticks()
 
         # Launch drawing module
-        if settings.enable_presence:
-            presence.renderer.run()
-
+        # if settings.enable_presence:
+        #     presence.renderer.run()
+        
+        for d in delayables:
+            d.register()
         return {"FINISHED"}
 
 
@@ -202,12 +154,14 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client
+        global client, delayables
 
         assert(client)
 
         client.disconnect()
 
+        for d in delayables:
+            d.unregister()
         # del client_instance
 
         # unregister_ticks()

@@ -96,6 +96,10 @@ class SessionProps(bpy.types.PropertyGroup):
         default="127.0.0.1",
         update=save_session_config
         )
+    user_uuid: bpy.props.StringProperty(
+        name="user_uuid",
+        default="None"
+    )
     port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',

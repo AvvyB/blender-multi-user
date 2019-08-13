@@ -66,7 +66,7 @@ def get_client_view_rect():
         v5 = get_target(region, rv3d, (width/2, height/2))
         v6 = get_target_far(region, rv3d, (width/2, height/2), 10)
 
-    coords = [v1, v2, v3, v4,v5,v6]
+    coords = v5
     indices = (
         (1, 3), (2, 1), (3, 0), (2, 0)
     )
@@ -85,9 +85,36 @@ class User():
     def __init__(self, username=None, color=(0,0,0,1)):
         self.name = username
         self.color = color
-        self.location = (0,0,0)
+        self.location = [0,0,0]
         self.active_object = ""
-    
+
+    def update_location(self):
+        current_coords = get_client_view_rect()
+
+        if current_coords:
+            self.location = current_coords
+            
+
+
+    def update_client_selected_object(self,context):
+        session = bpy.context.window_manager.session
+        username = bpy.context.window_manager.session.username
+        # client_data = client.get(client_key)
+
+        selected_objects = utils.get_selected_objects(context.scene)
+        if len(selected_objects) > 0 and len(client_data) > 0:
+
+            for obj in selected_objects:
+                # if obj not in client_data[0][1]['active_objects']:
+                client_data[0][1]['active_objects'] = selected_objects
+
+                client.set(client_key, client_data[0][1])
+                break
+
+        elif client_data and client_data[0][1]['active_objects']:
+            client_data[0][1]['active_objects'] = []
+            client.set(client_key, client_data[0][1])
+        
     
 
 
