@@ -25,10 +25,6 @@ def random_string_digits(stringLength=6):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
-
-def refresh_window():
-    bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-
 def clean_scene():
     for datablock in BPY_TYPES:
         datablock_ref = getattr(bpy.data,  BPY_TYPES[datablock])

@@ -3,6 +3,7 @@ import bgl
 import blf
 import gpu
 import mathutils
+import copy
 
 import math
 
@@ -50,7 +51,7 @@ def get_target_far(region, rv3d, coord, distance):
     return [target.x, target.y, target.z]
 
 
-def get_client_view_rect():
+def get_client_cam_points():
     area, region, rv3d = view3d_find()
 
     v1 = [0, 0, 0]
@@ -70,12 +71,10 @@ def get_client_view_rect():
         v4 = get_target(region, rv3d, (width, 0))
 
         v5 = get_target(region, rv3d, (width/2, height/2))
-        v6 = get_target_far(region, rv3d, (width/2, height/2), 10)
+        v6 = list(rv3d.view_location)
+        v7 = get_target_far(region, rv3d, (width/2, height/2), -.8)
 
-    coords = v5
-    indices = (
-        (1, 3), (2, 1), (3, 0), (2, 0)
-    )
+    coords = [v1,v2,v3,v4,v5,v6,v7]
 
     return coords
 
@@ -91,16 +90,16 @@ class User():
     def __init__(self, username=None, color=(0,0,0,1)):
         self.name = username
         self.color = color
-        self.location = [0,0,0]
+        self.location = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
         self.active_object = ""
 
     def update_location(self):
-        current_coords = get_client_view_rect()
+        current_coords = get_client_cam_points()
         area, region, rv3d = view3d_find()
 
-        current_coords = construct_camera(area)[0]
+        current_coords = get_client_cam_points()
         if current_coords:
-            self.location = current_coords
+            self.location = list(current_coords)
             
 
 
@@ -208,32 +207,31 @@ class DrawFactory(object):
                 else:
                     pass
     
-    def draw_client(self, client):
-        if client:
-            name = client['id']
+    def draw_client_camera(self,client_uuid, client_location, client_color):
+        if client_location:
             local_username = bpy.context.window_manager.session.username
 
-            if name != local_username:
-                try:
-                    indices = (
-                        (1, 3), (2, 1), (3, 0), (2, 0),(4, 5)
-                    )
+            try:
+                indices = (
+                    (1, 3), (2, 1), (3, 0), (2, 0),(4,5),(1, 6), (2, 6), (3, 6), (0, 6)
+                )
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    position = client['location']
-                    color = client['color']
+                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                position = [tuple(coord) for coord in client_location]
+                color = client_color
 
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": position}, indices=indices)
 
-                    self.d3d_items[name] = (shader, batch, color)
-                    self.d2d_items[name] = (position[1], name, color)
+                batch = batch_for_shader(
+                    shader, 'LINES', {"pos": position}, indices=indices)
 
-                except Exception as e:
-                    print("Draw client exception {}".format(e))
+                self.d3d_items[client_uuid] = (shader, batch, color)
+                self.d2d_items[client_uuid] = (position[1], client_uuid, color)
+
+            except Exception as e:
+                print("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
-        bgl.glLineWidth(2)
+        bgl.glLineWidth(1.5)
         try:
             for shader, batch, color in self.d3d_items.values():
                 shader.bind()
@@ -249,43 +247,12 @@ class DrawFactory(object):
 
                 if coords:
                     blf.position(0, coords[0], coords[1]+10, 0)
-                    blf.size(0, 10, 72)
+                    blf.size(0, 16, 72)
                     blf.color(0, color[0], color[1], color[2], color[3])
                     blf.draw(0,  font)
 
             except Exception as e:
                 print("2D EXCEPTION")
-
-def construct_camera(area):
-    """
-    Construct the camera frustum as a box  
-    """
-    r3dv = area.spaces[0]
-    box = [[0, 0, 0] for i in range(8)]
-
-    aspx = area.width
-    aspy = area.height
-
-    ratiox = min(aspx / aspy, 1.0)
-    ratioy = min(aspy / aspx, 1.0)
-
-    angleofview = 2.0 * \
-        math.atan(36 / (2.0 * r3dv.lens))
-    oppositeclipsta = math.tan(angleofview / 2.0) * r3dv.clip_start
-    oppositeclipend = math.tan(angleofview / 2.0) * r3dv.clip_end
-
-    box[2][0] = box[1][0] = -oppositeclipsta * ratiox
-    box[0][0] = box[3][0] = -oppositeclipend * ratiox
-    box[5][0] = box[6][0] = +oppositeclipsta * ratiox
-    box[4][0] = box[7][0] = +oppositeclipend * ratiox
-    box[1][1] = box[5][1] = -oppositeclipsta * ratioy
-    box[0][1] = box[4][1] = -oppositeclipend * ratioy
-    box[2][1] = box[6][1] = +oppositeclipsta * ratioy
-    box[3][1] = box[7][1] = +oppositeclipend * ratioy
-    box[0][2] = box[3][2] = box[4][2] = box[7][2] = -r3dv.clip_end
-    box[1][2] = box[2][2] = box[5][2] = box[6][2] = -r3dv.clip_start
-
-    return [r3dv.view_matrix @ mathutils.Vector(i) for i in box]
 
 def register():
     global renderer

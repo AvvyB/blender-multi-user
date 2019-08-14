@@ -30,7 +30,7 @@ class Drawable():
     :type duration: float
     """
 
-    def __init__(self, coords=DEFAULT_COORDS, indices=DEFAULT_INDICES, location=(0.0, 0.0, 0.0), mode='POINTS', color=(1, 0, 0, 1), duration=1):
+    def __init__(self, coords=DEFAULT_COORDS, indices=DEFAULT_INDICES, location=(0.0, 0.0, 0.0), mode='POINTS', color=(1, 0, 0, 1), duration=0):
         self._duration = duration
         self._color = color
         self._coord = [tuple(numpy.add(c,location)) for c in coords]
@@ -42,8 +42,9 @@ class Drawable():
         self._handler = bpy.types.SpaceView3D.draw_handler_add(
             self.draw, (), 'WINDOW', 'POST_VIEW')
         # Bind the callback
-        self._timer = bpy.app.timers.register(
-            self.clear, first_interval=duration)
+        if duration:
+            self._timer = bpy.app.timers.register(
+                self.clear, first_interval=duration)
 
     def draw(self):
         self.shader.bind()

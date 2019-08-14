@@ -23,8 +23,7 @@ logger = logging.getLogger(__name__)
 
 client = None
 delayables = []
-context = None
-
+ui_context = None
 
 def add_datablock(datablock):
     global client
@@ -96,7 +95,7 @@ class SessionStartOperator(bpy.types.Operator):
 
             if _type.bl_id == 'users':#For testing
                 bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=0.1,automatic=True)
-                # delayables.append(delayable.ApplyTimer(timout=0.16,target_type=_type.bl_rep_class))
+                delayables.append(delayable.ApplyTimer(timout=0.1,target_type=_type.bl_rep_class))
             else:
                 bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
 
@@ -120,19 +119,21 @@ class SessionStartOperator(bpy.types.Operator):
 
         usr = presence.User(
             username=settings.username,
-            color=list(settings.client_color),
+            color=(settings.client_color.r,
+                settings.client_color.g,
+                settings.client_color.b,
+                1),
         )
         
         settings.user_uuid = client.add(usr)
-        delayables.append(delayable.DrawClients())
+        # delayables.append(delayable.DrawClients())
         delayables.append(delayable.ClientUpdate(client_uuid=settings.user_uuid))
         # Push all added values 
         client.push()
-        
 
         # Launch drawing module
-        # if settings.enable_presence:
-        #     presence.renderer.run()
+        if settings.enable_presence:
+            presence.renderer.run()
         
         for d in delayables:
             d.register()
@@ -159,11 +160,7 @@ class SessionStopOperator(bpy.types.Operator):
         for d in delayables:
             d.unregister()
         
-        
-        # del client_instance
-
-        # unregister_ticks()
-        # presence.renderer.stop()
+        presence.renderer.stop()
 
         return {"FINISHED"}
 
