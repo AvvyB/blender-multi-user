@@ -30,24 +30,24 @@ logging.basicConfig(level=logging.INFO)
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
-    # from operator import client
+    from . import operators
+    from .bl_types.bl_user import BlUser
     
-    # items = [("Common", "Common", "")]
+    items = [("Common", "Common", "")]
 
-    # username = bpy.context.window_manager.session.username
+    username = bpy.context.window_manager.session.username
+    cli = operators.client
+    if cli:
+        client_keys = cli.list(filter=BlUser)
+        for k in client_keys:
+                name = cli.get(k).buffer["name"]
 
-    # if cli:
-    #     client_keys = cli.list()
-    #     for k in client_keys:
-    #         if 'Client' in k[0]:
-    #             name = k[1]
+                if name == username:
+                    name += " (self)"
 
-    #             if name == username:
-    #                 name += " (self)"
+                items.append((name, name, ""))
 
-    #             items.append((name, name, ""))
-
-    return [("Common", "Common", "")]
+    return items
 
 
 def randomColor():

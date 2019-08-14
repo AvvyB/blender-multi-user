@@ -248,15 +248,15 @@ class SESSION_PT_outliner(bpy.types.Panel):
                     detail_item_box.operator(
                         "session.remove_prop", text="", icon="X").property_path = key
                     
-                    # right_icon = "DECORATE_UNLOCKED"
-                    # if owner == settings.username:
-                    #     right_icon="DECORATE_UNLOCKED"
-                    # else:
+                    right_icon = "DECORATE_UNLOCKED"
+                    if item.owner == settings.username:
+                        right_icon="DECORATE_UNLOCKED"
+                    else:
                         
-                    #     right_icon="DECORATE_LOCKED"
+                        right_icon="DECORATE_LOCKED"
                     
-                    # ro = detail_item_box.operator("session.right", text="",emboss=settings.is_admin, icon=right_icon)
-                    # ro.key = item[0]
+                    ro = detail_item_box.operator("session.right", text="", icon=right_icon)
+                    ro.key = key
                   
             else:
                 area_msg.label(text="Empty")

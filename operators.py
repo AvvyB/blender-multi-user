@@ -136,7 +136,7 @@ class SessionStartOperator(bpy.types.Operator):
         
         for d in delayables:
             d.register()
-            
+
         return {"FINISHED"}
 
 
@@ -212,19 +212,11 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
     def execute(self, context):
         settings = context.window_manager.session
+        global client
 
-        if settings.is_admin:
-            val = client.get(self.key)
-            val[0][1]['id'] = settings.clients
-
-            client.set(key=self.key, value=val[0][1], override=True)
-            item = utils.resolve_bpy_path(self.key)
-            if item:
-                item.id = settings.clients
-                logger.info("Updating {} rights to {}".format(
-                    self.key, settings.clients))
-        else:
-            print("Not admin")
+        if client:
+            client.right(self.key,settings.clients)
+        
 
         return {"FINISHED"}
 
