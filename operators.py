@@ -243,11 +243,11 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
     def execute(self, context):
         area, region, rv3d = presence.view3d_find()
+        global client
 
-        target_client = client.get(
-            "Client/{}".format(self.target_client))
+        target_client = client.get(self.target_client)
         if target_client:
-            rv3d.view_location = target_client[0][1]['location'][0]
+            rv3d.view_location = target_client.buffer['location'][0]
             rv3d.view_distance = 30.0
 
             return {"FINISHED"}
@@ -255,20 +255,6 @@ class SessionSnapUserOperator(bpy.types.Operator):
         return {"CANCELLED"}
 
         pass
-
-
-class SessionSaveConfig(bpy.types.Operator):
-    bl_idname = "session.save"
-    bl_label = "Save session configuration"
-    bl_description = "Save session configuration"
-    bl_options = {"REGISTER"}
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        context.window_manager.session.save()
 
 
 class SessionApply(bpy.types.Operator):
@@ -297,7 +283,6 @@ classes = (
     SessionPropertyRemoveOperator,
     SessionSnapUserOperator,
     SessionPropertyRightOperator,
-    SessionSaveConfig,
     SessionApply,
 )
 
