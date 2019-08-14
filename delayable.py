@@ -5,6 +5,8 @@ from . import operators, utils
 from .bl_types.bl_user import BlUser
 
 class Delayable():
+    """Delayable task interface
+    """
     def register(self):
         raise NotImplementedError
 
@@ -88,42 +90,3 @@ class ClientUpdate(Draw):
             if client:
                 client.pointer.update_location()
             
-                
-class DrawClients(Draw):
-    def __init__(self):
-        super().__init__()
-        self._camera_lines = []
-
-    def execute(self):
-        if operators.client:
-            users = operators.client.list(filter=BlUser)
-            try:    
-                self.clear_camera()
-            except:
-                pass
-
-            for u in users:
-                cli =  operators.client.get(u)
-                if cli:
-                    loc = cli.buffer['location']
-                    self.draw_camera(loc)
-                    
-    def clear_camera(self):
-        for line in self._camera_lines:
-            line.clear()
-        
-        self._camera_lines.clear()
-
-    def draw_camera(self, loc):
-        self._camera_lines.append(debug.draw_line(a=loc[0],b=loc[2]))
-        self._camera_lines.append(debug.draw_line(a=loc[1],b=loc[2]))
-        self._camera_lines.append(debug.draw_line(a=loc[3],b=loc[1]))
-        self._camera_lines.append(debug.draw_line(a=loc[3],b=loc[0]))
-
-        self._camera_lines.append(debug.draw_line(a=loc[0],b=loc[6]))
-        self._camera_lines.append(debug.draw_line(a=loc[1],b=loc[6]))
-        self._camera_lines.append(debug.draw_line(a=loc[2],b=loc[6]))
-        self._camera_lines.append(debug.draw_line(a=loc[3],b=loc[6]))
-        
-        self._camera_lines.append(debug.draw_line(a=loc[4],b=loc[5]))
-

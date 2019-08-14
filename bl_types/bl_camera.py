@@ -28,4 +28,5 @@ class BlCamera(ReplicatedDatablock):
 bl_id = "cameras"
 bl_class = bpy.types.Camera
 bl_rep_class = BlCamera
-
+bl_delay_refresh = 1
+bl_delay_apply = 1

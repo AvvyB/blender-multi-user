@@ -29,4 +29,5 @@ class BlLight(ReplicatedDatablock):
 bl_id = "lights"
 bl_class = bpy.types.Light
 bl_rep_class = BlLight
-
+bl_delay_refresh = 1
+bl_delay_apply = 1

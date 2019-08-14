@@ -163,7 +163,11 @@ class BlMesh(ReplicatedDatablock):
         assert(self.buffer)      
         self.pointer = bpy.data.meshes.get(self.buffer['name'])
 
+    def diff(self):
+        return len(self.pointer.vertices) != self.buffer['verts']
+    
 bl_id = "meshes"
 bl_class = bpy.types.Mesh
 bl_rep_class = BlMesh
-
+bl_delay_refresh = 10
+bl_delay_apply = 10

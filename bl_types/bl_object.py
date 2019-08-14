@@ -72,4 +72,5 @@ class BlObject(ReplicatedDatablock):
 bl_id = "objects"
 bl_class = bpy.types.Object
 bl_rep_class = BlObject 
-
+bl_delay_refresh = 1
+bl_delay_apply = 1

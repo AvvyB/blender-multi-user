@@ -75,4 +75,5 @@ class BlGpencil(ReplicatedDatablock):
 bl_id = "grease_pencils"
 bl_class = bpy.types.GreasePencil
 bl_rep_class = BlGpencil
-
+bl_delay_refresh = 5
+bl_delay_apply = 5

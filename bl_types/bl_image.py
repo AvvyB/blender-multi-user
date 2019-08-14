@@ -69,4 +69,5 @@ class BlImage(ReplicatedDatablock):
 bl_id = "images"
 bl_class = bpy.types.Image
 bl_rep_class = BlImage
-
+bl_delay_refresh = 0
+bl_delay_apply = 0

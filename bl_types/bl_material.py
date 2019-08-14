@@ -80,7 +80,10 @@ class BlMaterial(ReplicatedDatablock):
         assert(self.buffer)      
         self.pointer = bpy.data.materials.get(self.buffer['name'])
 
+    def diff(self):
+        return len(self.pointer.node_tree.links) != len(self.buffer['node_tree']['links'])
 bl_id = "materials"
 bl_class = bpy.types.Material
 bl_rep_class = BlMaterial
-
+bl_delay_refresh = 1
+bl_delay_apply = 1

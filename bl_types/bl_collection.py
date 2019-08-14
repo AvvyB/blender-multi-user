@@ -48,7 +48,13 @@ class BlCollection(ReplicatedDatablock):
     def resolve(self):
         assert(self.buffer)      
         self.pointer = bpy.data.collections.get(self.buffer['name'])
+    
+    def diff(self):
+        return (len(self.pointer.objects) != self.buffer['objects'] or 
+                len(self.pointer.collection.children) != self.buffer['collection']['children'])
 
 bl_id = "collections"
 bl_class = bpy.types.Collection
 bl_rep_class = BlCollection
+bl_delay_refresh = 1
+bl_delay_apply = 1

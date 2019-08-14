@@ -93,12 +93,11 @@ class SessionStartOperator(bpy.types.Operator):
             _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
 
-            if _type.bl_id == 'users':#For testing
-                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=0.1,automatic=True)
-                delayables.append(delayable.ApplyTimer(timout=0.1,target_type=_type.bl_rep_class))
-            else:
-                bpy_factory.register_type(_type.bl_class, _type.bl_rep_class)
-
+            bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=_type.bl_delay_refresh,automatic=True)
+            
+            if _type.bl_delay_apply > 0:
+                delayables.append(delayable.ApplyTimer(timout=_type.bl_delay_apply,target_type=_type.bl_rep_class))
+           
         client = Client(factory=bpy_factory)
 
         if self.host:
@@ -126,8 +125,8 @@ class SessionStartOperator(bpy.types.Operator):
         )
         
         settings.user_uuid = client.add(usr)
-        # delayables.append(delayable.DrawClients())
         delayables.append(delayable.ClientUpdate(client_uuid=settings.user_uuid))
+        
         # Push all added values 
         client.push()
 
@@ -137,6 +136,7 @@ class SessionStartOperator(bpy.types.Operator):
         
         for d in delayables:
             d.register()
+            
         return {"FINISHED"}
 
 
