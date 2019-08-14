@@ -56,8 +56,8 @@ class BlScene(ReplicatedDatablock):
         self.pointer = bpy.data.scenes.get(scene_name)
     
     def diff(self):
-        return (len(self.pointer.collection.objects) != self.buffer['collection']['objects'] or 
-                len(self.pointer.collection.children) != self.buffer['collection']['children'])
+        return (len(self.pointer.collection.objects) != len(self.buffer['collection']['objects']) or 
+                len(self.pointer.collection.children) != len(self.buffer['collection']['children']))
 
 bl_id = "scenes"
 bl_class = bpy.types.Scene

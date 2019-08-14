@@ -164,8 +164,8 @@ class BlMesh(ReplicatedDatablock):
         self.pointer = bpy.data.meshes.get(self.buffer['name'])
 
     def diff(self):
-        return len(self.pointer.vertices) != self.buffer['verts']
-    
+        return len(self.pointer.vertices) != len(self.buffer['verts'])
+
 bl_id = "meshes"
 bl_class = bpy.types.Mesh
 bl_rep_class = BlMesh
