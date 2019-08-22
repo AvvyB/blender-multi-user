@@ -16,7 +16,7 @@ import os
 import bpy
 from . import environment
 from . import utils
-
+from bpy.app.handlers import persistent
 
 DEPENDENCIES = {
     "zmq",
