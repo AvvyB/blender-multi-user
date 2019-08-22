@@ -133,6 +133,7 @@ def setup(dependencies, python_path):
     PYTHON_PATH = Path(python_path)
     SUBPROCESS_DIR = PYTHON_PATH.parent
 
+
     if not module_can_be_imported("pip"):
         install_pip()
 

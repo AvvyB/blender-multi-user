@@ -9,15 +9,13 @@ bl_info = {
 }
 
 
-import addon_utils
 import logging
 import random
-import string
 import sys
 import os
 import bpy
 from . import environment
-from bpy.app.handlers import persistent
+from . import utils
 
 
 DEPENDENCIES = {
@@ -32,17 +30,17 @@ logger.setLevel(logging.DEBUG)
 
 # UTILITY FUNCTIONS
 def client_list_callback(scene, context):
-    from . import client
+    from . import operators
+    from .bl_types.bl_user import BlUser
     
     items = [("Common", "Common", "")]
 
     username = bpy.context.window_manager.session.username
-
-    if client.instance:
-        client_keys = client.instance.list()
+    cli = operators.client
+    if cli:
+        client_keys = cli.list(filter=BlUser)
         for k in client_keys:
-            if 'Client' in k[0]:
-                name = k[1]
+                name = cli.get(k).buffer["name"]
 
                 name_desc = name
                 if name == username:
@@ -51,12 +49,6 @@ def client_list_callback(scene, context):
                 items.append((name, name_desc, ""))
 
     return items
-
-
-def randomStringDigits(stringLength=6):
-    """Generate a random string of letters and digits """
-    lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
 
 
 def randomColor():
@@ -96,7 +88,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
-        default="user_{}".format(randomStringDigits()),
+        default="user_{}".format(utils.random_string_digits()),
         update=save_session_config
     )
     ip: bpy.props.StringProperty(
@@ -105,6 +97,10 @@ class SessionProps(bpy.types.PropertyGroup):
         default="127.0.0.1",
         update=save_session_config
         )
+    user_uuid: bpy.props.StringProperty(
+        name="user_uuid",
+        default="None"
+    )
     port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',
@@ -115,20 +111,13 @@ class SessionProps(bpy.types.PropertyGroup):
         name="add_property_depth",
         default=1
         )
-    buffer: bpy.props.StringProperty(name="None")
+    outliner_filter: bpy.props.StringProperty(name="None")
     is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
-    load_data: bpy.props.BoolProperty(name="load_data", default=True)
-    reset_rights: bpy.props.BoolProperty(name="reset_rights", default=True)
-    init_scene: bpy.props.BoolProperty(name="load_data", default=True)
+    init_scene: bpy.props.BoolProperty(name="init_scene", default=True)
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
         default=False,
-        update=save_session_config
-        )
-    update_frequency: bpy.props.FloatProperty(
-        name="update_frequency",
-        default=0.008
-        )
+        update=save_session_config)
     active_object: bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
     session_mode: bpy.props.EnumProperty(
@@ -146,8 +135,7 @@ class SessionProps(bpy.types.PropertyGroup):
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
-        items=client_list_callback
-    )
+        items=client_list_callback)
     enable_presence: bpy.props.BoolProperty(
         name="enable_presence",
         description='Enable overlay drawing module',
@@ -156,7 +144,6 @@ class SessionProps(bpy.types.PropertyGroup):
         )
     supported_datablock: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
-       
         )
 
     def load(self):
@@ -200,10 +187,11 @@ class SessionProps(bpy.types.PropertyGroup):
 
 classes = (
     ReplicatedDatablock,
-    SessionProps
+    SessionProps,
 
 )
 
+libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication"
 
 @persistent
 def load_handler(dummy):
@@ -215,6 +203,10 @@ def load_handler(dummy):
 
 
 def register():
+    if libs not in sys.path:
+        sys.path.append(libs)
+        print(libs)
+    
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
     from . import operators
@@ -223,13 +215,11 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.ID.id = bpy.props.StringProperty(default="None")
-    bpy.types.ID.is_dirty = bpy.props.BoolProperty(default=False)
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
-
-    bpy.app.handlers.load_post.append(load_handler)
-    
+    bpy.types.ID.uuid = bpy.props.StringProperty(default="")
+    bpy.context.window_manager.session.load()
+    save_session_config(bpy.context.window_manager.session,bpy.context)
     operators.register()
     ui.register()
 
@@ -242,8 +232,6 @@ def unregister():
     operators.unregister()
 
     del bpy.types.WindowManager.session
-    del bpy.types.ID.id
-    del bpy.types.ID.is_dirty
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

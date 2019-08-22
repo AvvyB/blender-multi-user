@@ -3,13 +3,20 @@ import bgl
 import blf
 import gpu
 import mathutils
+import copy
+
+import math
+
 
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
+# from .libs import debug
+# from .bl_types.bl_user import BlUser
+# from .delayable import Draw 
+
 global renderer
-
-
+            
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
@@ -44,7 +51,7 @@ def get_target_far(region, rv3d, coord, distance):
     return [target.x, target.y, target.z]
 
 
-def get_client_view_rect():
+def get_client_cam_points():
     area, region, rv3d = view3d_find()
 
     v1 = [0, 0, 0]
@@ -64,12 +71,10 @@ def get_client_view_rect():
         v4 = get_target(region, rv3d, (width, 0))
 
         v5 = get_target(region, rv3d, (width/2, height/2))
-        v6 = get_target_far(region, rv3d, (width/2, height/2), 10)
+        v6 = list(rv3d.view_location)
+        v7 = get_target_far(region, rv3d, (width/2, height/2), -.8)
 
-    coords = [v1, v2, v3, v4,v5,v6]
-    indices = (
-        (1, 3), (2, 1), (3, 0), (2, 0)
-    )
+    coords = [v1,v2,v3,v4,v5,v6,v7]
 
     return coords
 
@@ -80,6 +85,44 @@ def get_client_2d(coords):
         return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
     else:
         return (0, 0)
+
+class User():
+    def __init__(self, username=None, color=(0,0,0,1)):
+        self.name = username
+        self.color = color
+        self.location = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+        self.active_object = ""
+
+    def update_location(self):
+        current_coords = get_client_cam_points()
+        area, region, rv3d = view3d_find()
+
+        current_coords = get_client_cam_points()
+        if current_coords:
+            self.location = list(current_coords)
+            
+
+
+    def update_client_selected_object(self,context):
+        session = bpy.context.window_manager.session
+        username = bpy.context.window_manager.session.username
+        # client_data = client.get(client_key)
+
+        selected_objects = utils.get_selected_objects(context.scene)
+        if len(selected_objects) > 0 and len(client_data) > 0:
+
+            for obj in selected_objects:
+                # if obj not in client_data[0][1]['active_objects']:
+                client_data[0][1]['active_objects'] = selected_objects
+
+                client.set(client_key, client_data[0][1])
+                break
+
+        elif client_data and client_data[0][1]['active_objects']:
+            client_data[0][1]['active_objects'] = []
+            client.set(client_key, client_data[0][1])
+        
+    
 
 
 class DrawFactory(object):
@@ -164,32 +207,31 @@ class DrawFactory(object):
                 else:
                     pass
     
-    def draw_client(self, client):
-        if client:
-            name = client['id']
+    def draw_client_camera(self,client_uuid, client_location, client_color):
+        if client_location:
             local_username = bpy.context.window_manager.session.username
 
-            if name != local_username:
-                try:
-                    indices = (
-                        (1, 3), (2, 1), (3, 0), (2, 0),(4, 5)
-                    )
+            try:
+                indices = (
+                    (1, 3), (2, 1), (3, 0), (2, 0),(4,5),(1, 6), (2, 6), (3, 6), (0, 6)
+                )
 
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    position = client['location']
-                    color = client['color']
+                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                position = [tuple(coord) for coord in client_location]
+                color = client_color
 
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": position}, indices=indices)
 
-                    self.d3d_items[name] = (shader, batch, color)
-                    self.d2d_items[name] = (position[1], name, color)
+                batch = batch_for_shader(
+                    shader, 'LINES', {"pos": position}, indices=indices)
 
-                except Exception as e:
-                    print("Draw client exception {}".format(e))
+                self.d3d_items[client_uuid] = (shader, batch, color)
+                self.d2d_items[client_uuid] = (position[1], client_uuid, color)
+
+            except Exception as e:
+                print("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
-        bgl.glLineWidth(2)
+        bgl.glLineWidth(1.5)
         try:
             for shader, batch, color in self.d3d_items.values():
                 shader.bind()
@@ -205,7 +247,7 @@ class DrawFactory(object):
 
                 if coords:
                     blf.position(0, coords[0], coords[1]+10, 0)
-                    blf.size(0, 10, 72)
+                    blf.size(0, 16, 72)
                     blf.color(0, color[0], color[1], color[2], color[3])
                     blf.draw(0,  font)
 

@@ -1,12 +1,18 @@
 import bpy
-from . import client
 from . import operators
-
+from .libs.replication.constants import *
+from .bl_types.bl_user import BlUser
 
 
 ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
                   'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA','AreaLight':'LIGHT_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION', 'Armature': 'ARMATURE_DATA', 'GreasePencil': 'GREASEPENCIL'}
 
+PROP_STATES = [ 'ADDED',
+                'COMMITED',
+                'PUSHED',
+                'FETCHED',
+                'UP',
+                'CHANGED']
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
@@ -21,230 +27,247 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
+        row = layout.row()
         if hasattr(context.window_manager, 'session'):
-            net_settings = context.window_manager.session
+            settings = context.window_manager.session
             window_manager = context.window_manager
 
-            row = layout.row()
-            if not client.instance or (client.instance and client.instance.state() == 1):
-                row = layout.row()
-
-                # USER SETTINGS
-                box = row.box()
-                row = box.row()
-                row.label(text="USER", icon='TRIA_RIGHT')
-                row = box.row()
-                row.prop(window_manager.session, "username", text="id")
-                
-                row = box.row()
-                row.prop(window_manager.session, "client_color", text="color") 
-                row = box.row()
-
-                
-
-
-                # NETWORK SETTINGS
-                row = layout.row()
-                box = row.box()
-                row = box.row()
-                row.label(text="NETWORK", icon = "TRIA_RIGHT")
-                
-                row = box.row()
-                row.label(text="draw overlay:")
-                row.prop(net_settings, "enable_presence", text="")
-                row = box.row()
-                row.label(text="clear blend:")
-                row.prop(net_settings, "start_empty", text="")
-                row = box.row()
-            
-                row = box.row()
-                row.prop(net_settings, "session_mode", expand=True)
-                row = box.row()
-
-                if window_manager.session.session_mode == 'HOST':
-                    box = row.box()
-                    row = box.row()
-                    row.label(text="init scene:")
-                    row.prop(net_settings, "init_scene", text="")
-                    row = box.row()
-                    row.label(text="reset rights:")
-                    row.prop(net_settings, "reset_rights", text="")
-                    row = box.row()
-                    row.operator("session.create", text="HOST")
-                else:
-                    box = row.box()
-                    row = box.row()
-                    row.prop(net_settings, "ip", text="ip")
-                    row = box.row()
-                    row.label(text="port:")
-                    row.prop(window_manager.session, "port", text="")
-                    row = box.row()
-                    row.label(text="load data:")
-                    row.prop(net_settings, "load_data", text="")
-                    
-
-                    row = box.row()
-                    row.operator("session.join", text="CONNECT")
-
+            # STATE INITIAL
+            if not operators.client or (operators.client and operators.client.state == 0):
+                pass
                 # REPLICATION SETTINGS
-                row = layout.row()
-                box = row.box()
-                row = box.row()
-                row.label(text="REPLICATION", icon='TRIA_RIGHT')
-                row = box.row()    
+                # row = layout.row()
+                # box = row.box()
+                # row = box.row()
+                # row.label(text="REPLICATION", icon='TRIA_RIGHT')
+                # row = box.row()    
                 
-                for item in window_manager.session.supported_datablock:
-                    row.label(text=item.type_name,icon=ICONS[item.type_name])
-                    row.prop(item, "is_replicated", text="") 
-                    row = box.row()
-
-
-                
-
+                # for item in window_manager.session.supported_datablock:
+                #     row.label(text=item.type_name,icon=ICONS[item.type_name])
+                #     row.prop(item, "is_replicated", text="") 
+                #     row = box.row()
             else:
-                if client.instance.state() ==  3:
+                 # STATE ACTIVE
+                if operators.client.state ==  2:
                     
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
-                    # row = layout.row(align=True)
-                    # row.operator("session.dump", icon='QUIT', text="Dump")
-                    # row.operator("session.dump", icon='QUIT', text="Load")
                     row = layout.row()
 
-                    box = row.box()
-                    row = box.row()
-                    row.label(text="", icon='INFO')
-                    row = box.row()
-                    row.label(text="Sync tasks: {}".format(client.instance.active_tasks))
-                else:
+                # STATE SYNCING
+                else:    
                     status = "connecting..."
-                    if net_settings.is_admin:
-                        status =  "init scene...({} tasks remaining)".format(client.instance.active_tasks)
                     row.label(text=status)
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
 
 
-            row = layout.row()
+class SESSION_PT_settings_network(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
+    bl_label = "Network"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    @classmethod
+    def poll(cls, context):
+        return  not operators.client or (operators.client and operators.client.state == 0)
+    
+    def draw(self, context):
+        layout = self.layout
+
+        settings = context.window_manager.session
+        scene = context.window_manager
+        row = layout.row()
+        # USER SETTINGS
+        row.label(text="draw overlay:")
+        row.prop(settings, "enable_presence", text="")
+        row = layout.row()
+        row.label(text="clear blend:")
+        row.prop(settings, "start_empty", text="")
+        row = layout.row()
+    
+        row = layout.row()
+        row.prop(settings, "session_mode", expand=True)
+        row = layout.row()
+
+        if settings.session_mode == 'HOST':
+            box = row.box()
+            row = box.row()
+            row.label(text="init scene:")
+            row.prop(settings, "init_scene", text="")
+            row = box.row()
+            row.operator("session.start", text="HOST").host = True
+        else:
+            box = row.box()
+            row = box.row()
+            row.prop(settings, "ip", text="ip")
+            row = box.row()
+            row.label(text="port:")
+            row.prop(settings, "port", text="")
+            row = box.row()
+            
+
+            row = box.row()
+            row.operator("session.start", text="CONNECT").host = False
+
+
+class SESSION_PT_settings_user(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
+    bl_label = "User"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    @classmethod
+    def poll(cls, context):
+        return  not operators.client or (operators.client and operators.client.state == 0)
+    
+    def draw(self, context):
+        layout = self.layout
+
+        settings = context.window_manager.session
+        scene = context.window_manager
+        row = layout.row()
+        # USER SETTINGS
+        row.prop(settings, "username", text="id")
+        
+        row = layout.row()
+        row.prop(settings, "client_color", text="color") 
+        row = layout.row()
 
 
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
-    bl_label = "Users online"
+    bl_label = "Users"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
     @classmethod
     def poll(cls, context):
-        return  client.instance and client.instance.state() == 3
+        return  operators.client and operators.client.state == 2
  
 
     def draw(self, context):
         layout = self.layout
 
-        net_settings = context.window_manager.session
+        settings = context.window_manager.session
         scene = context.window_manager
         # Create a simple row.
-        row = layout.row()
-        client_keys = client.instance.list()
+        col = layout.column(align=True)
+        
+        client_keys = operators.client.list(filter=BlUser)
         if client_keys and len(client_keys) > 0:
             for key in client_keys:
-                if 'Client' in key[0]:
-                    info = ""
-                    item_box = row.box()
-                    detail_item_box = item_box.row()
+                area_msg = col.row(align = True)
+                item_box = area_msg.box()
+                client = operators.client.get(key).buffer
+                pointer = operators.client.get(key).pointer
+                info = ""
+                
+                detail_item_row = item_box.row(align = True)
 
-                    username = key[0].split('/')[1]
-                    if username == net_settings.username:
-                        info = "(self)"
-                    # detail_item_box = item_box.row()
-                    detail_item_box.label(
-                        text="{} - {}".format(username, info))
+                username = client['name']
 
-                    if net_settings.username not in key[0]:
-                        detail_item_box.operator(
-                            "session.snapview", text="", icon='VIEW_CAMERA').target_client = username
-                    row = layout.row()
+
+                is_local_user =  username == settings.username
+                
+                if is_local_user: 
+                    info = "(self)"
+                
+                detail_item_row.label(
+                    text="{} {}".format(username, info))
+               
+                if not is_local_user:
+                    detail_item_row.operator(
+                        "session.snapview", text="", icon='VIEW_CAMERA').target_client = key
+                row = layout.row()
         else:
             row.label(text="Empty")
 
         row = layout.row()
 
 
-def get_client_key(item):
-    return item[0]
-
-
-class SESSION_PT_properties(bpy.types.Panel):
+class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
-    bl_label = "Replicated properties"
+    bl_label = "Properties"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
 
     @classmethod
     def poll(cls, context):
-        return  client.instance and client.instance.state() == 3
+        return  operators.client and operators.client.state == 2
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
-
+    
     def draw(self, context):
         layout = self.layout
-
+        
         if hasattr(context.window_manager,'session'):
-            net_settings = context.window_manager.session
+            settings = context.window_manager.session
             scene = context.window_manager
 
             row = layout.row()
+            row.prop(settings,'outliner_filter', text="")
 
             row = layout.row(align=True)
-            row.prop(net_settings, "buffer", text="")
-            row.prop(net_settings, "add_property_depth", text="")
-            add = row.operator("session.add_prop", text="",
-                        icon="ADD")
-            add.property_path = net_settings.buffer
-            add.depth = net_settings.add_property_depth
-            row = layout.row()
-
             # Property area
-            area_msg = row.box()
-            client_keys = client.instance.list()
-            if client_keys and len(client_keys) > 0:
-                for item in sorted(client_keys, key=get_client_key):
-                    owner = 'toto'
-                    try:
-                        owner =  item[1]
-                    except:
-                        owner =  item[1].decode()
-                        pass
-                    
-                    store_type,store_name =  item[0].split('/')
-                    item_box = area_msg.box()
-                    
-                    detail_item_box = item_box.row(align = True)
-                    detail_item_box.label(text="",icon=ICONS[store_type])
-                    detail_item_box.label(text="{} ".format(store_name))
-                    detail_item_box.label(text="{} ".format(owner))
+            # area_msg = row.box()
+            client_keys = operators.client.list()
 
+            if client_keys and len(client_keys) > 0:
+                col = layout.column(align=True)
+                for key in client_keys:
+                    item = operators.client.get(key)
+
+                    if item.str_type == 'BlUser':
+                        continue
+
+                    area_msg = col.row(align = True)
+                    item_box = area_msg.box()
+                    name = "None"
+                    #TODO: refactor that...
+                    if hasattr(item.pointer,'name'):
+                        name = item.pointer.name
+                    else:
+                        name = item.buffer['name']
+
+                    detail_item_box = item_box.row()
+                    detail_item_box.label(text="",icon=item.icon)
+                    detail_item_box.label(text="{} ".format(name))
+                    detail_item_box.label(text="{} ".format(item.owner))
+
+                    if item.state == FETCHED:
+                        detail_item_box.operator("session.apply", text=PROP_STATES[item.state]).target = item.uuid
+                    else:
+                        detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
+                    
+                    detail_item_box.operator(
+                        "session.remove_prop", text="", icon="X").property_path = key
+                    
                     right_icon = "DECORATE_UNLOCKED"
-                    if owner == net_settings.username or owner == "Common" :
+                    if item.owner == settings.username:
                         right_icon="DECORATE_UNLOCKED"
                     else:
                         
                         right_icon="DECORATE_LOCKED"
                     
-                    ro = detail_item_box.operator("session.right", text="",emboss=net_settings.is_admin, icon=right_icon)
-                    ro.key = item[0]
+                    ro = detail_item_box.operator("session.right", text="", icon=right_icon)
+                    ro.key = key
+                  
             else:
                 area_msg.label(text="Empty")
 
 
 classes = (
     SESSION_PT_settings,
+    SESSION_PT_settings_user,
+    SESSION_PT_settings_network,
     SESSION_PT_user,
-    SESSION_PT_properties,
+    SESSION_PT_outliner,
 
 )
 

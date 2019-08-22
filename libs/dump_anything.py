@@ -350,6 +350,17 @@ def dump(any, depth=1):
     dumper.depath = depth
     return dumper.dump(any)
 
+def dump_datablock(datablock, depth):
+    if datablock:
+        dumper = Dumper()
+        dumper.type_subset = dumper.match_subset_all
+        dumper.depth = depth
+
+        datablock_type = datablock.bl_rna.name
+        key = "{}/{}".format(datablock_type, datablock.name)
+        data = dumper.dump(datablock)
+
+        return data
 
 def load(dst, src):
     loader = Loader()
