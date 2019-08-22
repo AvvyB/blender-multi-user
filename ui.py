@@ -4,15 +4,13 @@ from .libs.replication.constants import *
 from .bl_types.bl_user import BlUser
 
 
-ICONS = {'Image': 'IMAGE_DATA', 'Curve':'CURVE_DATA', 'Client':'SOLO_ON','Collection': 'FILE_FOLDER', 'Mesh': 'MESH_DATA', 'Object': 'OBJECT_DATA', 'Material': 'MATERIAL_DATA',
-                  'Texture': 'TEXTURE_DATA', 'Scene': 'SCENE_DATA','AreaLight':'LIGHT_DATA', 'Light': 'LIGHT_DATA', 'SpotLight': 'LIGHT_DATA', 'SunLight': 'LIGHT_DATA', 'PointLight': 'LIGHT_DATA', 'Camera': 'CAMERA_DATA', 'Action': 'ACTION', 'Armature': 'ARMATURE_DATA', 'GreasePencil': 'GREASEPENCIL'}
+PROP_STATES = [ 'KEYTYPE_BREAKDOWN_VEC',
+                'KEYTYPE_BREAKDOWN_VEC',
+                'KEYTYPE_KEYFRAME_VEC',
+                'KEYTYPE_KEYFRAME_VEC',
+                'KEYTYPE_JITTER_VEC',
+                'KEYTYPE_KEYFRAME_VEC']
 
-PROP_STATES = [ 'ADDED',
-                'COMMITED',
-                'PUSHED',
-                'FETCHED',
-                'UP',
-                'CHANGED']
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
@@ -27,6 +25,8 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
+        
         row = layout.row()
         if hasattr(context.window_manager, 'session'):
             settings = context.window_manager.session
@@ -189,6 +189,44 @@ class SESSION_PT_user(bpy.types.Panel):
         row = layout.row()
 
 
+def draw_property(context,parent,property_uuid, level=0):
+    settings = context.window_manager.session
+    item = operators.client.get(property_uuid)
+    
+    if item.str_type == 'BlUser' or item.state == ERROR:
+        return
+
+    area_msg = parent.row(align = True)
+    if level > 0:
+        for i in range(level):
+            area_msg.label(text="")
+    line = area_msg.box()
+
+    name = item.buffer['name']
+
+    detail_item_box = line.row(align = True)
+
+    if item.state == FETCHED:
+        detail_item_box.operator("session.apply",text="", icon=PROP_STATES[item.state]).target = item.uuid
+    else:
+        detail_item_box.label(text="", icon=PROP_STATES[item.state])
+
+    detail_item_box.label(text="",icon=item.icon)
+    detail_item_box.label(text="{} ".format(name))
+    
+    right_icon = "DECORATE_UNLOCKED"
+    if item.owner == settings.username:
+        right_icon="DECORATE_UNLOCKED"
+    else:
+        right_icon="DECORATE_LOCKED"
+    
+    ro = detail_item_box.operator("session.right", text="", icon=right_icon, emboss=settings.is_admin)
+    ro.key = property_uuid
+
+    detail_item_box.operator(
+        "session.remove_prop", text="", icon="X").property_path = property_uuid
+
+
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
     bl_label = "Properties"
@@ -206,6 +244,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         
+        
         if hasattr(context.window_manager,'session'):
             settings = context.window_manager.session
             scene = context.window_manager
@@ -221,45 +260,10 @@ class SESSION_PT_outliner(bpy.types.Panel):
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
                 for key in client_keys:
-                    item = operators.client.get(key)
-
-                    if item.str_type == 'BlUser':
-                        continue
-
-                    area_msg = col.row(align = True)
-                    item_box = area_msg.box()
-                    name = "None"
-                    #TODO: refactor that...
-                    if hasattr(item.pointer,'name'):
-                        name = item.pointer.name
-                    else:
-                        name = item.buffer['name']
-
-                    detail_item_box = item_box.row()
-                    detail_item_box.label(text="",icon=item.icon)
-                    detail_item_box.label(text="{} ".format(name))
-                    detail_item_box.label(text="{} ".format(item.owner))
-
-                    if item.state == FETCHED:
-                        detail_item_box.operator("session.apply", text=PROP_STATES[item.state]).target = item.uuid
-                    else:
-                        detail_item_box.label(text="{} ".format(PROP_STATES[item.state]))
-                    
-                    detail_item_box.operator(
-                        "session.remove_prop", text="", icon="X").property_path = key
-                    
-                    right_icon = "DECORATE_UNLOCKED"
-                    if item.owner == settings.username:
-                        right_icon="DECORATE_UNLOCKED"
-                    else:
-                        
-                        right_icon="DECORATE_LOCKED"
-                    
-                    ro = detail_item_box.operator("session.right", text="", icon=right_icon)
-                    ro.key = key
+                    draw_property(context,col,key)
                   
             else:
-                area_msg.label(text="Empty")
+                col.label(text="Empty")
 
 
 classes = (

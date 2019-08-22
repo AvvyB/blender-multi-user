@@ -107,7 +107,7 @@ class SessionStartOperator(bpy.types.Operator):
                 address=settings.ip,
                 port=settings.port
             )
-
+            settings.is_admin = True
             if settings.init_scene:
                 init_supported_datablocks(supported_bl_types)
         else:

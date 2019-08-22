@@ -19,6 +19,7 @@ def dump_image(image):
         file = open(image.filepath_raw, "rb")
         pixels = file.read()
     else:
+        raise ValueError()
         print("Image format not supported ")
     return pixels
 
