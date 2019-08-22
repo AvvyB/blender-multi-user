@@ -215,9 +215,7 @@ def draw_property(context,parent,property_uuid, level=0):
     detail_item_box.label(text="{} ".format(name))
     
     right_icon = "DECORATE_UNLOCKED"
-    if item.owner == settings.username:
-        right_icon="DECORATE_UNLOCKED"
-    else:
+    if item.owner != settings.username:
         right_icon="DECORATE_LOCKED"
     
     ro = detail_item_box.operator("session.right", text="", icon=right_icon, emboss=settings.is_admin)
