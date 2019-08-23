@@ -16,7 +16,7 @@ from bpy_extras.io_utils import ExportHelper
 from . import environment, presence, ui, utils, delayable
 from .libs import umsgpack
 from .libs.replication.data import ReplicatedDataFactory
-from .libs.replication.interface import Client
+from .libs.replication.interface import Session
 from . import bl_types
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def add_datablock(datablock):
        and client.exist(datablock.uuid):
         return datablock.uuid
     else:
-        new_uuid = client.add(datablock, childs=child)
+        new_uuid = client.add(datablock, dependencies=child)
         datablock.uuid = new_uuid
         return new_uuid
 
@@ -108,7 +108,7 @@ class SessionStartOperator(bpy.types.Operator):
                                     timout=_type.bl_delay_apply,
                                     target_type=_type.bl_rep_class))
 
-        client = Client(factory=bpy_factory)
+        client = Session(factory=bpy_factory)
 
         if self.host:
             client.host(
@@ -226,7 +226,7 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         global client
 
         if client:
-            client.change_right(self.key, settings.clients)
+            client.change_owner(self.key, settings.clients)
 
         return {"FINISHED"}
 
