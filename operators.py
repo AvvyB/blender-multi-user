@@ -195,7 +195,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 
             return {"FINISHED"}
         except:
-            return {"CANCELED"}
+            return {"CANCELLED"}
 
 
 class SessionPropertyRightOperator(bpy.types.Operator):
@@ -226,7 +226,7 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         global client
 
         if client:
-            client.right(self.key, settings.clients)
+            client.change_right(self.key, settings.clients)
 
         return {"FINISHED"}
 
