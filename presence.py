@@ -13,10 +13,11 @@ from gpu_extras.batch import batch_for_shader
 
 # from .libs import debug
 # from .bl_types.bl_user import BlUser
-# from .delayable import Draw 
+# from .delayable import Draw
 
 global renderer
-            
+
+
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
@@ -74,7 +75,7 @@ def get_client_cam_points():
         v6 = list(rv3d.view_location)
         v7 = get_target_far(region, rv3d, (width/2, height/2), -.8)
 
-    coords = [v1,v2,v3,v4,v5,v6,v7]
+    coords = [v1, v2, v3, v4, v5, v6, v7]
 
     return coords
 
@@ -86,11 +87,12 @@ def get_client_2d(coords):
     else:
         return (0, 0)
 
+
 class User():
-    def __init__(self, username=None, color=(0,0,0,1)):
+    def __init__(self, username=None, color=(0, 0, 0, 1)):
         self.name = username
         self.color = color
-        self.location = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]]
+        self.location = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.active_object = ""
 
     def update_location(self):
@@ -100,10 +102,8 @@ class User():
         current_coords = get_client_cam_points()
         if current_coords:
             self.location = list(current_coords)
-            
 
-
-    def update_client_selected_object(self,context):
+    def update_client_selected_object(self, context):
         session = bpy.context.window_manager.session
         username = bpy.context.window_manager.session.username
         # client_data = client.get(client_key)
@@ -121,8 +121,6 @@ class User():
         elif client_data and client_data[0][1]['active_objects']:
             client_data[0][1]['active_objects'] = []
             client.set(client_key, client_data[0][1])
-        
-    
 
 
 class DrawFactory(object):
@@ -136,12 +134,12 @@ class DrawFactory(object):
         self.coords = None
         self.active_object = None
 
-
     def run(self):
         self.register_handlers()
-    
+
     def stop(self):
         self.unregister_handlers()
+
     def register_handlers(self):
         self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
             self.draw3d_callback, (), 'WINDOW', 'POST_VIEW')
@@ -184,42 +182,38 @@ class DrawFactory(object):
                             (0, 4), (1, 5), (2, 6), (3, 7)
                         )
 
-
                         if select_ob in bpy.data.objects.keys():
                             ob = bpy.data.objects[select_ob]
                         else:
                             return
 
-                        bbox_corners = [ob.matrix_world @ mathutils.Vector(corner) for corner in ob.bound_box]
+                        bbox_corners = [ob.matrix_world @ mathutils.Vector(
+                            corner) for corner in ob.bound_box]
 
                         coords = [(point.x, point.y, point.z)
-                                for point in bbox_corners]
-
+                                  for point in bbox_corners]
                         shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-
                         color = client['color']
-
                         batch = batch_for_shader(
                             shader, 'LINES', {"pos": coords}, indices=indices)
+                        drawable_key = "{}/{}".format(client['id'], select_ob)
 
-                        self.d3d_items["{}/{}".format(client['id'],
-                                                    select_ob)] = (shader, batch, color)
-                else:
-                    pass
-    
-    def draw_client_camera(self,client_uuid, client_location, client_color):
+                        self.d3d_items[drawable_key] = (shader, batch, color)
+
+    def draw_client_camera(self, client_uuid, client_location, client_color):
         if client_location:
             local_username = bpy.context.window_manager.session.username
 
             try:
                 indices = (
-                    (1, 3), (2, 1), (3, 0), (2, 0),(4,5),(1, 6), (2, 6), (3, 6), (0, 6)
+                    (1, 3), (2, 1), (3, 0),
+                    (2, 0), (4, 5), (1, 6),
+                    (2, 6), (3, 6), (0, 6)
                 )
 
                 shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
                 position = [tuple(coord) for coord in client_location]
                 color = client_color
-
 
                 batch = batch_for_shader(
                     shader, 'LINES', {"pos": position}, indices=indices)
@@ -237,7 +231,7 @@ class DrawFactory(object):
                 shader.bind()
                 shader.uniform_float("color", color)
                 batch.draw(shader)
-        except Exception as e:
+        except Exception:
             print("3D Exception")
 
     def draw2d_callback(self):
@@ -251,8 +245,9 @@ class DrawFactory(object):
                     blf.color(0, color[0], color[1], color[2], color[3])
                     blf.draw(0,  font)
 
-            except Exception as e:
+            except Exception:
                 print("2D EXCEPTION")
+
 
 def register():
     global renderer

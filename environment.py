@@ -39,26 +39,27 @@ DEFAULT_CONFIG = {
 }
 
 ORDERED_TYPES = [
-        'Image',
-        'Texture',
-        'Curve',
-        'Material',
-        'Light',
-        'SunLight',
-        'SpotLight',
-        'AreaLight',
-        'PointLight',
-        'Camera',
-        'Mesh',
-        'Armature',
-        'GreasePencil',
-        'Object',
-        'Action',
-        'Collection',
-        'Scene',
+    'Image',
+    'Texture',
+    'Curve',
+    'Material',
+    'Light',
+    'SunLight',
+    'SpotLight',
+    'AreaLight',
+    'PointLight',
+    'Camera',
+    'Mesh',
+    'Armature',
+    'GreasePencil',
+    'Object',
+    'Action',
+    'Collection',
+    'Scene',
 ]
 
 rtypes = []
+
 
 def load_config():
     import yaml
@@ -71,6 +72,7 @@ def load_config():
 
     return DEFAULT_CONFIG
 
+
 def get_replicated_types():
     config = load_config()
     rtpyes = config["replicated_types"]
@@ -82,9 +84,10 @@ def get_replicated_types():
 
     return tlist
 
+
 def genererate_replicated_types():
     rtypes.clear()
-    
+
     cfg = load_config()
     replicated_types = cfg['replicated_types']
     for t in ORDERED_TYPES:
@@ -132,7 +135,6 @@ def setup(dependencies, python_path):
 
     PYTHON_PATH = Path(python_path)
     SUBPROCESS_DIR = PYTHON_PATH.parent
-
 
     if not module_can_be_imported("pip"):
         install_pip()

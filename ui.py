@@ -1,15 +1,16 @@
 import bpy
 from . import operators
-from .libs.replication.constants import *
+from .libs.replication.constants import FETCHED, ERROR
 from .bl_types.bl_user import BlUser
 
 
-PROP_STATES = [ 'KEYTYPE_BREAKDOWN_VEC',
-                'KEYTYPE_BREAKDOWN_VEC',
-                'KEYTYPE_KEYFRAME_VEC',
-                'KEYTYPE_KEYFRAME_VEC',
-                'KEYTYPE_JITTER_VEC',
-                'KEYTYPE_KEYFRAME_VEC']
+PROP_STATES = ['KEYTYPE_BREAKDOWN_VEC',
+               'KEYTYPE_BREAKDOWN_VEC',
+               'KEYTYPE_KEYFRAME_VEC',
+               'KEYTYPE_KEYFRAME_VEC',
+               'KEYTYPE_JITTER_VEC',
+               'KEYTYPE_KEYFRAME_VEC']
+
 
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
@@ -22,40 +23,37 @@ class SESSION_PT_settings(bpy.types.Panel):
     def draw_header(self, context):
         self.layout.label(text="", icon='TOOL_SETTINGS')
 
-
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        
         row = layout.row()
-        if hasattr(context.window_manager, 'session'):
-            settings = context.window_manager.session
-            window_manager = context.window_manager
 
+        if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
-            if not operators.client or (operators.client and operators.client.state == 0):
+            if not operators.client \
+               or (operators.client and operators.client.state == 0):
                 pass
                 # REPLICATION SETTINGS
                 # row = layout.row()
                 # box = row.box()
                 # row = box.row()
                 # row.label(text="REPLICATION", icon='TRIA_RIGHT')
-                # row = box.row()    
-                
+                # row = box.row()
+
                 # for item in window_manager.session.supported_datablock:
                 #     row.label(text=item.type_name,icon=ICONS[item.type_name])
-                #     row.prop(item, "is_replicated", text="") 
+                #     row.prop(item, "is_replicated", text="")
                 #     row = box.row()
             else:
-                 # STATE ACTIVE
-                if operators.client.state ==  2:
-                    
+                # STATE ACTIVE
+                if operators.client.state == 2:
+
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
 
                 # STATE SYNCING
-                else:    
+                else:
                     status = "connecting..."
                     row.label(text=status)
                     row = layout.row()
@@ -69,15 +67,17 @@ class SESSION_PT_settings_network(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+
     @classmethod
     def poll(cls, context):
-        return  not operators.client or (operators.client and operators.client.state == 0)
-    
+        return not operators.client \
+                or (operators.client and operators.client.state == 0)
+
     def draw(self, context):
         layout = self.layout
 
         settings = context.window_manager.session
-        scene = context.window_manager
+
         row = layout.row()
         # USER SETTINGS
         row.label(text="draw overlay:")
@@ -86,7 +86,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row.label(text="clear blend:")
         row.prop(settings, "start_empty", text="")
         row = layout.row()
-    
+
         row = layout.row()
         row.prop(settings, "session_mode", expand=True)
         row = layout.row()
@@ -106,7 +106,6 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.label(text="port:")
             row.prop(settings, "port", text="")
             row = box.row()
-            
 
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
@@ -119,21 +118,23 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+
     @classmethod
     def poll(cls, context):
-        return  not operators.client or (operators.client and operators.client.state == 0)
-    
+        return not operators.client \
+            or (operators.client and operators.client.state == 0)
+
     def draw(self, context):
         layout = self.layout
 
         settings = context.window_manager.session
-        scene = context.window_manager
+
         row = layout.row()
         # USER SETTINGS
         row.prop(settings, "username", text="id")
-        
+
         row = layout.row()
-        row.prop(settings, "client_color", text="color") 
+        row.prop(settings, "client_color", text="color")
         row = layout.row()
 
 
@@ -144,44 +145,45 @@ class SESSION_PT_user(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+
     @classmethod
     def poll(cls, context):
-        return  operators.client and operators.client.state == 2
- 
+        return operators.client and operators.client.state == 2
 
     def draw(self, context):
         layout = self.layout
 
         settings = context.window_manager.session
-        scene = context.window_manager
+
         # Create a simple row.
         col = layout.column(align=True)
-        
+
         client_keys = operators.client.list(filter=BlUser)
         if client_keys and len(client_keys) > 0:
             for key in client_keys:
-                area_msg = col.row(align = True)
+                area_msg = col.row(align=True)
                 item_box = area_msg.box()
                 client = operators.client.get(key).buffer
-                pointer = operators.client.get(key).pointer
+
                 info = ""
-                
-                detail_item_row = item_box.row(align = True)
+
+                detail_item_row = item_box.row(align=True)
 
                 username = client['name']
 
+                is_local_user = username == settings.username
 
-                is_local_user =  username == settings.username
-                
-                if is_local_user: 
+                if is_local_user:
                     info = "(self)"
-                
+
                 detail_item_row.label(
                     text="{} {}".format(username, info))
-               
+
                 if not is_local_user:
                     detail_item_row.operator(
-                        "session.snapview", text="", icon='VIEW_CAMERA').target_client = key
+                        "session.snapview",
+                        text="",
+                        icon='VIEW_CAMERA').target_client = key
                 row = layout.row()
         else:
             row.label(text="Empty")
@@ -189,14 +191,14 @@ class SESSION_PT_user(bpy.types.Panel):
         row = layout.row()
 
 
-def draw_property(context,parent,property_uuid, level=0):
+def draw_property(context, parent, property_uuid, level=0):
     settings = context.window_manager.session
     item = operators.client.get(property_uuid)
-    
+
     if item.str_type == 'BlUser' or item.state == ERROR:
         return
 
-    area_msg = parent.row(align = True)
+    area_msg = parent.row(align=True)
     if level > 0:
         for i in range(level):
             area_msg.label(text="")
@@ -204,21 +206,25 @@ def draw_property(context,parent,property_uuid, level=0):
 
     name = item.buffer['name']
 
-    detail_item_box = line.row(align = True)
+    detail_item_box = line.row(align=True)
 
     if item.state == FETCHED:
-        detail_item_box.operator("session.apply",text="", icon=PROP_STATES[item.state]).target = item.uuid
+        detail_item_box.operator(
+            "session.apply",
+            text="",
+            icon=PROP_STATES[item.state]).target = item.uuid
     else:
         detail_item_box.label(text="", icon=PROP_STATES[item.state])
 
-    detail_item_box.label(text="",icon=item.icon)
+    detail_item_box.label(text="", icon=item.icon)
     detail_item_box.label(text="{} ".format(name))
-    
+
     right_icon = "DECORATE_UNLOCKED"
     if item.owner != settings.username:
-        right_icon="DECORATE_LOCKED"
-    
-    ro = detail_item_box.operator("session.right", text="", icon=right_icon, emboss=settings.is_admin)
+        right_icon = "DECORATE_LOCKED"
+
+    ro = detail_item_box.operator(
+        "session.right", text="", icon=right_icon, emboss=settings.is_admin)
     ro.key = property_uuid
 
     detail_item_box.operator(
@@ -234,21 +240,19 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return  operators.client and operators.client.state == 2
+        return operators.client and operators.client.state == 2
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
-    
+
     def draw(self, context):
         layout = self.layout
-        
-        
-        if hasattr(context.window_manager,'session'):
+
+        if hasattr(context.window_manager, 'session'):
             settings = context.window_manager.session
-            scene = context.window_manager
 
             row = layout.row()
-            row.prop(settings,'outliner_filter', text="")
+            row.prop(settings, 'outliner_filter', text="")
 
             row = layout.row(align=True)
             # Property area
@@ -258,8 +262,8 @@ class SESSION_PT_outliner(bpy.types.Panel):
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
                 for key in client_keys:
-                    draw_property(context,col,key)
-                  
+                    draw_property(context, col, key)
+
             else:
                 col.label(text="Empty")
 

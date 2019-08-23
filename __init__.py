@@ -10,13 +10,14 @@ bl_info = {
 
 
 import logging
+import os
 import random
 import sys
-import os
+
 import bpy
-from . import environment
-from . import utils
 from bpy.app.handlers import persistent
+
+from . import environment, utils
 
 DEPENDENCIES = {
     "zmq",

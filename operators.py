@@ -26,6 +26,7 @@ client = None
 delayables = []
 ui_context = None
 
+
 def add_datablock(datablock):
     global client
     child = []
@@ -35,16 +36,19 @@ def add_datablock(datablock):
     if hasattr(datablock, "materials"):
         for mat in datablock.materials:
             child.append(add_datablock(mat))
-    if hasattr(datablock, "collection") and hasattr(datablock.collection, "children"):
-        for coll in datablock.collection.children:
-            child.append(add_datablock(coll))
+    if hasattr(datablock, "collection") \
+       and hasattr(datablock.collection, "children"):
+            for coll in datablock.collection.children:
+                child.append(add_datablock(coll))
     if hasattr(datablock, "children"):
         for coll in datablock.children:
             child.append(add_datablock(coll))
     if hasattr(datablock, "objects"):
         for obj in datablock.objects:
             child.append(add_datablock(obj))
-    if hasattr(datablock,'uuid') and datablock.uuid and client.exist(datablock.uuid):
+    if hasattr(datablock, 'uuid') \
+       and datablock.uuid \
+       and client.exist(datablock.uuid):
         return datablock.uuid
     else:
         new_uuid = client.add(datablock, childs=child)
@@ -60,7 +64,6 @@ def init_supported_datablocks(supported_types_id):
         if hasattr(bpy.data, type_id):
             for item in getattr(bpy.data, type_id):
                 add_datablock(item)
-
 
 
 # OPERATORS
@@ -94,11 +97,17 @@ class SessionStartOperator(bpy.types.Operator):
             _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
 
-            bpy_factory.register_type(_type.bl_class, _type.bl_rep_class, timer=_type.bl_delay_refresh,automatic=True)
-            
+            bpy_factory.register_type(
+                    _type.bl_class,
+                    _type.bl_rep_class,
+                    timer=_type.bl_delay_refresh,
+                    automatic=True)
+
             if _type.bl_delay_apply > 0:
-                delayables.append(delayable.ApplyTimer(timout=_type.bl_delay_apply,target_type=_type.bl_rep_class))
-           
+                delayables.append(delayable.ApplyTimer(
+                                    timout=_type.bl_delay_apply,
+                                    target_type=_type.bl_rep_class))
+
         client = Client(factory=bpy_factory)
 
         if self.host:
@@ -120,21 +129,22 @@ class SessionStartOperator(bpy.types.Operator):
         usr = presence.User(
             username=settings.username,
             color=(settings.client_color.r,
-                settings.client_color.g,
-                settings.client_color.b,
-                1),
+                   settings.client_color.g,
+                   settings.client_color.b,
+                   1),
         )
-        
+
         settings.user_uuid = client.add(usr)
-        delayables.append(delayable.ClientUpdate(client_uuid=settings.user_uuid))
-        
-        # Push all added values 
+        delayables.append(delayable.ClientUpdate(
+            client_uuid=settings.user_uuid))
+
+        # Push all added values
         client.push()
 
         # Launch drawing module
         if settings.enable_presence:
             presence.renderer.run()
-        
+
         for d in delayables:
             d.register()
 
@@ -160,7 +170,7 @@ class SessionStopOperator(bpy.types.Operator):
 
         for d in delayables:
             d.unregister()
-        
+
         presence.renderer.stop()
 
         return {"FINISHED"}
@@ -216,8 +226,7 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         global client
 
         if client:
-            client.right(self.key,settings.clients)
-        
+            client.right(self.key, settings.clients)
 
         return {"FINISHED"}
 
@@ -246,8 +255,6 @@ class SessionSnapUserOperator(bpy.types.Operator):
             return {"FINISHED"}
 
         return {"CANCELLED"}
-
-        pass
 
 
 class SessionApply(bpy.types.Operator):

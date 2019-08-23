@@ -1,12 +1,15 @@
 import bpy
-from .libs.replication.constants import *
-from .libs import debug
+
 from . import operators, utils
 from .bl_types.bl_user import BlUser
+from .libs import debug
+from .libs.replication.constants import FETCHED
+
 
 class Delayable():
     """Delayable task interface
     """
+
     def register(self):
         raise NotImplementedError
 
@@ -16,11 +19,13 @@ class Delayable():
     def unregister(self):
         raise NotImplementedError
 
+
 class Timer(Delayable):
     """Timer binder interface for blender
 
     Run a bpy.app.Timer in the background looping at the given rate
     """
+
     def __init__(self, duration=1):
         self._timeout = duration
 
@@ -42,8 +47,9 @@ class Timer(Delayable):
         except:
             print("timer already unregistered")
 
+
 class ApplyTimer(Timer):
-    def __init__(self, timout=1,target_type=None):
+    def __init__(self, timout=1, target_type=None):
         self._type = target_type
         super().__init__(timout)
 
@@ -59,24 +65,26 @@ class ApplyTimer(Timer):
 
         return self._timeout
 
+
 class Draw(Delayable):
     def __init__(self):
         self._handler = None
 
     def register(self):
         self._handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.execute,(), 'WINDOW', 'POST_VIEW')
-    
+            self.execute, (), 'WINDOW', 'POST_VIEW')
+
     def execute(self):
         raise NotImplementedError()
-    
+
     def unregister(self):
         try:
             bpy.types.SpaceView3D.draw_handler_remove(
-                    self._handler, "WINDOW")
+                self._handler, "WINDOW")
         except:
             print("draw already unregistered")
-            
+
+
 class ClientUpdate(Draw):
     def __init__(self, client_uuid=None):
         assert(client_uuid)
@@ -84,9 +92,8 @@ class ClientUpdate(Draw):
         super().__init__()
 
     def execute(self):
-        if hasattr(operators,"client") and self._client_uuid:
+        if hasattr(operators, "client") and self._client_uuid:
             client = operators.client.get(self._client_uuid)
 
             if client:
                 client.pointer.update_location()
-            
