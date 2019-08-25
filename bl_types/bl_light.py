@@ -25,7 +25,9 @@ class BlLight(ReplicatedDatablock):
     def resolve(self):
         assert(self.buffer)      
         self.pointer = bpy.data.lights.get(self.buffer['name'])
-        
+
+    def diff(self):
+        return False        
 bl_id = "lights"
 bl_class = bpy.types.Light
 bl_rep_class = BlLight

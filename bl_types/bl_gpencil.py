@@ -59,7 +59,8 @@ class BlGpencil(ReplicatedDatablock):
             for mat in data['materials']:
                 target.materials.append(bpy.data.materials[mat])
 
-
+    def diff(self):
+        return False
 
     def dump(self, pointer=None):
         assert(pointer)

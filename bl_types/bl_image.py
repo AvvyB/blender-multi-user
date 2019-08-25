@@ -67,6 +67,8 @@ class BlImage(ReplicatedDatablock):
         assert(self.buffer)      
         self.pointer = bpy.data.images.get(self.buffer['name'])
 
+    def diff(self):
+        return False
 bl_id = "images"
 bl_class = bpy.types.Image
 bl_rep_class = BlImage

@@ -47,6 +47,8 @@ class BlCurve(ReplicatedDatablock):
         assert(self.buffer)      
         self.pointer = bpy.data.curves.get(self.buffer['name'])
 
+    def diff(self):
+        return False
 bl_id = "curves"
 bl_class = bpy.types.Curve
 bl_rep_class = BlCurve

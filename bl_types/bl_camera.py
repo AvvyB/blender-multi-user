@@ -24,7 +24,10 @@ class BlCamera(ReplicatedDatablock):
     def resolve(self):
         assert(self.buffer)      
         self.pointer = bpy.data.cameras.get(self.buffer['name'])
-        
+    
+    def diff(self):
+        return False
+
 bl_id = "cameras"
 bl_class = bpy.types.Camera
 bl_rep_class = BlCamera
