@@ -67,7 +67,7 @@ class BlObject(ReplicatedDatablock):
         self.pointer = bpy.data.objects.get(object_name)
     
     def diff(self):
-        return self.dump(pointer=self.pointer)['location'] != self.buffer['location'] 
+        return self.dump(pointer=self.pointer)['matrix_world'] != self.buffer['matrix_world'] 
     
 bl_id = "objects"
 bl_class = bpy.types.Object
