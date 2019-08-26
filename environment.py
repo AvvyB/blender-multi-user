@@ -139,6 +139,6 @@ def setup(dependencies, python_path):
     if not module_can_be_imported("pip"):
         install_pip()
 
-    for dep in dependencies:
-        if not module_can_be_imported(dep):
-            install_package(dep)
+    for module_name,package_name in dependencies:
+        if not module_can_be_imported(module_name):
+            install_package(package_name)

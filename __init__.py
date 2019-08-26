@@ -20,9 +20,9 @@ from bpy.app.handlers import persistent
 from . import environment, utils
 
 DEPENDENCIES = {
-    "zmq",
-    "umsgpack",
-    "pyyaml"
+    ("zmq","zmq"),
+    ("umsgpack","umsgpack"),
+    ("yaml","pyyaml")
 }
 
 
