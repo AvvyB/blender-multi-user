@@ -2,9 +2,9 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
-class BlLight(ReplicatedDatablock):
+class BlLight(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'LIGHT_DATA'
 
@@ -28,6 +28,7 @@ class BlLight(ReplicatedDatablock):
 
     def diff(self):
         return False        
+
 bl_id = "lights"
 bl_class = bpy.types.Light
 bl_rep_class = BlLight

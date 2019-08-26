@@ -2,13 +2,14 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
-class BlCamera(ReplicatedDatablock):
+class BlCamera(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'CAMERA_DATA'
 
         super().__init__( *args, **kwargs)
+        
         
     def load(self, data, target):
         utils.dump_anything.load(target, data)

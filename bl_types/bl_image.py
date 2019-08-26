@@ -3,7 +3,7 @@ import mathutils
 import os
 
 from .. import utils, environment
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
 def dump_image(image):
     pixels = None
@@ -23,7 +23,7 @@ def dump_image(image):
         print("Image format not supported ")
     return pixels
 
-class BlImage(ReplicatedDatablock):
+class BlImage(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'IMAGE_DATA'
 

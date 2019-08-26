@@ -2,7 +2,7 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
 def load_gpencil_layer(target=None, data=None, create=False):
 
@@ -30,7 +30,7 @@ def load_gpencil_layer(target=None, data=None, create=False):
 
                 utils.dump_anything.load(tpoint, p)
 
-class BlGpencil(ReplicatedDatablock):
+class BlGpencil(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'GREASEPENCIL'
 

@@ -58,12 +58,14 @@ class ApplyTimer(Timer):
             nodes = operators.client.list(filter=self._type)
 
             for node in nodes:
-                node_ref = operators.client.get(node)
+                node_ref = operators.client.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     operators.client.apply(uuid=node)
 
         return self._timeout
+
+# class CheckNewTimer(Timer):
 
 
 class Draw(Delayable):
@@ -93,7 +95,7 @@ class ClientUpdate(Draw):
 
     def execute(self):
         if hasattr(operators, "client") and self._client_uuid:
-            client = operators.client.get(self._client_uuid)
+            client = operators.client.get(uuid=self._client_uuid)
 
             if client:
                 client.pointer.update_location()

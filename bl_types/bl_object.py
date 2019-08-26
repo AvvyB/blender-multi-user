@@ -2,9 +2,9 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
-class BlObject(ReplicatedDatablock):
+class BlObject(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'OBJECT_DATA'
 
@@ -68,7 +68,13 @@ class BlObject(ReplicatedDatablock):
     
     def diff(self):
         return self.dump(pointer=self.pointer)['matrix_world'] != self.buffer['matrix_world'] 
-    
+
+    def resolve_dependencies(self):
+        deps = []
+        
+        deps.append(self.pointer.data)
+        
+        return deps
 bl_id = "objects"
 bl_class = bpy.types.Object
 bl_rep_class = BlObject 

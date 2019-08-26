@@ -2,10 +2,10 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
 
-class BlCollection(ReplicatedDatablock):
+class BlCollection(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'FILE_FOLDER'
 
@@ -48,10 +48,20 @@ class BlCollection(ReplicatedDatablock):
     def resolve(self):
         assert(self.buffer)      
         self.pointer = bpy.data.collections.get(self.buffer['name'])
-    
+   
     def diff(self):
         return (len(self.pointer.objects) != len(self.buffer['objects']) or 
                 len(self.pointer.children) != len(self.buffer['children']))
+
+    def resolve_dependencies(self):
+        deps = []
+        
+        for child in self.pointer.children:
+            deps.append(child)
+        for object in self.pointer.objects:
+            deps.append(object)
+        
+        return deps
 
 bl_id = "collections"
 bl_class = bpy.types.Collection

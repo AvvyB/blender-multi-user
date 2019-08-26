@@ -4,12 +4,12 @@ from .libs.replication.constants import FETCHED, ERROR
 from .bl_types.bl_user import BlUser
 
 
-PROP_STATES = ['KEYTYPE_BREAKDOWN_VEC',
-               'KEYTYPE_BREAKDOWN_VEC',
-               'KEYTYPE_KEYFRAME_VEC',
-               'KEYTYPE_KEYFRAME_VEC',
-               'KEYTYPE_JITTER_VEC',
-               'KEYTYPE_KEYFRAME_VEC']
+PROP_STATES = ['KEYTYPE_EXTREME_VEC',  # ADDED
+               'KEYTYPE_BREAKDOWN_VEC',  # COMMITED
+               'KEYTYPE_KEYFRAME_VEC',  # PUSHED
+               'KEYTYPE_KEYFRAME_VEC',  # FETCHED
+               'KEYTYPE_JITTER_VEC',   # UP
+               'KEYTYPE_KEYFRAME_VEC']  # CHANGED
 
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -71,7 +71,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not operators.client \
-                or (operators.client and operators.client.state == 0)
+            or (operators.client and operators.client.state == 0)
 
     def draw(self, context):
         layout = self.layout
@@ -163,7 +163,7 @@ class SESSION_PT_user(bpy.types.Panel):
             for key in client_keys:
                 area_msg = col.row(align=True)
                 item_box = area_msg.box()
-                client = operators.client.get(key).buffer
+                client = operators.client.get(uuid=key).buffer
 
                 info = ""
 
@@ -193,7 +193,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = context.window_manager.session
-    item = operators.client.get(property_uuid)
+    item = operators.client.get(uuid=property_uuid)
 
     if item.str_type == 'BlUser' or item.state == ERROR:
         return

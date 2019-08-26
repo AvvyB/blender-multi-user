@@ -2,9 +2,9 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
-class BlCurve(ReplicatedDatablock):
+class BlCurve(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'CURVE_DATA'
 
@@ -49,6 +49,7 @@ class BlCurve(ReplicatedDatablock):
 
     def diff(self):
         return False
+
 bl_id = "curves"
 bl_class = bpy.types.Curve
 bl_rep_class = BlCurve

@@ -3,7 +3,7 @@ import bmesh
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
 def dump_mesh(mesh, data={}):
     import bmesh
@@ -70,7 +70,7 @@ def dump_mesh(mesh, data={}):
     mesh_data["uv_layers"] = uv_layers
     return mesh_data
 
-class BlMesh(ReplicatedDatablock):
+class BlMesh(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'MESH_DATA'
         
@@ -166,6 +166,14 @@ class BlMesh(ReplicatedDatablock):
     def diff(self):
         return len(self.pointer.vertices) != len(self.buffer['verts'])
 
+    def resolve_dependencies(self):
+        deps = []
+        
+        for material in self.pointer.materials:
+            deps.append(material)
+        
+        return deps
+        
 bl_id = "meshes"
 bl_class = bpy.types.Mesh
 bl_rep_class = BlMesh

@@ -2,9 +2,9 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
-class BlMaterial(ReplicatedDatablock):
+class BlMaterial(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'MATERIAL_DATA'
 

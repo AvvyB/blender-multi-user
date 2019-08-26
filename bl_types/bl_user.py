@@ -3,13 +3,13 @@ import mathutils
 
 from .. import utils
 from .. import presence
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 from ..libs.replication.constants import UP
 from ..libs.debug import draw_point
 
 
 
-class BlUser(ReplicatedDatablock):
+class BlUser(BlDatablock):
     def __init__(self, *args, **kwargs):
         super().__init__( *args, **kwargs)
 

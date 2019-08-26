@@ -2,9 +2,9 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from .bl_datablock import BlDatablock
 
-class BlScene(ReplicatedDatablock):
+class BlScene(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'SCENE_DATA'
 
@@ -59,6 +59,16 @@ class BlScene(ReplicatedDatablock):
         return (len(self.pointer.collection.objects) != len(self.buffer['collection']['objects']) or 
                 len(self.pointer.collection.children) != len(self.buffer['collection']['children']))
 
+    def resolve_dependencies(self):
+        deps = []
+        
+        for child in self.pointer.collection.children:
+            deps.append(child)
+        for object in self.pointer.objects:
+            deps.append(object)
+        
+        return deps
+        
 bl_id = "scenes"
 bl_class = bpy.types.Scene
 bl_rep_class = BlScene

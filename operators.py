@@ -29,31 +29,9 @@ ui_context = None
 
 def add_datablock(datablock):
     global client
-    child = []
 
-    if hasattr(datablock, "data"):
-        child.append(add_datablock(datablock.data))
-    if hasattr(datablock, "materials"):
-        for mat in datablock.materials:
-            child.append(add_datablock(mat))
-    if hasattr(datablock, "collection") \
-       and hasattr(datablock.collection, "children"):
-            for coll in datablock.collection.children:
-                child.append(add_datablock(coll))
-    if hasattr(datablock, "children"):
-        for coll in datablock.children:
-            child.append(add_datablock(coll))
-    if hasattr(datablock, "objects"):
-        for obj in datablock.objects:
-            child.append(add_datablock(obj))
-    if hasattr(datablock, 'uuid') \
-       and datablock.uuid \
-       and client.exist(datablock.uuid):
-        return datablock.uuid
-    else:
-        new_uuid = client.add(datablock, dependencies=child)
-        datablock.uuid = new_uuid
-        return new_uuid
+    new_uuid = client.add(datablock)
+    return new_uuid
 
 
 # TODO: cleanup
@@ -63,7 +41,10 @@ def init_supported_datablocks(supported_types_id):
     for type_id in supported_types_id:
         if hasattr(bpy.data, type_id):
             for item in getattr(bpy.data, type_id):
-                add_datablock(item)
+                if client.exist(uuid=item.uuid):
+                    continue
+                else:
+                    client.add(item)
 
 
 # OPERATORS
@@ -247,7 +228,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
         area, region, rv3d = presence.view3d_find()
         global client
 
-        target_client = client.get(self.target_client)
+        target_client = client.get(uuid=self.target_client)
         if target_client:
             rv3d.view_location = target_client.buffer['location'][0]
             rv3d.view_distance = 30.0
