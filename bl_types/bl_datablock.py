@@ -2,7 +2,7 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.replication.data import ReplicatedDatablock
+from ..libs.replication.replication.data import ReplicatedDatablock
 
 class BlDatablock(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):

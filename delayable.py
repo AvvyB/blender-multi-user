@@ -3,7 +3,7 @@ import bpy
 from . import operators, utils
 from .bl_types.bl_user import BlUser
 from .libs import debug
-from .libs.replication.constants import FETCHED
+from .libs.replication.replication.constants import FETCHED
 
 
 class Delayable():

@@ -15,8 +15,8 @@ from bpy_extras.io_utils import ExportHelper
 
 from . import environment, presence, ui, utils, delayable
 from .libs import umsgpack
-from .libs.replication.data import ReplicatedDataFactory
-from .libs.replication.interface import Session
+from .libs.replication.replication.data import ReplicatedDataFactory
+from .libs.replication.replication.interface import Session
 from . import bl_types
 
 logger = logging.getLogger(__name__)

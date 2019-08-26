@@ -1,6 +1,6 @@
 import bpy
 from . import operators
-from .libs.replication.constants import FETCHED, ERROR
+from .libs.replication.replication.constants import FETCHED, ERROR
 from .bl_types.bl_user import BlUser
 
 
