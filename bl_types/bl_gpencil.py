@@ -50,7 +50,7 @@ class BlGpencil(BlDatablock):
                 else:
                     gp_layer = target.layers[layer]
                 load_gpencil_layer(
-                    target=gp_layer, data=data["layers"][layer], create=create)
+                    target=gp_layer, data=data["layers"][layer], create=True)
 
         utils.dump_anything.load(target, data)
 
@@ -72,6 +72,14 @@ class BlGpencil(BlDatablock):
     def resolve(self):
         assert(self.buffer)      
         self.pointer = bpy.data.grease_pencils.get(self.buffer['name'])
+
+    def resolve_dependencies(self):
+        deps = []
+        
+        for material in self.pointer.materials:
+            deps.append(material)
+        
+        return deps
 
 bl_id = "grease_pencils"
 bl_class = bpy.types.GreasePencil

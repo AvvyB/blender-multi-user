@@ -94,7 +94,7 @@ class ClientUpdate(Draw):
         super().__init__()
 
     def execute(self):
-        if hasattr(operators, "client") and self._client_uuid:
+        if self._client_uuid and operators.client:
             client = operators.client.get(uuid=self._client_uuid)
 
             if client:

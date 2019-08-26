@@ -69,10 +69,10 @@ class BlMaterial(BlDatablock):
     def dump(self, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 2)
-        if pointer.node_tree:
+        if pointer.use_nodes:
             utils.dump_datablock_attibutes(
                 pointer.node_tree, ["nodes", "links"], 5, data['node_tree'])
-        elif pointer.grease_pencil:
+        elif pointer.is_grease_pencil:
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
     
@@ -81,7 +81,10 @@ class BlMaterial(BlDatablock):
         self.pointer = bpy.data.materials.get(self.buffer['name'])
 
     def diff(self):
-        return len(self.pointer.node_tree.links) != len(self.buffer['node_tree']['links'])
+        if self.pointer.is_grease_pencil:
+            self.dump(pointer=self.pointer) != self.buffer
+        else:
+            return len(self.pointer.node_tree.links) != len(self.buffer['node_tree']['links'])
 bl_id = "materials"
 bl_class = bpy.types.Material
 bl_rep_class = BlMaterial
