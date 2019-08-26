@@ -82,11 +82,11 @@ class BlMaterial(BlDatablock):
 
     def diff(self):
         if self.pointer.is_grease_pencil:
-            self.dump(pointer=self.pointer) != self.buffer
+            return self.dump(pointer=self.pointer) != self.buffer
         else:
             return len(self.pointer.node_tree.links) != len(self.buffer['node_tree']['links'])
 bl_id = "materials"
 bl_class = bpy.types.Material
 bl_rep_class = BlMaterial
-bl_delay_refresh = 1
-bl_delay_apply = 1
+bl_delay_refresh = 5
+bl_delay_apply = 5

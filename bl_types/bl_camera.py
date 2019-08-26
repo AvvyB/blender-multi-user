@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
@@ -27,7 +28,9 @@ class BlCamera(BlDatablock):
         self.pointer = bpy.data.cameras.get(self.buffer['name'])
     
     def diff(self):
-        return False
+        d = diff(self.dump(pointer=self.pointer),self.buffer)
+        print(d)
+        return len(d)>1
 
 bl_id = "cameras"
 bl_class = bpy.types.Camera
