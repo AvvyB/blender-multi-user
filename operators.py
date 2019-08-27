@@ -79,15 +79,15 @@ class SessionStartOperator(bpy.types.Operator):
             supported_bl_types.append(_type.bl_id)
 
             bpy_factory.register_type(
-                    _type.bl_class,
-                    _type.bl_rep_class,
-                    timer=_type.bl_delay_refresh,
-                    automatic=True)
+                _type.bl_class,
+                _type.bl_rep_class,
+                timer=_type.bl_delay_refresh,
+                automatic=True)
 
             if _type.bl_delay_apply > 0:
                 delayables.append(delayable.ApplyTimer(
-                                    timout=_type.bl_delay_apply,
-                                    target_type=_type.bl_rep_class))
+                    timout=_type.bl_delay_apply,
+                    target_type=_type.bl_rep_class))
 
         client = Session(factory=bpy_factory)
 
@@ -98,14 +98,21 @@ class SessionStartOperator(bpy.types.Operator):
                 port=settings.port
             )
             settings.is_admin = True
-            if settings.init_scene:
-                init_supported_datablocks(supported_bl_types)
         else:
             client.connect(
                 id=settings.username,
                 address=settings.ip,
                 port=settings.port
             )
+    
+        if client.state == 0:
+            self.report(
+                {'ERROR'},
+                "A session is already hosted on this address")
+            return {"CANCELLED"}
+
+        if settings.init_scene and settings.is_admin:
+            init_supported_datablocks(supported_bl_types)
 
         usr = presence.User(
             username=settings.username,
@@ -128,7 +135,9 @@ class SessionStartOperator(bpy.types.Operator):
 
         for d in delayables:
             d.register()
-
+        self.report(
+                {'INFO'},
+                "connexion on tcp://{}:{}".format(settings.ip,settings.port))
         return {"FINISHED"}
 
 
@@ -154,7 +163,6 @@ class SessionStopOperator(bpy.types.Operator):
             d.unregister()
 
         presence.renderer.stop()
-
 
         return {"FINISHED"}
 
