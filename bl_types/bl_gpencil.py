@@ -60,7 +60,8 @@ class BlGpencil(BlDatablock):
                 target.materials.append(bpy.data.materials[mat])
 
     def diff(self):
-        return False
+        return (self.bl_diff() or
+                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
 
     def dump(self, pointer=None):
         assert(pointer)

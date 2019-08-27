@@ -28,8 +28,8 @@ class BlCamera(BlDatablock):
         self.pointer = bpy.data.cameras.get(self.buffer['name'])
     
     def diff(self):
-        d = diff(self.dump(pointer=self.pointer), self.buffer)
-        return len(d)>1
+        return (self.bl_diff() or
+                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
 
 bl_id = "cameras"
 bl_class = bpy.types.Camera

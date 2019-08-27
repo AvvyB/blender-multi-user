@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
@@ -56,7 +57,8 @@ class BlScene(BlDatablock):
         self.pointer = bpy.data.scenes.get(scene_name)
     
     def diff(self):
-        return (len(self.pointer.collection.objects) != len(self.buffer['collection']['objects']) or 
+        return (self.bl_diff() or
+                len(self.pointer.collection.objects) != len(self.buffer['collection']['objects']) or 
                 len(self.pointer.collection.children) != len(self.buffer['collection']['children']))
 
     def resolve_dependencies(self):

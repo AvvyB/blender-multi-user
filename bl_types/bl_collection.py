@@ -50,7 +50,8 @@ class BlCollection(BlDatablock):
         self.pointer = bpy.data.collections.get(self.buffer['name'])
    
     def diff(self):
-        return (len(self.pointer.objects) != len(self.buffer['objects']) or 
+        return (self.bl_diff() or
+                len(self.pointer.objects) != len(self.buffer['objects']) or 
                 len(self.pointer.children) != len(self.buffer['children']))
 
     def resolve_dependencies(self):

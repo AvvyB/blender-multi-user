@@ -48,7 +48,8 @@ class BlCurve(BlDatablock):
         self.pointer = bpy.data.curves.get(self.buffer['name'])
 
     def diff(self):
-        return False
+        return (self.bl_diff() or
+                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
 
 bl_id = "curves"
 bl_class = bpy.types.Curve

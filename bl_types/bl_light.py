@@ -1,33 +1,36 @@
 import bpy
 import mathutils
+from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
+
 
 class BlLight(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'LIGHT_DATA'
 
-        super().__init__( *args, **kwargs)
-    
+        super().__init__(*args, **kwargs)
+
     def construct(self, data):
         return bpy.data.lights.new(data["name"], data["type"])
-    
+
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 
-
     def dump(self, pointer=None):
         assert(pointer)
-        
+
         return utils.dump_datablock(pointer, 3)
-    
+
     def resolve(self):
-        assert(self.buffer)      
+        assert(self.buffer)
         self.pointer = bpy.data.lights.get(self.buffer['name'])
 
     def diff(self):
-        return False        
+        return (self.bl_diff() or
+                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
+
 
 bl_id = "lights"
 bl_class = bpy.types.Light

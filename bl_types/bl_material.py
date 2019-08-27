@@ -1,15 +1,17 @@
 import bpy
 import mathutils
+from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
+
 
 class BlMaterial(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'MATERIAL_DATA'
 
-        super().__init__( *args, **kwargs)
-        
+        super().__init__(*args, **kwargs)
+
     def construct(self, data):
         return bpy.data.materials.new(data["name"])
 
@@ -18,7 +20,8 @@ class BlMaterial(BlDatablock):
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
 
-            utils.dump_anything.load(target.grease_pencil, data['grease_pencil'])
+            utils.dump_anything.load(
+                target.grease_pencil, data['grease_pencil'])
 
             utils.load_dict(data['grease_pencil'], target.grease_pencil)
 
@@ -75,16 +78,16 @@ class BlMaterial(BlDatablock):
         elif pointer.is_grease_pencil:
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
-    
+
     def resolve(self):
-        assert(self.buffer)      
+        assert(self.buffer)
         self.pointer = bpy.data.materials.get(self.buffer['name'])
 
     def diff(self):
-        if self.pointer.is_grease_pencil:
-            return self.dump(pointer=self.pointer) != self.buffer
-        else:
-            return len(self.pointer.node_tree.links) != len(self.buffer['node_tree']['links'])
+        return (self.bl_diff() or
+                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
+
+
 bl_id = "materials"
 bl_class = bpy.types.Material
 bl_rep_class = BlMaterial
