@@ -84,8 +84,9 @@ class BlMaterial(BlDatablock):
         self.pointer = bpy.data.materials.get(self.buffer['name'])
 
     def diff(self):
+        diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
-                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
+                len(diff_rev.keys()) > 1)
 
 
 bl_id = "materials"

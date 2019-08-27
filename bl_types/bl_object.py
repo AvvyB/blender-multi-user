@@ -34,7 +34,7 @@ class BlObject(BlDatablock):
 
     def load(self, data, target):
         # Load other meshes metadata
-        # dump_anything.load(target, data)
+        utils.dump_anything.load(target, data)
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
