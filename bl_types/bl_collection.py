@@ -17,7 +17,7 @@ class BlCollection(BlDatablock):
     def load(self, data, target):
         # Load other meshes metadata
         # dump_anything.load(target, data)
-
+ 
         # link objects
         for object in data["objects"]:
             if object not in target.objects.keys():
@@ -30,9 +30,9 @@ class BlCollection(BlDatablock):
         # Link childrens
         for collection in data["children"]:
             if collection not in target.children.keys():
-                if bpy.data.collections.find(collection) == -1:
-                    target.children.link(
-                        bpy.data.collections[collection])
+                # if bpy.data.collections.find(collection) == -1:
+                target.children.link(
+                    bpy.data.collections[collection])
 
         for collection in target.children.keys():
             if collection not in data["children"]:
