@@ -106,6 +106,7 @@ class SessionStartOperator(bpy.types.Operator):
             )
     
         if client.state == 0:
+            settings.is_admin = False
             self.report(
                 {'ERROR'},
                 "A session is already hosted on this address")
@@ -154,6 +155,7 @@ class SessionStopOperator(bpy.types.Operator):
     def execute(self, context):
         global client, delayables
         settings = context.window_manager.session
+        settings.is_admin = False
         assert(client)
 
         client.remove(settings.user_uuid)
