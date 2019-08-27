@@ -144,15 +144,17 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables
-
+        settings = context.window_manager.session
         assert(client)
 
+        client.remove(settings.user_uuid)
         client.disconnect()
 
         for d in delayables:
             d.unregister()
 
         presence.renderer.stop()
+
 
         return {"FINISHED"}
 
