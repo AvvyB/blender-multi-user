@@ -5,6 +5,7 @@ from jsondiff import diff
 from .. import utils
 from .bl_datablock import BlDatablock
 
+
 def load_gpencil_layer(target=None, data=None, create=False):
 
     utils.dump_anything.load(target, data)
@@ -31,15 +32,16 @@ def load_gpencil_layer(target=None, data=None, create=False):
 
                 utils.dump_anything.load(tpoint, p)
 
+
 class BlGpencil(BlDatablock):
     def __init__(self, *args, **kwargs):
         self.icon = 'GREASEPENCIL'
 
-        super().__init__( *args, **kwargs)
-    
-    def construct(self,data):
+        super().__init__(*args, **kwargs)
+
+    def construct(self, data):
         return bpy.data.grease_pencils.new(data["name"])
-    
+
     def load(self, data, target):
         for layer in target.layers:
             target.layers.remove(layer)
@@ -70,18 +72,19 @@ class BlGpencil(BlDatablock):
         utils.dump_datablock_attibutes(
             pointer, ['layers'], 9, data)
         return data
-    
+
     def resolve(self):
-        assert(self.buffer)      
+        assert(self.buffer)
         self.pointer = bpy.data.grease_pencils.get(self.buffer['name'])
 
     def resolve_dependencies(self):
         deps = []
-        
+
         for material in self.pointer.materials:
             deps.append(material)
-        
+
         return deps
+
 
 bl_id = "grease_pencils"
 bl_class = bpy.types.GreasePencil

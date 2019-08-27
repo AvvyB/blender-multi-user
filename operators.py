@@ -66,10 +66,6 @@ class SessionStartOperator(bpy.types.Operator):
         # save config
         settings.save(context)
 
-        # Scene setup
-        if settings.start_empty:
-            utils.clean_scene()
-
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
 
@@ -92,13 +88,21 @@ class SessionStartOperator(bpy.types.Operator):
         client = Session(factory=bpy_factory)
 
         if self.host:
+            # Scene setup
+            if settings.start_empty:
+                utils.clean_scene()
+
             client.host(
                 id=settings.username,
                 address=settings.ip,
                 port=settings.port
             )
             settings.is_admin = True
+
+            
         else:
+            utils.clean_scene()
+            
             client.connect(
                 id=settings.username,
                 address=settings.ip,

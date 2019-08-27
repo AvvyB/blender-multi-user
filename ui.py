@@ -83,9 +83,6 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row.label(text="draw overlay:")
         row.prop(settings, "enable_presence", text="")
         row = layout.row()
-        row.label(text="clear blend:")
-        row.prop(settings, "start_empty", text="")
-        row = layout.row()
 
         row = layout.row()
         row.prop(settings, "session_mode", expand=True)
@@ -93,6 +90,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
         if settings.session_mode == 'HOST':
             box = row.box()
+            row = box.row()
+            row.label(text="clear blend:")
+            row.prop(settings, "start_empty", text="")
             row = box.row()
             row.label(text="init scene:")
             row.prop(settings, "init_scene", text="")

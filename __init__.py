@@ -118,7 +118,7 @@ class SessionProps(bpy.types.PropertyGroup):
     init_scene: bpy.props.BoolProperty(name="init_scene", default=True)
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
-        default=False,
+        default=True,
         update=save_session_config)
     active_object: bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
