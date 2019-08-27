@@ -74,7 +74,7 @@ class BlMaterial(BlDatablock):
         data = utils.dump_datablock(pointer, 2)
         if pointer.use_nodes:
             utils.dump_datablock_attibutes(
-                pointer.node_tree, ["nodes", "links"], 5, data['node_tree'])
+                pointer.node_tree, ["nodes", "links"], 3, data['node_tree'])
         elif pointer.is_grease_pencil:
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
@@ -87,6 +87,16 @@ class BlMaterial(BlDatablock):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 1)
+    
+    def resolve_dependencies(self):
+        deps = []
+
+        if self.pointer.use_nodes:
+            for node in self.pointer.node_tree.nodes:
+                if node.type == 'TEX_IMAGE':
+                    deps.append(node.image)
+
+        return deps
 
 
 bl_id = "materials"
