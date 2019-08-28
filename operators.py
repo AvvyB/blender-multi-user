@@ -17,6 +17,7 @@ from . import environment, presence, ui, utils, delayable
 from .libs import umsgpack
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.interface import Session
+from .libs.replication.replication.exception import NonAuthorizedOperationError
 from . import bl_types
 
 logger = logging.getLogger(__name__)
@@ -191,7 +192,10 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
             client.remove(self.property_path)
 
             return {"FINISHED"}
-        except:
+        except:# NonAuthorizedOperationError:
+            self.report(
+                {'ERROR'},
+                "Non authorized operation")
             return {"CANCELLED"}
 
 
