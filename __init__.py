@@ -18,6 +18,7 @@ import bpy
 from bpy.app.handlers import persistent
 
 from . import environment, utils
+# from . import bl_types
 
 DEPENDENCIES = {
     ("zmq","zmq"),
@@ -31,6 +32,20 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # UTILITY FUNCTIONS
+def generate_supported_types():
+    stype_dict = {'supported_types':{}}
+    for type in bl_types.types_to_register():
+        _type = getattr(bl_types, type)
+        props = {}
+        props['bl_delay_refresh']=_type.bl_delay_refresh
+        props['bl_delay_apply']=_type.bl_delay_apply
+        props['use_as_filter'] = False
+        props['icon'] = _type.bl_icon
+        # stype_dict[type]['bl_delay_apply']=_type.bl_delay_apply
+        stype_dict['supported_types'][_type.bl_rep_class.__name__] = props
+
+    return stype_dict
+
 def client_list_callback(scene, context):
     from . import operators
     from .bl_types.bl_user import BlUser
@@ -62,7 +77,8 @@ def randomColor():
 
 def save_session_config(self,context):
         config = environment.load_config()
-
+        if "supported_types" not in config:
+            config = generate_supported_types()
         config["username"] = self.username
         config["ip"] = self.ip
         config["port"] = self.port
@@ -72,10 +88,11 @@ def save_session_config(self,context):
     
         rep_type = {}
         for bloc in self.supported_datablock:
-            config["replicated_types"][bloc.type_name] = bloc.is_replicated
+            config["supported_types"][bloc.type_name]['bl_delay_refresh'] = bloc.bl_delay_refresh
+            config["supported_types"][bloc.type_name]['bl_delay_apply'] = bloc.bl_delay_apply
+            config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
+            config["supported_types"][bloc.type_name]['icon'] = bloc.icon
 
-        # Generate ordered replicate types
-        environment.genererate_replicated_types()
         
         # Save out the configuration file
         environment.save_config(config)
@@ -84,8 +101,10 @@ def save_session_config(self,context):
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     '''name = StringProperty() '''
     type_name: bpy.props.StringProperty()
-    is_replicated: bpy.props.BoolProperty()
-
+    bl_delay_refresh: bpy.props.FloatProperty()
+    bl_delay_apply: bpy.props.FloatProperty()
+    use_as_filter: bpy.props.BoolProperty(default=False)
+    icon: bpy.props.StringProperty()
 
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
@@ -147,11 +166,14 @@ class SessionProps(bpy.types.PropertyGroup):
     supported_datablock: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
         )
+    session_filter: bpy.props.CollectionProperty(
+        type=ReplicatedDatablock,
+    )
 
     def load(self):
         config = environment.load_config()
         logger.info(config)
-        if "username" in config:
+        if "username" in config.keys():
             self.username = config["username"]
             self.ip = config["ip"]
             self.port = config["port"]
@@ -163,13 +185,15 @@ class SessionProps(bpy.types.PropertyGroup):
         
         if len(self.supported_datablock)>0:
             self.supported_datablock.clear()
-
-        for datablock,enabled in config["replicated_types"].items():
+        if "supported_types" not in config:
+            config = generate_supported_types()
+        for datablock in config["supported_types"].keys():
             rep_value = self.supported_datablock.add()
             rep_value.name = datablock
             rep_value.type_name = datablock
-            rep_value.is_replicated = enabled
-
+            rep_value.bl_delay_refresh = config["supported_types"][datablock]['bl_delay_refresh']
+            rep_value.bl_delay_apply = config["supported_types"][datablock]['bl_delay_apply']
+            rep_value.icon = config["supported_types"][datablock]['icon']
     def save(self,context):
         config = environment.load_config()
 
@@ -182,8 +206,10 @@ class SessionProps(bpy.types.PropertyGroup):
         
 
         for bloc in self.supported_datablock:
-            config["replicated_types"][bloc.type_name] = bloc.is_replicated
-        
+            config["supported_types"][bloc.type_name]['bl_delay_refresh'] = bloc.bl_delay_refresh
+            config["supported_types"][bloc.type_name]['bl_delay_apply'] = bloc.bl_delay_apply
+            config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
+            config["supported_types"][bloc.type_name]['icon'] = bloc.icon
         environment.save_config(config)    
 
 

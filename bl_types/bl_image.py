@@ -23,11 +23,6 @@ def dump_image(image):
     return pixels
 
 class BlImage(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'IMAGE_DATA'
-
-        super().__init__( *args, **kwargs)
-    
     def construct(self, data):
         return bpy.data.images.new(
                 name=data['name'],
@@ -74,3 +69,4 @@ bl_rep_class = BlImage
 bl_delay_refresh = 0
 bl_delay_apply = 0
 bl_automatic_push = False
+bl_icon = 'IMAGE_DATA'

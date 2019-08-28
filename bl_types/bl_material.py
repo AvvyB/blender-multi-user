@@ -7,11 +7,6 @@ from .bl_datablock import BlDatablock
 
 
 class BlMaterial(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'MATERIAL_DATA'
-
-        super().__init__(*args, **kwargs)
-
     def construct(self, data):
         return bpy.data.materials.new(data["name"])
 
@@ -105,3 +100,4 @@ bl_rep_class = BlMaterial
 bl_delay_refresh = 5
 bl_delay_apply = 5
 bl_automatic_push = True
+bl_icon = 'MATERIAL_DATA'

@@ -6,11 +6,6 @@ from .bl_datablock import BlDatablock
 
 
 class BlCollection(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'FILE_FOLDER'
-
-        super().__init__(*args, **kwargs)
-    
     def construct(self,data):
         return bpy.data.collections.new(data["name"])
 
@@ -65,6 +60,7 @@ class BlCollection(BlDatablock):
         return deps
 
 bl_id = "collections"
+bl_icon = 'FILE_FOLDER'
 bl_class = bpy.types.Collection
 bl_rep_class = BlCollection
 bl_delay_refresh = 1

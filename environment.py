@@ -15,28 +15,6 @@ THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
 PYTHON_PATH = None
 SUBPROCESS_DIR = None
-DEFAULT_CONFIG = {
-    "replicated_types": {
-        'Client': True,
-        'Image': True,
-        'Texture': True,
-        'Curve': True,
-        'Material': True,
-        'Light': True,
-        'SunLight': True,
-        'SpotLight': True,
-        'AreaLight': True,
-        'PointLight': True,
-        'Camera': True,
-        'Mesh': True,
-        'Armature': True,
-        'GreasePencil': True,
-        'Object': True,
-        'Action': True,
-        'Collection': True,
-        'Scene': True
-    }
-}
 
 ORDERED_TYPES = [
     'Image',
@@ -69,31 +47,7 @@ def load_config():
             return yaml.safe_load(config_file)
     except FileNotFoundError:
         logger.info("no config")
-
-    return DEFAULT_CONFIG
-
-
-def get_replicated_types():
-    config = load_config()
-    rtpyes = config["replicated_types"]
-    tlist = []
-
-    for t in ORDERED_TYPES:
-        if rtpyes[t]:
-            tlist.append(t)
-
-    return tlist
-
-
-def genererate_replicated_types():
-    rtypes.clear()
-
-    cfg = load_config()
-    replicated_types = cfg['replicated_types']
-    for t in ORDERED_TYPES:
-        if replicated_types[t]:
-            rtypes.append(t)
-
+        return  {}
 
 def save_config(config):
     import yaml

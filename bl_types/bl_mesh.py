@@ -71,11 +71,6 @@ def dump_mesh(mesh, data={}):
     return mesh_data
 
 class BlMesh(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'MESH_DATA'
-        
-        super().__init__( *args, **kwargs)
-    
     def construct(self, data):
         return bpy.data.meshes.new(data["name"])
 
@@ -181,3 +176,4 @@ bl_rep_class = BlMesh
 bl_delay_refresh = 10
 bl_delay_apply = 10
 bl_automatic_push = False
+bl_icon = 'MESH_DATA'

@@ -6,11 +6,6 @@ from .bl_datablock import BlDatablock
 
 
 class BlObject(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'OBJECT_DATA'
-
-        super().__init__(*args, **kwargs)
-
     def construct(self, data):
         pointer = None
 
@@ -86,3 +81,4 @@ bl_rep_class = BlObject
 bl_delay_refresh = 1
 bl_delay_apply = 1
 bl_automatic_push = True
+bl_icon = 'OBJECT_DATA'

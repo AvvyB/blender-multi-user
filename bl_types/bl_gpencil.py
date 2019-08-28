@@ -34,11 +34,6 @@ def load_gpencil_layer(target=None, data=None, create=False):
 
 
 class BlGpencil(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'GREASEPENCIL'
-
-        super().__init__(*args, **kwargs)
-
     def construct(self, data):
         return bpy.data.grease_pencils.new(data["name"])
 
@@ -92,3 +87,4 @@ bl_rep_class = BlGpencil
 bl_delay_refresh = 5
 bl_delay_apply = 5
 bl_automatic_push = True
+bl_icon = 'GREASEPENCIL'

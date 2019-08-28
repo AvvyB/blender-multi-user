@@ -6,11 +6,6 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 class BlScene(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'SCENE_DATA'
-
-        super().__init__( *args, **kwargs)
-    
     def construct(self, data):
         return bpy.data.scenes.new(data["name"])
 
@@ -77,3 +72,4 @@ bl_rep_class = BlScene
 bl_delay_refresh = 1
 bl_delay_apply = 1
 bl_automatic_push = True
+bl_icon = 'SCENE_DATA'

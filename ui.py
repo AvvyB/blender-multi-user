@@ -4,12 +4,12 @@ from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED, UP
 from .bl_types.bl_user import BlUser
 
 
-PROP_STATES = ['FILE_REFRESH',  # ADDED
-               'TRIA_UP',  # COMMITED
-               'KEYTYPE_KEYFRAME_VEC',  # PUSHED
-               'TRIA_DOWN',  # FETCHED
-               'FILE_REFRESH',   # UP
-               'TRIA_UP']  # CHANGED
+ICONS_PROP_STATES = ['FILE_REFRESH',  # ADDED
+                     'TRIA_UP',  # COMMITED
+                     'KEYTYPE_KEYFRAME_VEC',  # PUSHED
+                     'TRIA_DOWN',  # FETCHED
+                     'FILE_REFRESH',   # UP
+                     'TRIA_UP']  # CHANGED
 
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -33,17 +33,6 @@ class SESSION_PT_settings(bpy.types.Panel):
             if not operators.client \
                or (operators.client and operators.client.state == 0):
                 pass
-                # REPLICATION SETTINGS
-                # row = layout.row()
-                # box = row.box()
-                # row = box.row()
-                # row.label(text="REPLICATION", icon='TRIA_RIGHT')
-                # row = box.row()
-
-                # for item in window_manager.session.supported_datablock:
-                #     row.label(text=item.type_name,icon=ICONS[item.type_name])
-                #     row.prop(item, "is_replicated", text="")
-                #     row = box.row()
             else:
                 # STATE ACTIVE
                 if operators.client.state == 2:
@@ -138,6 +127,34 @@ class SESSION_PT_settings_user(bpy.types.Panel):
         row = layout.row()
 
 
+class SESSION_PT_settings_replication(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
+    bl_label = "Replication"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+
+    @classmethod
+    def poll(cls, context):
+        return not operators.client \
+            or (operators.client and operators.client.state == 0)
+
+    def draw(self, context):
+        layout = self.layout
+
+        settings = context.window_manager.session
+
+
+        flow = layout.grid_flow(
+                row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        for item in settings.supported_datablock:
+            line = flow.column(align=True)
+            line.label(text=item.type_name,icon=item.icon)
+            line.prop(item, "bl_delay_refresh", text="refresh time")
+            line.prop(item, "bl_delay_apply", text="apply timer")
+
+
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
     bl_label = "Users"
@@ -208,7 +225,8 @@ def draw_property(context, parent, property_uuid, level=0):
 
     detail_item_box = line.row(align=True)
 
-    detail_item_box.label(text="", icon=item.icon)
+    detail_item_box.label(text="",
+                          icon=settings.supported_datablock[item.str_type].icon)
     detail_item_box.label(text="{} ".format(name))
 
     # Operations
@@ -219,14 +237,14 @@ def draw_property(context, parent, property_uuid, level=0):
         detail_item_box.operator(
             "session.apply",
             text="",
-            icon=PROP_STATES[item.state]).target = item.uuid
+            icon=ICONS_PROP_STATES[item.state]).target = item.uuid
     elif item.state == MODIFIED:
         detail_item_box.operator(
             "session.commit",
             text="",
-            icon=PROP_STATES[item.state]).target = item.uuid
+            icon=ICONS_PROP_STATES[item.state]).target = item.uuid
     else:
-        detail_item_box.label(text="", icon=PROP_STATES[item.state])
+        detail_item_box.label(text="", icon=ICONS_PROP_STATES[item.state])
 
     right_icon = "DECORATE_UNLOCKED"
     if item.owner != settings.username:
@@ -240,7 +258,8 @@ def draw_property(context, parent, property_uuid, level=0):
         detail_item_box.operator(
             "session.remove_prop", text="", icon="X").property_path = property_uuid
     else:
-        detail_item_box.label( text="", icon="DECORATE_LOCKED")
+        detail_item_box.label(text="", icon="DECORATE_LOCKED")
+
 
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
@@ -262,8 +281,14 @@ class SESSION_PT_outliner(bpy.types.Panel):
         if hasattr(context.window_manager, 'session'):
             settings = context.window_manager.session
 
-            row = layout.row()
-            row.prop(settings, 'outliner_filter', text="")
+            # row.prop(settings, 'outliner_filter', text="")
+            flow = layout.grid_flow(
+                row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+
+            for item in settings.supported_datablock:
+                col = flow.column()
+                col.prop(item,"use_as_filter",text="", icon=item.icon)
+            #     row.prop(item, "is_replicated", text="")
 
             row = layout.row(align=True)
             # Property area
@@ -283,6 +308,7 @@ classes = (
     SESSION_PT_settings,
     SESSION_PT_settings_user,
     SESSION_PT_settings_network,
+    SESSION_PT_settings_replication,
     SESSION_PT_user,
     SESSION_PT_outliner,
 

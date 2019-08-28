@@ -6,11 +6,6 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 class BlCurve(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'CURVE_DATA'
-
-        super().__init__( *args, **kwargs)
-
     def construct(self, data):
         return bpy.data.curves.new(data["name"], 'CURVE')
 
@@ -58,3 +53,4 @@ bl_rep_class = BlCurve
 bl_delay_refresh = 1
 bl_delay_apply = 1
 bl_automatic_push = True
+bl_icon = 'CURVE_DATA'

@@ -74,16 +74,16 @@ class SessionStartOperator(bpy.types.Operator):
         for type in bl_types.types_to_register():
             _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
-
+            type_local_config = settings.supported_datablock[_type.bl_rep_class.__name__]
             bpy_factory.register_type(
                 _type.bl_class,
                 _type.bl_rep_class,
-                timer=_type.bl_delay_refresh,
+                timer=type_local_config.bl_delay_refresh,
                 automatic=_type.bl_automatic_push)
 
-            if _type.bl_delay_apply > 0:
+            if type_local_config.bl_delay_apply > 0:
                 delayables.append(delayable.ApplyTimer(
-                    timout=_type.bl_delay_apply,
+                    timout=type_local_config.bl_delay_apply,
                     target_type=_type.bl_rep_class))
 
         client = Session(factory=bpy_factory)
