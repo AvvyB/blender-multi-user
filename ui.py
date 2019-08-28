@@ -1,15 +1,15 @@
 import bpy
 from . import operators
-from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED
+from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED, UP
 from .bl_types.bl_user import BlUser
 
 
-PROP_STATES = ['KEYTYPE_EXTREME_VEC',  # ADDED
-               'KEYTYPE_BREAKDOWN_VEC',  # COMMITED
+PROP_STATES = ['FILE_REFRESH',  # ADDED
+               'TRIA_UP',  # COMMITED
                'KEYTYPE_KEYFRAME_VEC',  # PUSHED
-               'KEYTYPE_KEYFRAME_VEC',  # FETCHED
-               'KEYTYPE_JITTER_VEC',   # UP
-               'KEYTYPE_KEYFRAME_VEC']  # CHANGED
+               'TRIA_DOWN',  # FETCHED
+               'FILE_REFRESH',   # UP
+               'TRIA_UP']  # CHANGED
 
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -208,7 +208,14 @@ def draw_property(context, parent, property_uuid, level=0):
 
     detail_item_box = line.row(align=True)
 
-    if item.state == FETCHED:
+    detail_item_box.label(text="", icon=item.icon)
+    detail_item_box.label(text="{} ".format(name))
+
+    # Operations
+
+    have_right_to_modify = settings.is_admin or item.owner == settings.username
+
+    if item.state in [FETCHED, UP]:
         detail_item_box.operator(
             "session.apply",
             text="",
@@ -221,20 +228,19 @@ def draw_property(context, parent, property_uuid, level=0):
     else:
         detail_item_box.label(text="", icon=PROP_STATES[item.state])
 
-    detail_item_box.label(text="", icon=item.icon)
-    detail_item_box.label(text="{} ".format(name))
-
     right_icon = "DECORATE_UNLOCKED"
     if item.owner != settings.username:
         right_icon = "DECORATE_LOCKED"
 
-    ro = detail_item_box.operator(
-        "session.right", text="", icon=right_icon, emboss=settings.is_admin)
-    ro.key = property_uuid
+    if have_right_to_modify:
+        ro = detail_item_box.operator(
+            "session.right", text="", icon=right_icon)
+        ro.key = property_uuid
 
-    detail_item_box.operator(
-        "session.remove_prop", text="", icon="X").property_path = property_uuid
-
+        detail_item_box.operator(
+            "session.remove_prop", text="", icon="X").property_path = property_uuid
+    else:
+        detail_item_box.label( text="", icon="DECORATE_LOCKED")
 
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
