@@ -23,6 +23,7 @@ class BlUser(BlDatablock):
     def load(self, data, target):      
         target.name = data['name']
         target.location = data['location']
+        target.selected_objects = data['selected_objects']
         utils.dump_anything.load(target, data)
     
     def apply(self):
@@ -36,12 +37,14 @@ class BlUser(BlDatablock):
         #TODO: refactor in order to redraw in cleaner ways
         if presence.renderer:
             presence.renderer.draw_client_camera(self.buffer['name'], self.buffer['location'],self.buffer['color'])
+            presence.renderer.draw_client_selection(self.buffer['name'], self.buffer['color'],self.buffer['selected_objects'])
 
 
     def dump(self,pointer=None):
         data = utils.dump_anything.dump(pointer)
         data['location'] = pointer.location
         data['color'] = pointer.color
+        data['selected_objects'] = pointer.selected_objects
         return data
 
 

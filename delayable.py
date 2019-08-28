@@ -101,3 +101,4 @@ class ClientUpdate(Draw):
 
             if client:
                 client.pointer.update_location()
+                client.pointer.update_selected_objects(bpy.context)

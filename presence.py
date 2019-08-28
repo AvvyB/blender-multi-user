@@ -11,7 +11,8 @@ import math
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
-# from .libs import debug
+from . import utils
+from .libs import debug
 # from .bl_types.bl_user import BlUser
 # from .delayable import Draw
 
@@ -94,7 +95,7 @@ class User():
         self.name = username
         self.color = color
         self.location = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        self.active_object = ""
+        self.selected_objects = []
 
     def update_location(self):
         current_coords = get_client_cam_points()
@@ -104,24 +105,8 @@ class User():
         if current_coords:
             self.location = list(current_coords)
 
-    def update_client_selected_object(self, context):
-        session = bpy.context.window_manager.session
-        username = bpy.context.window_manager.session.username
-        # client_data = client.get(client_key)
-
-        selected_objects = utils.get_selected_objects(context.scene)
-        if len(selected_objects) > 0 and len(client_data) > 0:
-
-            for obj in selected_objects:
-                # if obj not in client_data[0][1]['active_objects']:
-                client_data[0][1]['active_objects'] = selected_objects
-
-                client.set(client_key, client_data[0][1])
-                break
-
-        elif client_data and client_data[0][1]['active_objects']:
-            client_data[0][1]['active_objects'] = []
-            client.set(client_key, client_data[0][1])
+    def update_selected_objects(self, context):
+        self.selected_objects = utils.get_selected_objects(context.scene)
 
 
 class DrawFactory(object):
@@ -161,46 +146,45 @@ class DrawFactory(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
-    def draw_client_selected_objects(self, client):
-        if client:
-            name = client['id']
-            local_username = bpy.context.window_manager.session.username
+    def draw_client_selection(self, client_uuid, client_color, client_selection):
+        local_username = bpy.context.window_manager.session.username
+        
+        key_to_remove = []
+        for k in self.d3d_items.keys():
+            if "{}_select".format(client_uuid) in k:
+                key_to_remove.append(k)
 
-            if name != local_username:
-                key_to_remove = []
-                for k in self.d3d_items.keys():
-                    if "{}/".format(client['id']) in k:
-                        key_to_remove.append(k)
+        for k in key_to_remove:
+            del self.d3d_items[k]
 
-                for k in key_to_remove:
-                    del self.d3d_items[k]
+        if client_selection:
+            
+            for select_ob in client_selection:
+                drawable_key = "{}_select_{}".format(client_uuid, select_ob)
+                indices = (
+                    (0, 1), (1, 2), (2, 3), (0, 3),
+                    (4, 5), (5, 6), (6, 7), (4, 7),
+                    (0, 4), (1, 5), (2, 6), (3, 7)
+                )
 
-                if client['active_objects']:
-                    for select_ob in client['active_objects']:
-                        indices = (
-                            (0, 1), (1, 2), (2, 3), (0, 3),
-                            (4, 5), (5, 6), (6, 7), (4, 7),
-                            (0, 4), (1, 5), (2, 6), (3, 7)
-                        )
+                if select_ob in bpy.data.objects.keys():
+                    ob = bpy.data.objects[select_ob]
+                else:
+                    return
 
-                        if select_ob in bpy.data.objects.keys():
-                            ob = bpy.data.objects[select_ob]
-                        else:
-                            return
+                bbox_corners = [ob.matrix_world @ mathutils.Vector(
+                    corner) for corner in ob.bound_box]
 
-                        bbox_corners = [ob.matrix_world @ mathutils.Vector(
-                            corner) for corner in ob.bound_box]
+                coords = [(point.x, point.y, point.z)
+                            for point in bbox_corners]
+                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                color = client_color
+                batch = batch_for_shader(
+                    shader, 'LINES', {"pos": coords}, indices=indices)
+               
 
-                        coords = [(point.x, point.y, point.z)
-                                  for point in bbox_corners]
-                        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                        color = client['color']
-                        batch = batch_for_shader(
-                            shader, 'LINES', {"pos": coords}, indices=indices)
-                        drawable_key = "{}/{}".format(client['id'], select_ob)
-
-                        self.d3d_items[drawable_key] = (shader, batch, color)
-
+                self.d3d_items[drawable_key] = (shader, batch, color)
+                
     def draw_client_camera(self, client_uuid, client_location, client_color):
         if client_location:
             local_username = bpy.context.window_manager.session.username

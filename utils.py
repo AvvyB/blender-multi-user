@@ -71,12 +71,7 @@ def get_armature_edition_context(armature):
 
 
 def get_selected_objects(scene):
-    selected_objects = []
-    for obj in scene.objects:
-        if obj.select_get():
-            selected_objects.append(obj.name)
-
-    return selected_objects
+    return [obj.name for obj in scene.objects if obj.select_get()]
 
 def load_dict(src_dict, target):
     try:
