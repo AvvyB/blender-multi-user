@@ -20,7 +20,6 @@ def dump_image(image):
         pixels = file.read()
     else:
         raise ValueError()
-        print("Image format not supported ")
     return pixels
 
 class BlImage(BlDatablock):
@@ -74,3 +73,4 @@ bl_class = bpy.types.Image
 bl_rep_class = BlImage
 bl_delay_refresh = 0
 bl_delay_apply = 0
+bl_automatic_push = False

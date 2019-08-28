@@ -1,10 +1,12 @@
 import bpy
+import logging
 
 from . import operators, utils
 from .bl_types.bl_user import BlUser
 from .libs import debug
 from .libs.replication.replication.constants import FETCHED
 
+logger = logging.getLogger(__name__)
 
 class Delayable():
     """Delayable task interface
@@ -45,7 +47,7 @@ class Timer(Delayable):
         try:
             bpy.app.timers.unregister(self.execute)
         except:
-            print("timer already unregistered")
+            logger.error("timer already unregistered")
 
 
 class ApplyTimer(Timer):
@@ -84,7 +86,7 @@ class Draw(Delayable):
             bpy.types.SpaceView3D.draw_handler_remove(
                 self._handler, "WINDOW")
         except:
-            print("draw already unregistered")
+            logger.error("draw already unregistered")
 
 
 class ClientUpdate(Draw):

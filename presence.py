@@ -4,7 +4,7 @@ import blf
 import gpu
 import mathutils
 import copy
-
+import logging
 import math
 
 
@@ -17,6 +17,7 @@ from gpu_extras.batch import batch_for_shader
 
 global renderer
 
+logger = logging.getLogger(__name__)
 
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
@@ -222,7 +223,7 @@ class DrawFactory(object):
                 self.d2d_items[client_uuid] = (position[1], client_uuid, color)
 
             except Exception as e:
-                print("Draw client exception {}".format(e))
+                logger.error("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
         bgl.glLineWidth(1.5)
@@ -232,7 +233,7 @@ class DrawFactory(object):
                 shader.uniform_float("color", color)
                 batch.draw(shader)
         except Exception:
-            print("3D Exception")
+            logger.error("3D Exception")
 
     def draw2d_callback(self):
         for position, font, color in self.d2d_items.values():
@@ -246,7 +247,7 @@ class DrawFactory(object):
                     blf.draw(0,  font)
 
             except Exception:
-                print("2D EXCEPTION")
+                logger.error("2D EXCEPTION")
 
 
 def register():

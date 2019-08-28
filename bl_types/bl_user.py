@@ -56,3 +56,4 @@ bl_class = presence.User
 bl_rep_class = BlUser 
 bl_delay_refresh = 1
 bl_delay_apply = 1
+bl_automatic_push = True

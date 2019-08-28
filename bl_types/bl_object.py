@@ -85,3 +85,4 @@ bl_class = bpy.types.Object
 bl_rep_class = BlObject
 bl_delay_refresh = 1
 bl_delay_apply = 1
+bl_automatic_push = True

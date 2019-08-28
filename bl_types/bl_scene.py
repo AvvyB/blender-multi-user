@@ -76,3 +76,4 @@ bl_class = bpy.types.Scene
 bl_rep_class = BlScene
 bl_delay_refresh = 1
 bl_delay_apply = 1
+bl_automatic_push = True

@@ -180,3 +180,4 @@ bl_class = bpy.types.Mesh
 bl_rep_class = BlMesh
 bl_delay_refresh = 10
 bl_delay_apply = 10
+bl_automatic_push = False

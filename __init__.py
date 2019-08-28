@@ -207,7 +207,6 @@ def load_handler(dummy):
 def register():
     if libs not in sys.path:
         sys.path.append(libs)
-        print(libs)
     
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 

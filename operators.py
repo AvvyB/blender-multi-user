@@ -78,7 +78,7 @@ class SessionStartOperator(bpy.types.Operator):
                 _type.bl_class,
                 _type.bl_rep_class,
                 timer=_type.bl_delay_refresh,
-                automatic=True)
+                automatic=_type.bl_automatic_push)
 
             if _type.bl_delay_apply > 0:
                 delayables.append(delayable.ApplyTimer(

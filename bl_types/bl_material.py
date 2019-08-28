@@ -104,3 +104,4 @@ bl_class = bpy.types.Material
 bl_rep_class = BlMaterial
 bl_delay_refresh = 5
 bl_delay_apply = 5
+bl_automatic_push = True
