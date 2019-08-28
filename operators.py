@@ -273,6 +273,25 @@ class SessionApply(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class SessionCommit(bpy.types.Operator):
+    bl_idname = "session.commit"
+    bl_label = "commit and push the target to other clients"
+    bl_description = "commit and push the target to other clients"
+    bl_options = {"REGISTER"}
+
+    target = bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client
+
+        client.commit(uuid=self.target)
+        client.push(uuid=self.target)
+        return {"FINISHED"}
+
 
 classes = (
     SessionStartOperator,
@@ -281,6 +300,7 @@ classes = (
     SessionSnapUserOperator,
     SessionPropertyRightOperator,
     SessionApply,
+    SessionCommit,
 )
 
 

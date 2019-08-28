@@ -1,6 +1,6 @@
 import bpy
 from . import operators
-from .libs.replication.replication.constants import FETCHED, ERROR
+from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED
 from .bl_types.bl_user import BlUser
 
 
@@ -211,6 +211,11 @@ def draw_property(context, parent, property_uuid, level=0):
     if item.state == FETCHED:
         detail_item_box.operator(
             "session.apply",
+            text="",
+            icon=PROP_STATES[item.state]).target = item.uuid
+    elif item.state == MODIFIED:
+        detail_item_box.operator(
+            "session.commit",
             text="",
             icon=PROP_STATES[item.state]).target = item.uuid
     else:
