@@ -31,6 +31,7 @@ DEPENDENCIES = {
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+#TODO: refactor config 
 # UTILITY FUNCTIONS
 def generate_supported_types():
     stype_dict = {'supported_types':{}}
@@ -249,7 +250,7 @@ def register():
     save_session_config(bpy.context.window_manager.session,bpy.context)
     operators.register()
     ui.register()
-
+    bpy.app.handlers.load_post.append(load_handler)
 
 def unregister():
     from . import operators
