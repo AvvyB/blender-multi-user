@@ -132,8 +132,14 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
 
+        for node in client.list():
+            try:
+                client.commit(node)
+            except:
+                continue
         # Push all added values
         client.push()
+
 
         # Launch drawing module
         if settings.enable_presence:

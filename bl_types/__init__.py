@@ -10,6 +10,7 @@ __all__ = [
     'bl_light',
     'bl_scene',
     'bl_material',
+    'bl_library',
 ]  # Order here defines execution order
 
 from . import *

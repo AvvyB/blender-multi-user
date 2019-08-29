@@ -10,11 +10,11 @@ from ..libs.debug import draw_point
 
 
 class BlUser(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        super().__init__( *args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__( *args, **kwargs)
     
-        if self.buffer:
-            self.load(self.buffer, self.pointer)
+    #     if self.buffer:
+    #         self.load(self.buffer, self.pointer)
 
     def construct(self, name):
         return presence.User()
