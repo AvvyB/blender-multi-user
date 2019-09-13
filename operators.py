@@ -135,8 +135,8 @@ class SessionStartOperator(bpy.types.Operator):
         for node in client.list():
             try:
                 client.commit(node)
-            except:
-                continue
+            except Exception as e:
+                print(e)
         # Push all added values
         client.push()
 
