@@ -90,6 +90,8 @@ class BlMaterial(BlDatablock):
             for node in self.pointer.node_tree.nodes:
                 if node.type == 'TEX_IMAGE':
                     deps.append(node.image)
+        if self.is_library:
+            deps.append(self.pointer.library)
 
         return deps
 

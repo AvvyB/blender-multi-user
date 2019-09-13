@@ -9,6 +9,12 @@ class BlObject(BlDatablock):
     def construct(self, data):
         pointer = None
 
+        if self.is_library:
+            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.buffer['library']].filepath, link=True) as (sourceData, targetData):
+                targetData.objects  = [name for name in sourceData.objects if name ==  self.buffer['name']]
+            
+            return  targetData.objects[self.buffer['name']]
+
         # Object specific constructor...
         if data["data"] in bpy.data.meshes.keys():
             pointer = bpy.data.meshes[data["data"]]
@@ -51,6 +57,9 @@ class BlObject(BlDatablock):
     def dump(self, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 1)
+        
+        if self.is_library:
+            return data
 
         if hasattr(pointer, 'modifiers'):
             utils.dump_datablock_attibutes(
@@ -71,6 +80,9 @@ class BlObject(BlDatablock):
         deps = []
 
         deps.append(self.pointer.data)
+
+        if self.is_library:
+            deps.append(self.pointer.library)
 
         return deps
 
