@@ -286,14 +286,17 @@ class SESSION_PT_outliner(bpy.types.Panel):
                 row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
 
             for item in settings.supported_datablock:
-                col = flow.column()
+                col = flow.column(align=True)
                 col.prop(item,"use_as_filter",text="", icon=item.icon)
             #     row.prop(item, "is_replicated", text="")
 
             row = layout.row(align=True)
             # Property area
             # area_msg = row.box()
-            client_keys = operators.client.list()
+            
+            types_filter = [t.type_name for t in settings.supported_datablock if t.use_as_filter]
+            client_keys = [key for key in operators.client.list() if operators.client.get(uuid=key).str_type in types_filter]
+
 
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
@@ -301,7 +304,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
                     draw_property(context, col, key)
 
             else:
-                col.label(text="Empty")
+                row.label(text="Empty")
 
 
 classes = (

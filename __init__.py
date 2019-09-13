@@ -104,7 +104,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
     bl_delay_refresh: bpy.props.FloatProperty()
     bl_delay_apply: bpy.props.FloatProperty()
-    use_as_filter: bpy.props.BoolProperty(default=False)
+    use_as_filter: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
 class SessionProps(bpy.types.PropertyGroup):
