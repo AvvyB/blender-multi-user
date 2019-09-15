@@ -148,11 +148,17 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         flow = layout.grid_flow(
                 row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        line = flow.row(align=True)
+        line.label(text=" ")
+        line.separator()
+        line.label(text="refresh (sec)")
+        line.label(text="apply (sec)")
         for item in settings.supported_datablock:
-            line = flow.column(align=True)
-            line.label(text=item.type_name,icon=item.icon)
-            line.prop(item, "bl_delay_refresh", text="refresh time")
-            line.prop(item, "bl_delay_apply", text="apply timer")
+            line = flow.row(align=True)
+            line.label(text="",icon=item.icon)
+            line.separator()
+            line.prop(item, "bl_delay_refresh", text="")
+            line.prop(item, "bl_delay_apply", text="")
 
 
 class SESSION_PT_user(bpy.types.Panel):
