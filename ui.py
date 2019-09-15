@@ -15,7 +15,7 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
-    bl_label = "Settings"
+    bl_label = "Session"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"

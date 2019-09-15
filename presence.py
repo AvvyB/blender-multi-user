@@ -31,6 +31,10 @@ def view3d_find():
 
     return None, None, None
 
+def refresh_3d_view():
+    area, region, rv3d = view3d_find()
+
+    area.tag_redraw()
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]
@@ -211,6 +215,7 @@ class DrawFactory(object):
 
     def draw3d_callback(self):
         bgl.glLineWidth(1.5)
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
         try:
             for shader, batch, color in self.d3d_items.values():
                 shader.bind()
