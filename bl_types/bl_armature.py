@@ -13,7 +13,6 @@ class BlArmature(BlDatablock):
         return bpy.data.armatures.new(data["name"])
 
     def load(self, data, target):
-
         # Load parent object
         if data['user'] not in bpy.data.objects.keys():
             parent_object = bpy.data.objects.new(data['user'], self.pointer)
@@ -45,9 +44,7 @@ class BlArmature(BlDatablock):
         # override['area'] = area 
         # override['region'] = region
         # override['screen'] = bpy.data.window_managers[0].windows[0].screen
-
-        import time
-        time.sleep(0.1)
+        
         bpy.ops.object.mode_set(mode='EDIT')
         for bone in data['bones']:
             if bone not in self.pointer.edit_bones:
@@ -63,8 +60,8 @@ class BlArmature(BlDatablock):
             if 'parent' in data['bones'][bone]:
                 new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['parent']['name']]
                 new_bone.use_connect = data['bones'][bone]['use_connect']
-
-            
+        bpy.ops.object.mode_set(mode='OBJECT')
+           
         # bpy_.mode =  'EDIT_ARMATURE'
 
         # bpy_.active_object = armature
