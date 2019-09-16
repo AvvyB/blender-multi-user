@@ -13,38 +13,41 @@ class BlArmature(BlDatablock):
         return bpy.data.armatures.new(data["name"])
 
     def load(self, data, target):
+
         # Load parent object
-        if data['user'] not in bpy.data.objects:
-            parent_object = bpy.data.objects.new(data['user'],self.pointer)
+        if data['user'] not in bpy.data.objects.keys():
+            parent_object = bpy.data.objects.new(data['user'], self.pointer)
         else:
-            parent_object = bpy.data.objects['user']
+            parent_object = bpy.data.objects[data['user']]
         
         # Link it to the correct context
-        if  data['user_collection'][0] not in bpy.data.collections:
+        if data['user_collection'][0] == "Master Collection":
+            parent_collection = bpy.data.scenes[data['user_scene'][0]].collection
+        elif  data['user_collection'][0] not in bpy.data.collections.keys():
             parent_collection = bpy.data.collections.new(data['user_collection'][0])
         else:
             parent_collection =  bpy.data.collection['user_collection'][0]
-        parent_collection.objects.link(parent_object)
+        
+        if parent_object.name not in parent_collection.objects:
+            parent_collection.objects.link(parent_object)
 
         # utils.dump_anything.load(target, data)
         # with Overrider(name="bpy_",parent=bpy.context) as bpy_:
         area, region, rv3d = presence.view3d_find()
 
         override = bpy.context.copy()
-        override['window'] = bpy.data.window_managers[0].windows[0]
-        override['area'] = area
-        override['region'] = region
-        override['screen'] = bpy.data.window_managers[0].windows[0].screen
-        override['active_object'] = parent_object
-        override['selected_objects'] = [parent_object]
-        try:
-            bpy.ops.object.mode_set(override,mode='EDIT')
-        except Exception as e:
-            print(e)
-            # bpy_.mode =  'EDIT_ARMATURE'
+        # override['window'] = bpy.data.window_managers[0].windows[0]
+        # override['window_manager'] = bpy.data.window_managers[0]
+        # override['area'] = area
+        # override['region'] = region
+        # override['screen'] = bpy.data.window_managers[0].windows[0].screen
+        # override['active_object'] = parent_object
+        bpy.ops.object.mode_set(override,mode='EDIT')
 
-            # bpy_.active_object = armature
-            # bpy_.selected_objects = [armature]
+        # bpy_.mode =  'EDIT_ARMATURE'
+
+        # bpy_.active_object = armature
+        # bpy_.selected_objects = [armature]
 
     def dump(self, pointer=None):
         assert(pointer)

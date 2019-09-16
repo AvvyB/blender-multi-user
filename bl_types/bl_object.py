@@ -37,7 +37,7 @@ class BlObject(BlDatablock):
 
     def load(self, data, target):
         # Load other meshes metadata
-        utils.dump_anything.load(target, data)
+        # utils.dump_anything.load(target, data)
 
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
@@ -71,8 +71,10 @@ class BlObject(BlDatablock):
     def resolve(self):
         assert(self.buffer)
         object_name = self.buffer['name']
-
-        self.pointer = bpy.data.objects.get(object_name)
+        try:
+            self.pointer = bpy.data.objects[object_name]
+        except:
+            pass
 
     def diff(self):
         return (self.bl_diff() or
