@@ -96,6 +96,7 @@ def get_client_2d(coords):
 
 class User():
     def __init__(self, username=None, color=(0, 0, 0, 1)):
+        self.is_dirty = False
         self.name = username
         self.color = color
         self.location = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]

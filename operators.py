@@ -12,6 +12,7 @@ from pathlib import Path
 import bpy
 import mathutils
 from bpy_extras.io_utils import ExportHelper
+from bpy.app.handlers import persistent
 
 from . import environment, presence, ui, utils, delayable
 from .libs import umsgpack
@@ -131,7 +132,7 @@ class SessionStartOperator(bpy.types.Operator):
         settings.user_uuid = client.add(usr)
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
-
+        # delayables.append(delayable.RedrawTimer(timout=0.5))
         for node in client.list():
             try:
                 client.commit(node)
@@ -302,6 +303,13 @@ class SessionCommit(bpy.types.Operator):
         client.push(uuid=self.target)
         return {"FINISHED"}
 
+@persistent
+def redresh_handler(dummy):
+    global client
+
+    user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
+    user.pointer.is_dirty = True
+
 
 classes = (
     SessionStartOperator,
@@ -320,6 +328,7 @@ def register():
         register_class(cls)
 
     presence.register()
+    bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
 
 
 def unregister():
@@ -334,6 +343,8 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+    
+    bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
 
 
 if __name__ == "__main__":

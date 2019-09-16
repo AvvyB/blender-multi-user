@@ -1,7 +1,7 @@
 import bpy
 import logging
 
-from . import operators, utils
+from . import operators, utils, presence
 from .bl_types.bl_user import BlUser
 from .libs import debug
 from .libs.replication.replication.constants import FETCHED
@@ -69,6 +69,16 @@ class ApplyTimer(Timer):
 
 # class CheckNewTimer(Timer):
 
+class RedrawTimer(Timer):
+    def __init__(self, timout=1, target_type=None):
+        self._type = target_type
+        super().__init__(timout)
+
+    def execute(self):
+        if presence.renderer:
+            presence.refresh_3d_view()
+
+        return self._timeout
 
 class Draw(Delayable):
     def __init__(self):

@@ -49,6 +49,10 @@ class BlUser(BlDatablock):
 
 
     def diff(self):
+        if self.pointer.is_dirty:
+            self.pointer.is_dirty = False
+            return True
+
         for i,coord in enumerate(self.pointer.location):
             if coord != self.buffer['location'][i]:
                 return True
