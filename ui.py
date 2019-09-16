@@ -145,9 +145,8 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         settings = context.window_manager.session
 
-
         flow = layout.grid_flow(
-                row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+            row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
         line = flow.row(align=True)
         line.label(text=" ")
         line.separator()
@@ -155,7 +154,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         line.label(text="apply (sec)")
         for item in settings.supported_datablock:
             line = flow.row(align=True)
-            line.label(text="",icon=item.icon)
+            line.label(text="", icon=item.icon)
             line.separator()
             line.prop(item, "bl_delay_refresh", text="")
             line.prop(item, "bl_delay_apply", text="")
@@ -286,23 +285,25 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
         if hasattr(context.window_manager, 'session'):
             settings = context.window_manager.session
-
-            # row.prop(settings, 'outliner_filter', text="")
             flow = layout.grid_flow(
-                row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+                row_major=True,
+                columns=0,
+                even_columns=True,
+                even_rows=False,
+                align=True)
 
             for item in settings.supported_datablock:
                 col = flow.column(align=True)
-                col.prop(item,"use_as_filter",text="", icon=item.icon)
-            #     row.prop(item, "is_replicated", text="")
+                col.prop(item, "use_as_filter", text="", icon=item.icon)
 
             row = layout.row(align=True)
             # Property area
-            # area_msg = row.box()
-            
-            types_filter = [t.type_name for t in settings.supported_datablock if t.use_as_filter]
-            client_keys = [key for key in operators.client.list() if operators.client.get(uuid=key).str_type in types_filter]
+            types_filter = [t.type_name for t in settings.supported_datablock
+                            if t.use_as_filter]
 
+            client_keys = [key for key in operators.client.list()
+                           if operators.client.get(uuid=key).str_type
+                           in types_filter]
 
             if client_keys and len(client_keys) > 0:
                 col = layout.column(align=True)
