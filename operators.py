@@ -101,10 +101,9 @@ class SessionStartOperator(bpy.types.Operator):
             )
             settings.is_admin = True
 
-            
         else:
             utils.clean_scene()
-            
+
             client.connect(
                 id=settings.username,
                 address=settings.ip,
@@ -141,7 +140,6 @@ class SessionStartOperator(bpy.types.Operator):
         # Push all added values
         client.push()
 
-
         # Launch drawing module
         if settings.enable_presence:
             presence.renderer.run()
@@ -149,8 +147,8 @@ class SessionStartOperator(bpy.types.Operator):
         for d in delayables:
             d.register()
         self.report(
-                {'INFO'},
-                "connexion on tcp://{}:{}".format(settings.ip,settings.port))
+            {'INFO'},
+            "connexion on tcp://{}:{}".format(settings.ip, settings.port))
         return {"FINISHED"}
 
 
@@ -199,7 +197,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
             client.remove(self.property_path)
 
             return {"FINISHED"}
-        except:# NonAuthorizedOperationError:
+        except:  # NonAuthorizedOperationError:
             self.report(
                 {'ERROR'},
                 "Non authorized operation")
@@ -284,6 +282,7 @@ class SessionApply(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 class SessionCommit(bpy.types.Operator):
     bl_idname = "session.commit"
     bl_label = "commit and push the target to other clients"
@@ -302,6 +301,7 @@ class SessionCommit(bpy.types.Operator):
         client.commit(uuid=self.target)
         client.push(uuid=self.target)
         return {"FINISHED"}
+
 
 @persistent
 def redresh_handler(dummy):
@@ -344,7 +344,7 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-    
+
     bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
 
 
