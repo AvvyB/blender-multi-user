@@ -33,7 +33,7 @@ def view3d_find():
 
 def refresh_3d_view():
     area, region, rv3d = view3d_find()
-
+    
     area.tag_redraw()
 
 def get_target(region, rv3d, coord):
