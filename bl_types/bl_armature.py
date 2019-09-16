@@ -35,15 +35,36 @@ class BlArmature(BlDatablock):
         # with Overrider(name="bpy_",parent=bpy.context) as bpy_:
         area, region, rv3d = presence.view3d_find()
 
-        override = bpy.context.copy()
+        
+        
+        bpy.context.view_layer.objects.active = parent_object 
+        # override = bpy.context.copy()
         # override['window'] = bpy.data.window_managers[0].windows[0]
+        # override['mode'] = 'EDIT_ARMATURE'
         # override['window_manager'] = bpy.data.window_managers[0]
-        # override['area'] = area
+        # override['area'] = area 
         # override['region'] = region
         # override['screen'] = bpy.data.window_managers[0].windows[0].screen
-        # override['active_object'] = parent_object
-        bpy.ops.object.mode_set(override,mode='EDIT')
 
+        import time
+        time.sleep(0.1)
+        bpy.ops.object.mode_set(mode='EDIT')
+        for bone in data['bones']:
+            if bone not in self.pointer.edit_bones:
+                new_bone = self.pointer.edit_bones.new(bone)
+            else:
+                new_bone = self.pointer.edit_bones[bone]
+
+            new_bone.tail = data['bones'][bone]['tail_local']
+            new_bone.head = data['bones'][bone]['head_local']
+            new_bone.tail_radius = data['bones'][bone]['tail_radius']
+            new_bone.head_radius = data['bones'][bone]['head_radius']
+
+            if 'parent' in data['bones'][bone]:
+                new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['parent']['name']]
+                new_bone.use_connect = data['bones'][bone]['use_connect']
+
+            
         # bpy_.mode =  'EDIT_ARMATURE'
 
         # bpy_.active_object = armature
@@ -51,7 +72,7 @@ class BlArmature(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        data =  utils.dump_datablock(pointer, 3)
+        data =  utils.dump_datablock(pointer, 4)
 
         #get the parent Object
         object_users = utils.get_users(pointer)[0]
@@ -75,6 +96,6 @@ bl_id = "armatures"
 bl_class = bpy.types.Armature
 bl_rep_class = BlArmature
 bl_delay_refresh = 1
-bl_delay_apply = 1
+bl_delay_apply = 0
 bl_automatic_push = True
 bl_icon = 'ARMATURE_DATA'
