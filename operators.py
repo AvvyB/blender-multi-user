@@ -80,7 +80,7 @@ class SessionStartOperator(bpy.types.Operator):
                 _type.bl_class,
                 _type.bl_rep_class,
                 timer=type_local_config.bl_delay_refresh,
-                automatic=_type.bl_automatic_push)
+                automatic=type_local_config.auto_push)
 
             if type_local_config.bl_delay_apply > 0:
                 delayables.append(delayable.ApplyTimer(
@@ -307,8 +307,9 @@ class SessionCommit(bpy.types.Operator):
 def redresh_handler(dummy):
     global client
 
-    user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
-    user.pointer.is_dirty = True
+    if client:
+        user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
+        user.pointer.is_dirty = True
 
 
 classes = (

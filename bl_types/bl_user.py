@@ -61,7 +61,7 @@ class BlUser(BlDatablock):
 bl_id = "users"
 bl_class = presence.User
 bl_rep_class = BlUser 
-bl_delay_refresh = 1
-bl_delay_apply = 1
+bl_delay_refresh = .2
+bl_delay_apply = .2
 bl_automatic_push = True
 bl_icon = 'CON_ARMATURE'

@@ -42,6 +42,7 @@ def generate_supported_types():
         props['bl_delay_apply']=_type.bl_delay_apply
         props['use_as_filter'] = False
         props['icon'] = _type.bl_icon
+        props['auto_push']=_type.bl_automatic_push
         # stype_dict[type]['bl_delay_apply']=_type.bl_delay_apply
         stype_dict['supported_types'][_type.bl_rep_class.__name__] = props
 
@@ -93,6 +94,7 @@ def save_session_config(self,context):
             config["supported_types"][bloc.type_name]['bl_delay_apply'] = bloc.bl_delay_apply
             config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
             config["supported_types"][bloc.type_name]['icon'] = bloc.icon
+            config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
 
         
         # Save out the configuration file
@@ -105,6 +107,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     bl_delay_refresh: bpy.props.FloatProperty()
     bl_delay_apply: bpy.props.FloatProperty()
     use_as_filter: bpy.props.BoolProperty(default=True)
+    auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
 class SessionProps(bpy.types.PropertyGroup):
@@ -195,6 +198,8 @@ class SessionProps(bpy.types.PropertyGroup):
             rep_value.bl_delay_refresh = config["supported_types"][datablock]['bl_delay_refresh']
             rep_value.bl_delay_apply = config["supported_types"][datablock]['bl_delay_apply']
             rep_value.icon = config["supported_types"][datablock]['icon']
+            rep_value.auto_push = config["supported_types"][datablock]['auto_push']
+            
     def save(self,context):
         config = environment.load_config()
 
@@ -211,6 +216,7 @@ class SessionProps(bpy.types.PropertyGroup):
             config["supported_types"][bloc.type_name]['bl_delay_apply'] = bloc.bl_delay_apply
             config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
             config["supported_types"][bloc.type_name]['icon'] = bloc.icon
+            config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
         environment.save_config(config)    
 
 

@@ -152,12 +152,15 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         line.separator()
         line.label(text="refresh (sec)")
         line.label(text="apply (sec)")
+        
         for item in settings.supported_datablock:
             line = flow.row(align=True)
-            line.label(text="", icon=item.icon)
+            # line.label(text="", icon=item.icon)
+            line.prop(item, "auto_push", text="", icon=item.icon)
             line.separator()
             line.prop(item, "bl_delay_refresh", text="")
             line.prop(item, "bl_delay_apply", text="")
+            
 
 
 class SESSION_PT_user(bpy.types.Panel):
