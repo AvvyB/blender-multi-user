@@ -113,7 +113,6 @@ class BlMesh(BlDatablock):
             # mesh_buffer.from_mesh(target)
     
             # 2 - LOAD METADATA
-    
             # uv's
             for uv_layer in data['uv_layers']:
                 target.uv_layers.new(name=uv_layer)
@@ -122,7 +121,6 @@ class BlMesh(BlDatablock):
             skin_layer = mesh_buffer.verts.layers.skin.verify()
     
             # for face in mesh_buffer.faces:
-    
             #     # Face metadata
             #     for loop in face.loops:
             #         loop_uv = loop[uv_layer]
