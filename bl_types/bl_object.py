@@ -16,7 +16,9 @@ class BlObject(BlDatablock):
             return  targetData.objects[self.buffer['name']]
 
         # Object specific constructor...
-        if data["data"] in bpy.data.meshes.keys():
+        if "data" not in data:
+            pass
+        elif data["data"] in bpy.data.meshes.keys():
             pointer = bpy.data.meshes[data["data"]]
         elif data["data"] in bpy.data.lights.keys():
             pointer = bpy.data.lights[data["data"]]
@@ -78,8 +80,9 @@ class BlObject(BlDatablock):
 
     def resolve_dependencies(self):
         deps = []
-
-        deps.append(self.pointer.data)
+        # Avoid Empty case
+        if self.pointer.data:
+            deps.append(self.pointer.data)
 
         if self.is_library:
             deps.append(self.pointer.library)

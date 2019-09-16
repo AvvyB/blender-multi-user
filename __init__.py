@@ -43,6 +43,7 @@ def generate_supported_types():
         props['use_as_filter'] = False
         props['icon'] = _type.bl_icon
         props['auto_push']=_type.bl_automatic_push
+        props['bl_name']=_type.bl_id
         # stype_dict[type]['bl_delay_apply']=_type.bl_delay_apply
         stype_dict['supported_types'][_type.bl_rep_class.__name__] = props
 
@@ -95,6 +96,8 @@ def save_session_config(self,context):
             config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
             config["supported_types"][bloc.type_name]['icon'] = bloc.icon
             config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
+            config["supported_types"][bloc.type_name]['bl_name'] = bloc.bl_name
+
 
         
         # Save out the configuration file
@@ -104,6 +107,7 @@ def save_session_config(self,context):
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     '''name = StringProperty() '''
     type_name: bpy.props.StringProperty()
+    bl_name: bpy.props.StringProperty()
     bl_delay_refresh: bpy.props.FloatProperty()
     bl_delay_apply: bpy.props.FloatProperty()
     use_as_filter: bpy.props.BoolProperty(default=True)
@@ -199,6 +203,7 @@ class SessionProps(bpy.types.PropertyGroup):
             rep_value.bl_delay_apply = config["supported_types"][datablock]['bl_delay_apply']
             rep_value.icon = config["supported_types"][datablock]['icon']
             rep_value.auto_push = config["supported_types"][datablock]['auto_push']
+            rep_value.bl_name = config["supported_types"][datablock]['bl_name']
             
     def save(self,context):
         config = environment.load_config()
@@ -217,6 +222,7 @@ class SessionProps(bpy.types.PropertyGroup):
             config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
             config["supported_types"][bloc.type_name]['icon'] = bloc.icon
             config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
+            config["supported_types"][bloc.type_name]['bl_name'] = bloc.bl_name
         environment.save_config(config)    
 
 

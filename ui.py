@@ -129,7 +129,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
 
 class SESSION_PT_settings_replication(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
-    bl_label = "Replication"
+    bl_label = "Advanced"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"

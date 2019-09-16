@@ -6,12 +6,6 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 class BlCamera(BlDatablock):
-    def __init__(self, *args, **kwargs):
-        self.icon = 'CAMERA_DATA'
-
-        super().__init__( *args, **kwargs)
-        
-        
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 

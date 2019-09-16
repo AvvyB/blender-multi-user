@@ -19,11 +19,33 @@ BPY_TYPES = {'Image': 'images', 'Texture': 'textures', 'Material': 'materials', 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
+def get_users(datablock):
+    users = []
+    supported_types = bpy.context.window_manager.session.supported_datablock
+    if  hasattr(datablock, 'users_collection') and datablock.users_collection:
+        users.extend(list(datablock.users_collection))
+    if  hasattr(datablock, 'users_scene') and datablock.users_scene:
+        users.extend(list(datablock.users_scene))
+    if  hasattr(datablock, 'users_group') and datablock.users_scene:
+        users.extend(list(datablock.users_scene))
+    for datatype in supported_types:
+        if datatype.bl_name != 'users':
+            root = getattr(bpy.data,datatype.bl_name)
+            for item in root:
+                if hasattr(item, 'data') and datablock == item.data or \
+                hasattr(item, 'children') and datablock in item.children:
+                    users.append(item)
+    return users
+
 # UTILITY FUNCTIONS
+
+
 def random_string_digits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+
 
 def clean_scene():
     for datablock in BPY_TYPES:
@@ -73,6 +95,7 @@ def get_armature_edition_context(armature):
 def get_selected_objects(scene):
     return [obj.name for obj in scene.objects if obj.select_get()]
 
+
 def load_dict(src_dict, target):
     try:
         for item in src_dict:
@@ -82,6 +105,7 @@ def load_dict(src_dict, target):
     except Exception as e:
         logger.error(e)
         pass
+
 
 def resolve_bpy_path(path):
     """
@@ -156,6 +180,7 @@ def load_armature(target=None, data=None, create=False):
             import os
             os.remove(file)
 
+
 def dump_datablock(datablock, depth):
     if datablock:
         dumper = dump_anything.Dumper()
@@ -189,8 +214,6 @@ def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None)
                 pass
 
         return data
-
-
 
 
 def init_client(key=None):
