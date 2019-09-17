@@ -34,7 +34,7 @@ def get_users(datablock):
             root = getattr(bpy.data,datatype.bl_name)
             for item in root:
                 if hasattr(item, 'data') and datablock == item.data or \
-                hasattr(item, 'children') and datablock in item.children:
+                datatype.bl_name != 'collections' and hasattr(item, 'children') and datablock in item.children:
                     users.append(item)
     return users
 

@@ -19,16 +19,23 @@ class BlArmature(BlDatablock):
         else:
             parent_object = bpy.data.objects[data['user']]
         
-        # Link it to the correct context
-        if data['user_collection'][0] == "Master Collection":
+        is_object_in_master = (data['user_collection'][0] == "Master Collection")
+        #TODO: recursive parent collection loading
+        # Link parent object to the collection
+        if is_object_in_master:
             parent_collection = bpy.data.scenes[data['user_scene'][0]].collection
         elif  data['user_collection'][0] not in bpy.data.collections.keys():
             parent_collection = bpy.data.collections.new(data['user_collection'][0])
         else:
-            parent_collection =  bpy.data.collection['user_collection'][0]
+            parent_collection =  bpy.data.collections[data['user_collection'][0]]
         
         if parent_object.name not in parent_collection.objects:
             parent_collection.objects.link(parent_object)
+        
+        # Link parent collection to the scene master collection
+        if not is_object_in_master and parent_collection.name not in bpy.data.scenes[data['user_scene'][0]].collection.children:
+            bpy.data.scenes[data['user_scene'][0]].collection.  children.link(parent_collection)
+
 
         # utils.dump_anything.load(target, data)
         # with Overrider(name="bpy_",parent=bpy.context) as bpy_:
