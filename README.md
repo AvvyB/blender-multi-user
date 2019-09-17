@@ -6,7 +6,7 @@
 | Dependencies | Version | Needed |
 |--------------|:-------:|-------:|
 | ZeroMQ       | latest  |    yes |
-| umsgpack     | latest  |    yes |
+| msgpack     | latest  |    yes |
 | PyYAML       | latest  |    yes |
 
 ## Contributing

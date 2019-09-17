@@ -12,9 +12,6 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
 from . import utils
-from .libs import debug
-# from .bl_types.bl_user import BlUser
-# from .delayable import Draw
 
 global renderer
 

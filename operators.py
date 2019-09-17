@@ -15,7 +15,7 @@ from bpy_extras.io_utils import ExportHelper
 from bpy.app.handlers import persistent
 
 from . import environment, presence, ui, utils, delayable
-from .libs import umsgpack
+import msgpack
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.interface import Session
 from .libs.replication.replication.exception import NonAuthorizedOperationError

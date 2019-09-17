@@ -22,7 +22,7 @@ from . import environment, utils
 
 DEPENDENCIES = {
     ("zmq","zmq"),
-    ("umsgpack","umsgpack"),
+    ("msgpack","msgpack"),
     ("yaml","pyyaml"),
     ("jsondiff","jsondiff")
 }

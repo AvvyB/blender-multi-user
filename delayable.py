@@ -3,7 +3,6 @@ import logging
 
 from . import operators, utils, presence
 from .bl_types.bl_user import BlUser
-from .libs import debug
 from .libs.replication.replication.constants import FETCHED
 
 logger = logging.getLogger(__name__)

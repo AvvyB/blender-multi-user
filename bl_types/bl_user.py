@@ -5,9 +5,6 @@ from .. import utils
 from .. import presence
 from .bl_datablock import BlDatablock
 from ..libs.replication.replication.constants import UP
-from ..libs.debug import draw_point
-
-
 
 class BlUser(BlDatablock):
     # def __init__(self, *args, **kwargs):
