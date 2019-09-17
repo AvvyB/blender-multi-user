@@ -16,14 +16,15 @@ class BlCurve(BlDatablock):
         # load splines
         for spline in data['splines']:
             # Update existing..
-            # if spline in target.splines.keys():
+            #if spline in target.splines.keys():
 
             new_spline = target.splines.new(data['splines'][spline]['type'])
             utils.dump_anything.load(new_spline, data['splines'][spline])
 
             # Load curve geometry data
             for bezier_point_index in data['splines'][spline]["bezier_points"]:
-                new_spline.bezier_points.add(1)
+                if bezier_point_index != 0:
+                    new_spline.bezier_points.add(1)
                 utils.dump_anything.load(
                     new_spline.bezier_points[bezier_point_index], data['splines'][spline]["bezier_points"][bezier_point_index])
 
@@ -35,8 +36,17 @@ class BlCurve(BlDatablock):
     def dump(self, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 1)
-        utils.dump_datablock_attibutes(
-            pointer, ['splines'], 5, data)
+        data['splines'] = {}
+
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 3
+        
+        for index,spline in enumerate(pointer.splines):
+            spline_data = {}
+            spline_data['points'] = dumper.dump(spline.points)
+            spline_data['bezier_points'] = dumper.dump(spline.bezier_points)
+            spline_data['type'] = dumper.dump(spline.type)
+            data['splines'][index] = spline_data
         return data
 
     def resolve(self):
