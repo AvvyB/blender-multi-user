@@ -66,6 +66,33 @@ class ApplyTimer(Timer):
 
         return self._timeout
 
+class DynamicRightSelectTimer(Timer):
+    def __init__(self, timout=1):
+        super().__init__(timout)
+        self.last_selection=[]
+
+    def execute(self):
+        if operators.client:
+            users = operators.client.list(filter=BlUser)
+
+            for user in users:
+                user_ref = operators.client.get(uuid=user)
+                settings = bpy.context.window_manager.session
+                
+                if user_ref.buffer['name'] != settings.username:
+                    for obj in bpy.data.objects:
+                        obj.hide_select = obj.name in user_ref.buffer['selected_objects']
+                elif user_ref.pointer:
+                    if user_ref.pointer.selected_objects != self.last_selection:
+                        self.last_selection = user_ref.pointer.selected_objects
+
+                        # update our rights
+                        for selected_obj in self.last_selection:
+                            node = operators.client.get(reference=bpy.data.objects[selected_obj])
+                            node.owner =  settings.username
+                            operators.client.change_owner(node.uuid, settings.username)
+        return self._timeout
+
 # class CheckNewTimer(Timer):
 
 class RedrawTimer(Timer):

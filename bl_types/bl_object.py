@@ -38,7 +38,7 @@ class BlObject(BlDatablock):
     def load(self, data, target):
         # Load other meshes metadata
         # utils.dump_anything.load(target, data)
-
+        target.uuid = data['uuid']
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
         # Load modifiers

@@ -135,7 +135,9 @@ class SessionStartOperator(bpy.types.Operator):
         settings.user_uuid = client.add(usr)
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
-
+        
+        delayables.append(delayable.DynamicRightSelectTimer())
+    
         for node in client.list():
             try:
                 client.commit(node)
