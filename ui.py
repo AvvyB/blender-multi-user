@@ -152,7 +152,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         line.separator()
         line.label(text="refresh (sec)")
         line.label(text="apply (sec)")
-        
+
         for item in settings.supported_datablock:
             line = flow.row(align=True)
             # line.label(text="", icon=item.icon)
@@ -160,7 +160,6 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
             line.separator()
             line.prop(item, "bl_delay_refresh", text="")
             line.prop(item, "bl_delay_apply", text="")
-            
 
 
 class SESSION_PT_user(bpy.types.Panel):
@@ -287,6 +286,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
         layout = self.layout
 
         if hasattr(context.window_manager, 'session'):
+            # Filters
             settings = context.window_manager.session
             flow = layout.grid_flow(
                 row_major=True,
@@ -299,12 +299,20 @@ class SESSION_PT_outliner(bpy.types.Panel):
                 col = flow.column(align=True)
                 col.prop(item, "use_as_filter", text="", icon=item.icon)
 
+
             row = layout.row(align=True)
-            # Property area
+            row.prop(settings, "filter_owned", text="Show only owned")
+
+            row = layout.row(align=True)
+
+            # Properties
             types_filter = [t.type_name for t in settings.supported_datablock
                             if t.use_as_filter]
 
-            client_keys = [key for key in operators.client.list()
+            key_to_filter = operators.client.list(
+                filter_owner=settings.username) if settings.filter_owned else operators.client.list()
+
+            client_keys = [key for key in key_to_filter
                            if operators.client.get(uuid=key).str_type
                            in types_filter]
 

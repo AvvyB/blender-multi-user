@@ -176,6 +176,11 @@ class SessionProps(bpy.types.PropertyGroup):
     session_filter: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
     )
+    filter_owned: bpy.props.BoolProperty(
+        name="filter_owned",
+        description='Show only owned datablocks',
+        default=True
+    )
 
     def load(self):
         config = environment.load_config()
