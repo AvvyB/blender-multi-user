@@ -31,7 +31,8 @@ class BlUser(BlDatablock):
         
         self.state = UP
         #TODO: refactor in order to redraw in cleaner ways
-        if presence.renderer:
+        area, region, rv3d = presence.view3d_find()
+        if presence.renderer and  area and region and rv3d :
             presence.renderer.draw_client_camera(self.buffer['name'], self.buffer['location'],self.buffer['color'])
             presence.renderer.draw_client_selection(self.buffer['name'], self.buffer['color'],self.buffer['selected_objects'])
             presence.refresh_3d_view()

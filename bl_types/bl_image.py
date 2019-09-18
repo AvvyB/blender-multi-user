@@ -18,6 +18,7 @@ def dump_image(image):
         image.save()
         file = open(image.filepath_raw, "rb")
         pixels = file.read()
+        file.close()
     else:
         raise ValueError()
     return pixels

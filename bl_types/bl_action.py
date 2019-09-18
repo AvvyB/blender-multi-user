@@ -12,6 +12,17 @@ class BlAction(BlDatablock):
     def construct(self, data):
         return bpy.data.actions.new(data["name"])
 
+    def load(self, data, target):
+        pass
+        # # find target object
+        # object_ = bpy.context.scene.objects.active
+        # if object_ is None:
+        #     raise RuntimeError("Nothing is selected.")
+        # if object_.mode != 'POSE':  # object must be in pose mode
+        #     raise RuntimeError("Object must be in pose mode.")
+        # if object_.animation_data.action is None:
+        #     raise RuntimeError("Object needs an active action.")
+
     def dump(self, pointer=None):
         assert(pointer)
         data =  utils.dump_datablock(pointer, 1)
@@ -50,4 +61,4 @@ bl_rep_class = BlAction
 bl_delay_refresh = 1
 bl_delay_apply = 1
 bl_automatic_push = True
-bl_icon = 'ACTION_DATA'
+bl_icon = 'ACTION_TWEAK'

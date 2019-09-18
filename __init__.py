@@ -4,7 +4,7 @@ bl_info = {
     "description": "",
     "blender": (2, 80, 0),
     "location": "",
-    "warning": "",
+    "warning": "Unstable addon, use it at your own risks",
     "category": "Collaboration"
 }
 
@@ -18,8 +18,8 @@ import bpy
 from bpy.app.handlers import persistent
 
 from . import environment, utils
-# from . import bl_types
 
+# TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
     ("zmq","zmq"),
     ("msgpack","msgpack"),
@@ -44,10 +44,11 @@ def generate_supported_types():
         props['icon'] = _type.bl_icon
         props['auto_push']=_type.bl_automatic_push
         props['bl_name']=_type.bl_id
-        # stype_dict[type]['bl_delay_apply']=_type.bl_delay_apply
+
         stype_dict['supported_types'][_type.bl_rep_class.__name__] = props
 
     return stype_dict
+
 
 def client_list_callback(scene, context):
     from . import operators
@@ -97,8 +98,6 @@ def save_session_config(self,context):
             config["supported_types"][bloc.type_name]['icon'] = bloc.icon
             config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
             config["supported_types"][bloc.type_name]['bl_name'] = bloc.bl_name
-
-
         
         # Save out the configuration file
         environment.save_config(config)

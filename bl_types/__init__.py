@@ -11,7 +11,8 @@ __all__ = [
     'bl_scene',
     'bl_material',
     'bl_library',
-    'bl_armature'
+    'bl_armature',
+    'bl_action'
 ]  # Order here defines execution order
 
 from . import *

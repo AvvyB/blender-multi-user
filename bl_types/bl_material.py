@@ -44,13 +44,15 @@ class BlMaterial(BlDatablock):
                                                                           ["nodes"][node]['image']['name']]
 
                 for input in data["node_tree"]["nodes"][node]["inputs"]:
-
                     try:
                         if hasattr(target.node_tree.nodes[index].inputs[input], "default_value"):
                             target.node_tree.nodes[index].inputs[input].default_value = data[
                                 "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
                     except Exception as e:
+                        print("loading error {}".format(e))
                         continue
+                # utils.dump_anything.load(
+                #     target.node_tree.nodes[index],data["node_tree"]["nodes"][node])
 
             # Load nodes links
             target.node_tree.links.clear()
@@ -68,8 +70,19 @@ class BlMaterial(BlDatablock):
         assert(pointer)
         data = utils.dump_datablock(pointer, 2)
         if pointer.use_nodes:
+            # nodes inputs 
+            nodes = {}
+            for node in pointer.node_tree.nodes:
+                dumper = utils.dump_anything.Dumper()
+                if node.type == 'TEX_IMAGE':
+                    dumper.depth = 2
+                else:
+                    dumper.depth = 4
+
+                nodes[node.name] = dumper.dump(node) 
+            data["node_tree"]['nodes']= nodes
             utils.dump_datablock_attibutes(
-                pointer.node_tree, ["nodes", "links"], 3, data['node_tree'])
+                pointer.node_tree, ["links"], 3, data['node_tree'])
         elif pointer.is_grease_pencil:
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
@@ -81,7 +94,7 @@ class BlMaterial(BlDatablock):
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
-                len(diff_rev.keys()) > 1)
+                len(diff_rev.keys()) > 0)
     
     def resolve_dependencies(self):
         deps = []

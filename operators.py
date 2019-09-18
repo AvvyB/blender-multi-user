@@ -75,7 +75,10 @@ class SessionStartOperator(bpy.types.Operator):
         for type in bl_types.types_to_register():
             _type = getattr(bl_types, type)
             supported_bl_types.append(_type.bl_id)
+
+            # Retreive local replicated types settings
             type_local_config = settings.supported_datablock[_type.bl_rep_class.__name__]
+
             bpy_factory.register_type(
                 _type.bl_class,
                 _type.bl_rep_class,
@@ -100,7 +103,6 @@ class SessionStartOperator(bpy.types.Operator):
                 port=settings.port
             )
             settings.is_admin = True
-
         else:
             utils.clean_scene()
 
@@ -109,7 +111,9 @@ class SessionStartOperator(bpy.types.Operator):
                 address=settings.ip,
                 port=settings.port
             )
+       
         time.sleep(0.5)
+
         if client.state == 0:
             settings.is_admin = False
             self.report(
@@ -131,12 +135,13 @@ class SessionStartOperator(bpy.types.Operator):
         settings.user_uuid = client.add(usr)
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
-        # delayables.append(delayable.RedrawTimer(timout=0.5))
+
         for node in client.list():
             try:
                 client.commit(node)
             except Exception as e:
                 print(e)
+
         # Push all added values
         client.push()
 
@@ -144,8 +149,10 @@ class SessionStartOperator(bpy.types.Operator):
         if settings.enable_presence:
             presence.renderer.run()
 
+        # Register blender main thread tools
         for d in delayables:
             d.register()
+
         self.report(
             {'INFO'},
             "connexion on tcp://{}:{}".format(settings.ip, settings.port))
@@ -155,7 +162,7 @@ class SessionStartOperator(bpy.types.Operator):
 class SessionStopOperator(bpy.types.Operator):
     bl_idname = "session.stop"
     bl_label = "close"
-    bl_description = "stop net service"
+    bl_description = "Exit current session"
     bl_options = {"REGISTER"}
 
     @classmethod
@@ -207,7 +214,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 class SessionPropertyRightOperator(bpy.types.Operator):
     bl_idname = "session.right"
     bl_label = "Change owner to"
-    bl_description = "stop net service"
+    bl_description = "Change owner of specified datablock"
     bl_options = {"REGISTER"}
 
     key: bpy.props.StringProperty(default="None")
@@ -239,8 +246,8 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
 class SessionSnapUserOperator(bpy.types.Operator):
     bl_idname = "session.snapview"
-    bl_label = "draw client_instances"
-    bl_description = "Description that shows in blender tooltips"
+    bl_label = "snap to user"
+    bl_description = "Snap 3d view to selected user"
     bl_options = {"REGISTER"}
 
     target_client: bpy.props.StringProperty(default="None")
@@ -265,8 +272,8 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
 class SessionApply(bpy.types.Operator):
     bl_idname = "session.apply"
-    bl_label = "apply the target item into the blender data"
-    bl_description = "Apply target object into blender data"
+    bl_label = "apply selected block into blender"
+    bl_description = "Apply selected block into blender"
     bl_options = {"REGISTER"}
 
     target = bpy.props.StringProperty()
@@ -285,8 +292,8 @@ class SessionApply(bpy.types.Operator):
 
 class SessionCommit(bpy.types.Operator):
     bl_idname = "session.commit"
-    bl_label = "commit and push the target to other clients"
-    bl_description = "commit and push the target to other clients"
+    bl_label = "commit and push selected datablock to server"
+    bl_description = "commit and push selected datablock to server"
     bl_options = {"REGISTER"}
 
     target = bpy.props.StringProperty()
@@ -305,6 +312,8 @@ class SessionCommit(bpy.types.Operator):
 
 @persistent
 def redresh_handler(dummy):
+    """force to refresh client renderer
+    """
     global client
 
     if client:

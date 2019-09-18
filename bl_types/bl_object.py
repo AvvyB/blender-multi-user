@@ -81,10 +81,13 @@ class BlObject(BlDatablock):
                 self.dump(pointer=self.pointer)['matrix_world'] != self.buffer['matrix_world'])
 
     def resolve_dependencies(self):
-        deps = []
+        deps = super().resolve_dependencies()
+
         # Avoid Empty case
         if self.pointer.data:
             deps.append(self.pointer.data)
+        if len(self.pointer.children)>0:
+            deps.extend(list(self.pointer.children))
 
         if self.is_library:
             deps.append(self.pointer.library)

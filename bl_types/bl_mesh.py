@@ -145,8 +145,9 @@ class BlMesh(BlDatablock):
         data = dump_mesh(pointer, data)
         # Fix material index
         m_list = []
-        for m in pointer.materials:
-            m_list.append(m.name)
+        for material in pointer.materials:
+            if material:
+                m_list.append(material.name)
 
         data['material_list'] = m_list
 
