@@ -80,6 +80,8 @@ class BlGpencil(BlDatablock):
 
         return deps
 
+    def is_valid(self):
+        return bpy.data.grease_pencils.get(self.buffer['name'])
 
 bl_id = "grease_pencils"
 bl_class = bpy.types.GreasePencil

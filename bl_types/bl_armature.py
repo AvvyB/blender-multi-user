@@ -95,6 +95,8 @@ class BlArmature(BlDatablock):
     def diff(self):
         False
 
+    def is_valid(self):
+        return bpy.data.armatures.get(self.buffer['name'])
 
 bl_id = "armatures"
 bl_class = bpy.types.Armature

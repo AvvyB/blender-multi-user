@@ -57,3 +57,6 @@ class BlDatablock(ReplicatedDatablock):
             dependencies.append(self.pointer.animation_data.action)
         
         return dependencies
+
+    def is_valid(self):
+        raise NotImplementedError

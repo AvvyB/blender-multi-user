@@ -59,6 +59,9 @@ class BlCollection(BlDatablock):
         
         return deps
 
+    def is_valid(self):
+        return bpy.data.collections.get(self.buffer['name'])
+        
 bl_id = "collections"
 bl_icon = 'FILE_FOLDER'
 bl_class = bpy.types.Collection

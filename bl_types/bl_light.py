@@ -26,6 +26,8 @@ class BlLight(BlDatablock):
         return (self.bl_diff() or
                 len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
 
+    def is_valid(self):
+        return bpy.data.lights.get(self.buffer['name'])
 
 bl_id = "lights"
 bl_class = bpy.types.Light

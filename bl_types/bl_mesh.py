@@ -168,6 +168,9 @@ class BlMesh(BlDatablock):
             deps.append(material)
         
         return deps
+    
+    def is_valid(self):
+        return bpy.data.meshes.get(self.buffer['name'])
         
 bl_id = "meshes"
 bl_class = bpy.types.Mesh

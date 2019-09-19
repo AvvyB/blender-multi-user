@@ -56,6 +56,8 @@ class BlUser(BlDatablock):
                 return True
         return False
 
+    def is_valid(self):
+        return True
 bl_id = "users"
 bl_class = presence.User
 bl_rep_class = BlUser 

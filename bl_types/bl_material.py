@@ -108,6 +108,8 @@ class BlMaterial(BlDatablock):
 
         return deps
 
+    def is_valid(self):
+        return bpy.data.materials.get(self.buffer['name'])
 
 bl_id = "materials"
 bl_class = bpy.types.Material

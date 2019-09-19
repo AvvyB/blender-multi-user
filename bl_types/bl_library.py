@@ -25,6 +25,8 @@ class BlLibrary(BlDatablock):
     def diff(self):
         return (self.bl_diff())
 
+    def is_valid(self):
+        return bpy.data.libraries.get(self.buffer['name'])
 
 bl_id = "libraries"
 bl_class = bpy.types.Library

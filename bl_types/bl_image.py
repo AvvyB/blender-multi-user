@@ -64,6 +64,9 @@ class BlImage(BlDatablock):
 
     def diff(self):
         return False
+    
+    def is_valid(self):
+        return bpy.data.images.get(self.buffer['name'])
 bl_id = "images"
 bl_class = bpy.types.Image
 bl_rep_class = BlImage

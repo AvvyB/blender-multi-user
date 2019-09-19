@@ -24,6 +24,10 @@ class BlCamera(BlDatablock):
     def diff(self):
         return (self.bl_diff() or
                 len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
+    
+    def is_valid(self):
+        return bpy.data.cameras.get(self.buffer['name'])
+
 
 bl_id = "cameras"
 bl_class = bpy.types.Camera

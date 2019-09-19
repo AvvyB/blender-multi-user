@@ -55,6 +55,9 @@ class BlAction(BlDatablock):
     def diff(self):
         return False
 
+    def is_valid(self):
+        return bpy.data.actions.get(self.buffer['name'])
+
 bl_id = "actions"
 bl_class = bpy.types.Action
 bl_rep_class = BlAction

@@ -94,7 +94,8 @@ class BlObject(BlDatablock):
 
         return deps
 
-
+    def is_valid(self):
+        return bpy.data.objects.get(self.buffer['name'])
 bl_id = "objects"
 bl_class = bpy.types.Object
 bl_rep_class = BlObject

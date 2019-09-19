@@ -65,7 +65,9 @@ class BlScene(BlDatablock):
             deps.append(object)
         
         return deps
-        
+    
+    def is_valid(self):
+        return bpy.data.scenes.get(self.buffer['name'])
 bl_id = "scenes"
 bl_class = bpy.types.Scene
 bl_rep_class = BlScene
