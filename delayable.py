@@ -83,9 +83,10 @@ class DynamicRightSelectTimer(Timer):
                     for obj in bpy.data.objects:
                         obj.hide_select = obj.name in user_ref.buffer['selected_objects']
                 elif user_ref.pointer:
-                    if user_ref.pointer.selected_objects != self.last_selection:
-                        self.last_selection = user_ref.pointer.selected_objects
-
+                    current_selection = utils.get_selected_objects(bpy.context.scene)
+                    if current_selection != self.last_selection:
+                        self.last_selection = current_selection
+                        user_ref.pointer.update_selected_objects(bpy.context)
                         # update our rights
                         for selected_obj in self.last_selection:
                             node = operators.client.get(reference=bpy.data.objects[selected_obj])
@@ -137,4 +138,3 @@ class ClientUpdate(Draw):
 
             if client:
                 client.pointer.update_location()
-                client.pointer.update_selected_objects(bpy.context)

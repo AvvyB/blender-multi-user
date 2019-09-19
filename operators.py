@@ -322,7 +322,8 @@ def redresh_handler(dummy):
         user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
         
         if hasattr(user,"pointer"):
-            user.pointer.is_dirty = True
+            pass
+            # user.pointer.is_dirty = True
 
 
 classes = (
@@ -342,7 +343,7 @@ def register():
         register_class(cls)
 
     presence.register()
-    bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
+    # bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
 
 
 def unregister():
@@ -358,7 +359,7 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
+    # bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
 
 
 if __name__ == "__main__":
