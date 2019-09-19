@@ -114,7 +114,7 @@ class BlMaterial(BlDatablock):
 bl_id = "materials"
 bl_class = bpy.types.Material
 bl_rep_class = BlMaterial
-bl_delay_refresh = 5
-bl_delay_apply = 5
+bl_delay_refresh = 10
+bl_delay_apply = 10
 bl_automatic_push = True
 bl_icon = 'MATERIAL_DATA'
