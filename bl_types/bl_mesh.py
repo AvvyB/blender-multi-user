@@ -53,6 +53,7 @@ def dump_mesh(mesh, data={}):
         f["material_index"] = face.material_index
         f["smooth"] = face.smooth
         f["normal"] = list(face.normal)
+        f["index"] = face.index
 
         uvs = []
         # Face metadata
@@ -79,9 +80,19 @@ class BlMesh(BlDatablock):
 
     def load(self, data, target):
         if not target or not target.is_editmode:
-            # 1 - LOAD GEOMETRY
-            mesh_buffer = bmesh.new()
+             # 1 - LOAD MATERIAL SLOTS
+            material_to_load = []
+            material_to_load = utils.revers(data["materials"])
+            target.materials.clear()
+            # SLots
+            i = 0
     
+            for m in data["material_list"]:
+                target.materials.append(bpy.data.materials[m])
+
+            # 2 - LOAD GEOMETRY
+            mesh_buffer = bmesh.new()
+
             for i in data["verts"]:
                 v = mesh_buffer.verts.new(data["verts"][i]["co"])
                 v.normal = data["verts"][i]["normal"]
@@ -91,8 +102,8 @@ class BlMesh(BlDatablock):
                 verts = mesh_buffer.verts
                 v1 = data["edges"][i]["verts"][0]
                 v2 = data["edges"][i]["verts"][1]
-                mesh_buffer.edges.new([verts[v1], verts[v2]])
-    
+                edge = mesh_buffer.edges.new([verts[v1], verts[v2]])
+                edge.smooth = data["edges"][i]["smooth"]
             for p in data["faces"]:
                 verts = []
                 for v in data["faces"][p]["verts"]:
@@ -102,45 +113,29 @@ class BlMesh(BlDatablock):
                     f = mesh_buffer.faces.new(verts)
     
                     uv_layer = mesh_buffer.loops.layers.uv.verify()
-    
-                    f.material_index = data["faces"][p]['material_index']
+                    
                     f.smooth = data["faces"][p]["smooth"]
                     f.normal = data["faces"][p]["normal"]
+                    f.index = data["faces"][p]["index"]
+                    f.material_index = data["faces"][p]['material_index']
                     # UV loading
                     for i, loop in enumerate(f.loops):
                         loop_uv = loop[uv_layer]
                         loop_uv.uv = data["faces"][p]["uv"][i]
-    
-   
+            mesh_buffer.faces.ensure_lookup_table()
             mesh_buffer.to_mesh(target)
-    
-            # mesh_buffer.from_mesh(target)
-    
-            # 2 - LOAD METADATA
+
+            # 3 - LOAD METADATA
             # uv's
             for uv_layer in data['uv_layers']:
                 target.uv_layers.new(name=uv_layer)
     
             bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
             skin_layer = mesh_buffer.verts.layers.skin.verify()
-    
-            # for face in mesh_buffer.faces:
-            #     # Face metadata
-            #     for loop in face.loops:
-            #         loop_uv = loop[uv_layer]
-            #         loop_uv.uv = data['faces'][face.index]["uv"]
-    
+            
             utils.dump_anything.load(target, data)
     
-            # 3 - LOAD MATERIAL SLOTS
-            material_to_load = []
-            material_to_load = utils.revers(data["materials"])
-            target.materials.clear()
-            # SLots
-            i = 0
-    
-            for m in data["material_list"]:
-                target.materials.append(bpy.data.materials[m])
+           
 
     def dump(self, pointer=None):
         assert(pointer)
