@@ -322,8 +322,7 @@ def redresh_handler(dummy):
         user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
         
         if hasattr(user,"pointer"):
-            pass
-            # user.pointer.is_dirty = True
+            user.pointer.is_dirty = True
 
 
 classes = (
