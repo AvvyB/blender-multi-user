@@ -342,7 +342,7 @@ def register():
         register_class(cls)
 
     presence.register()
-    # bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
+    bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
 
 
 def unregister():
@@ -358,7 +358,7 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    # bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
+    bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
 
 
 if __name__ == "__main__":

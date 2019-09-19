@@ -69,10 +69,12 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
         row = layout.row()
         # USER SETTINGS
-        row.label(text="draw overlay:")
+        row.label(text="Presence overlay:")
         row.prop(settings, "enable_presence", text="")
         row = layout.row()
-
+        row.label(text="Own selection:")
+        row.prop(settings, "use_select_right", text="")
+        row = layout.row()
         row = layout.row()
         row.prop(settings, "session_mode", expand=True)
         row = layout.row()
@@ -80,19 +82,19 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         if settings.session_mode == 'HOST':
             box = row.box()
             row = box.row()
-            row.label(text="clear blend:")
+            row.label(text="Start empty:")
             row.prop(settings, "start_empty", text="")
             row = box.row()
-            row.label(text="init scene:")
+            row.label(text="Init scene:")
             row.prop(settings, "init_scene", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
             box = row.box()
             row = box.row()
-            row.prop(settings, "ip", text="ip")
+            row.prop(settings, "ip", text="IP")
             row = box.row()
-            row.label(text="port:")
+            row.label(text="Port:")
             row.prop(settings, "port", text="")
             row = box.row()
 

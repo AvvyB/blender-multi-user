@@ -87,12 +87,14 @@ class DynamicRightSelectTimer(Timer):
                     if current_selection != self.last_selection:
                         self.last_selection = current_selection
                         user_ref.pointer.update_selected_objects(bpy.context)
-                        # update our rights
-                        for selected_obj in self.last_selection:
-                            node = operators.client.get(reference=bpy.data.objects[selected_obj])
-                            if node:
-                                node.owner =  settings.username
-                                operators.client.change_owner(node.uuid, settings.username)
+
+                        if settings.use_select_right:
+                            # update our rights
+                            for selected_obj in self.last_selection:
+                                node = operators.client.get(reference=bpy.data.objects[selected_obj])
+                                if node:
+                                    node.owner =  settings.username
+                                    operators.client.change_owner(node.uuid, settings.username)
         return self._timeout
 
 # class CheckNewTimer(Timer):

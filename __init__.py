@@ -165,7 +165,7 @@ class SessionProps(bpy.types.PropertyGroup):
         description="client enum",
         items=client_list_callback)
     enable_presence: bpy.props.BoolProperty(
-        name="enable_presence",
+        name="Presence overlay",
         description='Enable overlay drawing module',
         default=True,
         update=save_session_config
@@ -179,6 +179,11 @@ class SessionProps(bpy.types.PropertyGroup):
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',
+        default=True
+    )
+    use_select_right: bpy.props.BoolProperty(
+        name="Selection right",
+        description='Change right on selection',
         default=True
     )
 
