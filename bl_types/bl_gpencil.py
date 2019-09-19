@@ -59,7 +59,7 @@ class BlGpencil(BlDatablock):
 
     def diff(self):
         return (self.bl_diff() or
-                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
+                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 0)
 
     def dump(self, pointer=None):
         assert(pointer)

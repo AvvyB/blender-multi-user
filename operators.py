@@ -142,7 +142,7 @@ class SessionStartOperator(bpy.types.Operator):
             try:
                 client.commit(node)
             except Exception as e:
-                print(e)
+                print("error on first commit {}".format(e))
 
         # Push all added values
         client.push()
