@@ -24,6 +24,7 @@ def dump_mesh(mesh, data={}):
 
         # vert metadata
         v['bevel'] = vert[bevel_layer]
+        v['normal'] = list(vert.normal)
         # v['skin'] = list(vert[skin_layer])
 
         verts[str(vert.index)] = v
@@ -50,6 +51,8 @@ def dump_mesh(mesh, data={}):
 
         f["verts"] = fverts
         f["material_index"] = face.material_index
+        f["smooth"] = face.smooth
+        f["normal"] = list(face.normal)
 
         uvs = []
         # Face metadata
@@ -81,7 +84,7 @@ class BlMesh(BlDatablock):
     
             for i in data["verts"]:
                 v = mesh_buffer.verts.new(data["verts"][i]["co"])
-    
+                v.normal = data["verts"][i]["normal"]
             mesh_buffer.verts.ensure_lookup_table()
     
             for i in data["edges"]:
@@ -101,7 +104,8 @@ class BlMesh(BlDatablock):
                     uv_layer = mesh_buffer.loops.layers.uv.verify()
     
                     f.material_index = data["faces"][p]['material_index']
-    
+                    f.smooth = data["faces"][p]["smooth"]
+                    f.normal = data["faces"][p]["normal"]
                     # UV loading
                     for i, loop in enumerate(f.loops):
                         loop_uv = loop[uv_layer]
