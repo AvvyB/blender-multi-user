@@ -16,7 +16,28 @@ class BlLight(BlDatablock):
     def dump(self, pointer=None):
         assert(pointer)
 
-        return utils.dump_datablock(pointer, 3)
+        replicated_attributes = [
+            "name",
+            "type",
+            "color",
+            "energy",
+            "specular_factor",
+            "uuid",
+            "shadow_soft_size",
+            "use_custom_distance",
+            "cutoff_distance",
+            "use_shadow",
+            "shadow_buffer_clip_start",
+            "shadow_buffer_soft",
+            "shadow_buffer_bias",
+            "shadow_buffer_bleed_bias",
+            "contact_shadow_distance",
+            "contact_shadow_soft_size",
+            "contact_shadow_bias",
+            "contact_shadow_thickness"
+        ]
+        data = { k:v for k,v in utils.dump_datablock(pointer, 3).items() if k in replicated_attributes }
+        return data
 
     def resolve(self):
         assert(self.buffer)

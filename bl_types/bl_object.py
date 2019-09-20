@@ -3,6 +3,7 @@ import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
+from jsondiff import diff
 
 
 class BlObject(BlDatablock):
@@ -59,6 +60,19 @@ class BlObject(BlDatablock):
     def dump(self, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 1)
+        replicated_attributes = [
+            "name",
+            "matrix_world",
+            "rotation_mode",
+            "parent",
+            "data",
+            "uuid",
+            "children",
+            "library"
+        ]
+        data = { k:v for k,v in data.items() if k in replicated_attributes }
+        # data = {value in data for key, value in data.items() if key in replicated_attributes}
+        # data = utils.dump_datablock_attibutes(pointer, replicated_attributes)
         
         if self.is_library:
             return data
@@ -77,8 +91,9 @@ class BlObject(BlDatablock):
             pass
 
     def diff(self):
+        diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
-                self.dump(pointer=self.pointer)['matrix_world'] != self.buffer['matrix_world'])
+                len(diff_rev.keys()))
 
     def resolve_dependencies(self):
         deps = super().resolve_dependencies()

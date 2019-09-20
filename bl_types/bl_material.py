@@ -94,7 +94,7 @@ class BlMaterial(BlDatablock):
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
-                len(diff_rev.keys()) > 0)
+                len(diff_rev.keys()) > 1)
     
     def resolve_dependencies(self):
         deps = []

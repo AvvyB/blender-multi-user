@@ -201,7 +201,6 @@ def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None)
         dumper.depth = depth
 
         datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type, datablock.name)
 
         data = {}
 
