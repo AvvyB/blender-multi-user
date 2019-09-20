@@ -241,7 +241,11 @@ def draw_property(context, parent, property_uuid, level=0):
     # Operations
 
     have_right_to_modify = settings.is_admin or item.owner == settings.username
-
+    detail_item_box.operator(
+        "session.commit",
+        text="",
+        icon='TRIA_UP').target = item.uuid
+    detail_item_box.separator() 
     if item.state in [FETCHED, UP]:
         detail_item_box.operator(
             "session.apply",
