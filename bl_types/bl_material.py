@@ -68,19 +68,25 @@ class BlMaterial(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
+
         data = utils.dump_datablock(pointer, 2)
         if pointer.use_nodes:
-            # nodes inputs 
             nodes = {}
+            dumper = utils.dump_anything.Dumper()
+            dumper.exclude_filter = [
+                "dimensions",
+                "select",
+            ]
+
             for node in pointer.node_tree.nodes:
-                dumper = utils.dump_anything.Dumper()
                 if node.type == 'TEX_IMAGE':
                     dumper.depth = 2
                 else:
-                    dumper.depth = 4
+                    dumper.depth = 3
+                dumper.filter = ["inputs"]
+                nodes[node.name] = dumper.dump(node)
 
-                nodes[node.name] = dumper.dump(node) 
-            data["node_tree"]['nodes']= nodes
+            data["node_tree"]['nodes'] = nodes
             utils.dump_datablock_attibutes(
                 pointer.node_tree, ["links"], 3, data['node_tree'])
         elif pointer.is_grease_pencil:
@@ -95,7 +101,7 @@ class BlMaterial(BlDatablock):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 1)
-    
+
     def resolve_dependencies(self):
         deps = []
 
@@ -110,6 +116,7 @@ class BlMaterial(BlDatablock):
 
     def is_valid(self):
         return bpy.data.materials.get(self.buffer['name'])
+
 
 bl_id = "materials"
 bl_class = bpy.types.Material

@@ -78,6 +78,8 @@ class Dumper:
         self._build_inline_dump_functions()
         self._build_match_elements()
         self.type_subset = self.match_subset_all
+        self.filter = []
+        self.exclude_filter = []
         # self._atomic_types = [] # TODO future option?
 
     def dump(self, any):
@@ -85,7 +87,6 @@ class Dumper:
 
     def _dump_any(self, any, depth):
         for filter_function, dump_function in self.type_subset:
-
             if filter_function(any):
                 # print(any)
                 return dump_function[not (depth >= self.depth)](any, depth + 1)
@@ -142,7 +143,9 @@ class Dumper:
     def _dump_default_as_branch(self, default, depth):
         def is_valid_property(p):
             try:
-                getattr(default, p)
+                if (self.filter and default not in self.exclude_filter) or \
+                    not self.exclude_filter:
+                    getattr(default, p)
             except AttributeError:
                 return False
             if p.startswith("__"):
@@ -153,7 +156,7 @@ class Dumper:
                 return False
             return True
 
-        all_property_names = [p for p in dir(default) if is_valid_property(p)]
+        all_property_names = [p for p in dir(default) if is_valid_property(p) and p != '']
         dump = {}
         for p in all_property_names:
             dp = self._dump_any(getattr(default, p), depth)
