@@ -73,18 +73,34 @@ class BlMaterial(BlDatablock):
         if pointer.use_nodes:
             nodes = {}
             dumper = utils.dump_anything.Dumper()
+            dumper.depth = 2
             dumper.exclude_filter = [
                 "dimensions",
                 "select",
+                "bl_height_min",
+                "bl_height_max",
+                "bl_width_min",
+                "bl_width_max",
+                "bl_width_default",
+                "hide",
+                "show_options",
+                "show_tetxures",
+                "show_preview",
+                "outputs",
             ]
 
             for node in pointer.node_tree.nodes:
-                if node.type == 'TEX_IMAGE':
-                    dumper.depth = 2
-                else:
-                    dumper.depth = 3
-                dumper.filter = ["inputs"]
                 nodes[node.name] = dumper.dump(node)
+
+                if hasattr(node,'inputs'):
+                    nodes[node.name]['inputs'] = {}
+
+                    for i in node.inputs:
+                        dumper.depth = 1
+                        dumper.include_filter = ["default_value"]
+                        if hasattr(i,'default_value'):
+                            nodes[node.name]['inputs'][i.name] = dumper.dump(i) 
+                    
 
             data["node_tree"]['nodes'] = nodes
             utils.dump_datablock_attibutes(

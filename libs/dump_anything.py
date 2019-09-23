@@ -78,7 +78,7 @@ class Dumper:
         self._build_inline_dump_functions()
         self._build_match_elements()
         self.type_subset = self.match_subset_all
-        self.filter = []
+        self.include_filter = []
         self.exclude_filter = []
         # self._atomic_types = [] # TODO future option?
 
@@ -143,9 +143,10 @@ class Dumper:
     def _dump_default_as_branch(self, default, depth):
         def is_valid_property(p):
             try:
-                if (self.filter and default not in self.exclude_filter) or \
-                    not self.exclude_filter:
-                    getattr(default, p)
+                if (self.exclude_filter and p in self.exclude_filter) or\
+                    (self.include_filter and p not in self.include_filter):
+                    return False
+                getattr(default, p)
             except AttributeError:
                 return False
             if p.startswith("__"):
