@@ -6,29 +6,18 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 
-class BlMaterial(BlDatablock):
+class BlWorld(BlDatablock):
     def construct(self, data):
-        return bpy.data.materials.new(data["name"])
+        return bpy.data.worlds.new(data["name"])
 
     def load(self, data, target):
-        if data['is_grease_pencil']:
-            if not target.is_grease_pencil:
-                bpy.data.materials.create_gpencil_data(target)
-
-            utils.dump_anything.load(
-                target.grease_pencil, data['grease_pencil'])
-
-            utils.load_dict(data['grease_pencil'], target.grease_pencil)
-
-        elif data["use_nodes"]:
+        if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
 
             target.node_tree.nodes.clear()
 
             for node in data["node_tree"]["nodes"]:
-                # fix None node tree error
-
                 index = target.node_tree.nodes.find(node)
 
                 if index is -1:
@@ -51,8 +40,6 @@ class BlMaterial(BlDatablock):
                     except Exception as e:
                         print("loading error {}".format(e))
                         continue
-                # utils.dump_anything.load(
-                #     target.node_tree.nodes[index],data["node_tree"]["nodes"][node])
 
             # Load nodes links
             target.node_tree.links.clear()
@@ -68,21 +55,19 @@ class BlMaterial(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        mat_dumper = utils.dump_anything.Dumper()
-        mat_dumper.depth = 2
-        mat_dumper.exclude_filter = [
+
+        world_dumper = utils.dump_anything.Dumper()
+        world_dumper.depth = 2
+        world_dumper.exclude_filter = [
             "preview",
             "original",
-            "uuid",
-            "users",
-            "alpha_threshold",
-            "line_color"
-        ]
-        data = mat_dumper.dump(pointer)
+            "uuid"
+        ] 
+        data = world_dumper.dump(pointer)
         if pointer.use_nodes:
             nodes = {}
             dumper = utils.dump_anything.Dumper()
-            dumper.depth = 1
+            dumper.depth = 2
             dumper.exclude_filter = [
                 "dimensions",
                 "select",
@@ -96,7 +81,9 @@ class BlMaterial(BlDatablock):
                 "show_tetxures",
                 "show_preview",
                 "outputs",
-                "view_center",
+                "preview",
+                "original",
+                "width_hidden"
             ]
 
             for node in pointer.node_tree.nodes:
@@ -114,17 +101,14 @@ class BlMaterial(BlDatablock):
             data["node_tree"]['nodes'] = nodes
             utils.dump_datablock_attibutes(
                 pointer.node_tree, ["links"], 3, data['node_tree'])
-        elif pointer.is_grease_pencil:
-            utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
 
     def resolve(self):
         assert(self.buffer)
-        self.pointer = bpy.data.materials.get(self.buffer['name'])
+        self.pointer = bpy.data.worlds.get(self.buffer['name'])
 
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        print(diff_rev)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 0)
 
@@ -141,13 +125,13 @@ class BlMaterial(BlDatablock):
         return deps
 
     def is_valid(self):
-        return bpy.data.materials.get(self.buffer['name'])
+        return bpy.data.worlds.get(self.buffer['name'])
 
 
-bl_id = "materials"
-bl_class = bpy.types.Material
-bl_rep_class = BlMaterial
-bl_delay_refresh = 10
-bl_delay_apply = 10
+bl_id = "worlds"
+bl_class = bpy.types.World
+bl_rep_class = BlWorld
+bl_delay_refresh = 4
+bl_delay_apply = 4
 bl_automatic_push = True
-bl_icon = 'MATERIAL_DATA'
+bl_icon = 'WORLD_DATA'

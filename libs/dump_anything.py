@@ -160,6 +160,9 @@ class Dumper:
         all_property_names = [p for p in dir(default) if is_valid_property(p) and p != '']
         dump = {}
         for p in all_property_names:
+            if (self.exclude_filter and p in self.exclude_filter) or\
+                (self.include_filter and p not in self.include_filter):
+                return False
             dp = self._dump_any(getattr(default, p), depth)
             if not (dp is None):
                 dump[p] = dp

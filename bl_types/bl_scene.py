@@ -58,11 +58,17 @@ class BlScene(BlDatablock):
 
     def resolve_dependencies(self):
         deps = []
-        
+
+        # child collections
         for child in self.pointer.collection.children:
             deps.append(child)
+        
+        # childs objects
         for object in self.pointer.objects:
             deps.append(object)
+        
+        # world
+        deps.append(self.pointer.world)
         
         return deps
     
