@@ -15,8 +15,9 @@ class BlLight(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-
-        replicated_attributes = [
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 3
+        dumper.include_filter = [
             "name",
             "type",
             "color",
@@ -36,7 +37,7 @@ class BlLight(BlDatablock):
             "contact_shadow_bias",
             "contact_shadow_thickness"
         ]
-        data = { k:v for k,v in utils.dump_datablock(pointer, 3).items() if k in replicated_attributes }
+        data = dumper.dump(pointer)
         return data
 
     def resolve(self):

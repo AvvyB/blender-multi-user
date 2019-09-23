@@ -27,6 +27,8 @@ class BlObject(BlDatablock):
             pointer = bpy.data.cameras[data["data"]]
         elif data["data"] in bpy.data.curves.keys():
             pointer = bpy.data.curves[data["data"]]
+        elif data["data"] in bpy.data.metaballs.keys():
+            pointer = bpy.data.metaballs[data["data"]]
         elif data["data"] in bpy.data.armatures.keys():
             pointer = bpy.data.armatures[data["data"]]
         elif data["data"] in bpy.data.grease_pencils.keys():
