@@ -100,7 +100,8 @@ class SessionStartOperator(bpy.types.Operator):
             client.host(
                 id=settings.username,
                 address=settings.ip,
-                port=settings.port
+                port=settings.port,
+                right_strategy=settings.right_strategy
             )
             settings.is_admin = True
         else:
@@ -154,7 +155,7 @@ class SessionStartOperator(bpy.types.Operator):
         # Register blender main thread tools
         for d in delayables:
             d.register()
-
+        
         self.report(
             {'INFO'},
             "connexion on tcp://{}:{}".format(settings.ip, settings.port))

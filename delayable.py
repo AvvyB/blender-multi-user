@@ -87,7 +87,7 @@ class DynamicRightSelectTimer(Timer):
                     if current_selection != self.last_selection:
                         user_ref.pointer.update_selected_objects(bpy.context)
 
-                        if settings.use_select_right:
+                        if operators.client.get_config()['right_strategy'] == 'COMMON':
                             obj_common = [o for o in self.last_selection if o not in current_selection]
                             obj_ours = [o for o in current_selection if o not in self.last_selection]
 

@@ -66,14 +66,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
         settings = context.window_manager.session
 
-        row = layout.row()
         # USER SETTINGS
-        # row.label(text="Presence overlay:")
-        # row.prop(settings, "enable_presence", text="")
-        # row = layout.row()
-        row.label(text="Own selection:")
-        row.prop(settings, "use_select_right", text="")
-        row = layout.row()
         row = layout.row()
         row.prop(settings, "session_mode", expand=True)
         row = layout.row()
@@ -121,7 +114,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
 
         row = layout.row()
         # USER SETTINGS
-        row.prop(settings, "username", text="id")
+        row.prop(settings, "username", text="name")
 
         row = layout.row()
         row.prop(settings, "client_color", text="color")
@@ -146,8 +139,17 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         layout = self.layout
 
         settings = context.window_manager.session
+        # Right managment
+        if settings.session_mode == 'HOST':
+            row = layout.row(align=True)
+            row.label(text="Right strategy:")
+            row.prop(settings,"right_strategy",text="")
 
-        flow = layout.grid_flow(
+        row = layout.row()
+
+        row = layout.row()
+        # Replication frequencies
+        flow = row .grid_flow(
             row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
         line = flow.row(align=True)
         line.label(text=" ")
@@ -157,7 +159,6 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         for item in settings.supported_datablock:
             line = flow.row(align=True)
-            # line.label(text="", icon=item.icon)
             line.prop(item, "auto_push", text="", icon=item.icon)
             line.separator()
             line.prop(item, "bl_delay_refresh", text="")
@@ -224,6 +225,7 @@ class SESSION_PT_presence(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -362,8 +364,8 @@ class SESSION_PT_outliner(bpy.types.Panel):
 classes = (
     SESSION_PT_settings,
     SESSION_PT_settings_user,
-    SESSION_PT_presence,
     SESSION_PT_settings_network,
+    SESSION_PT_presence,
     SESSION_PT_settings_replication,
     SESSION_PT_user,
     SESSION_PT_outliner

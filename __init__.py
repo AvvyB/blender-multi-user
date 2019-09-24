@@ -17,7 +17,7 @@ import sys
 import bpy
 from bpy.app.handlers import persistent
 
-from . import environment, utils
+from . import environment, utils, presence
 from .libs.replication.replication.constants import  RP_COMMON
 
 
@@ -135,6 +135,13 @@ class SessionProps(bpy.types.PropertyGroup):
             ('HOST', 'hosting', 'host a session'),
             ('CONNECT', 'connexion', 'connect to a session')},
         default='HOST')
+    right_strategy: bpy.props.EnumProperty(
+        name='right_strategy',
+        description='right strategy',
+        items={
+            ('STRICT', 'strict', 'strict right repartition'),
+            ('COMMON', 'common', 'relaxed right repartition')},
+        default='COMMON')
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
         subtype='COLOR',
@@ -154,7 +161,7 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Enable selection overlay ',
         default=True,
         update=presence.update_overlay_settings
-        )
+    )
     presence_show_user: bpy.props.BoolProperty(
         name="Show users",
         description='Enable user overlay ',
