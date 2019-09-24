@@ -78,31 +78,6 @@ def randomColor():
     b = random.random()
     return [r, v, b]
 
-
-def save_session_config(self,context):
-        config = environment.load_config()
-        if "supported_types" not in config:
-            config = generate_supported_types()
-        config["username"] = self.username
-        config["ip"] = self.ip
-        config["port"] = self.port
-        config["start_empty"] = self.start_empty
-        config["enable_presence"] = self.enable_presence
-        config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
-    
-        rep_type = {}
-        for bloc in self.supported_datablock:
-            config["supported_types"][bloc.type_name]['bl_delay_refresh'] = bloc.bl_delay_refresh
-            config["supported_types"][bloc.type_name]['bl_delay_apply'] = bloc.bl_delay_apply
-            config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
-            config["supported_types"][bloc.type_name]['icon'] = bloc.icon
-            config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
-            config["supported_types"][bloc.type_name]['bl_name'] = bloc.bl_name
-        
-        # Save out the configuration file
-        environment.save_config(config)
-
-
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     '''name = StringProperty() '''
     type_name: bpy.props.StringProperty()
@@ -116,14 +91,12 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
-        default="user_{}".format(utils.random_string_digits()),
-        update=save_session_config
+        default="user_{}".format(utils.random_string_digits())
     )
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
-        default="127.0.0.1",
-        update=save_session_config
+        default="127.0.0.1"
         )
     user_uuid: bpy.props.StringProperty(
         name="user_uuid",
@@ -132,20 +105,25 @@ class SessionProps(bpy.types.PropertyGroup):
     port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',
-        default=5555,
-        update=save_session_config
+        default=5555
         )
     add_property_depth: bpy.props.IntProperty(
         name="add_property_depth",
         default=1
         )
     outliner_filter: bpy.props.StringProperty(name="None")
-    is_admin: bpy.props.BoolProperty(name="is_admin", default=False)
-    init_scene: bpy.props.BoolProperty(name="init_scene", default=True)
+    is_admin: bpy.props.BoolProperty(
+        name="is_admin",
+        default=False
+        )
+    init_scene: bpy.props.BoolProperty(
+        name="init_scene",
+        default=True
+        )
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
-        default=True,
-        update=save_session_config)
+        default=True
+        )
     active_object: bpy.props.PointerProperty(
         name="active_object", type=bpy.types.Object)
     session_mode: bpy.props.EnumProperty(
@@ -158,8 +136,7 @@ class SessionProps(bpy.types.PropertyGroup):
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
         subtype='COLOR',
-        default=randomColor(),
-        update=save_session_config)
+        default=randomColor())
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
@@ -167,8 +144,7 @@ class SessionProps(bpy.types.PropertyGroup):
     enable_presence: bpy.props.BoolProperty(
         name="Presence overlay",
         description='Enable overlay drawing module',
-        default=True,
-        update=save_session_config
+        default=True
         )
     supported_datablock: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
@@ -208,11 +184,13 @@ class SessionProps(bpy.types.PropertyGroup):
             rep_value = self.supported_datablock.add()
             rep_value.name = datablock
             rep_value.type_name = datablock
-            rep_value.bl_delay_refresh = config["supported_types"][datablock]['bl_delay_refresh']
-            rep_value.bl_delay_apply = config["supported_types"][datablock]['bl_delay_apply']
-            rep_value.icon = config["supported_types"][datablock]['icon']
-            rep_value.auto_push = config["supported_types"][datablock]['auto_push']
-            rep_value.bl_name = config["supported_types"][datablock]['bl_name']
+
+            config_block = config["supported_types"][datablock]
+            rep_value.bl_delay_refresh = config_block['bl_delay_refresh']
+            rep_value.bl_delay_apply = config_block['bl_delay_apply']
+            rep_value.icon = config_block['icon']
+            rep_value.auto_push = config_block['auto_push']
+            rep_value.bl_name = config_block['bl_name']
             
     def save(self,context):
         config = environment.load_config()
@@ -226,12 +204,13 @@ class SessionProps(bpy.types.PropertyGroup):
         
 
         for bloc in self.supported_datablock:
-            config["supported_types"][bloc.type_name]['bl_delay_refresh'] = bloc.bl_delay_refresh
-            config["supported_types"][bloc.type_name]['bl_delay_apply'] = bloc.bl_delay_apply
-            config["supported_types"][bloc.type_name]['use_as_filter'] = bloc.use_as_filter
-            config["supported_types"][bloc.type_name]['icon'] = bloc.icon
-            config["supported_types"][bloc.type_name]['auto_push'] = bloc.auto_push
-            config["supported_types"][bloc.type_name]['bl_name'] = bloc.bl_name
+            config_block = config["supported_types"][bloc.type_name]
+            config_block['bl_delay_refresh'] = bloc.bl_delay_refresh
+            config_block['bl_delay_apply'] = bloc.bl_delay_apply
+            config_block['use_as_filter'] = bloc.use_as_filter
+            config_block['icon'] = bloc.icon
+            config_block['auto_push'] = bloc.auto_push
+            config_block['bl_name'] = bloc.bl_name
         environment.save_config(config)    
 
 
@@ -247,10 +226,6 @@ libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication"
 def load_handler(dummy):
     import bpy
     bpy.context.window_manager.session.load()
-    # Generate ordered replicate types
-    
-    save_session_config(bpy.context.window_manager.session,bpy.context)
-
 
 def register():
     if libs not in sys.path:
@@ -267,8 +242,9 @@ def register():
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
     bpy.types.ID.uuid = bpy.props.StringProperty(default="")
+    
     bpy.context.window_manager.session.load()
-    save_session_config(bpy.context.window_manager.session,bpy.context)
+
     operators.register()
     ui.register()
     bpy.app.handlers.load_post.append(load_handler)
