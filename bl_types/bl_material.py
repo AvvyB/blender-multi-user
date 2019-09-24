@@ -76,7 +76,8 @@ class BlMaterial(BlDatablock):
             "uuid",
             "users",
             "alpha_threshold",
-            "line_color"
+            "line_color",
+            "view_center",
         ]
         data = mat_dumper.dump(pointer)
         if pointer.use_nodes:
@@ -96,7 +97,6 @@ class BlMaterial(BlDatablock):
                 "show_tetxures",
                 "show_preview",
                 "outputs",
-                "view_center",
             ]
 
             for node in pointer.node_tree.nodes:

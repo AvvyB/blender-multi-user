@@ -143,8 +143,7 @@ class Dumper:
     def _dump_default_as_branch(self, default, depth):
         def is_valid_property(p):
             try:
-                if (self.exclude_filter and p in self.exclude_filter) or\
-                    (self.include_filter and p not in self.include_filter):
+                if (self.include_filter and p not in self.include_filter):
                     return False
                 getattr(default, p)
             except AttributeError:
@@ -156,8 +155,8 @@ class Dumper:
             if p in ["bl_rna", "rna_type"]:
                 return False
             return True
-
-        all_property_names = [p for p in dir(default) if is_valid_property(p) and p != '']
+        
+        all_property_names = [p for p in dir(default) if is_valid_property(p) and p != '' and  p not in self.exclude_filter]
         dump = {}
         for p in all_property_names:
             if (self.exclude_filter and p in self.exclude_filter) or\
