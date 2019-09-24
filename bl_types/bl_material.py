@@ -6,6 +6,38 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 
+def load_node(target_node_tree, source):
+    target_node = target_node_tree.nodes.get(source["name"])
+
+    if target_node is None:
+        node_type = source["bl_idname"]
+
+        target_node = target_node_tree.nodes.new(type=node_type)
+
+    utils.dump_anything.load(
+        target_node, source)
+
+    if source['type'] == 'TEX_IMAGE':
+        target_node.image = bpy.data.images[source['image']['name']]
+
+    for input in source["inputs"]:
+        try:
+            if hasattr(target_node.inputs[input], "default_value"):
+                target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
+        except Exception as e:
+            print("loading error {}".format(e))
+            continue
+
+
+def load_link(target_node_tree, source):
+    input_socket = target_node_tree.nodes[source['to_node']
+                                          ['name']].inputs[source['to_socket']['name']]
+    output_socket = target_node_tree.nodes[source['from_node']
+                                           ['name']].outputs[source['from_socket']['name']]
+
+    target_node_tree.links.new(input_socket, output_socket)
+
+
 class BlMaterial(BlDatablock):
     def construct(self, data):
         return bpy.data.materials.new(data["name"])
@@ -26,45 +58,15 @@ class BlMaterial(BlDatablock):
 
             target.node_tree.nodes.clear()
 
+            # Load nodes
             for node in data["node_tree"]["nodes"]:
-                # fix None node tree error
-
-                index = target.node_tree.nodes.find(node)
-
-                if index is -1:
-                    node_type = data["node_tree"]["nodes"][node]["bl_idname"]
-
-                    target.node_tree.nodes.new(type=node_type)
-
-                utils.dump_anything.load(
-                    target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
-
-                if data["node_tree"]["nodes"][node]['type'] == 'TEX_IMAGE':
-                    target.node_tree.nodes[index].image = bpy.data.images[data["node_tree"]
-                                                                          ["nodes"][node]['image']['name']]
-
-                for input in data["node_tree"]["nodes"][node]["inputs"]:
-                    try:
-                        if hasattr(target.node_tree.nodes[index].inputs[input], "default_value"):
-                            target.node_tree.nodes[index].inputs[input].default_value = data[
-                                "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
-                    except Exception as e:
-                        print("loading error {}".format(e))
-                        continue
-                # utils.dump_anything.load(
-                #     target.node_tree.nodes[index],data["node_tree"]["nodes"][node])
+                load_node(target.node_tree, data["node_tree"]["nodes"][node])
 
             # Load nodes links
             target.node_tree.links.clear()
 
             for link in data["node_tree"]["links"]:
-                current_link = data["node_tree"]["links"][link]
-                input_socket = target.node_tree.nodes[current_link['to_node']
-                                                      ['name']].inputs[current_link['to_socket']['name']]
-                output_socket = target.node_tree.nodes[current_link['from_node']
-                                                       ['name']].outputs[current_link['from_socket']['name']]
-
-                target.node_tree.links.new(input_socket, output_socket)
+                load_link(target.node_tree, data["node_tree"]["links"][link])
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -79,41 +81,48 @@ class BlMaterial(BlDatablock):
             "line_color",
             "view_center",
         ]
+        node_dumper = utils.dump_anything.Dumper()
+        node_dumper.depth = 1
+        node_dumper.exclude_filter = [
+            "dimensions",
+            "select",
+            "bl_height_min",
+            "bl_height_max",
+            "bl_width_min",
+            "bl_width_max",
+            "bl_width_default",
+            "hide",
+            "show_options",
+            "show_tetxures",
+            "show_preview",
+            "outputs",
+            "width_hidden"
+        ]
+        input_dumper = utils.dump_anything.Dumper()
+        input_dumper.depth = 2
+        input_dumper.include_filter = ["default_value"]
+        links_dumper = utils.dump_anything.Dumper()
+        links_dumper.depth = 3
+        links_dumper.exclude_filter = ["dimensions"]
         data = mat_dumper.dump(pointer)
+
         if pointer.use_nodes:
             nodes = {}
-            dumper = utils.dump_anything.Dumper()
-            dumper.depth = 1
-            dumper.exclude_filter = [
-                "dimensions",
-                "select",
-                "bl_height_min",
-                "bl_height_max",
-                "bl_width_min",
-                "bl_width_max",
-                "bl_width_default",
-                "hide",
-                "show_options",
-                "show_tetxures",
-                "show_preview",
-                "outputs",
-            ]
 
             for node in pointer.node_tree.nodes:
-                nodes[node.name] = dumper.dump(node)
+                nodes[node.name] = node_dumper.dump(node)
 
-                if hasattr(node,'inputs'):
+                if hasattr(node, 'inputs'):
                     nodes[node.name]['inputs'] = {}
 
                     for i in node.inputs:
-                        input_dumper = utils.dump_anything.Dumper()
-                        input_dumper.depth = 2
-                        input_dumper.include_filter = ["default_value"]
-                        if hasattr(i,'default_value'):
-                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(i) 
+                        
+                        if hasattr(i, 'default_value'):
+                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(
+                                i)
             data["node_tree"]['nodes'] = nodes
-            utils.dump_datablock_attibutes(
-                pointer.node_tree, ["links"], 3, data['node_tree'])
+            data["node_tree"]["links"] = links_dumper.dump(pointer.node_tree.links)
+        
         elif pointer.is_grease_pencil:
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
@@ -129,6 +138,7 @@ class BlMaterial(BlDatablock):
                 len(diff_rev.keys()) > 0)
 
     def resolve_dependencies(self):
+        # TODO: resolve node group deps
         deps = []
 
         if self.pointer.use_nodes:

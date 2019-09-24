@@ -4,6 +4,7 @@ from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
+from .bl_material import load_link, load_node
 
 
 class BlWorld(BlDatablock):
@@ -18,40 +19,13 @@ class BlWorld(BlDatablock):
             target.node_tree.nodes.clear()
 
             for node in data["node_tree"]["nodes"]:
-                index = target.node_tree.nodes.find(node)
-
-                if index is -1:
-                    node_type = data["node_tree"]["nodes"][node]["bl_idname"]
-
-                    target.node_tree.nodes.new(type=node_type)
-
-                utils.dump_anything.load(
-                    target.node_tree.nodes[index], data["node_tree"]["nodes"][node])
-
-                if data["node_tree"]["nodes"][node]['type'] == 'TEX_IMAGE':
-                    target.node_tree.nodes[index].image = bpy.data.images[data["node_tree"]
-                                                                          ["nodes"][node]['image']['name']]
-
-                for input in data["node_tree"]["nodes"][node]["inputs"]:
-                    try:
-                        if hasattr(target.node_tree.nodes[index].inputs[input], "default_value"):
-                            target.node_tree.nodes[index].inputs[input].default_value = data[
-                                "node_tree"]["nodes"][node]["inputs"][input]["default_value"]
-                    except Exception as e:
-                        print("loading error {}".format(e))
-                        continue
+                load_node(target.node_tree, data["node_tree"]["nodes"][node])
 
             # Load nodes links
             target.node_tree.links.clear()
 
             for link in data["node_tree"]["links"]:
-                current_link = data["node_tree"]["links"][link]
-                input_socket = target.node_tree.nodes[current_link['to_node']
-                                                      ['name']].inputs[current_link['to_socket']['name']]
-                output_socket = target.node_tree.nodes[current_link['from_node']
-                                                       ['name']].outputs[current_link['from_socket']['name']]
-
-                target.node_tree.links.new(input_socket, output_socket)
+                load_link(target.node_tree, data["node_tree"]["links"][link])
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -62,7 +36,7 @@ class BlWorld(BlDatablock):
             "preview",
             "original",
             "uuid"
-        ] 
+        ]
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
             nodes = {}
@@ -89,15 +63,16 @@ class BlWorld(BlDatablock):
             for node in pointer.node_tree.nodes:
                 nodes[node.name] = dumper.dump(node)
 
-                if hasattr(node,'inputs'):
+                if hasattr(node, 'inputs'):
                     nodes[node.name]['inputs'] = {}
 
                     for i in node.inputs:
                         input_dumper = utils.dump_anything.Dumper()
                         input_dumper.depth = 2
                         input_dumper.include_filter = ["default_value"]
-                        if hasattr(i,'default_value'):
-                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(i) 
+                        if hasattr(i, 'default_value'):
+                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(
+                                i)
             data["node_tree"]['nodes'] = nodes
             utils.dump_datablock_attibutes(
                 pointer.node_tree, ["links"], 3, data['node_tree'])
