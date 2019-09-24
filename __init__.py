@@ -18,6 +18,8 @@ import bpy
 from bpy.app.handlers import persistent
 
 from . import environment, utils
+from .libs.replication.replication.constants import  RP_COMMON
+
 
 # TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
@@ -54,7 +56,7 @@ def client_list_callback(scene, context):
     from . import operators
     from .bl_types.bl_user import BlUser
     
-    items = [("Common", "Common", "")]
+    items = [(RP_COMMON, RP_COMMON, "")]
 
     username = bpy.context.window_manager.session.username
     cli = operators.client
@@ -144,7 +146,20 @@ class SessionProps(bpy.types.PropertyGroup):
     enable_presence: bpy.props.BoolProperty(
         name="Presence overlay",
         description='Enable overlay drawing module',
-        default=True
+        default=True,
+        update=presence.update_presence
+        )
+    presence_show_selected: bpy.props.BoolProperty(
+        name="Show selected objects",
+        description='Enable selection overlay ',
+        default=True,
+        update=presence.update_overlay_settings
+        )
+    presence_show_user: bpy.props.BoolProperty(
+        name="Show users",
+        description='Enable user overlay ',
+        default=True,
+        update=presence.update_overlay_settings
         )
     supported_datablock: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,

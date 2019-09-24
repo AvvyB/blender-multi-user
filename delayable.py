@@ -3,7 +3,7 @@ import logging
 
 from . import operators, utils, presence
 from .bl_types.bl_user import BlUser
-from .libs.replication.replication.constants import FETCHED
+from .libs.replication.replication.constants import FETCHED, RP_COMMON
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class DynamicRightSelectTimer(Timer):
                                 node = operators.client.get(reference=bpy.data.objects[obj])
                                 if node:
                                     node.owner =  settings.username
-                                    operators.client.change_owner(node.uuid, 'common')
+                                    operators.client.change_owner(node.uuid, RP_COMMON)
 
                             # update our rights
                             for obj in obj_ours:

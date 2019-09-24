@@ -1,6 +1,6 @@
 import bpy
 from . import operators
-from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED, UP, ADDED
+from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED, UP, ADDED, RP_COMMON
 from .bl_types.bl_user import BlUser
 
 
@@ -36,7 +36,6 @@ class SESSION_PT_settings(bpy.types.Panel):
             else:
                 # STATE ACTIVE
                 if operators.client.state == 2:
-
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
@@ -69,9 +68,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
         row = layout.row()
         # USER SETTINGS
-        row.label(text="Presence overlay:")
-        row.prop(settings, "enable_presence", text="")
-        row = layout.row()
+        # row.label(text="Presence overlay:")
+        # row.prop(settings, "enable_presence", text="")
+        # row = layout.row()
         row.label(text="Own selection:")
         row.prop(settings, "use_select_right", text="")
         row = layout.row()
@@ -136,6 +135,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -217,6 +217,32 @@ class SESSION_PT_user(bpy.types.Panel):
         row = layout.row()
 
 
+class SESSION_PT_presence(bpy.types.Panel):
+    bl_idname = "MULTIUSER_MODULE_PT_panel"
+    bl_label = "Presence overlay"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def draw_header(self, context):
+        self.layout.prop(context.window_manager.session, "enable_presence", text="")
+
+    def draw(self, context):
+        layout = self.layout
+
+        settings = context.window_manager.session
+        layout.active = settings.enable_presence
+        col = layout.column()
+        col.prop(settings,"presence_show_selected")
+        col.prop(settings,"presence_show_user")
+        row = layout.row()
+
+
 def draw_property(context, parent, property_uuid, level=0):
     settings = context.window_manager.session
     item = operators.client.get(uuid=property_uuid)
@@ -240,12 +266,15 @@ def draw_property(context, parent, property_uuid, level=0):
 
     # Operations
 
-    have_right_to_modify = settings.is_admin or item.owner == settings.username
+    have_right_to_modify = settings.is_admin or \
+        item.owner == settings.username or \
+        item.owner == RP_COMMON
+
     detail_item_box.operator(
         "session.commit",
         text="",
         icon='TRIA_UP').target = item.uuid
-    detail_item_box.separator() 
+    detail_item_box.separator()
     if item.state in [FETCHED, UP]:
         detail_item_box.operator(
             "session.apply",
@@ -260,7 +289,7 @@ def draw_property(context, parent, property_uuid, level=0):
         detail_item_box.label(text="", icon=ICONS_PROP_STATES[item.state])
 
     right_icon = "DECORATE_UNLOCKED"
-    if item.owner != settings.username:
+    if not have_right_to_modify:
         right_icon = "DECORATE_LOCKED"
 
     if have_right_to_modify:
@@ -305,7 +334,6 @@ class SESSION_PT_outliner(bpy.types.Panel):
                 col = flow.column(align=True)
                 col.prop(item, "use_as_filter", text="", icon=item.icon)
 
-
             row = layout.row(align=True)
             row.prop(settings, "filter_owned", text="Show only owned")
 
@@ -334,11 +362,11 @@ class SESSION_PT_outliner(bpy.types.Panel):
 classes = (
     SESSION_PT_settings,
     SESSION_PT_settings_user,
+    SESSION_PT_presence,
     SESSION_PT_settings_network,
     SESSION_PT_settings_replication,
     SESSION_PT_user,
-    SESSION_PT_outliner,
-
+    SESSION_PT_outliner
 )
 
 

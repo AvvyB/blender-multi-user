@@ -29,12 +29,15 @@ class BlUser(BlDatablock):
         if self.pointer:
             self.load(data=self.buffer, target=self.pointer)
         
+        settings = bpy.context.window_manager.session
         self.state = UP
         #TODO: refactor in order to redraw in cleaner ways
         area, region, rv3d = presence.view3d_find()
-        if presence.renderer and  area and region and rv3d :
-            presence.renderer.draw_client_camera(self.buffer['name'], self.buffer['location'],self.buffer['color'])
-            presence.renderer.draw_client_selection(self.buffer['name'], self.buffer['color'],self.buffer['selected_objects'])
+        if presence.renderer and  area and region and rv3d and settings.enable_presence:
+            if settings.presence_show_user:
+                presence.renderer.draw_client_camera(self.buffer['name'], self.buffer['location'],self.buffer['color'])
+            if settings.presence_show_selected:
+                presence.renderer.draw_client_selection(self.buffer['name'], self.buffer['color'],self.buffer['selected_objects'])
             presence.refresh_3d_view()
 
 

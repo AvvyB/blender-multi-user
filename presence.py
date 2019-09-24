@@ -110,9 +110,23 @@ class User():
     def update_selected_objects(self, context):
         self.selected_objects = utils.get_selected_objects(context.scene)
 
+def update_presence(self, context):
+        global renderer
+        
+        if renderer and self.enable_presence:
+            renderer.run()
+        else:
+            renderer.stop()
+
+def update_overlay_settings(self, context):
+        global renderer
+        
+        if renderer and not self.presence_show_selected:
+            renderer.flush_selection()
+        if renderer and not self.presence_show_user:
+            renderer.flush_users()
 
 class DrawFactory(object):
-
     def __init__(self):
         self.d3d_items = {}
         self.d2d_items = {}
@@ -148,16 +162,37 @@ class DrawFactory(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
+    def flush_selection(self):
+        key_to_remove = []
+        for k in self.d3d_items.keys():
+            if "select" in k:
+                key_to_remove.append(k)
+        
+        for k in key_to_remove:
+            del self.d3d_items[k]
+
+    def flush_users(self):
+        key_to_remove = []
+        for k in self.d3d_items.keys():
+            if "select" not in k:
+                key_to_remove.append(k)
+        
+        for k in key_to_remove:
+            del self.d3d_items[k]
+        
+        self.d2d_items.clear()
+
     def draw_client_selection(self, client_uuid, client_color, client_selection):
         local_username = bpy.context.window_manager.session.username
         
-        key_to_remove = []
-        for k in self.d3d_items.keys():
-            if "{}_select".format(client_uuid) in k:
-                key_to_remove.append(k)
+        self.flush_selection()
+        # key_to_remove = []
+        # for k in self.d3d_items.keys():
+        #     if "{}_select".format(client_uuid) in k:
+        #         key_to_remove.append(k)
 
-        for k in key_to_remove:
-            del self.d3d_items[k]
+        # for k in key_to_remove:
+        #     del self.d3d_items[k]
 
         if client_selection:
             
