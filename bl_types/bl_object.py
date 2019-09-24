@@ -12,9 +12,10 @@ class BlObject(BlDatablock):
 
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.buffer['library']].filepath, link=True) as (sourceData, targetData):
-                targetData.objects  = [name for name in sourceData.objects if name ==  self.buffer['name']]
-            
-            return  targetData.objects[self.buffer['name']]
+                targetData.objects = [
+                    name for name in sourceData.objects if name == self.buffer['name']]
+
+            return targetData.objects[self.buffer['name']]
 
         # Object specific constructor...
         if "data" not in data:
@@ -39,8 +40,6 @@ class BlObject(BlDatablock):
         return bpy.data.objects.new(data["name"], pointer)
 
     def load(self, data, target):
-        # Load other meshes metadata
-        # utils.dump_anything.load(target, data)
         target.uuid = data['uuid']
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
@@ -61,8 +60,9 @@ class BlObject(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        data = utils.dump_datablock(pointer, 1)
-        replicated_attributes = [
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 1
+        dumper.include_filter = [
             "name",
             "matrix_world",
             "rotation_mode",
@@ -72,16 +72,15 @@ class BlObject(BlDatablock):
             "children",
             "library"
         ]
-        data = { k:v for k,v in data.items() if k in replicated_attributes }
-        # data = {value in data for key, value in data.items() if key in replicated_attributes}
-        # data = utils.dump_datablock_attibutes(pointer, replicated_attributes)
-        
+        data = dumper.dump(pointer)
+
         if self.is_library:
             return data
 
         if hasattr(pointer, 'modifiers'):
-            utils.dump_datablock_attibutes(
-                pointer, ['modifiers'], 3, data)
+            dumper.include_filter = None
+            dumper.depth = 3
+            data["modifiers"] = dumper.dump(pointer.modifiers)
         return data
 
     def resolve(self):
@@ -103,7 +102,7 @@ class BlObject(BlDatablock):
         # Avoid Empty case
         if self.pointer.data:
             deps.append(self.pointer.data)
-        if len(self.pointer.children)>0:
+        if len(self.pointer.children) > 0:
             deps.extend(list(self.pointer.children))
 
         if self.is_library:
@@ -113,6 +112,8 @@ class BlObject(BlDatablock):
 
     def is_valid(self):
         return bpy.data.objects.get(self.buffer['name'])
+
+
 bl_id = "objects"
 bl_class = bpy.types.Object
 bl_rep_class = BlObject
