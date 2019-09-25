@@ -58,6 +58,10 @@ class BlObject(BlDatablock):
                 utils.dump_anything.load(
                     target_modifier, data['modifiers'][modifier])
 
+        if 'children' in data.keys():
+            for child in data['children']:
+                bpy.data.objects[child].parent = self.pointer
+
     def dump(self, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
@@ -81,6 +85,14 @@ class BlObject(BlDatablock):
             dumper.include_filter = None
             dumper.depth = 3
             data["modifiers"] = dumper.dump(pointer.modifiers)
+        
+        if len(pointer.children) > 0:
+            childs = []
+            for child in pointer.children:
+                childs.append(child.name)
+           
+            data["children"] = childs
+            # deps.extend(list(self.pointer.children))
         return data
 
     def resolve(self):
