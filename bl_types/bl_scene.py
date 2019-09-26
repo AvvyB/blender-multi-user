@@ -67,7 +67,8 @@ class BlScene(BlDatablock):
             deps.append(object)
         
         # world
-        deps.append(self.pointer.world)
+        if self.pointer.world:
+            deps.append(self.pointer.world)
         
         return deps
     
