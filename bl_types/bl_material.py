@@ -21,12 +21,8 @@ def load_node(target_node_tree, source):
         target_node.image = bpy.data.images[source['image']['name']]
 
     for input in source["inputs"]:
-        try:
-            if hasattr(target_node.inputs[input], "default_value"):
-                target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
-        except Exception as e:
-            print("loading error {}".format(e))
-            continue
+        if hasattr(target_node.inputs[input], "default_value"):
+            target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
 
 
 def load_link(target_node_tree, source):

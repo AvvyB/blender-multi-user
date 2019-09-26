@@ -88,7 +88,6 @@ class Dumper:
     def _dump_any(self, any, depth):
         for filter_function, dump_function in self.type_subset:
             if filter_function(any):
-                # print(any)
                 return dump_function[not (depth >= self.depth)](any, depth + 1)
 
     def _build_inline_dump_functions(self):

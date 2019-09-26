@@ -112,7 +112,7 @@ class SessionStartOperator(bpy.types.Operator):
                 address=settings.ip,
                 port=settings.port
             )
-       
+
         time.sleep(0.5)
 
         if client.state == 0:
@@ -122,9 +122,13 @@ class SessionStartOperator(bpy.types.Operator):
                 "A session is already hosted on this address")
             return {"CANCELLED"}
 
-        if settings.init_scene and settings.is_admin:
+        if settings.init_scene and self.host:
             init_supported_datablocks(supported_bl_types)
 
+            for node in client.list():
+                client.commit(node)
+
+        # Init user settings
         usr = presence.User(
             username=settings.username,
             color=(settings.client_color.r,
@@ -132,18 +136,13 @@ class SessionStartOperator(bpy.types.Operator):
                    settings.client_color.b,
                    1),
         )
-
         settings.user_uuid = client.add(usr)
+        client.commit(settings.user_uuid)
+
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
-        
+
         delayables.append(delayable.DynamicRightSelectTimer())
-    
-        for node in client.list():
-            try:
-                client.commit(node)
-            except Exception as e:
-                print("error on first commit {}".format(e))
 
         # Push all added values
         client.push()
@@ -155,7 +154,7 @@ class SessionStartOperator(bpy.types.Operator):
         # Register blender main thread tools
         for d in delayables:
             d.register()
-        
+
         self.report(
             {'INFO'},
             "connexion on tcp://{}:{}".format(settings.ip, settings.port))
@@ -321,8 +320,8 @@ def redresh_handler(dummy):
 
     if client:
         user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
-        
-        if hasattr(user,"pointer"):
+
+        if hasattr(user, "pointer"):
             user.pointer.is_dirty = True
 
 
