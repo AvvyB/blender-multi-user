@@ -15,9 +15,6 @@ class BlCurve(BlDatablock):
         target.splines.clear()
         # load splines
         for spline in data['splines']:
-            # Update existing..
-            #if spline in target.splines.keys():
-
             new_spline = target.splines.new(data['splines'][spline]['type'])
             utils.dump_anything.load(new_spline, data['splines'][spline])
 

@@ -15,12 +15,14 @@ class BlMetaball(BlDatablock):
         
         target.elements.clear()
         for element in data["elements"]:
-            element = target.elements.new(type=data["elements"][element]['type'])
-            utils.dump_anything.load(element,  data["elements"][element])
+            new_element = target.elements.new(type=data["elements"][element]['type'])
+            utils.dump_anything.load(new_element, data["elements"][element])
+
     def dump(self, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 3
+        dumper.exclude_filter = ["is_editmode"]
 
         data = dumper.dump(pointer)
         return data
@@ -30,8 +32,10 @@ class BlMetaball(BlDatablock):
         self.pointer = bpy.data.metaballs.get(self.buffer['name'])
 
     def diff(self):
+        rev = diff(self.dump(pointer=self.pointer), self.buffer)
+        print(rev)
         return (self.bl_diff() or
-                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
+                len(rev) > 0)
 
     def is_valid(self):
         return bpy.data.metaballs.get(self.buffer['name'])

@@ -7,12 +7,6 @@ from .bl_datablock import BlDatablock
 from ..libs.replication.replication.constants import UP
 
 class BlUser(BlDatablock):
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__( *args, **kwargs)
-    
-    #     if self.buffer:
-    #         self.load(self.buffer, self.pointer)
-
     def construct(self, name):
         return presence.User()
     

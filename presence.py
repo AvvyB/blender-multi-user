@@ -17,6 +17,7 @@ global renderer
 
 logger = logging.getLogger(__name__)
 
+
 def view3d_find():
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
@@ -28,10 +29,12 @@ def view3d_find():
 
     return None, None, None
 
+
 def refresh_3d_view():
     area, region, rv3d = view3d_find()
-    
+
     area.tag_redraw()
+
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]
@@ -111,20 +114,22 @@ class User():
         self.selected_objects = utils.get_selected_objects(context.scene)
 
 def update_presence(self, context):
-        global renderer
-        
-        if renderer and self.enable_presence:
-            renderer.run()
-        else:
-            renderer.stop()
+    global renderer
+
+    if renderer and self.enable_presence:
+        renderer.run()
+    else:
+        renderer.stop()
+
 
 def update_overlay_settings(self, context):
-        global renderer
-        
-        if renderer and not self.presence_show_selected:
-            renderer.flush_selection()
-        if renderer and not self.presence_show_user:
-            renderer.flush_users()
+    global renderer
+
+    if renderer and not self.presence_show_selected:
+        renderer.flush_selection()
+    if renderer and not self.presence_show_user:
+        renderer.flush_users()
+
 
 class DrawFactory(object):
     def __init__(self):
@@ -167,7 +172,7 @@ class DrawFactory(object):
         for k in self.d3d_items.keys():
             if "select" in k:
                 key_to_remove.append(k)
-        
+
         for k in key_to_remove:
             del self.d3d_items[k]
 
@@ -176,15 +181,15 @@ class DrawFactory(object):
         for k in self.d3d_items.keys():
             if "select" not in k:
                 key_to_remove.append(k)
-        
+
         for k in key_to_remove:
             del self.d3d_items[k]
-        
+
         self.d2d_items.clear()
 
     def draw_client_selection(self, client_uuid, client_color, client_selection):
         local_username = bpy.context.window_manager.session.username
-        
+
         self.flush_selection()
         # key_to_remove = []
         # for k in self.d3d_items.keys():
@@ -195,7 +200,7 @@ class DrawFactory(object):
         #     del self.d3d_items[k]
 
         if client_selection:
-            
+
             for select_ob in client_selection:
                 drawable_key = "{}_select_{}".format(client_uuid, select_ob)
                 indices = (
@@ -213,15 +218,14 @@ class DrawFactory(object):
                     corner) for corner in ob.bound_box]
 
                 coords = [(point.x, point.y, point.z)
-                            for point in bbox_corners]
+                          for point in bbox_corners]
                 shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
                 color = client_color
                 batch = batch_for_shader(
                     shader, 'LINES', {"pos": coords}, indices=indices)
-               
 
                 self.d3d_items[drawable_key] = (shader, batch, color)
-                
+
     def draw_client_camera(self, client_uuid, client_location, client_color):
         if client_location:
             local_username = bpy.context.window_manager.session.username

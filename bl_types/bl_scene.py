@@ -24,7 +24,6 @@ class BlScene(BlDatablock):
                 target.collection.objects.unlink(bpy.data.objects[object])
 
         # load collections
-        # TODO: Recursive link
         for collection in data["collection"]["children"]:
             if collection not in target.collection.children.keys():
                 target.collection.children.link(

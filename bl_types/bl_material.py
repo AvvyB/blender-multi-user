@@ -133,7 +133,6 @@ class BlMaterial(BlDatablock):
 
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        print(diff_rev)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 0)
 
