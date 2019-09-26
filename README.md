@@ -2,7 +2,11 @@
 
 > Enable real-time collaborative workflow inside blender  
 
-:warning: Under development, use it at your own risks :warning:
+:warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
+
+![settings](medias/connexion.gif)
+
+This tool aims to allow multiple user to work on the same scene over the network. 
 
 ## Installation
 
@@ -11,8 +15,12 @@
 
 ## Usage
 
-### Host a session
+Settings are under: `View3D -> Sidebar -> Multiuser`
 
+![settings](medias/settings.png)
+
+### Host a session
+:warning: If you host a session over internet, special network configuration is needed :warning:
 todo
 
 ### Join a session
@@ -23,22 +31,25 @@ todo
 
 Animation support is under development.
 
-| Name       |          Statut          |  Comment   |
-| ---------- | :----------------------: | :--------: |
-| action     |           :x:            |    WIP     |
-| armature   |           :x:            |    WIP     |
-| camera     |    :white_check_mark:    |            |
-| collection |    :white_check_mark:    |            |
-| curve      |    :white_check_mark:    | Not tested |
-| gpencil    |    :white_check_mark:    |            |
-| image      |    :white_check_mark:    | Local only |
-| mesh       |    :white_check_mark:    |            |
-| material   |    :white_check_mark:    |            |
-| metaball   | :heavy_exclamation_mark: |            |
-| object     |    :white_check_mark:    |            |
-| scene      |    :white_check_mark:    |            |
-| world      |    :white_check_mark:    |            |
+| Name       |       Statut       |  Comment   |
+| ---------- | :----------------: | :--------: |
+| action     |        :x:         |    WIP     |
+| armature   |        :x:         |    WIP     |
+| camera     | :white_check_mark: |            |
+| collection | :white_check_mark: |            |
+| curve      | :white_check_mark: | Not tested |
+| gpencil    | :white_check_mark: |            |
+| image      | :white_check_mark: | Local only |
+| mesh       | :white_check_mark: |            |
+| material   | :white_check_mark: |            |
+| metaball   |        :x:         |            |
+| object     | :white_check_mark: |            |
+| scene      | :white_check_mark: |            |
+| world      | :white_check_mark: |            |
 
+### Performance issues
+
+Since this addon is writen in pure python for a prototyping purpose, perfomance could be better from all perspective. Soon I will start to port the multi-user addon concept to a blender branch.
 
 ## Dependencies
 
@@ -56,3 +67,4 @@ Animation support is under development.
 3. Commit your changes (`git commit -am 'Add some fooBar'`)
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
+
