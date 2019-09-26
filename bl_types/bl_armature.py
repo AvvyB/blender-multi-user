@@ -79,11 +79,11 @@ class BlArmature(BlDatablock):
         data =  utils.dump_datablock(pointer, 4)
 
         #get the parent Object
-        object_users = utils.get_users(pointer)[0]
+        object_users = utils.get_datablock_users(pointer)[0]
         data['user'] = object_users.name
 
         #get parent collection
-        container_users = utils.get_users(object_users)
+        container_users = utils.get_datablock_users(object_users)
         data['user_collection'] = [item.name for item in container_users if isinstance(item,bpy.types.Collection)]
         data['user_scene'] = [item.name for item in container_users if isinstance(item,bpy.types.Scene)]
         return data
