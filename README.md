@@ -1,23 +1,43 @@
 # Multi-user blender addon
-> Enable realtime collaborative workflow inside blender  
 
-## Current statut
+> Enable real-time collaborative workflow inside blender  
 
-| Name       |       Statut       | Comment |
-| ---------- | :----------------: | :-----: |
-| action     |        :x:         |   WIP   |
-| armature   |        :x:         |   WIP   |
-| camera     | :white_check_mark: |         |
-| collection | :white_check_mark: |         |
-| curve      | :white_check_mark: |         |
-| gpencil    | :white_check_mark: |         |
-| image      | :white_check_mark: |         |
-| mesh       | :white_check_mark: |         |
-| material   | :white_check_mark: |         |
-| metaball   | :white_check_mark: |         |
-| object     | :white_check_mark: |         |
-| scene      | :white_check_mark: |         |
-| world      | :white_check_mark: |         |
+:warning: Under development, use it at your own risks :warning:
+
+## Installation
+
+1. Download lastest release here.
+2. Install last_version.zip from your addon preferences
+
+## Usage
+
+### Host a session
+
+todo
+
+### Join a session
+
+todo
+
+## Current development statut
+
+Animation support is under development.
+
+| Name       |          Statut          |  Comment   |
+| ---------- | :----------------------: | :--------: |
+| action     |           :x:            |    WIP     |
+| armature   |           :x:            |    WIP     |
+| camera     |    :white_check_mark:    |            |
+| collection |    :white_check_mark:    |            |
+| curve      |    :white_check_mark:    | Not tested |
+| gpencil    |    :white_check_mark:    |            |
+| image      |    :white_check_mark:    | Local only |
+| mesh       |    :white_check_mark:    |            |
+| material   |    :white_check_mark:    |            |
+| metaball   | :heavy_exclamation_mark: |            |
+| object     |    :white_check_mark:    |            |
+| scene      |    :white_check_mark:    |            |
+| world      |    :white_check_mark:    |            |
 
 
 ## Dependencies
