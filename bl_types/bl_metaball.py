@@ -33,7 +33,6 @@ class BlMetaball(BlDatablock):
 
     def diff(self):
         rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        print(rev)
         return (self.bl_diff() or
                 len(rev) > 0)
 
