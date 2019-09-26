@@ -1,13 +1,33 @@
 # Multi-user blender addon
 > Enable realtime collaborative workflow inside blender  
 
+## Current statut
+
+| Name       | Statut | Comment |
+| ---------- | :----: | :-----: |
+| action     |  [ ]   |   WIP   |
+| armature   |  [ ]   |   WIP   |
+| camera     |  [x]   |         |
+| collection |  [x]   |         |
+| curve      |  [x]   |         |
+| gpencil    |  [x]   |         |
+| image      |  [x]   |         |
+| mesh       |  [x]   |         |
+| material   |  [x]   |         |
+| metaball   |  [x]   |         |
+| object     |  [x]   |         |
+| scene      |  [x]   |         |
+| world      |  [x]   |         |
+
+
 ## Dependencies
 
 | Dependencies | Version | Needed |
-|--------------|:-------:|-------:|
+| ------------ | :-----: | -----: |
 | ZeroMQ       | latest  |    yes |
-| msgpack     | latest  |    yes |
+| msgpack      | latest  |    yes |
 | PyYAML       | latest  |    yes |
+
 
 ## Contributing
 
