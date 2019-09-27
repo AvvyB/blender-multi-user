@@ -6,7 +6,7 @@
 
 ![settings](medias/connexion.gif)
 
-This tool aims to allow multiple user to work on the same scene over the network. 
+This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender datablocks across the wire.
 
 ## Installation
 
