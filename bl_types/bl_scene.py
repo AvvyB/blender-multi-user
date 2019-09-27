@@ -34,13 +34,22 @@ class BlScene(BlDatablock):
                 target.collection.children.unlink(
                     bpy.data.collections[collection])
 
+        if 'world' in data.keys():
+            target.world = bpy.data.worlds[data['world']]
+
     def dump(self, pointer=None):
         assert(pointer)
-        
-        data = utils.dump_datablock_attibutes(
-            pointer, ['name', 'collection', 'id', 'camera', 'grease_pencil'], 2)
-        utils.dump_datablock_attibutes(
-            pointer, ['collection'], 4, data)
+        data = {}
+
+        scene_dumper = utils.dump_anything.Dumper()
+        scene_dumper.depth = 1
+        scene_dumper.include_filter = ['name','world', 'id', 'camera', 'grease_pencil']
+        data = scene_dumper.dump(pointer)
+
+        scene_dumper.depth = 3
+        scene_dumper.include_filter = ['children','objects','name']
+        data['collection'] = scene_dumper.dump(pointer.collection)
+            
 
         return data
 
