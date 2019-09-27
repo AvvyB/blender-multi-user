@@ -115,7 +115,7 @@ class User():
 
 def update_presence(self, context):
     global renderer
-
+    
     if renderer and self.enable_presence:
         renderer.run()
     else:
@@ -191,13 +191,6 @@ class DrawFactory(object):
         local_username = bpy.context.window_manager.session.username
 
         self.flush_selection()
-        # key_to_remove = []
-        # for k in self.d3d_items.keys():
-        #     if "{}_select".format(client_uuid) in k:
-        #         key_to_remove.append(k)
-
-        # for k in key_to_remove:
-        #     del self.d3d_items[k]
 
         if client_selection:
 

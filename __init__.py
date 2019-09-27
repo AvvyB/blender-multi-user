@@ -31,7 +31,7 @@ DEPENDENCIES = {
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 #TODO: refactor config 
 # UTILITY FUNCTIONS
@@ -187,7 +187,6 @@ class SessionProps(bpy.types.PropertyGroup):
 
     def load(self):
         config = environment.load_config()
-        logger.info(config)
         if "username" in config.keys():
             self.username = config["username"]
             self.ip = config["ip"]
@@ -255,6 +254,7 @@ def register():
     
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
+    from . import presence
     from . import operators
     from . import ui
 
@@ -267,14 +267,17 @@ def register():
     
     bpy.context.window_manager.session.load()
 
+    presence.register()
     operators.register()
     ui.register()
     bpy.app.handlers.load_post.append(load_handler)
 
 def unregister():
+    from . import presence
     from . import operators
     from . import ui
 
+    presence.unregister()
     ui.unregister()
     operators.unregister()
 

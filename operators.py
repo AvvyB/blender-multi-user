@@ -113,8 +113,6 @@ class SessionStartOperator(bpy.types.Operator):
                 port=settings.port
             )
 
-        time.sleep(0.5)
-
         if client.state == 0:
             settings.is_admin = False
             self.report(
@@ -179,10 +177,12 @@ class SessionStopOperator(bpy.types.Operator):
 
         client.remove(settings.user_uuid)
         client.disconnect()
-
+        
         for d in delayables:
-            d.unregister()
-
+            try:
+                d.unregister()
+            except:
+                continue
         presence.renderer.stop()
 
         return {"FINISHED"}
@@ -341,14 +341,11 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    presence.register()
     bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
 
 
 def unregister():
     global client
-
-    presence.unregister()
 
     if client and client.state == 2:
         client.disconnect()

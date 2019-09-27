@@ -7,6 +7,7 @@ from .libs.replication.replication.constants import FETCHED, RP_COMMON
 
 logger = logging.getLogger(__name__)
 
+
 class Delayable():
     """Delayable task interface
     """
@@ -29,25 +30,32 @@ class Timer(Delayable):
 
     def __init__(self, duration=1):
         self._timeout = duration
+        self._running = True
 
     def register(self):
         """Register the timer into the blender timer system
         """
-        bpy.app.timers.register(self.execute)
+        bpy.app.timers.register(self.main)
 
+    def main(self):
+        self.execute()
+
+        if self._running:
+            return self._timeout
+
+ 
     def execute(self):
         """Main timer loop
         """
-        return self._timeout
+        raise NotImplementedError
 
     def unregister(self):
         """Unnegister the timer of the blender timer system
         """
-        try:
-            bpy.app.timers.unregister(self.execute)
-        except:
-            logger.error("timer already unregistered")
+        if bpy.app.timers.is_registered(self.main):
+            bpy.app.timers.unregister(self.main)
 
+        self._running = False
 
 class ApplyTimer(Timer):
     def __init__(self, timout=1, target_type=None):
@@ -64,7 +72,6 @@ class ApplyTimer(Timer):
                 if node_ref.state == FETCHED:
                     operators.client.apply(uuid=node)
 
-        return self._timeout
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=1):
@@ -92,7 +99,9 @@ class DynamicRightSelectTimer(Timer):
                             obj_ours = [o for o in current_selection if o not in self.last_selection]
 
                             for obj in obj_common:
-                                node = operators.client.get(reference=bpy.data.objects[obj])
+                                _object = bpy.data.objects.get(obj)
+                                
+                                node = operators.client.get(reference=_object)
                                 if node:
                                     node.owner =  settings.username
                                     operators.client.change_owner(node.uuid, RP_COMMON)
@@ -104,9 +113,7 @@ class DynamicRightSelectTimer(Timer):
                                     node.owner =  settings.username
                                     operators.client.change_owner(node.uuid, settings.username)
                         self.last_selection = current_selection
-        return self._timeout
 
-# class CheckNewTimer(Timer):
 
 class RedrawTimer(Timer):
     def __init__(self, timout=1, target_type=None):
@@ -117,7 +124,6 @@ class RedrawTimer(Timer):
         if presence.renderer:
             presence.refresh_3d_view()
 
-        return self._timeout
 
 class Draw(Delayable):
     def __init__(self):
