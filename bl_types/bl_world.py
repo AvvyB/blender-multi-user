@@ -36,7 +36,9 @@ class BlWorld(BlDatablock):
             "preview",
             "original",
             "uuid",
-            "color"
+            "color",
+            "cycles",
+            "light_settings"
         ]
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
@@ -85,7 +87,6 @@ class BlWorld(BlDatablock):
 
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        print(diff_rev)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 0)
 
@@ -98,7 +99,6 @@ class BlWorld(BlDatablock):
                     deps.append(node.image)
         if self.is_library:
             deps.append(self.pointer.library)
-
         return deps
 
     def is_valid(self):
