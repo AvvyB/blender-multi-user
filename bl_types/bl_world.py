@@ -35,7 +35,8 @@ class BlWorld(BlDatablock):
         world_dumper.exclude_filter = [
             "preview",
             "original",
-            "uuid"
+            "uuid",
+            "color"
         ]
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
@@ -84,6 +85,7 @@ class BlWorld(BlDatablock):
 
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
+        print(diff_rev)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 0)
 
