@@ -94,24 +94,24 @@ class DynamicRightSelectTimer(Timer):
                     if current_selection != self.last_selection:
                         user_ref.pointer.update_selected_objects(bpy.context)
 
-                        if operators.client.get_config()['right_strategy'] == 'COMMON':
+                        if operators.client.get_config()['right_strategy'] == RP_COMMON:
                             obj_common = [o for o in self.last_selection if o not in current_selection]
                             obj_ours = [o for o in current_selection if o not in self.last_selection]
 
+                            # change old selection right to common
                             for obj in obj_common:
                                 _object = bpy.data.objects.get(obj)
                                 
                                 node = operators.client.get(reference=_object)
-                                if node:
-                                    node.owner =  settings.username
+                                if node and node.owner == settings.username:
                                     operators.client.change_owner(node.uuid, RP_COMMON)
 
-                            # update our rights
+                            # change new selection to our
                             for obj in obj_ours:
                                 node = operators.client.get(reference=bpy.data.objects[obj])
-                                if node:
-                                    node.owner =  settings.username
+                                if node and node.owner == RP_COMMON:
                                     operators.client.change_owner(node.uuid, settings.username)
+
                         self.last_selection = current_selection
 
 
