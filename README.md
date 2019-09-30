@@ -16,25 +16,43 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 Settings are under: `View3D -> Sidebar -> Multiuser`
 
-### 1. Set user infos
+### Before starting
+
+#### 1. Set user infos
 
 ![settings](medias/user.png)
 
 - **name**: username.
 - **color**: color used to represent the user into other user workspaces.
 
-### 2. setup network
+#### 2. setup network
+
+:warning: If you host a session over internet, special network configuration is needed :warning:
  
-| Host                                                                                             | Join                           |
-| :----------------------------------------------------------------------------------------------- | :----------------------------- |
-| ![host_panel](medias/host.png)                                                                   | ![join_panel](medias/join.png) |
-| Start empty: Cleanup the file before starting to host                                            | IP: host ip                    |
-| :warning: If you host a session over internet, special network configuration is needed :warning: | Port: host port                |
+| Host                                         | Join                           |
+| :------------------------------------------- | :----------------------------- |
+| ![host_panel](medias/host.png)               | ![join_panel](medias/join.png) |
+| Start empty: Cleanup the file before hosting | IP: host ip                    |
+|                                              | Port: host port                |
+
+### In a session
+
+#### Connected users pannel
+
+![users](medias/users.png)
+
+This pannel displays all connected users, including you. The camera button allow you to focus your 3D viewport on a user.
+
+#### Properties pannel
+
+![properties](medias/properties.png)
+
+
 
 
 ## Current development statut
 
-Animation support is under development.
+Actually, not all datablock are supported for replication over the wire. The following list summarizes the status for each ones.
 
 | Name       |       Statut       |  Comment   |
 | ---------- | :----------------: | :--------: |
