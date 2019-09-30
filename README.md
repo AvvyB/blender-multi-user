@@ -12,21 +12,24 @@ This tool aims to allow multiple users to work on the same scene over the networ
 1. Download lastest release here.
 2. Install last_version.zip from your addon preferences
 
---- 
 ## Usage
 
 Settings are under: `View3D -> Sidebar -> Multiuser`
 
 ### Before starting
 
-#### 1. Set user infos
+#### 1. User
+
+_All user-related infos fields._
 
 ![settings](medias/user.png)
 
 - **name**: username.
 - **color**: color used to represent the user into other user workspaces.
 
-#### 2. setup network
+#### 2. Network
+
+_Session-related managment tools_
 
 :warning: If you host a session over internet, special network configuration is needed :warning:
  
@@ -37,7 +40,7 @@ Settings are under: `View3D -> Sidebar -> Multiuser`
 | Start empty: Cleanup the file before hosting | IP: host ip                    |
 |                                              | Port: host port                |
 
-#### 2.1 Advanced pannel
+#### 2.1 Advanced
 
 ![properties](medias/properties.png)
 
@@ -52,13 +55,13 @@ _On each strategy, when a user is the owner he can choose to pass his rights to 
 
 ### In-session
 
-#### Connected users pannel
+#### Connected users
 
 ![users](medias/users.png)
 
-This pannel displays all connected users, including you. The camera button allow you to focus your 3D viewport on a user.
+This pannel displays all connected users, including you. The **camera button** allow you to focus on a user.
 
-#### Properties outliner pannel
+#### Properties outliner
 
 ![properties](medias/properties_in_session.png)
 
