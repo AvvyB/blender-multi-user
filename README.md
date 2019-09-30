@@ -16,27 +16,21 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 Settings are under: `View3D -> Sidebar -> Multiuser`
 
-![settings](medias/settings.png)
+### 1. Set user infos
 
-| Host | Join  |
-| :---: | :---: |
-|  ![host_panel](medias/host.png)    |    ![join_panel](medias/join.png)             |
-| Start empty: Cleanup the file before starting to host     |        IP: host ip        |
-|    |        Port: host port       |
+![settings](medias/user.png)
 
-### Host a session
-:warning: If you host a session over internet, special network configuration is needed :warning:
+- **name**: username.
+- **color**: color used to represent the user into other user workspaces.
 
-![host_panel](medias/host.png)
+### 2. setup network
+ 
+| Host                                                                                             | Join                           |
+| :----------------------------------------------------------------------------------------------- | :----------------------------- |
+| ![host_panel](medias/host.png)                                                                   | ![join_panel](medias/join.png) |
+| Start empty: Cleanup the file before starting to host                                            | IP: host ip                    |
+| :warning: If you host a session over internet, special network configuration is needed :warning: | Port: host port                |
 
-- Start empty: Cleanup the file before starting to host
-
-### Join a session
-
-![join_panel](medias/join.png)
-
-- IP: host ip
-- Port: host port
 
 ## Current development statut
 
