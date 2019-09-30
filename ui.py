@@ -77,9 +77,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.label(text="Start empty:")
             row.prop(settings, "start_empty", text="")
-            row = box.row()
-            row.label(text="Init scene:")
-            row.prop(settings, "init_scene", text="")
+            # row = box.row()
+            # row.label(text="Init scene:")
+            # row.prop(settings, "init_scene", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:

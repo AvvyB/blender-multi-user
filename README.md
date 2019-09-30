@@ -4,7 +4,6 @@
 
 :warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
 
-![settings](medias/connexion.gif)
 
 This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender datablocks across the wire.
 
@@ -19,13 +18,25 @@ Settings are under: `View3D -> Sidebar -> Multiuser`
 
 ![settings](medias/settings.png)
 
+| Host | Join  |
+| :---: | :---: |
+|  ![host_panel](medias/host.png)    |    ![join_panel](medias/join.png)             |
+| Start empty: Cleanup the file before starting to host     |        IP: host ip        |
+|    |        Port: host port       |
+
 ### Host a session
 :warning: If you host a session over internet, special network configuration is needed :warning:
-todo
+
+![host_panel](medias/host.png)
+
+- Start empty: Cleanup the file before starting to host
 
 ### Join a session
 
-todo
+![join_panel](medias/join.png)
+
+- IP: host ip
+- Port: host port
 
 ## Current development statut
 
