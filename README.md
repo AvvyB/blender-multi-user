@@ -12,6 +12,7 @@ This tool aims to allow multiple users to work on the same scene over the networ
 1. Download lastest release here.
 2. Install last_version.zip from your addon preferences
 
+--- 
 ## Usage
 
 Settings are under: `View3D -> Sidebar -> Multiuser`
@@ -31,13 +32,23 @@ Settings are under: `View3D -> Sidebar -> Multiuser`
  
 | Host                                         | Join                           |
 | :------------------------------------------- | :----------------------------- |
+| asd                                          |
 | ![host_panel](medias/host.png)               | ![join_panel](medias/join.png) |
 | Start empty: Cleanup the file before hosting | IP: host ip                    |
 |                                              | Port: host port                |
 
-#### 2.1 Advanced settings
-  
+#### 2.1 Advanced pannel
+
 ![properties](medias/properties.png)
+
+**Right strategy** (only host) enable you to choose between a strict and a relaxed pattern:
+
+- **Strict**: Host is the king, by default the host own each properties, only him can grant modification rights.
+- **Common**: Each properties are under common rights by default, on selection, a property is only modifiable by the owner.
+  
+_On each strategy, when a user is the owner he can choose to pass his rights to somemone else._
+
+**Propertie frequency gird** allow to set a custom replication frequency for each type of datablock
 
 ### In-session
 
