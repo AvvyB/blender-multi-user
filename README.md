@@ -28,7 +28,7 @@ Actually, not all datablock are supported for replication over the wire. The fol
 | collection | :white_check_mark: |            |
 | curve      | :white_check_mark: | Not tested |
 | gpencil    | :white_check_mark: |            |
-| image      | :white_check_mark: | Local only |
+| image      | :white_check_mark: | Not stable yet |
 | mesh       | :white_check_mark: |            |
 | material   | :white_check_mark: |            |
 | metaball   |        :x:         |            |
