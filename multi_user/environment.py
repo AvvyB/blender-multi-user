@@ -35,6 +35,7 @@ def save_config(config):
     import yaml
 
     logger.info("saving config")
+
     with open(CONFIG, 'w') as outfile:
         yaml.dump(config, outfile, default_flow_style=False)
 
@@ -65,12 +66,18 @@ def install_package(name):
     subprocess.run([str(PYTHON_PATH), "-m", "pip", "install",
                     name, '--target', target], cwd=SUBPROCESS_DIR)
 
+def check_dir(dir):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
 def setup(dependencies, python_path):
     global PYTHON_PATH, SUBPROCESS_DIR
 
     PYTHON_PATH = Path(python_path)
     SUBPROCESS_DIR = PYTHON_PATH.parent
+
+    check_dir(CACHE_DIR)
+    check_dir(CONFIG_DIR)
 
     if not module_can_be_imported("pip"):
         install_pip()
