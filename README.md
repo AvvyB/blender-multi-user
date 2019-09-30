@@ -20,16 +20,12 @@ Settings are under: `View3D -> Sidebar -> Multiuser`
 
 #### 1. User
 
-_All user-related infos fields._
-
 ![settings](medias/user.png)
 
 - **name**: username.
 - **color**: color used to represent the user into other user workspaces.
 
 #### 2. Network
-
-_Session-related managment tools_
 
 :warning: If you host a session over internet, special network configuration is needed :warning:
  

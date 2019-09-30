@@ -216,6 +216,9 @@ class SessionProps(bpy.types.PropertyGroup):
     def save(self,context):
         config = environment.load_config()
 
+        if "supported_types" not in config:
+            config = generate_supported_types()
+
         config["username"] = self.username
         config["ip"] = self.ip
         config["port"] = self.port
@@ -223,7 +226,7 @@ class SessionProps(bpy.types.PropertyGroup):
         config["enable_presence"] = self.enable_presence
         config["client_color"] = [self.client_color.r,self.client_color.g,self.client_color.b]
         
-
+        
         for bloc in self.supported_datablock:
             config_block = config["supported_types"][bloc.type_name]
             config_block['bl_delay_refresh'] = bloc.bl_delay_refresh
