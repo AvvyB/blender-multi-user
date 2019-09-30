@@ -47,6 +47,7 @@ Since this addon is writen in pure python for a prototyping purpose, perfomance 
 | ZeroMQ       | latest  |    yes |
 | msgpack      | latest  |    yes |
 | PyYAML       | latest  |    yes |
+| JsonDiff     | latest  |    yes |
 
 
 ## Contributing
