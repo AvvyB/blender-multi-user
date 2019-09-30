@@ -7,7 +7,7 @@ from .. import utils
 from .. import presence
 from .bl_datablock import BlDatablock
 
-
+# WIP
 class BlArmature(BlDatablock):
     def construct(self, data):
         return bpy.data.armatures.new(data["name"])

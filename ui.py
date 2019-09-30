@@ -1,8 +1,9 @@
 import bpy
-from . import operators
-from .libs.replication.replication.constants import FETCHED, ERROR, MODIFIED, UP, ADDED, RP_COMMON
-from .bl_types.bl_user import BlUser
 
+from . import operators
+from .bl_types.bl_user import BlUser
+from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
+                                                     MODIFIED, RP_COMMON, UP)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED

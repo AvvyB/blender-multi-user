@@ -1,36 +1,36 @@
+import json
 import logging
+import os
+import random
+import string
 import sys
 from uuid import uuid4
-import json
-import os
-import string
-import random
 
 import bpy
 import mathutils
 
-from . import presence, environment
+from . import environment, presence
 from .libs import dump_anything
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 def get_datablock_users(datablock):
     users = []
     supported_types = bpy.context.window_manager.session.supported_datablock
-    if  hasattr(datablock, 'users_collection') and datablock.users_collection:
+    if hasattr(datablock, 'users_collection') and datablock.users_collection:
         users.extend(list(datablock.users_collection))
-    if  hasattr(datablock, 'users_scene') and datablock.users_scene:
+    if hasattr(datablock, 'users_scene') and datablock.users_scene:
         users.extend(list(datablock.users_scene))
-    if  hasattr(datablock, 'users_group') and datablock.users_scene:
+    if hasattr(datablock, 'users_group') and datablock.users_scene:
         users.extend(list(datablock.users_scene))
     for datatype in supported_types:
         if datatype.bl_name != 'users':
-            root = getattr(bpy.data,datatype.bl_name)
+            root = getattr(bpy.data, datatype.bl_name)
             for item in root:
                 if hasattr(item, 'data') and datablock == item.data or \
-                datatype.bl_name != 'collections' and hasattr(item, 'children') and datablock in item.children:
+                        datatype.bl_name != 'collections' and hasattr(item, 'children') and datablock in item.children:
                     users.append(item)
     return users
 

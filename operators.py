@@ -9,34 +9,26 @@ import time
 from operator import itemgetter
 from pathlib import Path
 
+import msgpack
+
 import bpy
 import mathutils
-from bpy_extras.io_utils import ExportHelper
 from bpy.app.handlers import persistent
+from bpy_extras.io_utils import ExportHelper
 
-from . import environment, presence, ui, utils, delayable
-import msgpack
+from . import bl_types, delayable, environment, presence, ui, utils
 from .libs.replication.replication.data import ReplicatedDataFactory
-from .libs.replication.replication.interface import Session
 from .libs.replication.replication.exception import NonAuthorizedOperationError
-from . import bl_types
+from .libs.replication.replication.interface import Session
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 client = None
 delayables = []
 ui_context = None
 
 
-def add_datablock(datablock):
-    global client
-
-    new_uuid = client.add(datablock)
-    return new_uuid
-
-
-# TODO: cleanup
 def init_supported_datablocks(supported_types_id):
     global client
 
@@ -177,7 +169,7 @@ class SessionStopOperator(bpy.types.Operator):
 
         client.remove(settings.user_uuid)
         client.disconnect()
-        
+
         for d in delayables:
             try:
                 d.unregister()

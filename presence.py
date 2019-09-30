@@ -1,13 +1,12 @@
-import bpy
-import bgl
-import blf
-import gpu
-import mathutils
 import copy
 import logging
 import math
 
-
+import bgl
+import blf
+import bpy
+import gpu
+import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 

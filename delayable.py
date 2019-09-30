@@ -1,7 +1,8 @@
-import bpy
 import logging
 
-from . import operators, utils, presence
+import bpy
+
+from . import operators, presence, utils
 from .bl_types.bl_user import BlUser
 from .libs.replication.replication.constants import FETCHED, RP_COMMON
 
@@ -43,7 +44,6 @@ class Timer(Delayable):
         if self._running:
             return self._timeout
 
- 
     def execute(self):
         """Main timer loop
         """
@@ -56,6 +56,7 @@ class Timer(Delayable):
             bpy.app.timers.unregister(self.main)
 
         self._running = False
+
 
 class ApplyTimer(Timer):
     def __init__(self, timout=1, target_type=None):
@@ -76,7 +77,7 @@ class ApplyTimer(Timer):
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=1):
         super().__init__(timout)
-        self.last_selection=[]
+        self.last_selection = []
 
     def execute(self):
         if operators.client:
@@ -85,32 +86,42 @@ class DynamicRightSelectTimer(Timer):
             for user in users:
                 user_ref = operators.client.get(uuid=user)
                 settings = bpy.context.window_manager.session
-                
+
+                # Other user
                 if user_ref.buffer['name'] != settings.username:
+                    user_selection = user_ref.buffer['selected_objects']
                     for obj in bpy.data.objects:
-                        obj.hide_select = obj.name in user_ref.buffer['selected_objects']
+                        obj.hide_select = obj.name in user_selection
+                # Local user
                 elif user_ref.pointer:
-                    current_selection = utils.get_selected_objects(bpy.context.scene)
+                    current_selection = utils.get_selected_objects(
+                        bpy.context.scene)
                     if current_selection != self.last_selection:
                         user_ref.pointer.update_selected_objects(bpy.context)
-
-                        if operators.client.get_config()['right_strategy'] == RP_COMMON:
-                            obj_common = [o for o in self.last_selection if o not in current_selection]
-                            obj_ours = [o for o in current_selection if o not in self.last_selection]
+                        right_strategy = operators.client.get_config()[
+                            'right_strategy']
+                        if right_strategy == RP_COMMON:
+                            obj_common = [
+                                o for o in self.last_selection if o not in current_selection]
+                            obj_ours = [
+                                o for o in current_selection if o not in self.last_selection]
 
                             # change old selection right to common
                             for obj in obj_common:
                                 _object = bpy.data.objects.get(obj)
-                                
+
                                 node = operators.client.get(reference=_object)
                                 if node and node.owner == settings.username:
-                                    operators.client.change_owner(node.uuid, RP_COMMON)
+                                    operators.client.change_owner(
+                                        node.uuid, RP_COMMON)
 
                             # change new selection to our
                             for obj in obj_ours:
-                                node = operators.client.get(reference=bpy.data.objects[obj])
+                                node = operators.client.get(
+                                    reference=bpy.data.objects[obj])
                                 if node and node.owner == RP_COMMON:
-                                    operators.client.change_owner(node.uuid, settings.username)
+                                    operators.client.change_owner(
+                                        node.uuid, settings.username)
 
                         self.last_selection = current_selection
 
