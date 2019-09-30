@@ -126,7 +126,7 @@ class SessionStartOperator(bpy.types.Operator):
                    settings.client_color.b,
                    1),
         )
-        settings.user_uuid = client.add(usr)
+        settings.user_uuid = client.add(usr,owner=settings.username)
         client.commit(settings.user_uuid)
 
         delayables.append(delayable.ClientUpdate(

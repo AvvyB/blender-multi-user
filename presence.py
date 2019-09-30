@@ -187,12 +187,10 @@ class DrawFactory(object):
         self.d2d_items.clear()
 
     def draw_client_selection(self, client_uuid, client_color, client_selection):
-        local_username = bpy.context.window_manager.session.username
+        local_user = bpy.context.window_manager.session.user_uuid
 
-        self.flush_selection()
-
-        if client_selection:
-
+        if client_selection and local_user != client_uuid:
+            self.flush_selection()
             for select_ob in client_selection:
                 drawable_key = "{}_select_{}".format(client_uuid, select_ob)
                 indices = (
@@ -220,27 +218,28 @@ class DrawFactory(object):
 
     def draw_client_camera(self, client_uuid, client_location, client_color):
         if client_location:
-            local_username = bpy.context.window_manager.session.username
+            local_user = bpy.context.window_manager.session.user_uuid
 
-            try:
-                indices = (
-                    (1, 3), (2, 1), (3, 0),
-                    (2, 0), (4, 5), (1, 6),
-                    (2, 6), (3, 6), (0, 6)
-                )
+            if local_user != client_uuid:
+                try:
+                    indices = (
+                        (1, 3), (2, 1), (3, 0),
+                        (2, 0), (4, 5), (1, 6),
+                        (2, 6), (3, 6), (0, 6)
+                    )
 
-                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                position = [tuple(coord) for coord in client_location]
-                color = client_color
+                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+                    position = [tuple(coord) for coord in client_location]
+                    color = client_color
 
-                batch = batch_for_shader(
-                    shader, 'LINES', {"pos": position}, indices=indices)
+                    batch = batch_for_shader(
+                        shader, 'LINES', {"pos": position}, indices=indices)
 
-                self.d3d_items[client_uuid] = (shader, batch, color)
-                self.d2d_items[client_uuid] = (position[1], client_uuid, color)
+                    self.d3d_items[client_uuid] = (shader, batch, color)
+                    self.d2d_items[client_uuid] = (position[1], client_uuid, color)
 
-            except Exception as e:
-                logger.error("Draw client exception {}".format(e))
+                except Exception as e:
+                    logger.error("Draw client exception {}".format(e))
 
     def draw3d_callback(self):
         bgl.glLineWidth(1.5)

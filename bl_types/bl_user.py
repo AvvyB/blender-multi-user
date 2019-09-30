@@ -44,6 +44,8 @@ class BlUser(BlDatablock):
 
 
     def diff(self):
+        if not self.pointer:
+            return False
         if self.pointer.is_dirty:
             self.pointer.is_dirty = False
             return True
