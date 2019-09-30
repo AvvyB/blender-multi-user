@@ -35,7 +35,11 @@ Settings are under: `View3D -> Sidebar -> Multiuser`
 | Start empty: Cleanup the file before hosting | IP: host ip                    |
 |                                              | Port: host port                |
 
-### In a session
+#### 2.1 Advanced settings
+  
+![properties](medias/properties.png)
+
+### In-session
 
 #### Connected users pannel
 
@@ -43,12 +47,9 @@ Settings are under: `View3D -> Sidebar -> Multiuser`
 
 This pannel displays all connected users, including you. The camera button allow you to focus your 3D viewport on a user.
 
-#### Properties pannel
+#### Properties outliner pannel
 
-![properties](medias/properties.png)
-
-
-
+![properties](medias/properties_in_session.png)
 
 ## Current development statut
 
