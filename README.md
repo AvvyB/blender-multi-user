@@ -59,6 +59,6 @@ Since this addon is writen in pure python for a prototyping purpose, perfomance 
 
 ## Licencing
 
-See [licence](LICENCE)
+See [licence](LICENSE)
 
 
