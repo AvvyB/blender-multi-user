@@ -1,9 +1,9 @@
+import collections
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
-import logging
-import collections
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -16,25 +16,6 @@ CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
 PYTHON_PATH = None
 SUBPROCESS_DIR = None
 
-ORDERED_TYPES = [
-    'Image',
-    'Texture',
-    'Curve',
-    'Material',
-    'Light',
-    'SunLight',
-    'SpotLight',
-    'AreaLight',
-    'PointLight',
-    'Camera',
-    'Mesh',
-    'Armature',
-    'GreasePencil',
-    'Object',
-    'Action',
-    'Collection',
-    'Scene',
-]
 
 rtypes = []
 
@@ -47,7 +28,8 @@ def load_config():
             return yaml.safe_load(config_file)
     except FileNotFoundError:
         logger.info("no config")
-        return  {}
+        return {}
+
 
 def save_config(config):
     import yaml
@@ -93,6 +75,6 @@ def setup(dependencies, python_path):
     if not module_can_be_imported("pip"):
         install_pip()
 
-    for module_name,package_name in dependencies:
+    for module_name, package_name in dependencies:
         if not module_can_be_imported(module_name):
             install_package(package_name)
