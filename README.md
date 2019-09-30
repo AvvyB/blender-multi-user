@@ -14,52 +14,7 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 ## Usage
 
-Settings are under: `View3D -> Sidebar -> Multiuser`
-
-### Before starting
-
-#### 1. User
-
-![settings](medias/user.png)
-
-- **name**: username.
-- **color**: color used to represent the user into other user workspaces.
-
-#### 2. Network
-
-:warning: If you host a session over internet, special network configuration is needed :warning:
- 
-| Host                                         | Join                           |
-| :------------------------------------------- | :----------------------------- |
-| asd                                          |
-| ![host_panel](medias/host.png)               | ![join_panel](medias/join.png) |
-| Start empty: Cleanup the file before hosting | IP: host ip                    |
-|                                              | Port: host port                |
-
-#### 2.1 Advanced
-
-![properties](medias/properties.png)
-
-**Right strategy** (only host) enable you to choose between a strict and a relaxed pattern:
-
-- **Strict**: Host is the king, by default the host own each properties, only him can grant modification rights.
-- **Common**: Each properties are under common rights by default, on selection, a property is only modifiable by the owner.
-  
-_On each strategy, when a user is the owner he can choose to pass his rights to somemone else._
-
-**Propertie frequency gird** allow to set a custom replication frequency for each type of datablock
-
-### In-session
-
-#### Connected users
-
-![users](medias/users.png)
-
-This pannel displays all connected users, including you. The **camera button** allow you to focus on a user.
-
-#### Properties outliner
-
-![properties](medias/properties_in_session.png)
+See [how to](user-guide) section.
 
 ## Current development statut
 
