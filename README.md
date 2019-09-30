@@ -1,4 +1,4 @@
-# Multi-user blender addon
+# MULTI-USER for blender
 
 > Enable real-time collaborative workflow inside blender  
 
@@ -56,4 +56,9 @@ Since this addon is writen in pure python for a prototyping purpose, perfomance 
 3. Commit your changes (`git commit -am 'Add some fooBar'`)
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
+
+## Licencing
+
+See [licence](LICENCE)
+
 
