@@ -14,7 +14,7 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 ## Usage
 
-See [how to](https://gitlab.com/slumber/multi-user/wikis/user-guide) section.
+See [how to](https://gitlab.com/slumber/multi-user/wikis/User/Quickstart) section.
 
 ## Current development statut
 
