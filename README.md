@@ -18,7 +18,7 @@ See [how to](https://gitlab.com/slumber/multi-user/wikis/User/Quickstart) sectio
 
 ## Current development statut
 
-Actually, not all datablock are supported for replication over the wire. The following list summarizes the status for each ones.
+Currently, not all datablock are supported for replication over the wire. The following list summarizes the status for each ones.
 
 | Name       |       Statut       |  Comment   |
 | ---------- | :----------------: | :--------: |
