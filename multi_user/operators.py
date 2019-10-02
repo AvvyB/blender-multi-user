@@ -105,6 +105,8 @@ class SessionStartOperator(bpy.types.Operator):
                 port=settings.port
             )
 
+        time.sleep(1)
+        
         if client.state == 0:
             settings.is_admin = False
             self.report(
