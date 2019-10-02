@@ -131,6 +131,7 @@ class SessionStartOperator(bpy.types.Operator):
 
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
+        delayables.append(delayable.DrawClient())
 
         delayables.append(delayable.DynamicRightSelectTimer())
 
@@ -304,19 +305,6 @@ class SessionCommit(bpy.types.Operator):
         return {"FINISHED"}
 
 
-@persistent
-def redresh_handler(dummy):
-    """force to refresh client renderer
-    """
-    global client
-
-    if client:
-        user = client.get(uuid=bpy.context.window_manager.session.user_uuid)
-
-        if hasattr(user, "pointer"):
-            user.pointer.is_dirty = True
-
-
 classes = (
     SessionStartOperator,
     SessionStopOperator,
@@ -333,9 +321,6 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    bpy.app.handlers.depsgraph_update_post.append(redresh_handler)
-
-
 def unregister():
     global client
 
@@ -346,9 +331,6 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-
-    bpy.app.handlers.depsgraph_update_post.remove(redresh_handler)
-
 
 if __name__ == "__main__":
     register()

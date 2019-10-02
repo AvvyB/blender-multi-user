@@ -100,14 +100,15 @@ class User():
         self.color = color
         self.location = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.selected_objects = []
+        self.last_select_objects = []
 
     def update_location(self):
         current_coords = get_client_cam_points()
         area, region, rv3d = view3d_find()
 
-        current_coords = get_client_cam_points()
-        if current_coords:
-            self.location = list(current_coords)
+        current_coords = list(get_client_cam_points())
+        if current_coords and self.location != current_coords:
+            self.location = current_coords
 
     def update_selected_objects(self, context):
         self.selected_objects = utils.get_selected_objects(context.scene)
@@ -166,10 +167,12 @@ class DrawFactory(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
-    def flush_selection(self):
+    def flush_selection(self, user):
         key_to_remove = []
+        select_key = "{}_select".format(user) if user else "select"
         for k in self.d3d_items.keys():
-            if "select" in k:
+
+            if select_key in k:
                 key_to_remove.append(k)
 
         for k in key_to_remove:
@@ -189,8 +192,9 @@ class DrawFactory(object):
     def draw_client_selection(self, client_uuid, client_color, client_selection):
         local_user = bpy.context.window_manager.session.user_uuid
 
-        if client_selection and local_user != client_uuid:
-            self.flush_selection()
+        if local_user != client_uuid:
+            self.flush_selection(client_uuid)
+
             for select_ob in client_selection:
                 drawable_key = "{}_select_{}".format(client_uuid, select_ob)
                 indices = (
