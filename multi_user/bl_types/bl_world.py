@@ -38,7 +38,9 @@ class BlWorld(BlDatablock):
             "uuid",
             "color",
             "cycles",
-            "light_settings"
+            "light_settings",
+            "users",
+            "view_center"
         ]
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
@@ -60,7 +62,8 @@ class BlWorld(BlDatablock):
                 "outputs",
                 "preview",
                 "original",
-                "width_hidden"
+                "width_hidden",
+                
             ]
 
             for node in pointer.node_tree.nodes:

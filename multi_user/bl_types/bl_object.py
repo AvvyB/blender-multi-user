@@ -106,10 +106,10 @@ class BlObject(BlDatablock):
     def diff(self):
         diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
         return (self.bl_diff() or
-                len(diff_rev.keys()))
+                len(diff_rev.keys())>0)
 
     def resolve_dependencies(self):
-        deps = super().resolve_dependencies()
+        deps = []
 
         # Avoid Empty case
         if self.pointer.data:

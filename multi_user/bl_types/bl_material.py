@@ -1,10 +1,12 @@
 import bpy
 import mathutils
+import logging
 from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
 
+logger = logging.getLogger(__name__)
 
 def load_node(target_node_tree, source):
     target_node = target_node_tree.nodes.get(source["name"])
@@ -22,8 +24,10 @@ def load_node(target_node_tree, source):
 
     for input in source["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
-            target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
-
+            try:
+                target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
+            except:
+                logger.error("{} not supported, skipping".format(input))
 
 def load_link(target_node_tree, source):
     input_socket = target_node_tree.nodes[source['to_node']

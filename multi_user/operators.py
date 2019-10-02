@@ -136,7 +136,7 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(delayable.DynamicRightSelectTimer())
 
         # Push all added values
-        client.push()
+        client.push_all()
 
         # Launch drawing module
         if settings.enable_presence:
@@ -280,7 +280,7 @@ class SessionApply(bpy.types.Operator):
     def execute(self, context):
         global client
 
-        client.apply(uuid=self.target)
+        client.apply(self.target)
 
         return {"FINISHED"}
 
@@ -301,7 +301,7 @@ class SessionCommit(bpy.types.Operator):
         global client
 
         client.commit(uuid=self.target)
-        client.push(uuid=self.target)
+        client.push(self.target)
         return {"FINISHED"}
 
 
