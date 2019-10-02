@@ -20,7 +20,7 @@ def load_node(target_node_tree, source):
         target_node, source)
 
     if source['type'] == 'TEX_IMAGE':
-        target_node.image = bpy.data.images[source['image']['name']]
+        target_node.image = bpy.data.images[source['image']]
 
     for input in source["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
