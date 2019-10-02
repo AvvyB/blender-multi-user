@@ -165,7 +165,8 @@ class BlMesh(BlDatablock):
         deps = []
         
         for material in self.pointer.materials:
-            deps.append(material)
+            if material:
+                deps.append(material)
         
         return deps
     
