@@ -71,7 +71,7 @@ class ApplyTimer(Timer):
                 node_ref = operators.client.get(uuid=node)
 
                 if node_ref.state == FETCHED:
-                    operators.client.apply(uuid=node)
+                    operators.client.apply(node)
 
 
 class DynamicRightSelectTimer(Timer):
