@@ -75,7 +75,7 @@ class ApplyTimer(Timer):
 
 
 class DynamicRightSelectTimer(Timer):
-    def __init__(self, timout=1):
+    def __init__(self, timout=.1):
         super().__init__(timout)
         self.last_selection = []
 
@@ -87,17 +87,11 @@ class DynamicRightSelectTimer(Timer):
                 user_ref = operators.client.get(uuid=user)
                 settings = bpy.context.window_manager.session
 
-                # Other user
-                if user_ref.buffer['name'] != settings.username:
-                    user_selection = user_ref.buffer['selected_objects']
-                    for obj in bpy.data.objects:
-                        obj.hide_select = obj.name in user_selection
                 # Local user
-                elif user_ref.pointer:
+                if user_ref.pointer:
                     current_selection = utils.get_selected_objects(
                         bpy.context.scene)
                     if current_selection != self.last_selection:
-                        user_ref.pointer.update_selected_objects(bpy.context)
                         right_strategy = operators.client.get_config()[
                             'right_strategy']
                         if right_strategy == RP_COMMON:
@@ -106,15 +100,6 @@ class DynamicRightSelectTimer(Timer):
                             obj_ours = [
                                 o for o in current_selection if o not in self.last_selection]
 
-                            # change old selection right to common
-                            for obj in obj_common:
-                                _object = bpy.data.objects.get(obj)
-
-                                node = operators.client.get(reference=_object)
-                                if node and node.owner == settings.username:
-                                    operators.client.change_owner(
-                                        node.uuid, RP_COMMON)
-
                             # change new selection to our
                             for obj in obj_ours:
                                 node = operators.client.get(
@@ -122,18 +107,22 @@ class DynamicRightSelectTimer(Timer):
                                 if node and node.owner == RP_COMMON:
                                     operators.client.change_owner(
                                         node.uuid, settings.username)
+                                else:
+                                    return
 
-                        self.last_selection = current_selection
+                            self.last_selection = current_selection
+                            user_ref.pointer.update_selected_objects(
+                                bpy.context)
+                            user_ref.update()
 
+                            # change old selection right to common
+                            for obj in obj_common:
+                                _object = bpy.data.objects.get(obj)
 
-class RedrawTimer(Timer):
-    def __init__(self, timout=1, target_type=None):
-        self._type = target_type
-        super().__init__(timout)
-
-    def execute(self):
-        if presence.renderer:
-            presence.refresh_3d_view()
+                                node = operators.client.get(reference=_object)
+                                if node and (node.owner == settings.username or node.owner == RP_COMMON):
+                                    operators.client.change_owner(
+                                        node.uuid, RP_COMMON)
 
 
 class Draw(Delayable):
@@ -153,6 +142,25 @@ class Draw(Delayable):
                 self._handler, "WINDOW")
         except:
             logger.error("draw already unregistered")
+
+
+class DrawClient(Draw):
+    def execute(self):
+        repo = operators.client
+        if repo and presence.renderer:
+            settings = bpy.context.window_manager.session
+            client_list = [key for key in repo.list(filter=BlUser) if
+                           key != settings.user_uuid]
+
+            for cli in client_list:
+                cli_ref = repo.get(uuid=cli)
+
+                if settings.presence_show_selected:
+                    presence.renderer.draw_client_selection(
+                        cli_ref.buffer['name'], cli_ref.buffer['color'], cli_ref.buffer['selected_objects'])
+                if settings.presence_show_user:
+                    presence.renderer.draw_client_camera(
+                        cli_ref.buffer['name'], cli_ref.buffer['location'], cli_ref.buffer['color'])
 
 
 class ClientUpdate(Draw):
