@@ -17,22 +17,16 @@ class BlUser(BlDatablock):
         utils.dump_anything.load(target, data)
     
     def apply(self):
-        if self.pointer is None:
-            self.pointer = self.construct(self.buffer)
-
         if self.pointer:
             self.load(data=self.buffer, target=self.pointer)
-        
+
         settings = bpy.context.window_manager.session
+
+        presence.refresh_3d_view()
+        
         self.state = UP
-        #TODO: refactor in order to redraw in cleaner ways
-        area, region, rv3d = presence.view3d_find()
-        if presence.renderer and  area and region and rv3d and settings.enable_presence:
-            if settings.presence_show_user:
-                presence.renderer.draw_client_camera(self.buffer['name'], self.buffer['location'],self.buffer['color'])
-            if settings.presence_show_selected:
-                presence.renderer.draw_client_selection(self.buffer['name'], self.buffer['color'],self.buffer['selected_objects'])
-            presence.refresh_3d_view()
+
+
 
 
     def dump(self,pointer=None):
@@ -41,7 +35,9 @@ class BlUser(BlDatablock):
         data['color'] = pointer.color
         data['selected_objects'] = pointer.selected_objects
         return data
-
+    
+    def update(self):
+        self.pointer.is_dirty = True
 
     def diff(self):
         if not self.pointer:
@@ -60,7 +56,7 @@ class BlUser(BlDatablock):
 bl_id = "users"
 bl_class = presence.User
 bl_rep_class = BlUser 
-bl_delay_refresh = .2
-bl_delay_apply = .2
+bl_delay_refresh = .1
+bl_delay_apply = .1
 bl_automatic_push = True
 bl_icon = 'CON_ARMATURE'
