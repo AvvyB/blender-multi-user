@@ -123,7 +123,12 @@ class DynamicRightSelectTimer(Timer):
                                 if node and (node.owner == settings.username or node.owner == RP_COMMON):
                                     operators.client.change_owner(
                                         node.uuid, RP_COMMON)
-
+                else:
+                    for obj in bpy.data.objects:
+                        if obj.hide_select and obj.name not in user_ref.buffer['selected_objects']:
+                            obj.hide_select = False
+                        elif not obj.hide_select and obj.name in user_ref.buffer['selected_objects']:
+                            obj.hide_select = True
 
 class Draw(Delayable):
     def __init__(self):
@@ -163,11 +168,11 @@ class DrawClient(Draw):
                         cli_ref.buffer['name'], cli_ref.buffer['location'], cli_ref.buffer['color'])
 
 
-class ClientUpdate(Draw):
-    def __init__(self, client_uuid=None):
+class ClientUpdate(Timer):
+    def __init__(self, timout=1, client_uuid=None):
         assert(client_uuid)
         self._client_uuid = client_uuid
-        super().__init__()
+        super().__init__(timout)
 
     def execute(self):
         if self._client_uuid and operators.client:
