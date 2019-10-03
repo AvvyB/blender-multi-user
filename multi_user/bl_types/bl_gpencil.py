@@ -9,13 +9,14 @@ from .bl_datablock import BlDatablock
 def load_gpencil_layer(target=None, data=None, create=False):
 
     utils.dump_anything.load(target, data)
-
+    for k,v in target.frames.items():
+        target.frames.remove(v)
+        
     for frame in data["frames"]:
-        try:
-            tframe = target.frames[frame]
-        except:
-            tframe = target.frames.new(frame)
-        utils.dump_anything.load(tframe, data["frames"][frame])
+        
+        tframe = target.frames.new(frame)
+
+        # utils.dump_anything.load(tframe, data["frames"][frame])
         for stroke in data["frames"][frame]["strokes"]:
             try:
                 tstroke = tframe.strokes[stroke]
