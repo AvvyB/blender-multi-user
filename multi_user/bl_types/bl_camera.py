@@ -51,10 +51,6 @@ class BlCamera(BlDatablock):
         assert(self.buffer)
         self.pointer = bpy.data.cameras.get(self.buffer['name'])
 
-    def diff(self):
-        return (self.bl_diff() or
-                len(diff(self.dump(pointer=self.pointer), self.buffer)))
-
     def is_valid(self):
         return bpy.data.cameras.get(self.buffer['name'])
 

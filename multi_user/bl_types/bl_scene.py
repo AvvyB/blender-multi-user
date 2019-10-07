@@ -58,11 +58,6 @@ class BlScene(BlDatablock):
         scene_name = self.buffer['name']
         
         self.pointer = bpy.data.scenes.get(scene_name)
-    
-    def diff(self):
-        return (self.bl_diff() or
-                len(self.pointer.collection.objects) != len(self.buffer['collection']['objects']) or 
-                len(self.pointer.collection.children) != len(self.buffer['collection']['children']))
 
     def resolve_dependencies(self):
         deps = []

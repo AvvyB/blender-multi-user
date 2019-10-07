@@ -156,11 +156,6 @@ class BlMesh(BlDatablock):
         assert(self.buffer)      
         self.pointer = bpy.data.meshes.get(self.buffer['name'])
 
-    def diff(self):
-        return (self.bl_diff() or
-                len(self.pointer.vertices) != len(self.buffer['verts']) or 
-                len(self.pointer.materials) != len(self.buffer['materials']))
-
     def resolve_dependencies(self):
         deps = []
         

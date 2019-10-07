@@ -58,9 +58,6 @@ class BlGpencil(BlDatablock):
             for mat in data['materials']:
                 target.materials.append(bpy.data.materials[mat])
 
-    def diff(self):
-        return (self.bl_diff())
-
     def dump(self, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 2)

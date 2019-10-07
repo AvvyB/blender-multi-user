@@ -103,11 +103,6 @@ class BlObject(BlDatablock):
         except:
             pass
 
-    def diff(self):
-        diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        return (self.bl_diff() or
-                len(diff_rev.keys())>0)
-
     def resolve_dependencies(self):
         deps = []
 

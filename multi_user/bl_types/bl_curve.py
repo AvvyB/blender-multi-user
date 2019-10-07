@@ -50,10 +50,6 @@ class BlCurve(BlDatablock):
         assert(self.buffer)      
         self.pointer = bpy.data.curves.get(self.buffer['name'])
 
-    def diff(self):
-        return (self.bl_diff() or
-                len(diff(self.dump(pointer=self.pointer), self.buffer)) > 1)
-
     def is_valid(self):
         return bpy.data.curves.get(self.buffer['name'])
 bl_id = "curves"

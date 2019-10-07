@@ -131,11 +131,6 @@ class BlMaterial(BlDatablock):
         assert(self.buffer)
         self.pointer = bpy.data.materials.get(self.buffer['name'])
 
-    def diff(self):
-        diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        return (self.bl_diff() or
-                len(diff_rev.keys()) > 0)
-
     def resolve_dependencies(self):
         # TODO: resolve node group deps
         deps = []
