@@ -31,11 +31,6 @@ class BlMetaball(BlDatablock):
         assert(self.buffer)
         self.pointer = bpy.data.metaballs.get(self.buffer['name'])
 
-    def diff(self):
-        rev = diff(self.dump(pointer=self.pointer), self.buffer)
-        return (self.bl_diff() or
-                len(rev) > 0)
-
     def is_valid(self):
         return bpy.data.metaballs.get(self.buffer['name'])
 
