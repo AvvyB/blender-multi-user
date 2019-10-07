@@ -7,7 +7,9 @@ from .bl_datablock import BlDatablock
 
 class BlScene(BlDatablock):
     def construct(self, data):
-        return bpy.data.scenes.new(data["name"])
+        instance = bpy.data.scenes.new(data["name"])
+        instance.uuid = self.uuid
+        return instance
 
     def load(self, data, target):
         target = self.pointer
@@ -58,6 +60,7 @@ class BlScene(BlDatablock):
         scene_name = self.buffer['name']
         
         self.pointer = bpy.data.scenes.get(scene_name)
+        # self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
 
     def resolve_dependencies(self):
         deps = []

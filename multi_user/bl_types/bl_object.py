@@ -37,7 +37,10 @@ class BlObject(BlDatablock):
         elif data["data"] in bpy.data.curves.keys():
             pointer = bpy.data.curves[data["data"]]
 
-        return bpy.data.objects.new(data["name"], pointer)
+        instance =  bpy.data.objects.new(data["name"], pointer)
+        instance.uuid = self.uuid
+        
+        return instance
 
     def load(self, data, target):
         target.uuid = data['uuid']
@@ -97,11 +100,12 @@ class BlObject(BlDatablock):
 
     def resolve(self):
         assert(self.buffer)
-        object_name = self.buffer['name']
-        try:
-            self.pointer = bpy.data.objects[object_name]
-        except:
-            pass
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
+        # object_name = self.buffer['name']
+        # try:
+        #     self.pointer = bpy.data.objects[object_name]
+        # except:
+        #     pass
 
     def resolve_dependencies(self):
         deps = []

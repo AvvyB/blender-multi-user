@@ -76,8 +76,10 @@ def dump_mesh(mesh, data={}):
 
 class BlMesh(BlDatablock):
     def construct(self, data):
-        return bpy.data.meshes.new(data["name"])
-
+        instance = bpy.data.meshes.new(data["name"])
+        instance.uuid = self.uuid
+        return instance
+        
     def load(self, data, target):
         if not target or not target.is_editmode:
              # 1 - LOAD MATERIAL SLOTS
@@ -153,8 +155,9 @@ class BlMesh(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)      
-        self.pointer = bpy.data.meshes.get(self.buffer['name'])
+        assert(self.buffer)
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.meshes) 
+        # self.pointer = bpy.data.meshes.get(self.buffer['name'])
 
     def resolve_dependencies(self):
         deps = []

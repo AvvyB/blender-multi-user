@@ -7,7 +7,9 @@ from .bl_datablock import BlDatablock
 
 class BlCollection(BlDatablock):
     def construct(self,data):
-        return bpy.data.collections.new(data["name"])
+        instance = bpy.data.collections.new(data["name"])
+        instance.uuid = self.uuid
+        return instance
 
     def load(self, data, target):
         # Load other meshes metadata
@@ -38,11 +40,17 @@ class BlCollection(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        return utils.dump_datablock(pointer, 4)
+        
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 4
+        dumper.include_filter = ['name','objects', 'children', 'uuid']
+
+        return dumper.dump(pointer)
 
     def resolve(self):
         assert(self.buffer)      
-        self.pointer = bpy.data.collections.get(self.buffer['name'])
+        # self.pointer = bpy.data.collections.get(self.buffer['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.collections)
 
     def resolve_dependencies(self):
         deps = []

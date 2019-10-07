@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
 
+def find_from_attr(attr_name, attr_value, list):
+    for item in list:
+        if getattr(item, attr_name, None) == attr_value:
+            return item
+    return None
+
+
 def get_datablock_users(datablock):
     users = []
     supported_types = bpy.context.window_manager.session.supported_datablock
