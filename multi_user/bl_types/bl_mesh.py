@@ -79,7 +79,7 @@ class BlMesh(BlDatablock):
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
         return instance
-        
+
     def load(self, data, target):
         if not target or not target.is_editmode:
              # 1 - LOAD MATERIAL SLOTS
@@ -155,9 +155,9 @@ class BlMesh(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)
+        assert(self.data)
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.meshes) 
-        # self.pointer = bpy.data.meshes.get(self.buffer['name'])
+        # self.pointer = bpy.data.meshes.get(self.data['name'])
 
     def resolve_dependencies(self):
         deps = []
@@ -169,7 +169,7 @@ class BlMesh(BlDatablock):
         return deps
     
     def is_valid(self):
-        return bpy.data.meshes.get(self.buffer['name'])
+        return bpy.data.meshes.get(self.data['name'])
         
 bl_id = "meshes"
 bl_class = bpy.types.Mesh

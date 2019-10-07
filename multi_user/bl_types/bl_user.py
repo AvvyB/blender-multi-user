@@ -18,7 +18,7 @@ class BlUser(BlDatablock):
     
     def apply(self):
         if self.pointer:
-            self.load(data=self.buffer, target=self.pointer)
+            self.load(data=self.data, target=self.pointer)
 
         settings = bpy.context.window_manager.session
 
@@ -47,7 +47,7 @@ class BlUser(BlDatablock):
             return True
 
         for i,coord in enumerate(self.pointer.location):
-            if coord != self.buffer['location'][i]:
+            if coord != self.data['location'][i]:
                 return True
         return False
 

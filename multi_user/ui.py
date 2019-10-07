@@ -191,7 +191,7 @@ class SESSION_PT_user(bpy.types.Panel):
             for key in client_keys:
                 area_msg = col.row(align=True)
                 item_box = area_msg.box()
-                client = operators.client.get(uuid=key).buffer
+                client = operators.client.get(uuid=key).data
 
                 info = ""
 
@@ -259,7 +259,7 @@ def draw_property(context, parent, property_uuid, level=0):
             area_msg.label(text="")
     line = area_msg.box()
 
-    name = item.buffer['name'] if item.buffer else item.pointer.name
+    name = item.data['name'] if item.data else item.pointer.name
 
     detail_item_box = line.row(align=True)
 

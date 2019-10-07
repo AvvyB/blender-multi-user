@@ -66,8 +66,8 @@ class BlGpencil(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)
-        self.pointer = bpy.data.grease_pencils.get(self.buffer['name'])
+        assert(self.data)
+        self.pointer = bpy.data.grease_pencils.get(self.data['name'])
 
     def resolve_dependencies(self):
         deps = []
@@ -78,7 +78,7 @@ class BlGpencil(BlDatablock):
         return deps
 
     def is_valid(self):
-        return bpy.data.grease_pencils.get(self.buffer['name'])
+        return bpy.data.grease_pencils.get(self.data['name'])
 
 bl_id = "grease_pencils"
 bl_class = bpy.types.GreasePencil

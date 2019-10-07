@@ -85,11 +85,11 @@ class BlWorld(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)
-        self.pointer = bpy.data.worlds.get(self.buffer['name'])
+        assert(self.data)
+        self.pointer = bpy.data.worlds.get(self.data['name'])
 
     def diff(self):
-        diff_rev = diff(self.dump(pointer=self.pointer), self.buffer)
+        diff_rev = diff(self.dump(pointer=self.pointer), self.data)
         return (self.bl_diff() or
                 len(diff_rev.keys()) > 0)
 
@@ -105,7 +105,7 @@ class BlWorld(BlDatablock):
         return deps
 
     def is_valid(self):
-        return bpy.data.worlds.get(self.buffer['name'])
+        return bpy.data.worlds.get(self.data['name'])
 
 
 bl_id = "worlds"

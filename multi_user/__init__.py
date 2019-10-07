@@ -63,7 +63,7 @@ def client_list_callback(scene, context):
     if cli:
         client_keys = cli.list(filter=BlUser)
         for k in client_keys:
-                name = cli.get(uuid=k).buffer["name"]
+                name = cli.get(uuid=k).data["name"]
 
                 name_desc = name
                 if name == username:

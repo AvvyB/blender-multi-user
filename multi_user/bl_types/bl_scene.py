@@ -56,8 +56,8 @@ class BlScene(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)
-        scene_name = self.buffer['name']
+        assert(self.data)
+        scene_name = self.data['name']
         
         self.pointer = bpy.data.scenes.get(scene_name)
         # self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
@@ -80,7 +80,7 @@ class BlScene(BlDatablock):
         return deps
     
     def is_valid(self):
-        return bpy.data.scenes.get(self.buffer['name'])
+        return bpy.data.scenes.get(self.data['name'])
 bl_id = "scenes"
 bl_class = bpy.types.Scene
 bl_rep_class = BlScene

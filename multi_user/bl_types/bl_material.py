@@ -128,8 +128,8 @@ class BlMaterial(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)
-        self.pointer = bpy.data.materials.get(self.buffer['name'])
+        assert(self.data)
+        self.pointer = bpy.data.materials.get(self.data['name'])
 
     def resolve_dependencies(self):
         # TODO: resolve node group deps
@@ -145,7 +145,7 @@ class BlMaterial(BlDatablock):
         return deps
 
     def is_valid(self):
-        return bpy.data.materials.get(self.buffer['name'])
+        return bpy.data.materials.get(self.data['name'])
 
 
 bl_id = "materials"

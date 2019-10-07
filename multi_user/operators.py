@@ -259,7 +259,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
         target_client = client.get(uuid=self.target_client)
         if target_client:
-            rv3d.view_location = target_client.buffer['location'][0]
+            rv3d.view_location = target_client.data['location'][0]
             rv3d.view_distance = 30.0
 
             return {"FINISHED"}

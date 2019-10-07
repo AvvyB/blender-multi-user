@@ -10,12 +10,11 @@ class BlDatablock(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         pointer = kwargs.get('pointer', None)
-        buffer = self.buffer
-
+        
         # TODO: use is_library_indirect
         self.is_library = (pointer and hasattr(pointer, 'library') and
                            pointer.library) or \
-                           (buffer and 'library' in buffer)
+                           (self.data and 'library' in  self.data)
 
         if self.is_library:
             self.load = self.load_library
@@ -33,7 +32,7 @@ class BlDatablock(ReplicatedDatablock):
 
     def bl_diff(self):
         """Generic datablock diff"""
-        return self.pointer.name != self.buffer['name']
+        return self.pointer.name != self.data['name']
 
     def construct_library(self, data):
         return None

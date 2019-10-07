@@ -51,14 +51,14 @@ class BlAction(BlDatablock):
         return data
     
     def resolve(self):
-        assert(self.buffer)      
-        self.pointer = bpy.data.actions.get(self.buffer['name'])
+        assert(self.data)      
+        self.pointer = bpy.data.actions.get(self.data['name'])
     
     def diff(self):
         return False
 
     def is_valid(self):
-        return bpy.data.actions.get(self.buffer['name'])
+        return bpy.data.actions.get(self.data['name'])
 
 bl_id = "actions"
 bl_class = bpy.types.Action

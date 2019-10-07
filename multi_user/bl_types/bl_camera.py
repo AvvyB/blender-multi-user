@@ -48,11 +48,11 @@ class BlCamera(BlDatablock):
         return dumper.dump(pointer)
 
     def resolve(self):
-        assert(self.buffer)
-        self.pointer = bpy.data.cameras.get(self.buffer['name'])
+        assert(self.data)
+        self.pointer = bpy.data.cameras.get(self.data['name'])
 
     def is_valid(self):
-        return bpy.data.cameras.get(self.buffer['name'])
+        return bpy.data.cameras.get(self.data['name'])
 
 
 bl_id = "cameras"

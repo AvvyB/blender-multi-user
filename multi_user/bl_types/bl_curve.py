@@ -47,11 +47,11 @@ class BlCurve(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)      
-        self.pointer = bpy.data.curves.get(self.buffer['name'])
+        assert(self.data)      
+        self.pointer = bpy.data.curves.get(self.data['name'])
 
     def is_valid(self):
-        return bpy.data.curves.get(self.buffer['name'])
+        return bpy.data.curves.get(self.data['name'])
 bl_id = "curves"
 bl_class = bpy.types.Curve
 bl_rep_class = BlCurve

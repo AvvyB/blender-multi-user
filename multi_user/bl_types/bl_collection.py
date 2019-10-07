@@ -48,8 +48,8 @@ class BlCollection(BlDatablock):
         return dumper.dump(pointer)
 
     def resolve(self):
-        assert(self.buffer)      
-        # self.pointer = bpy.data.collections.get(self.buffer['name'])
+        assert(self.data)      
+        # self.pointer = bpy.data.collections.get(self.data['name'])
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.collections)
 
     def resolve_dependencies(self):
@@ -63,7 +63,7 @@ class BlCollection(BlDatablock):
         return deps
 
     def is_valid(self):
-        return bpy.data.collections.get(self.buffer['name'])
+        return bpy.data.collections.get(self.data['name'])
         
 bl_id = "collections"
 bl_icon = 'FILE_FOLDER'

@@ -128,9 +128,9 @@ class DynamicRightSelectTimer(Timer):
                                         node.uuid, RP_COMMON)
                 else:
                     for obj in bpy.data.objects:
-                        if obj.hide_select and obj.name not in user_ref.buffer['selected_objects']:
+                        if obj.hide_select and obj.name not in user_ref.data['selected_objects']:
                             obj.hide_select = False
-                        elif not obj.hide_select and obj.name in user_ref.buffer['selected_objects']:
+                        elif not obj.hide_select and obj.name in user_ref.data['selected_objects']:
                             obj.hide_select = True
 
 class Draw(Delayable):
@@ -165,10 +165,10 @@ class DrawClient(Draw):
 
                 if settings.presence_show_selected:
                     presence.renderer.draw_client_selection(
-                        cli_ref.buffer['name'], cli_ref.buffer['color'], cli_ref.buffer['selected_objects'])
+                        cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
                 if settings.presence_show_user:
                     presence.renderer.draw_client_camera(
-                        cli_ref.buffer['name'], cli_ref.buffer['location'], cli_ref.buffer['color'])
+                        cli_ref.data['name'], cli_ref.data['location'], cli_ref.data['color'])
 
 
 class ClientUpdate(Timer):

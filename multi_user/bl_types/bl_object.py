@@ -11,11 +11,11 @@ class BlObject(BlDatablock):
         pointer = None
 
         if self.is_library:
-            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.buffer['library']].filepath, link=True) as (sourceData, targetData):
+            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.objects = [
-                    name for name in sourceData.objects if name == self.buffer['name']]
+                    name for name in sourceData.objects if name == self.data['name']]
 
-            return targetData.objects[self.buffer['name']]
+            return targetData.objects[self.data['name']]
 
         # Object specific constructor...
         if "data" not in data:
@@ -99,9 +99,9 @@ class BlObject(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.buffer)
+        assert(self.data)
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
-        # object_name = self.buffer['name']
+        # object_name = self.data['name']
         # try:
         #     self.pointer = bpy.data.objects[object_name]
         # except:
@@ -122,7 +122,7 @@ class BlObject(BlDatablock):
         return deps
 
     def is_valid(self):
-        return bpy.data.objects.get(self.buffer['name'])
+        return bpy.data.objects.get(self.data['name'])
 
 
 bl_id = "objects"
