@@ -17,36 +17,51 @@ class BlCollection(BlDatablock):
  
         # link objects
         for object in data["objects"]:
-            if object not in target.objects.keys():
-                target.objects.link(bpy.data.objects[object])
+            object_ref = utils.find_from_attr('uuid',object,bpy.data.objects)
+            if object_ref and object_ref.name not in target.objects.keys():
+                target.objects.link(object_ref)
 
-        for object in target.objects.keys():
-            if object not in data["objects"]:
-                target.objects.unlink(bpy.data.objects[object])
+        for object in target.objects:
+            if object.uuid not in data["objects"]:
+                target.objects.unlink(object)
 
         # Link childrens
         for collection in data["children"]:
-            if collection not in target.children.keys():
-                # if bpy.data.collections.find(collection) == -1:
-                target.children.link(
-                    bpy.data.collections[collection])
+            collection_ref = utils.find_from_attr('uuid',collection,bpy.data.collections)
+            if collection_ref and collection_ref.name not in target.children.keys():
+                target.children.link(collection_ref)
 
-        for collection in target.children.keys():
-            if collection not in data["children"]:
-                target.collection.children.unlink(
-                    bpy.data.collections[collection])
+        for collection in target.children:
+            if collection.uuid not in data["children"]:
+                target.collection.children.unlink(collection)
 
         utils.dump_anything.load(target, data)
 
     def dump(self, pointer=None):
         assert(pointer)
+        data = {}
+        data['name'] = pointer.name
+
+        # dump objects
+        collection_objects = []
+        for object in pointer.objects:
+            collection_objects.append(object.uuid)
         
-        dumper = utils.dump_anything.Dumper()
-        dumper.depth = 2
-        dumper.include_filter = ['name','objects', 'children', 'uuid']
+        data['objects'] = collection_objects
 
-        return dumper.dump(pointer)
+        # dump children collections
+        collection_children = []
+        for object in pointer.objects:
+            collection_children.append(object.uuid)
+        
+        data['children'] = collection_objects
 
+        # dumper = utils.dump_anything.Dumper()
+        # dumper.depth = 2
+        # dumper.include_filter = ['name','objects', 'children']
+
+        # return dumper.dump(pointer)
+        return data
     def resolve(self):
         assert(self.data)      
         # self.pointer = bpy.data.collections.get(self.data['name'])
