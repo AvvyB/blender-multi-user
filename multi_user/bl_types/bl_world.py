@@ -88,11 +88,6 @@ class BlWorld(BlDatablock):
         assert(self.data)
         self.pointer = bpy.data.worlds.get(self.data['name'])
 
-    def diff(self):
-        diff_rev = diff(self.dump(pointer=self.pointer), self.data)
-        return (self.bl_diff() or
-                len(diff_rev.keys()) > 0)
-
     def resolve_dependencies(self):
         deps = []
 

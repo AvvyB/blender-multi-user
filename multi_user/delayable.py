@@ -162,13 +162,13 @@ class DrawClient(Draw):
 
             for cli in client_list:
                 cli_ref = repo.get(uuid=cli)
-
-                if settings.presence_show_selected:
-                    presence.renderer.draw_client_selection(
-                        cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
-                if settings.presence_show_user:
-                    presence.renderer.draw_client_camera(
-                        cli_ref.data['name'], cli_ref.data['location'], cli_ref.data['color'])
+                if cli_ref.data.get('name'):
+                    if settings.presence_show_selected:
+                        presence.renderer.draw_client_selection(
+                            cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
+                    if settings.presence_show_user:
+                        presence.renderer.draw_client_camera(
+                            cli_ref.data['name'], cli_ref.data['location'], cli_ref.data['color'])
 
 
 class ClientUpdate(Timer):

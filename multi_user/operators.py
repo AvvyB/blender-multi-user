@@ -114,11 +114,7 @@ class SessionStartOperator(bpy.types.Operator):
                 "A session is already hosted on this address")
             return {"CANCELLED"}
 
-        if settings.init_scene and self.host:
-            init_supported_datablocks(supported_bl_types)
-
-            for node in client.list():
-                client.commit(node)
+        
 
         # Init user settings
         usr = presence.User(
@@ -128,9 +124,16 @@ class SessionStartOperator(bpy.types.Operator):
                    settings.client_color.b,
                    1),
         )
+        
         settings.user_uuid = client.add(usr,owner=settings.username)
         client.commit(settings.user_uuid)
 
+        if settings.init_scene and self.host:
+            # init_supported_datablocks(supported_bl_types)
+            client.add(bpy.context.scene)
+            
+            for node in client.list():
+                client.commit(node)
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
         delayables.append(delayable.DrawClient())

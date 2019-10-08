@@ -42,7 +42,7 @@ class BlCollection(BlDatablock):
         assert(pointer)
         
         dumper = utils.dump_anything.Dumper()
-        dumper.depth = 4
+        dumper.depth = 2
         dumper.include_filter = ['name','objects', 'children', 'uuid']
 
         return dumper.dump(pointer)

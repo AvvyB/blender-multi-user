@@ -197,22 +197,23 @@ class SESSION_PT_user(bpy.types.Panel):
 
                 detail_item_row = item_box.row(align=True)
 
-                username = client['name']
+                if client.get('name'):
+                    username = client['name']
 
-                is_local_user = username == settings.username
+                    is_local_user = username == settings.username
 
-                if is_local_user:
-                    info = "(self)"
+                    if is_local_user:
+                        info = "(self)"
 
-                detail_item_row.label(
-                    text="{} {}".format(username, info))
+                    detail_item_row.label(
+                        text="{} {}".format(username, info))
 
-                if not is_local_user:
-                    detail_item_row.operator(
-                        "session.snapview",
-                        text="",
-                        icon='VIEW_CAMERA').target_client = key
-                row = layout.row()
+                    if not is_local_user:
+                        detail_item_row.operator(
+                            "session.snapview",
+                            text="",
+                            icon='VIEW_CAMERA').target_client = key
+                    row = layout.row()
         else:
             row.label(text="Empty")
 

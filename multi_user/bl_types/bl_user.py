@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import jsondiff
 
 from .. import utils
 from .. import presence
@@ -17,10 +18,14 @@ class BlUser(BlDatablock):
         utils.dump_anything.load(target, data)
     
     def apply(self):
+        # super().apply()
+    #     self.data = jsondiff.patch(self.data, self.modifications, marshal=True)
+    #     self.modifications = None
+        
         if self.pointer:
             self.load(data=self.data, target=self.pointer)
 
-        settings = bpy.context.window_manager.session
+    #     settings = bpy.context.window_manager.session
 
         presence.refresh_3d_view()
         
@@ -39,17 +44,17 @@ class BlUser(BlDatablock):
     def update(self):
         self.pointer.is_dirty = True
 
-    def diff(self):
-        if not self.pointer:
-            return False
-        if self.pointer.is_dirty:
-            self.pointer.is_dirty = False
-            return True
+    # def diff(self):
+    #     if not self.pointer:
+    #         return False
+    #     if self.pointer.is_dirty:
+    #         self.pointer.is_dirty = False
+    #         return True
 
-        for i,coord in enumerate(self.pointer.location):
-            if coord != self.data['location'][i]:
-                return True
-        return False
+    #     for i,coord in enumerate(self.pointer.location):
+    #         if coord != self.data['location'][i]:
+    #             return True
+    #     return False
 
     def is_valid(self):
         return True
