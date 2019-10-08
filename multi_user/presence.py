@@ -202,10 +202,8 @@ class DrawFactory(object):
                     (4, 5), (5, 6), (6, 7), (4, 7),
                     (0, 4), (1, 5), (2, 6), (3, 7)
                 )
-
-                if select_ob in bpy.data.objects.keys():
-                    ob = bpy.data.objects[select_ob]
-                else:
+                ob = utils.find_from_attr("uuid",select_ob,bpy.data.objects)
+                if not ob:
                     return
 
                 bbox_corners = [ob.matrix_world @ mathutils.Vector(

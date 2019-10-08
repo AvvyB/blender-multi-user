@@ -93,7 +93,7 @@ def get_armature_edition_context(armature):
 
 
 def get_selected_objects(scene):
-    return [obj.name for obj in scene.objects if obj.select_get()]
+    return [obj.uuid for obj in scene.objects if obj.select_get()]
 
 
 def load_dict(src_dict, target):

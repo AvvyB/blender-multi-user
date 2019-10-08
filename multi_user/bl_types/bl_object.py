@@ -43,7 +43,6 @@ class BlObject(BlDatablock):
         return instance
 
     def load(self, data, target):
-        target.uuid = data['uuid']
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
 
         # Load modifiers
@@ -75,7 +74,6 @@ class BlObject(BlDatablock):
             "rotation_mode",
             "parent",
             "data",
-            "uuid",
             "children",
             "library"
         ]

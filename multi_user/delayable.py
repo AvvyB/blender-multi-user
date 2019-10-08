@@ -105,8 +105,7 @@ class DynamicRightSelectTimer(Timer):
 
                             # change new selection to our
                             for obj in obj_ours:
-                                node = operators.client.get(
-                                    reference=bpy.data.objects[obj])
+                                node = operators.client.get(uuid=obj)
                                 if node and node.owner == RP_COMMON:
                                     operators.client.change_owner(
                                         node.uuid, settings.username)
@@ -120,17 +119,15 @@ class DynamicRightSelectTimer(Timer):
 
                             # change old selection right to common
                             for obj in obj_common:
-                                _object = bpy.data.objects.get(obj)
-
-                                node = operators.client.get(reference=_object)
+                                node = operators.client.get(uuid=obj)
                                 if node and (node.owner == settings.username or node.owner == RP_COMMON):
                                     operators.client.change_owner(
                                         node.uuid, RP_COMMON)
                 else:
                     for obj in bpy.data.objects:
-                        if obj.hide_select and obj.name not in user_ref.data['selected_objects']:
+                        if obj.hide_select and obj.uuid not in user_ref.data['selected_objects']:
                             obj.hide_select = False
-                        elif not obj.hide_select and obj.name in user_ref.data['selected_objects']:
+                        elif not obj.hide_select and obj.uuid in user_ref.data['selected_objects']:
                             obj.hide_select = True
 
 class Draw(Delayable):
