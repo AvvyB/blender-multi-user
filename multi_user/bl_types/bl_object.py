@@ -3,7 +3,6 @@ import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
-from jsondiff import diff
 
 
 class BlObject(BlDatablock):

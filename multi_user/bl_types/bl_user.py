@@ -1,6 +1,5 @@
 import bpy
 import mathutils
-import jsondiff
 
 from .. import utils
 from .. import presence

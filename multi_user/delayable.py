@@ -74,7 +74,7 @@ class ApplyTimer(Timer):
                     try:
                         operators.client.apply(node)
                     except Exception:
-                        logger.error("fail to apply {}".format(node_ref.data['name']))
+                            logger.error("fail to apply {}".format(node_ref.uuid))
 
 
 class DynamicRightSelectTimer(Timer):

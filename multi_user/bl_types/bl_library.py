@@ -1,6 +1,5 @@
 import bpy
 import mathutils
-from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock
@@ -22,8 +21,8 @@ class BlLibrary(BlDatablock):
         assert(self.data)
         self.pointer = bpy.data.libraries.get(self.data['name'])
 
-    def diff(self):
-        return (self.bl_diff())
+    # def diff(self):
+    #     return (self.bl_diff())
 
     def is_valid(self):
         return bpy.data.libraries.get(self.data['name'])

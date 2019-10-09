@@ -260,7 +260,7 @@ def draw_property(context, parent, property_uuid, level=0):
             area_msg.label(text="")
     line = area_msg.box()
 
-    name = item.data['name'] if item.data else item.pointer.name
+    name = item.data['name'] if item.data else item.uuid
 
     detail_item_box = line.row(align=True)
 

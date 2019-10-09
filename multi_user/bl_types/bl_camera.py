@@ -1,5 +1,3 @@
-from jsondiff import diff
-
 import bpy
 import mathutils
 

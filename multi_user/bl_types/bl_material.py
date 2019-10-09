@@ -1,7 +1,6 @@
 import bpy
 import mathutils
 import logging
-from jsondiff import diff
 
 from .. import utils
 from .bl_datablock import BlDatablock

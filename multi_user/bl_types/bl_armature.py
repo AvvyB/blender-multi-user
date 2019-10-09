@@ -1,6 +1,5 @@
 import bpy
 import mathutils
-from jsondiff import diff
 
 from ..libs.overrider import Overrider
 from .. import utils
