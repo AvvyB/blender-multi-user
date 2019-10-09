@@ -51,10 +51,10 @@ class BlCollection(BlDatablock):
 
         # dump children collections
         collection_children = []
-        for object in pointer.objects:
-            collection_children.append(object.uuid)
+        for child in pointer.children:
+            collection_children.append(child.uuid)
         
-        data['children'] = collection_objects
+        data['children'] = collection_children
 
         # dumper = utils.dump_anything.Dumper()
         # dumper.depth = 2
