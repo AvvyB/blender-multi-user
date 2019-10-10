@@ -55,7 +55,6 @@ class BlScene(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
         scene_name = self.data['name']
         
         self.pointer = bpy.data.scenes.get(scene_name)

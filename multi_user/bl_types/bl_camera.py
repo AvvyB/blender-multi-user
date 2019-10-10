@@ -46,8 +46,7 @@ class BlCamera(BlDatablock):
         return dumper.dump(pointer)
 
     def resolve(self):
-        assert(self.data)
-        self.pointer = bpy.data.cameras.get(self.data['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.cameras)
 
     def is_valid(self):
         return bpy.data.cameras.get(self.data['name'])

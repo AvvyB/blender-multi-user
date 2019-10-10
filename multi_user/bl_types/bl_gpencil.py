@@ -65,8 +65,7 @@ class BlGpencil(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
-        self.pointer = bpy.data.grease_pencils.get(self.data['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.grease_pencils)
 
     def resolve_dependencies(self):
         deps = []

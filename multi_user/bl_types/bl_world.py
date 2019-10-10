@@ -84,8 +84,7 @@ class BlWorld(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
-        self.pointer = bpy.data.worlds.get(self.data['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.worlds)
 
     def resolve_dependencies(self):
         deps = []

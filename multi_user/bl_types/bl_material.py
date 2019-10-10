@@ -127,7 +127,6 @@ class BlMaterial(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
         self.pointer = bpy.data.materials.get(self.data['name'])
 
     def resolve_dependencies(self):

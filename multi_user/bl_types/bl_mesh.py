@@ -155,7 +155,6 @@ class BlMesh(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.meshes) 
         # self.pointer = bpy.data.meshes.get(self.data['name'])
 

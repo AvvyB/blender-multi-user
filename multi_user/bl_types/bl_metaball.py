@@ -27,7 +27,6 @@ class BlMetaball(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
         self.pointer = bpy.data.metaballs.get(self.data['name'])
 
     def is_valid(self):

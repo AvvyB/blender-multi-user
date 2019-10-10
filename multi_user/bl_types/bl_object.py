@@ -96,7 +96,6 @@ class BlObject(BlDatablock):
         return data
 
     def resolve(self):
-        assert(self.data)
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
         # object_name = self.data['name']
         # try:
