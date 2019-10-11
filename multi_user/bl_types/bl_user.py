@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import jsondiff
 
 from .. import utils
 from .. import presence
@@ -18,8 +19,8 @@ class BlUser(BlDatablock):
     
     def apply(self):
         # super().apply()
-    #     self.data = jsondiff.patch(self.data, self.modifications, marshal=True)
-    #     self.modifications = None
+        self.data = jsondiff.patch(self.data, self.modifications, marshal=True)
+        self.modifications = None
         
         if self.pointer:
             self.load(data=self.data, target=self.pointer)

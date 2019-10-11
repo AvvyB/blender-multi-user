@@ -33,9 +33,8 @@ class BlCollection(BlDatablock):
 
         for collection in target.children:
             if collection.uuid not in data["children"]:
-                target.collection.children.unlink(collection)
+                    target.children.unlink(collection)
 
-        utils.dump_anything.load(target, data)
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -45,6 +44,7 @@ class BlCollection(BlDatablock):
         # dump objects
         collection_objects = []
         for object in pointer.objects:
+                if object not in collection_objects:
             collection_objects.append(object.uuid)
         
         data['objects'] = collection_objects
@@ -52,6 +52,7 @@ class BlCollection(BlDatablock):
         # dump children collections
         collection_children = []
         for child in pointer.children:
+                if child not in collection_children:
             collection_children.append(child.uuid)
         
         data['children'] = collection_children

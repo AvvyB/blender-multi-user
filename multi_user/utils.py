@@ -13,7 +13,7 @@ from . import environment, presence
 from .libs import dump_anything
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 
 def find_from_attr(attr_name, attr_value, list):
