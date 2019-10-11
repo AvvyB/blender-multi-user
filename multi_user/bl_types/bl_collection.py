@@ -44,16 +44,16 @@ class BlCollection(BlDatablock):
         # dump objects
         collection_objects = []
         for object in pointer.objects:
-                if object not in collection_objects:
-            collection_objects.append(object.uuid)
+            if object not in collection_objects:
+                collection_objects.append(object.uuid)
         
         data['objects'] = collection_objects
 
         # dump children collections
         collection_children = []
         for child in pointer.children:
-                if child not in collection_children:
-            collection_children.append(child.uuid)
+            if child not in collection_children:
+                collection_children.append(child.uuid)
         
         data['children'] = collection_children
 

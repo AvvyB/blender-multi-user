@@ -74,7 +74,7 @@ class SessionStartOperator(bpy.types.Operator):
             bpy_factory.register_type(
                 _type.bl_class,
                 _type.bl_rep_class,
-                timer=0,#type_local_config.bl_delay_refresh
+                timer=type_local_config.bl_delay_refresh,
                 automatic=type_local_config.auto_push)
 
             if type_local_config.bl_delay_apply > 0:
