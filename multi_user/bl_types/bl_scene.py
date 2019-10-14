@@ -37,6 +37,11 @@ class BlScene(BlDatablock):
 
         if 'world' in data.keys():
             target.world = bpy.data.worlds[data['world']]
+        
+        # Annotation
+        
+        if 'grease_pencil' in data.keys():
+            target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -75,6 +80,10 @@ class BlScene(BlDatablock):
         if self.pointer.world:
             deps.append(self.pointer.world)
         
+        # annotations
+        if self.pointer.grease_pencil:
+            deps.append(self.pointer.grease_pencil)
+
         return deps
     
     def is_valid(self):
