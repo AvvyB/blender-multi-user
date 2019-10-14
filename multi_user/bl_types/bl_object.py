@@ -13,8 +13,10 @@ class BlObject(BlDatablock):
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.objects = [
                     name for name in sourceData.objects if name == self.data['name']]
-
-            return targetData.objects[self.data['name']]
+            
+            instance = bpy.data.objects[self.data['name']]
+            instance.uuid = self.uuid
+            return instance
 
         # Object specific constructor...
         if "data" not in data:

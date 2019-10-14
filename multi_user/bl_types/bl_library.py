@@ -20,9 +20,6 @@ class BlLibrary(BlDatablock):
     def resolve(self):
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.libraries)
 
-    # def diff(self):
-    #     return (self.bl_diff())
-
     def is_valid(self):
         return bpy.data.libraries.get(self.data['name'])
 

@@ -20,7 +20,8 @@ class BlDatablock(ReplicatedDatablock):
             self.load = self.load_library
             self.dump = self.dump_library
             self.diff = self.diff_library
-
+            self.resolve_dependencies = self.resolve_dependencies_library
+            
         if self.pointer and hasattr(self.pointer, 'uuid'):
             self.pointer.uuid = self.uuid
 
