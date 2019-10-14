@@ -7,6 +7,16 @@ from .bl_datablock import BlDatablock
 
 class BlCollection(BlDatablock):
     def construct(self, data):
+        if self.is_library:
+            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
+                targetData.collections = [
+                    name for name in sourceData.collections if name == self.data['name']]
+            
+            instance = bpy.data.collections[self.data['name']]
+            instance.uuid = self.uuid
+            
+            return instance
+
         instance = bpy.data.collections.new(data["name"])
         instance.uuid = self.uuid
         return instance
