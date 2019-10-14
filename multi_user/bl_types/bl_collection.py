@@ -6,7 +6,7 @@ from .bl_datablock import BlDatablock
 
 
 class BlCollection(BlDatablock):
-    def construct(self,data):
+    def construct(self, data):
         instance = bpy.data.collections.new(data["name"])
         instance.uuid = self.uuid
         return instance
@@ -14,10 +14,10 @@ class BlCollection(BlDatablock):
     def load(self, data, target):
         # Load other meshes metadata
         # dump_anything.load(target, data)
- 
+
         # link objects
         for object in data["objects"]:
-            object_ref = utils.find_from_attr('uuid',object,bpy.data.objects)
+            object_ref = utils.find_from_attr('uuid', object, bpy.data.objects)
             if object_ref and object_ref.name not in target.objects.keys():
                 target.objects.link(object_ref)
 
@@ -27,14 +27,14 @@ class BlCollection(BlDatablock):
 
         # Link childrens
         for collection in data["children"]:
-            collection_ref = utils.find_from_attr('uuid',collection,bpy.data.collections)
+            collection_ref = utils.find_from_attr(
+                'uuid', collection, bpy.data.collections)
             if collection_ref and collection_ref.name not in target.children.keys():
                 target.children.link(collection_ref)
 
         for collection in target.children:
             if collection.uuid not in data["children"]:
-                    target.children.unlink(collection)
-
+                target.children.unlink(collection)
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -46,7 +46,7 @@ class BlCollection(BlDatablock):
         for object in pointer.objects:
             if object not in collection_objects:
                 collection_objects.append(object.uuid)
-        
+
         data['objects'] = collection_objects
 
         # dump children collections
@@ -54,7 +54,7 @@ class BlCollection(BlDatablock):
         for child in pointer.children:
             if child not in collection_children:
                 collection_children.append(child.uuid)
-        
+
         data['children'] = collection_children
 
         # dumper = utils.dump_anything.Dumper()
@@ -63,22 +63,27 @@ class BlCollection(BlDatablock):
 
         # return dumper.dump(pointer)
         return data
+
     def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.collections)
+        self.pointer = utils.find_from_attr(
+            'uuid',
+            self.uuid,
+            bpy.data.collections)
 
     def resolve_dependencies(self):
         deps = []
-        
+
         for child in self.pointer.children:
             deps.append(child)
         for object in self.pointer.objects:
             deps.append(object)
-        
+
         return deps
 
     def is_valid(self):
         return bpy.data.collections.get(self.data['name'])
-        
+
+
 bl_id = "collections"
 bl_icon = 'FILE_FOLDER'
 bl_class = bpy.types.Collection

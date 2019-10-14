@@ -45,7 +45,7 @@ class BlObject(BlDatablock):
 
     def load(self, data, target):
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
-
+        
         # Load modifiers
         if hasattr(target, 'modifiers'):
             for local_modifier in target.modifiers:
@@ -61,9 +61,19 @@ class BlObject(BlDatablock):
                 utils.dump_anything.load(
                     target_modifier, data['modifiers'][modifier])
 
+        # Load relations
         if 'children' in data.keys():
             for child in data['children']:
                 bpy.data.objects[child].parent = self.pointer
+
+        # Load empty representation
+        target.empty_display_size = data['empty_display_size']
+        target.empty_display_type = data['empty_display_type']
+
+        # Instancing
+        target.instance_type =  data['instance_type']
+        if data['instance_type'] == 'COLLECTION':
+            target.instance_collection = bpy.data.collections[data['instance_collection']]
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -76,25 +86,31 @@ class BlObject(BlDatablock):
             "parent",
             "data",
             "children",
-            "library"
+            "library",
+            "empty_display_type",
+            "empty_display_size",
+            "instance_collection",
+            "instance_type"
         ]
         data = dumper.dump(pointer)
 
         if self.is_library:
             return data
 
+        # MODIFIERS
         if hasattr(pointer, 'modifiers'):
             dumper.include_filter = None
             dumper.depth = 3
             data["modifiers"] = dumper.dump(pointer.modifiers)
         
+        # CHILDS
         if len(pointer.children) > 0:
             childs = []
             for child in pointer.children:
                 childs.append(child.name)
            
             data["children"] = childs
-            # deps.extend(list(self.pointer.children))
+
         return data
 
     def resolve(self):
@@ -111,6 +127,10 @@ class BlObject(BlDatablock):
 
         if self.is_library:
             deps.append(self.pointer.library)
+
+        if self.pointer.instance_type == 'COLLECTION':
+            #TODO: uuid based
+            deps.append(self.pointer.instance_collection)
 
         return deps
 
