@@ -39,7 +39,6 @@ class BlScene(BlDatablock):
             target.world = bpy.data.worlds[data['world']]
         
         # Annotation
-        
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 

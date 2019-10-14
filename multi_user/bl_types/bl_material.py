@@ -6,6 +6,15 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
+def clean_color_ramp(target_ramp):
+    # clear existing
+    try:
+        for key in target_ramp.elements:
+            target_ramp.elements.remove(key)
+    except:
+        pass
+    
+
 
 def load_node(target_node_tree, source):
     target_node = target_node_tree.nodes.get(source["name"])
@@ -15,11 +24,17 @@ def load_node(target_node_tree, source):
 
         target_node = target_node_tree.nodes.new(type=node_type)
 
+    # Clean color ramp before loading it
+    if source['type'] == 'VALTORGB':
+        clean_color_ramp(target_node.color_ramp)
+
     utils.dump_anything.load(
-        target_node, source)
+        target_node,
+        source)
 
     if source['type'] == 'TEX_IMAGE':
         target_node.image = bpy.data.images[source['image']]
+    
 
     for input in source["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
@@ -114,11 +129,21 @@ class BlMaterial(BlDatablock):
                 if hasattr(node, 'inputs'):
                     nodes[node.name]['inputs'] = {}
 
-                    for i in node.inputs:
-                        
+                    for i in node.inputs:      
                         if hasattr(i, 'default_value'):
                             nodes[node.name]['inputs'][i.name] = input_dumper.dump(
                                 i)
+                if hasattr(node, 'color_ramp'):
+                    ramp_dumper = utils.dump_anything.Dumper()
+                    ramp_dumper.depth = 4
+                    ramp_dumper.include_filter = [
+                        'elements',
+                        'alpha',
+                        'color',
+                        'position'
+                    ]
+                    nodes[node.name]['color_ramp'] = ramp_dumper.dump(node.color_ramp)
+
             data["node_tree"]['nodes'] = nodes
             data["node_tree"]["links"] = links_dumper.dump(pointer.node_tree.links)
         
