@@ -73,8 +73,8 @@ class ApplyTimer(Timer):
                 if node_ref.state == FETCHED:
                     try:
                         operators.client.apply(node)
-                    except Exception:
-                            logger.error("fail to apply {}".format(node_ref.uuid))
+                    except Exception as e:
+                            logger.error("fail to apply {}: {}".format(node_ref.uuid,e))
 
 
 class DynamicRightSelectTimer(Timer):
@@ -129,6 +129,7 @@ class DynamicRightSelectTimer(Timer):
                             obj.hide_select = False
                         elif not obj.hide_select and obj.uuid in user_ref.data['selected_objects']:
                             obj.hide_select = True
+
 
 class Draw(Delayable):
     def __init__(self):

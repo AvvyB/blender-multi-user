@@ -97,11 +97,6 @@ class BlObject(BlDatablock):
 
     def resolve(self):
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
-        # object_name = self.data['name']
-        # try:
-        #     self.pointer = bpy.data.objects[object_name]
-        # except:
-        #     pass
 
     def resolve_dependencies(self):
         deps = []

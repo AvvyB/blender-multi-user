@@ -27,7 +27,7 @@ class BlMetaball(BlDatablock):
         return data
 
     def resolve(self):
-        self.pointer = bpy.data.metaballs.get(self.data['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.metaballs)
 
     def is_valid(self):
         return bpy.data.metaballs.get(self.data['name'])

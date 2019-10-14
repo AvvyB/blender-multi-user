@@ -127,7 +127,7 @@ class BlMaterial(BlDatablock):
         return data
 
     def resolve(self):
-        self.pointer = bpy.data.materials.get(self.data['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.materials)
 
     def resolve_dependencies(self):
         # TODO: resolve node group deps

@@ -40,7 +40,7 @@ class BlLight(BlDatablock):
         return data
 
     def resolve(self):
-        self.pointer = bpy.data.lights.get(self.data['name'])
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.lights)
 
     def is_valid(self):
         return bpy.data.lights.get(self.data['name'])

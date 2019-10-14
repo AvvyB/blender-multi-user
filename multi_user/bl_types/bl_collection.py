@@ -64,8 +64,6 @@ class BlCollection(BlDatablock):
         # return dumper.dump(pointer)
         return data
     def resolve(self):
-        assert(self.data)      
-        # self.pointer = bpy.data.collections.get(self.data['name'])
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.collections)
 
     def resolve_dependencies(self):

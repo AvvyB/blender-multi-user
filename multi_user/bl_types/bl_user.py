@@ -18,14 +18,9 @@ class BlUser(BlDatablock):
         utils.dump_anything.load(target, data)
     
     def apply(self):
-        # super().apply()
-        self.data = jsondiff.patch(self.data, self.modifications, marshal=True)
-        self.modifications = None
-        
+       
         if self.pointer:
             self.load(data=self.data, target=self.pointer)
-
-    #     settings = bpy.context.window_manager.session
 
         presence.refresh_3d_view()
         

@@ -156,7 +156,6 @@ class BlMesh(BlDatablock):
 
     def resolve(self):
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.meshes) 
-        # self.pointer = bpy.data.meshes.get(self.data['name'])
 
     def resolve_dependencies(self):
         deps = []
