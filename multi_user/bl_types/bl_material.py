@@ -14,6 +14,20 @@ def clean_color_ramp(target_ramp):
     except:
         pass
     
+def load_mapping(target_apping, source_mapping):
+     # clear existing curves
+    for curve in target_apping.curves:
+        for point in curve.points:
+            try:
+                curve.remove(point)
+            except:
+                continue
+    
+    # Load curves
+    for curve in source_mapping['curves']:
+        for point in source_mapping['curves'][curve]['points']:
+            pos = source_mapping['curves'][curve]['points'][point]['location']
+            target_apping.curves[curve].points.new(pos[0],pos[1])
 
 
 def load_node(target_node_tree, source):
@@ -27,7 +41,8 @@ def load_node(target_node_tree, source):
     # Clean color ramp before loading it
     if source['type'] == 'VALTORGB':
         clean_color_ramp(target_node.color_ramp)
-
+    if source['type'] == 'CURVE_RGB':
+        load_mapping(target_node.mapping, source['mapping'])
     utils.dump_anything.load(
         target_node,
         source)
@@ -143,7 +158,15 @@ class BlMaterial(BlDatablock):
                         'position'
                     ]
                     nodes[node.name]['color_ramp'] = ramp_dumper.dump(node.color_ramp)
-
+                if hasattr(node, 'mapping'):
+                    curve_dumper = utils.dump_anything.Dumper()
+                    curve_dumper.depth = 5
+                    curve_dumper.include_filter = [
+                        'curves',
+                        'points',
+                        'location'
+                    ]
+                    nodes[node.name]['mapping'] = curve_dumper.dump(node.mapping)
             data["node_tree"]['nodes'] = nodes
             data["node_tree"]["links"] = links_dumper.dump(pointer.node_tree.links)
         
