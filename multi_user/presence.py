@@ -92,6 +92,13 @@ def get_client_2d(coords):
     else:
         return (0, 0)
 
+def get_bb_coords_from_obj(object, parent=None):
+    base = object.matrix_world if parent is None else parent.matrix_world
+    bbox_corners = [base @ mathutils.Vector(
+                corner) for corner in object.bound_box]
+
+    return [(point.x, point.y, point.z)
+                for point in bbox_corners]
 
 class User():
     def __init__(self, username=None, color=(0, 0, 0, 1)):
@@ -205,18 +212,35 @@ class DrawFactory(object):
                 ob = utils.find_from_attr("uuid",select_ob,bpy.data.objects)
                 if not ob:
                     return
+            
+                item_to_draw = [] 
+                if ob.type == 'EMPTY':
+                    # Child case
 
-                bbox_corners = [ob.matrix_world @ mathutils.Vector(
-                    corner) for corner in ob.bound_box]
+                    # Collection instance case
+                    if ob.instance_collection:
+                        for obj in ob.instance_collection.objects:
+                            if obj.type == 'MESH':
+                                 self.append_3d_item(
+                                    drawable_key,
+                                    client_color,
+                                    get_bb_coords_from_obj(obj, parent=ob),
+                                    indices)
+                    
+                if ob.type == 'MESH':
+                    self.append_3d_item(
+                        drawable_key,
+                        client_color,
+                        get_bb_coords_from_obj(ob),
+                        indices)
+    
+    def append_3d_item(self,key,color, coords, indices):
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        color = color
+        batch = batch_for_shader(
+            shader, 'LINES', {"pos": coords}, indices=indices)
 
-                coords = [(point.x, point.y, point.z)
-                          for point in bbox_corners]
-                shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                color = client_color
-                batch = batch_for_shader(
-                    shader, 'LINES', {"pos": coords}, indices=indices)
-
-                self.d3d_items[drawable_key] = (shader, batch, color)
+        self.d3d_items[key] = (shader, batch, color)
 
     def draw_client_camera(self, client_uuid, client_location, client_color):
         if client_location:
