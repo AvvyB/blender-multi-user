@@ -106,9 +106,13 @@ class DynamicRightSelectTimer(Timer):
                             # change new selection to our
                             for obj in obj_ours:
                                 node = operators.client.get(uuid=obj)
+                               
                                 if node and node.owner == RP_COMMON:
+                                    recursive = node.data['instance_type'] != 'COLLECTION'
                                     operators.client.change_owner(
-                                        node.uuid, settings.username)
+                                        node.uuid,
+                                        settings.username,
+                                        recursive=recursive)
                                 else:
                                     return
 
@@ -120,9 +124,13 @@ class DynamicRightSelectTimer(Timer):
                             # change old selection right to common
                             for obj in obj_common:
                                 node = operators.client.get(uuid=obj)
+                                
                                 if node and (node.owner == settings.username or node.owner == RP_COMMON):
+                                    recursive = node.data['instance_type'] != 'COLLECTION'
                                     operators.client.change_owner(
-                                        node.uuid, RP_COMMON)
+                                        node.uuid,
+                                        RP_COMMON,
+                                        recursive=recursive)
                 else:
                     for obj in bpy.data.objects:
                         if obj.hide_select and obj.uuid not in user_ref.data['selected_objects']:
