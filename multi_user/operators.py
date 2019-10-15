@@ -249,6 +249,8 @@ class SessionSnapUserOperator(bpy.types.Operator):
     bl_description = "Snap 3d view to selected user"
     bl_options = {"REGISTER"}
 
+    _timer = None
+
     target_client: bpy.props.StringProperty(default="None")
 
     @classmethod
@@ -256,17 +258,31 @@ class SessionSnapUserOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        area, region, rv3d = presence.view3d_find()
-        global client
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
-        target_client = client.get(uuid=self.target_client)
-        if target_client:
-            rv3d.view_matrix = mathutils.Matrix(target_client.data['view_matrix'])
-            # rv3d.view_distance = 30.0
+    def cancel(self, context):
+        wm = context.window_manager
+        wm.event_timer_remove(self._timer)
 
-            return {"FINISHED"}
+    def modal(self, context, event):
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.cancel(context)
+            return {'CANCELLED'}
 
-        return {"CANCELLED"}
+        if event.type == 'TIMER':
+            area, region, rv3d = presence.view3d_find()
+            global client
+
+            target_client = client.get(uuid=self.target_client)
+            if target_client:
+                rv3d.view_matrix = mathutils.Matrix(target_client.data['view_matrix'])
+            else:
+                return {"CANCELLED"}
+
+        return {'PASS_THROUGH'}
 
 
 class SessionApply(bpy.types.Operator):
