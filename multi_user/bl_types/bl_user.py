@@ -15,6 +15,7 @@ class BlUser(BlDatablock):
         target.name = data['name']
         target.location = data['location']
         target.selected_objects = data['selected_objects']
+
         utils.dump_anything.load(target, data)
     
     def apply(self):
@@ -34,6 +35,8 @@ class BlUser(BlDatablock):
         data['location'] = pointer.location
         data['color'] = pointer.color
         data['selected_objects'] = pointer.selected_objects
+        data['view_matrix'] = pointer.view_matrix
+
         return data
     
     def update(self):

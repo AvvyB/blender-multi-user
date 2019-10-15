@@ -108,6 +108,7 @@ class User():
         self.location = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.selected_objects = []
         self.last_select_objects = []
+        self.view_matrix = None
 
     def update_location(self):
         current_coords = get_client_cam_points()
@@ -116,6 +117,11 @@ class User():
         current_coords = list(get_client_cam_points())
         if current_coords and self.location != current_coords:
             self.location = current_coords
+
+        matrix_dumper = utils.dump_anything.Dumper()
+        current_vm = matrix_dumper.dump(rv3d.view_matrix)
+        if self.view_matrix != current_vm:
+            self.view_matrix = current_vm 
 
     def update_selected_objects(self, context):
         self.selected_objects = utils.get_selected_objects(context.scene)
