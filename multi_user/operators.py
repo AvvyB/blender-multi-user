@@ -22,7 +22,7 @@ from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 client = None
 delayables = []

@@ -12,7 +12,7 @@ from gpu_extras.batch import batch_for_shader
 
 from . import utils
 
-global renderer
+renderer = None
 
 logger = logging.getLogger(__name__)
 
