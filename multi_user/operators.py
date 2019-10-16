@@ -129,10 +129,11 @@ class SessionStartOperator(bpy.types.Operator):
         client.commit(settings.user_uuid)
 
         if settings.init_scene and self.host:
-            scene_uuid = client.add(bpy.context.scene)
+            for scene in bpy.data.scenes:
+                scene_uuid = client.add(scene)
             
-            # for node in client.list():
-            client.commit(scene_uuid)
+                # for node in client.list():
+                client.commit(scene_uuid)
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
         delayables.append(delayable.DrawClient())

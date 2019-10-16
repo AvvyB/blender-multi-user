@@ -108,7 +108,10 @@ class DynamicRightSelectTimer(Timer):
                                 node = operators.client.get(uuid=obj)
                                
                                 if node and node.owner == RP_COMMON:
-                                    recursive = node.data['instance_type'] != 'COLLECTION'
+                                    recursive = True
+                                    if node.data and 'instance_type' in node.data.keys():
+                                        recursive = node.data['instance_type'] != 'COLLECTION'
+                                        
                                     operators.client.change_owner(
                                         node.uuid,
                                         settings.username,
@@ -126,7 +129,9 @@ class DynamicRightSelectTimer(Timer):
                                 node = operators.client.get(uuid=obj)
                                 
                                 if node and (node.owner == settings.username or node.owner == RP_COMMON):
-                                    recursive = node.data['instance_type'] != 'COLLECTION'
+                                    recursive = True
+                                    if node.data and 'instance_type' in node.data.keys():
+                                        recursive = node.data['instance_type'] != 'COLLECTION'
                                     operators.client.change_owner(
                                         node.uuid,
                                         RP_COMMON,
