@@ -72,6 +72,7 @@ class BlMaterial(BlDatablock):
         return bpy.data.materials.new(data["name"])
 
     def load(self, data, target):
+        target.name = data['name']
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)

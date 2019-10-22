@@ -46,6 +46,7 @@ class BlObject(BlDatablock):
     def load(self, data, target):
         target.matrix_world = mathutils.Matrix(data["matrix_world"])
         
+        target.name = data["name"]
         # Load modifiers
         if hasattr(target, 'modifiers'):
             for local_modifier in target.modifiers:

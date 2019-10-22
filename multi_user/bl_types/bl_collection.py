@@ -24,7 +24,8 @@ class BlCollection(BlDatablock):
     def load(self, data, target):
         # Load other meshes metadata
         # dump_anything.load(target, data)
-
+        target.name = data["name"]
+        
         # link objects
         for object in data["objects"]:
             object_ref = utils.find_from_attr('uuid', object, bpy.data.objects)

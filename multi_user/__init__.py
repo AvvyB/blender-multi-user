@@ -1,6 +1,6 @@
 bl_info = {
     "name": "Multi-User",
-    "author": "CUBE CREATIVE",
+    "author": "Swann Martinez",
     "description": "",
     "blender": (2, 80, 0),
     "location": "",
