@@ -4,9 +4,6 @@
 
 :warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
 
-![collasboration](uploads/cfbc0a4ece50f7faffa65941e603577c/collasboration.mp4)
-
-
 This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender data-blocks across the wire.
 
 ## Installation
