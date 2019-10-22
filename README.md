@@ -5,11 +5,11 @@
 :warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
 
 
-This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender datablocks across the wire.
+This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender data-blocks across the wire.
 
 ## Installation
 
-1. Download lastest release [multi_user.zip](/uploads/2cdd8e3e7082062b834b33175b81376f/multi_user.zip).
+1. Download latest release [multi_user.zip](/uploads/2cdd8e3e7082062b834b33175b81376f/multi_user.zip).
 2. Install last_version.zip from your addon preferences.
 
 [Dependencies](#dependencies) will be automatically added to your blender python during installation.
@@ -18,29 +18,30 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 See [how to](https://gitlab.com/slumber/multi-user/wikis/User/Quickstart) section.
 
-## Current development statut
+## Current development status
 
-Currently, not all datablock are supported for replication over the wire. The following list summarizes the status for each ones.
+Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
 
-| Name       |       Statut       |  Comment   |
-| ---------- | :----------------: | :--------: |
-| action     |        :x:         |    WIP     |
-| armature   |        :x:         |    WIP     |
-| camera     | :white_check_mark: |            |
-| collection | :white_check_mark: |            |
-| curve      | :white_check_mark: | Not tested |
-| gpencil    | :white_check_mark: |            |
-| image      | :exclamation: | Not stable yet |
-| mesh       | :white_check_mark: |            |
-| material   | :white_check_mark: |            |
-| metaball   |        :x:         |            |
-| object     | :white_check_mark: |            |
-| scene      | :white_check_mark: |            |
-| world      | :white_check_mark: |            |
+| Name       |       Status       |    Comment     |
+| ---------- | :----------------: | :------------: |
+| action     |        :x:         |      WIP       |
+| armature   |        :x:         |      WIP       |
+| camera     | :white_check_mark: |                |
+| collection | :white_check_mark: |                |
+| curve      | :white_check_mark: |   Not tested   |
+| gpencil    | :white_check_mark: |                |
+| image      |   :exclamation:    | Not stable yet |
+| mesh       | :white_check_mark: |                |
+| material   | :white_check_mark: |                |
+| metaball   |        :x:         |                |
+| object     | :white_check_mark: |                |
+| scene      | :white_check_mark: |                |
+| world      | :white_check_mark: |                |
 
 ### Performance issues
 
-Since this addon is writen in pure python for a prototyping purpose, perfomance could be better from all perspective. Soon I will start to port the multi-user addon concept to a blender branch.
+Since this addon is written in pure python for a prototyping purpose, performances could be better from all perspective. 
+I'm working on it.
 
 ## Dependencies
 
@@ -60,8 +61,6 @@ Since this addon is writen in pure python for a prototyping purpose, perfomance 
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
 
-## Licencing
+## Licensing
 
-See [licence](LICENSE)
-
-
+See [license](LICENSE)
