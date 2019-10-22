@@ -2,6 +2,9 @@
 
 > Enable real-time collaborative workflow inside blender  
 
+![demo](https://i.imgur.com/MiGnRb3.gif)
+
+
 :warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
 
 This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender data-blocks across the wire.
