@@ -4,7 +4,7 @@
 
 :warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
 
-<iframe class="imgur-embed" width="100%" height="540" frameborder="0" src="https://i.imgur.com/8asn9rt.gifv#embed"></iframe>
+![demo](https://i.imgur.com/edzaj54.gifv)
 
 This tool aims to allow multiple users to work on the same scene over the network. Based on a Clients / Server architecture, the data-oriented replication schema replicate blender data-blocks across the wire.
 
