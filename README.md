@@ -9,7 +9,7 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 ## Installation
 
-1. Download latest release [multi_user.zip](/uploads/e928794b484895da1d0e0b37e6cd8d51/multi_user.zip).
+1. Download latest release [multi_user.zip](/uploads/16b4b6817e903fb8455cc1641db91245/multi_user.zip).
 2. Install last_version.zip from your addon preferences.
 
 [Dependencies](#dependencies) will be automatically added to your blender python during installation.
