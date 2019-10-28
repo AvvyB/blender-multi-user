@@ -292,7 +292,7 @@ class SessionApply(bpy.types.Operator):
     bl_description = "Apply selected block into blender"
     bl_options = {"REGISTER"}
 
-    target = bpy.props.StringProperty()
+    target: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
@@ -312,7 +312,7 @@ class SessionCommit(bpy.types.Operator):
     bl_description = "commit and push selected datablock to server"
     bl_options = {"REGISTER"}
 
-    target = bpy.props.StringProperty()
+    target: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):

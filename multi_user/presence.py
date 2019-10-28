@@ -128,11 +128,12 @@ class User():
 
 def update_presence(self, context):
     global renderer
-    
-    if renderer and self.enable_presence:
-        renderer.run()
-    else:
-        renderer.stop()
+
+    if 'renderer' in globals():
+        if self.enable_presence:
+            renderer.run()
+        else:
+            renderer.stop()
 
 
 def update_overlay_settings(self, context):
