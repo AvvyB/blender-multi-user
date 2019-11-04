@@ -3,7 +3,7 @@ import mathutils
 
 from ..libs.overrider import Overrider
 from .. import utils
-from .. import presence
+from .. import presence, operators
 from .bl_datablock import BlDatablock
 
 # WIP
@@ -43,15 +43,22 @@ class BlArmature(BlDatablock):
         
         
         bpy.context.view_layer.objects.active = parent_object 
-        # override = bpy.context.copy()
+        override = operators.ui_context
+        override['editable_objects'] =[bpy.data.objects['Armature']]
+        override['object'] =bpy.data.objects['Armature']
+        override['active_object'] = bpy.data.objects['Armature']
+        # override['']
         # override['window'] = bpy.data.window_managers[0].windows[0]
-        # override['mode'] = 'EDIT_ARMATURE'
+        # # override['mode'] = 'EDIT_ARMATURE'
         # override['window_manager'] = bpy.data.window_managers[0]
         # override['area'] = area 
         # override['region'] = region
+        # override['region_data'] = rv3d
         # override['screen'] = bpy.data.window_managers[0].windows[0].screen
         
-        bpy.ops.object.mode_set(mode='EDIT')
+        # bpy.ops.object.mode_set(override,mode='EDIT')
+        bpy.ops.object.editmode_toggle(override)
+        # override['mode'] = 'EDIT_ARMATURE'
         for bone in data['bones']:
             if bone not in self.pointer.edit_bones:
                 new_bone = self.pointer.edit_bones.new(bone)
@@ -59,15 +66,16 @@ class BlArmature(BlDatablock):
                 new_bone = self.pointer.edit_bones[bone]
 
             new_bone.tail = data['bones'][bone]['tail_local']
-            new_bone.head = data['bones'][bone]['head_local']
+            new_bone.head = data['bones'][bone]['head_local'] 
             new_bone.tail_radius = data['bones'][bone]['tail_radius']
             new_bone.head_radius = data['bones'][bone]['head_radius']
 
             if 'parent' in data['bones'][bone]:
                 new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['parent']['name']]
                 new_bone.use_connect = data['bones'][bone]['use_connect']
-        bpy.ops.object.mode_set(mode='OBJECT')
-           
+
+        bpy.ops.object.editmode_toggle(override)
+        print("toto")
         # bpy_.mode =  'EDIT_ARMATURE'
 
         # bpy_.active_object = armature

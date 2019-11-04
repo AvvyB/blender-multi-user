@@ -15,7 +15,7 @@ __all__ = [
     'bl_action',
     'bl_world',
     'bl_metaball'
-]  # Order here defines execution order
+] 
 
 from . import *
 from ..libs.replication.replication.data import ReplicatedDataFactory

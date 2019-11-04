@@ -55,14 +55,14 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables
+        global client, delayables, ui_context
         settings = context.window_manager.session
         # save config
         settings.save(context)
 
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
-
+        ui_context = context.copy()
         # init the factory with supported types
         for type in bl_types.types_to_register():
             _type = getattr(bl_types, type)
