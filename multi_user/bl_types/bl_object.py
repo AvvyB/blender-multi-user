@@ -37,6 +37,14 @@ class BlObject(BlDatablock):
             pointer = bpy.data.grease_pencils[data["data"]]
         elif data["data"] in bpy.data.curves.keys():
             pointer = bpy.data.curves[data["data"]]
+        elif data["data"] in bpy.data.lattices.keys():
+            pointer = bpy.data.lattices[data["data"]]
+        elif data["data"] in bpy.data.speakers.keys():
+            pointer = bpy.data.speakers[data["data"]]
+        elif data["data"] in bpy.data.lightprobes.keys():
+            pass
+            # bpy need to support correct lightprobe creation from python
+            # pointer = bpy.data.lightprobes[data["data"]]
 
         instance =  bpy.data.objects.new(data["name"], pointer)
         instance.uuid = self.uuid
