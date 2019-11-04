@@ -129,7 +129,7 @@ class User():
 def update_presence(self, context):
     global renderer
 
-    if 'renderer' in globals():
+    if 'renderer' in globals() and hasattr(renderer, 'run'):
         if self.enable_presence:
             renderer.run()
         else:
