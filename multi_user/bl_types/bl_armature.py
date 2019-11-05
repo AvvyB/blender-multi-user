@@ -44,15 +44,12 @@ class BlArmature(BlDatablock):
             current_active_object = bpy.context.view_layer.objects.active
 
             # LOAD ARMATURE BONES
-            if override['mode'] != 'OBJECT':
-                bpy.ops.object.mode_set(override,mode='OBJECT')
+            if bpy.context.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
             bpy.context.view_layer.objects.active = parent_object 
-            override['editable_objects'] =[bpy.data.objects['Armature']]
-            override['object'] =bpy.data.objects['Armature']
-            override['active_object'] = bpy.data.objects['Armature']
-          
             
-            bpy.ops.object.mode_set(override,mode='EDIT')
+            bpy.ops.object.mode_set(mode='EDIT')
+            print(bpy.context.mode)
         
             for bone in data['bones']:
                 if bone not in self.pointer.edit_bones:
@@ -68,22 +65,20 @@ class BlArmature(BlDatablock):
                 if 'parent' in data['bones'][bone]:
                     new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['use_connect']['name']]
                     new_bone.use_connect = data['bones'][bone]['use_connect']
-                bpy.data.objects['Armature'].update_from_editmode()
-
-            bpy.ops.object.mode_set(override,mode='OBJECT')
+            bpy.data.objects['Armature'].update_from_editmode()
+            if bpy.context.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
             bpy.context.view_layer.objects.active = current_active_object
-            # bpy.ops.object.mode_set(override,mode=current_mode)
+            
+            # TODO: clean way to restore previous context 
+            if 'EDIT' in current_mode :
+                bpy.ops.object.mode_set(mode='EDIT')
         else:
-            raise Exception()
-        # bpy.ops.object.editmode_toggle(override)
-        # bpy_.mode =  'EDIT_ARMATURE'
-
-        # bpy_.active_object = armature
-        # bpy_.selected_objects = [armature]
+            raise Exception("Wrong context")
 
     def dump(self, pointer=None):
         assert(pointer)
-        # data =  utils.dump_datablock(pointer, 4)
+
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 3
         dumper.include_filter  = [
@@ -112,9 +107,6 @@ class BlArmature(BlDatablock):
         assert(self.data)
         self.pointer = bpy.data.armatures.get(self.data['name'])
 
-    # def diff(self):
-    #     False
-
     def is_valid(self):
         return bpy.data.armatures.get(self.data['name'])
 
@@ -125,11 +117,3 @@ bl_delay_refresh = 1
 bl_delay_apply = 0
 bl_automatic_push = True
 bl_icon = 'ARMATURE_DATA'
-
-  # override['window'] = bpy.data.window_managers[0].windows[0]
-            # # override['mode'] = 'EDIT_ARMATURE'
-            # override['window_manager'] = bpy.data.window_managers[0]
-            # override['area'] = area 
-            # override['region'] = region
-            # override['region_data'] = rv3d
-            # override['screen'] = bpy.data.window_managers[0].windows[0].screen
