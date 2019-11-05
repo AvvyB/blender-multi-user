@@ -20,6 +20,7 @@ from . import bl_types, delayable, environment, presence, ui, utils
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
+from .libs.replication.replication.constants import FETCHED
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -27,19 +28,8 @@ logger.setLevel(logging.ERROR)
 client = None
 delayables = []
 ui_context = None
-
-
-def init_supported_datablocks(supported_types_id):
-    global client
-
-    for type_id in supported_types_id:
-        if hasattr(bpy.data, type_id):
-            for item in getattr(bpy.data, type_id):
-                if client.exist(uuid=item.uuid):
-                    continue
-                else:
-                    client.add(item)
-
+stop_modal_executor = False
+modal_executor_queue = None
 
 # OPERATORS
 class SessionStartOperator(bpy.types.Operator):
@@ -137,7 +127,6 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(delayable.ClientUpdate(
             client_uuid=settings.user_uuid))
         delayables.append(delayable.DrawClient())
-
         delayables.append(delayable.DynamicRightSelectTimer())
 
         # Push all added values
@@ -150,6 +139,10 @@ class SessionStartOperator(bpy.types.Operator):
         # Register blender main thread tools
         for d in delayables:
             d.register()
+        
+        global modal_executor_queue
+        modal_executor_queue = queue.Queue()
+        bpy.ops.wm.modal_executor_operator()
 
         self.report(
             {'INFO'},
@@ -168,7 +161,9 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables
+        global client, delayables, stop_modal_executor
+
+        stop_modal_executor= True
         settings = context.window_manager.session
         settings.is_admin = False
         assert(client)
@@ -182,7 +177,7 @@ class SessionStopOperator(bpy.types.Operator):
             except:
                 continue
         presence.renderer.stop()
-
+       
         return {"FINISHED"}
 
 
@@ -325,6 +320,48 @@ class SessionCommit(bpy.types.Operator):
         client.push(self.target)
         return {"FINISHED"}
 
+class ModalExecutorOperator(bpy.types.Operator):
+    """Operator which runs its self from a timer"""
+    bl_idname = "wm.modal_executor_operator"
+    bl_label = "Modal Executor Operator"
+
+    _timer = None
+
+    def modal(self, context, event):
+        global stop_modal_executor, modal_executor_queue
+        if stop_modal_executor:
+            self.cancel(context)
+            return {'CANCELLED'}
+
+        if event.type == 'TIMER':
+            global client
+            nodes = client.list(filter=bl_types.bl_armature.BlArmature)
+
+            for node in nodes:
+                node_ref = client.get(uuid=node)
+
+                if node_ref.state == FETCHED:
+                    try:
+                        client.apply(node)
+                    except Exception as e:
+                            logger.error("fail to apply {}: {}".format(node_ref.uuid,e))
+    
+        return {'PASS_THROUGH'}
+
+    def execute(self, context):
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(2, window=context.window)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        global stop_modal_executor
+
+        wm = context.window_manager
+        wm.event_timer_remove(self._timer)
+
+        stop_modal_executor = False
+        
 
 classes = (
     SessionStartOperator,
@@ -334,6 +371,7 @@ classes = (
     SessionPropertyRightOperator,
     SessionApply,
     SessionCommit,
+    ModalExecutorOperator,
 )
 
 

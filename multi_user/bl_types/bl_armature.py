@@ -35,47 +35,47 @@ class BlArmature(BlDatablock):
         if not is_object_in_master and parent_collection.name not in bpy.data.scenes[data['user_scene'][0]].collection.children:
             bpy.data.scenes[data['user_scene'][0]].collection.  children.link(parent_collection)
 
-
-        # utils.dump_anything.load(target, data)
-        # with Overrider(name="bpy_",parent=bpy.context) as bpy_:
         area, region, rv3d = presence.view3d_find()
-
         
+        override = bpy.context.copy()
+       
+        if override['area'] is not None:
+            current_mode = bpy.context.mode
+            current_active_object = bpy.context.view_layer.objects.active
+
+            # LOAD ARMATURE BONES
+            if override['mode'] != 'OBJECT':
+                bpy.ops.object.mode_set(override,mode='OBJECT')
+            bpy.context.view_layer.objects.active = parent_object 
+            override['editable_objects'] =[bpy.data.objects['Armature']]
+            override['object'] =bpy.data.objects['Armature']
+            override['active_object'] = bpy.data.objects['Armature']
+          
+            
+            bpy.ops.object.mode_set(override,mode='EDIT')
         
-        bpy.context.view_layer.objects.active = parent_object 
-        override = operators.ui_context
-        override['editable_objects'] =[bpy.data.objects['Armature']]
-        override['object'] =bpy.data.objects['Armature']
-        override['active_object'] = bpy.data.objects['Armature']
-        # override['']
-        # override['window'] = bpy.data.window_managers[0].windows[0]
-        # # override['mode'] = 'EDIT_ARMATURE'
-        # override['window_manager'] = bpy.data.window_managers[0]
-        # override['area'] = area 
-        # override['region'] = region
-        # override['region_data'] = rv3d
-        # override['screen'] = bpy.data.window_managers[0].windows[0].screen
-        
-        # bpy.ops.object.mode_set(override,mode='EDIT')
-        bpy.ops.object.editmode_toggle(override)
-        # override['mode'] = 'EDIT_ARMATURE'
-        for bone in data['bones']:
-            if bone not in self.pointer.edit_bones:
-                new_bone = self.pointer.edit_bones.new(bone)
-            else:
-                new_bone = self.pointer.edit_bones[bone]
+            for bone in data['bones']:
+                if bone not in self.pointer.edit_bones:
+                    new_bone = self.pointer.edit_bones.new(bone)
+                else:
+                    new_bone = self.pointer.edit_bones[bone]
+                
+                new_bone.tail = data['bones'][bone]['tail_local']
+                new_bone.head = data['bones'][bone]['head_local'] 
+                new_bone.tail_radius = data['bones'][bone]['tail_radius']
+                new_bone.head_radius = data['bones'][bone]['head_radius']
 
-            new_bone.tail = data['bones'][bone]['tail_local']
-            new_bone.head = data['bones'][bone]['head_local'] 
-            new_bone.tail_radius = data['bones'][bone]['tail_radius']
-            new_bone.head_radius = data['bones'][bone]['head_radius']
+                if 'parent' in data['bones'][bone]:
+                    new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['use_connect']['name']]
+                    new_bone.use_connect = data['bones'][bone]['use_connect']
+                bpy.data.objects['Armature'].update_from_editmode()
 
-            if 'parent' in data['bones'][bone]:
-                new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['parent']['name']]
-                new_bone.use_connect = data['bones'][bone]['use_connect']
-
-        bpy.ops.object.editmode_toggle(override)
-        print("toto")
+            bpy.ops.object.mode_set(override,mode='OBJECT')
+            bpy.context.view_layer.objects.active = current_active_object
+            # bpy.ops.object.mode_set(override,mode=current_mode)
+        else:
+            raise Exception()
+        # bpy.ops.object.editmode_toggle(override)
         # bpy_.mode =  'EDIT_ARMATURE'
 
         # bpy_.active_object = armature
@@ -83,8 +83,21 @@ class BlArmature(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        data =  utils.dump_datablock(pointer, 4)
+        # data =  utils.dump_datablock(pointer, 4)
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 3
+        dumper.include_filter  = [
+            'bones',
+            'tail_local',
+            'head_local',
+            'tail_radius',
+            'head_radius',
+            'use_connect',
+            'name',
+            'parent',
 
+        ]
+        data = dumper.dump(pointer)
         #get the parent Object
         object_users = utils.get_datablock_users(pointer)[0]
         data['user'] = object_users.name
@@ -99,8 +112,8 @@ class BlArmature(BlDatablock):
         assert(self.data)
         self.pointer = bpy.data.armatures.get(self.data['name'])
 
-    def diff(self):
-        False
+    # def diff(self):
+    #     False
 
     def is_valid(self):
         return bpy.data.armatures.get(self.data['name'])
@@ -112,3 +125,11 @@ bl_delay_refresh = 1
 bl_delay_apply = 0
 bl_automatic_push = True
 bl_icon = 'ARMATURE_DATA'
+
+  # override['window'] = bpy.data.window_managers[0].windows[0]
+            # # override['mode'] = 'EDIT_ARMATURE'
+            # override['window_manager'] = bpy.data.window_managers[0]
+            # override['area'] = area 
+            # override['region'] = region
+            # override['region_data'] = rv3d
+            # override['screen'] = bpy.data.window_managers[0].windows[0].screen
