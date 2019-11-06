@@ -76,7 +76,7 @@ class BlArmature(BlDatablock):
         else:
             raise Exception("Wrong context")
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()

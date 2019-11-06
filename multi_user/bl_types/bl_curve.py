@@ -29,7 +29,7 @@ class BlCurve(BlDatablock):
                 utils.dump_anything.load(
                     new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 1)
         data['splines'] = {}

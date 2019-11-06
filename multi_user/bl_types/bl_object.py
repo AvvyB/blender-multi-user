@@ -43,8 +43,9 @@ class BlObject(BlDatablock):
         
         return instance
 
-    def load(self, data, target):
-        target.matrix_world = mathutils.Matrix(data["matrix_world"])
+    def load_implementation(self, data, target):
+        if "matrix_world" in data:
+            target.matrix_world = mathutils.Matrix(data["matrix_world"])
         
         target.name = data["name"]
         # Load modifiers
@@ -76,13 +77,12 @@ class BlObject(BlDatablock):
         if data['instance_type'] == 'COLLECTION':
             target.instance_collection = bpy.data.collections[data['instance_collection']]
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             "name",
-            "matrix_world",
             "rotation_mode",
             "parent",
             "data",
@@ -93,6 +93,9 @@ class BlObject(BlDatablock):
             "instance_collection",
             "instance_type"
         ]
+        if not pointer.animation_data:
+            dumper.include_filter.append('matrix_world')
+
         data = dumper.dump(pointer)
 
         if self.is_library:
@@ -118,7 +121,7 @@ class BlObject(BlDatablock):
         self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
 
     def resolve_dependencies(self):
-        deps = []
+        deps = super().resolve_dependencies()
 
         # Avoid Empty case
         if self.pointer.data:

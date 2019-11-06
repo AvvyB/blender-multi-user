@@ -57,7 +57,7 @@ class BlGpencil(BlDatablock):
             for mat in data['materials']:
                 target.materials.append(bpy.data.materials[mat])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 2)
         utils.dump_datablock_attibutes(

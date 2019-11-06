@@ -98,7 +98,7 @@ class BlMaterial(BlDatablock):
             for link in data["node_tree"]["links"]:
                 load_link(target.node_tree, data["node_tree"]["links"][link])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         mat_dumper = utils.dump_anything.Dumper()
         mat_dumper.depth = 2

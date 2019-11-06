@@ -12,7 +12,7 @@ class BlLight(BlDatablock):
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 3

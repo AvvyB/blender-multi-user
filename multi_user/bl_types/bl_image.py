@@ -46,7 +46,7 @@ class BlImage(BlDatablock):
         image.filepath = img_path
 
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)

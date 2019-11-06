@@ -47,7 +47,7 @@ class BlCollection(BlDatablock):
             if collection.uuid not in data["children"]:
                 target.children.unlink(collection)
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['name'] = pointer.name

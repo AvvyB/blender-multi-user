@@ -26,7 +26,7 @@ class BlWorld(BlDatablock):
             for link in data["node_tree"]["links"]:
                 load_link(target.node_tree, data["node_tree"]["links"][link])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         world_dumper = utils.dump_anything.Dumper()

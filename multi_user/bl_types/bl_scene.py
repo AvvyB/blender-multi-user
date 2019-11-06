@@ -42,7 +42,7 @@ class BlScene(BlDatablock):
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
 

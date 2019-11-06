@@ -139,7 +139,7 @@ class BlMesh(BlDatablock):
     
            
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         data = utils.dump_datablock(pointer, 2)

@@ -17,7 +17,7 @@ class BlMetaball(BlDatablock):
             new_element = target.elements.new(type=data["elements"][element]['type'])
             utils.dump_anything.load(new_element, data["elements"][element])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 3
