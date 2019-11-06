@@ -77,6 +77,12 @@ class BlObject(BlDatablock):
         if data['instance_type'] == 'COLLECTION':
             target.instance_collection = bpy.data.collections[data['instance_collection']]
 
+        # vertex groups
+        if 'vertex_groups' in data:
+            target.vertex_groups.clear()
+            for vg in data['vertex_groups']:
+                target.vertex_groups.new(name=vg)
+
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
@@ -115,6 +121,13 @@ class BlObject(BlDatablock):
            
             data["children"] = childs
 
+        # VERTEx GROUP
+        if len(pointer.vertex_groups)>0:
+            vg_data = []
+            for vg in pointer.vertex_groups:
+                vg_data.append(vg.name)
+
+            data['vertex_groups'] = vg_data
         return data
 
     def resolve(self):
