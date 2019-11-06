@@ -92,6 +92,7 @@ class Dumper:
 
     def _build_inline_dump_functions(self):
         self._dump_identity = (lambda x, depth: x, lambda x, depth: x)
+        self._dump_ref = (lambda x, depth: x.name, self._dump_object_as_branch)
         self._dump_ID = (lambda x, depth: x.name, self._dump_default_as_branch)
         self._dump_collection = (self._dump_default_as_leaf, self._dump_collection_as_branch)
         self._dump_array = (self._dump_default_as_leaf, self._dump_array_as_branch)
@@ -105,6 +106,7 @@ class Dumper:
         self._match_type_int = (_dump_filter_type(int), self._dump_identity)
         self._match_type_float = (_dump_filter_type(float), self._dump_identity)
         self._match_type_string = (_dump_filter_type(str), self._dump_identity)
+        self._match_type_ref = (_dump_filter_type(T.Object), self._dump_ref)
         self._match_type_ID = (_dump_filter_type(T.ID), self._dump_ID)
         self._match_type_bpy_prop_collection = (_dump_filter_type(T.bpy_prop_collection), self._dump_collection)
         self._match_type_array = (_dump_filter_array, self._dump_array)
@@ -138,6 +140,12 @@ class Dumper:
 
     def _dump_color_as_leaf(self, color, depth):
         return list(color)
+
+    def _dump_object_as_branch(self, default, depth):
+        if depth == 1:
+            return self._dump_default_as_branch(default, depth)
+        else:
+            return default.name
 
     def _dump_default_as_branch(self, default, depth):
         def is_valid_property(p):
@@ -173,6 +181,7 @@ class Dumper:
             self._match_type_int,
             self._match_type_float,
             self._match_type_string,
+            self._match_type_ref,
             self._match_type_ID,
             self._match_type_bpy_prop_collection,
             self._match_type_array,

@@ -132,6 +132,15 @@ class BlObject(BlDatablock):
         if self.is_library:
             deps.append(self.pointer.library)
 
+        if hasattr(self.pointer, 'modifiers'):
+            for mod in self.pointer.modifiers:
+                attributes = dir(mod)
+                for attr in attributes:
+                    if 'object' in attr:
+                        attr_ref = getattr(mod, attr)
+                        if attr_ref and isinstance(attr_ref, bpy.types.Object):
+                            deps.append(attr_ref)
+
         if self.pointer.instance_type == 'COLLECTION':
             #TODO: uuid based
             deps.append(self.pointer.instance_collection)
