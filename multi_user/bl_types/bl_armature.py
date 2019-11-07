@@ -13,10 +13,10 @@ class BlArmature(BlDatablock):
 
     def load(self, data, target):
         # Load parent object
-        if data['user'] not in bpy.data.objects.keys():
-            parent_object = bpy.data.objects.new(data['user'], self.pointer)
-        else:
-            parent_object = bpy.data.objects[data['user']]
+        parent_object = utils.find_from_attr('uuid',data['user'],bpy.data.objects)
+        if parent_object is None:
+            parent_object = bpy.data.objects.new(data['user_name'], self.pointer)
+            parent_object.uuid = data['user']
         
         is_object_in_master = (data['user_collection'][0] == "Master Collection")
         #TODO: recursive parent collection loading
@@ -34,14 +34,10 @@ class BlArmature(BlDatablock):
         # Link parent collection to the scene master collection
         if not is_object_in_master and parent_collection.name not in bpy.data.scenes[data['user_scene'][0]].collection.children:
             bpy.data.scenes[data['user_scene'][0]].collection.  children.link(parent_collection)
-
-        area, region, rv3d = presence.view3d_find()
-        
-        override = bpy.context.copy()
        
         current_mode = bpy.context.mode
         current_active_object = bpy.context.view_layer.objects.active
-
+        
         # LOAD ARMATURE BONES
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -93,7 +89,8 @@ class BlArmature(BlDatablock):
         data = dumper.dump(pointer)
         #get the parent Object
         object_users = utils.get_datablock_users(pointer)[0]
-        data['user'] = object_users.name
+        data['user'] = object_users.uuid
+        data['user_name'] = object_users.name
 
         #get parent collection
         container_users = utils.get_datablock_users(object_users)
