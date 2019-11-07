@@ -31,8 +31,8 @@ def view3d_find():
 
 def refresh_3d_view():
     area, region, rv3d = view3d_find()
-
-    area.tag_redraw()
+    if area and region and rv3d:
+        area.tag_redraw()
 
 
 def get_target(region, rv3d, coord):
@@ -66,6 +66,7 @@ def get_client_cam_points():
     v4 = [0, 0, 0]
     v5 = [0, 0, 0]
     v6 = [0, 0, 0]
+    v7 = [0, 0, 0]
 
     if area and region and rv3d:
         width = region.width
@@ -114,14 +115,15 @@ class User():
         current_coords = get_client_cam_points()
         area, region, rv3d = view3d_find()
 
-        current_coords = list(get_client_cam_points())
-        if current_coords and self.location != current_coords:
-            self.location = current_coords
+        if area and region and rv3d:
+            current_coords = list(get_client_cam_points())
+            if current_coords and self.location != current_coords:
+                self.location = current_coords
 
-        matrix_dumper = utils.dump_anything.Dumper()
-        current_vm = matrix_dumper.dump(rv3d.view_matrix)
-        if self.view_matrix != current_vm:
-            self.view_matrix = current_vm 
+            matrix_dumper = utils.dump_anything.Dumper()
+            current_vm = matrix_dumper.dump(rv3d.view_matrix)
+            if self.view_matrix != current_vm:
+                self.view_matrix = current_vm 
 
     def update_selected_objects(self, context):
         self.selected_objects = utils.get_selected_objects(context.scene)
