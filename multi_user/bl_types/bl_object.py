@@ -5,6 +5,22 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 
+def load_constraints(target, data):
+    for local_constraint in target.constraints:
+        if local_constraint.name not in data:
+            target.constraints.remove(local_constraint)
+
+    for constraint in data:
+        target_constraint = target.constraints.get(constraint)
+
+        if not target_constraint:
+            target_constraint = target.constraints.new(
+                data[constraint]['type'])
+
+        utils.dump_anything.load(
+            target_constraint, data[constraint])
+
+
 class BlObject(BlDatablock):
     def construct(self, data):
         pointer = None
@@ -13,7 +29,7 @@ class BlObject(BlDatablock):
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.objects = [
                     name for name in sourceData.objects if name == self.data['name']]
-            
+
             instance = bpy.data.objects[self.data['name']]
             instance.uuid = self.uuid
             return instance
@@ -38,9 +54,9 @@ class BlObject(BlDatablock):
         elif data["data"] in bpy.data.curves.keys():
             pointer = bpy.data.curves[data["data"]]
 
-        instance =  bpy.data.objects.new(data["name"], pointer)
+        instance = bpy.data.objects.new(data["name"], pointer)
         instance.uuid = self.uuid
-        
+
         return instance
 
     def load_implementation(self, data, target):
@@ -54,8 +70,9 @@ class BlObject(BlDatablock):
                 vertex_group = target.vertex_groups.new(name=vg['name'])
                 # TODO: assign vertex
                 for vert in vg['vertices']:
-                    vertex_group.add([vert['index']],vert['weight'],'REPLACE')
-        
+                    vertex_group.add(
+                        [vert['index']], vert['weight'], 'REPLACE')
+
         target.name = data["name"]
         # Load modifiers
         if hasattr(target, 'modifiers'):
@@ -71,21 +88,20 @@ class BlObject(BlDatablock):
 
                 utils.dump_anything.load(
                     target_modifier, data['modifiers'][modifier])
-        
+
         # Load constraints
-        if hasattr(target, 'constraints'):
-            for local_constraint in target.constraints:
-                if local_constraint.name not in data['modifiers']:
-                    target.modifiers.remove(local_constraint)
+        # Object
+        if hasattr(target, 'constraints') and 'constraints' in data:
+            load_constraints(target, data['constraints'])
 
-            for constraint in data['constraints']:
-                target_constraint = target.constraints.get(modifier)
-
-                if not target_constraint:
-                    target_constraint = target.constraints.new(data['constraints'][constraint]['type'])
-
-                utils.dump_anything.load(
-                    target_constraint, data['constraints'][constraint])
+        # Pose bone
+        if 'pose' in data:
+            if not target.pose:
+                raise Exception('No pose...')
+            for bone in data['pose']['bones']:
+                target_bone = target.pose.bones.get(bone)
+                load_constraints(
+                    target_bone, data['pose']['bones'][bone]['constraints'])
 
         # Load relations
         if 'children' in data.keys():
@@ -97,7 +113,7 @@ class BlObject(BlDatablock):
         target.empty_display_type = data['empty_display_type']
 
         # Instancing
-        target.instance_type =  data['instance_type']
+        target.instance_type = data['instance_type']
         if data['instance_type'] == 'COLLECTION':
             target.instance_collection = bpy.data.collections[data['instance_collection']]
 
@@ -130,37 +146,48 @@ class BlObject(BlDatablock):
             dumper.include_filter = None
             dumper.depth = 3
             data["modifiers"] = dumper.dump(pointer.modifiers)
-        
+
         # CONSTRAINTS
+        # OBJECT
         if hasattr(pointer, 'constraints'):
-            dumper.include_filter = None
             dumper.depth = 3
             data["constraints"] = dumper.dump(pointer.constraints)
+
+        # POSE BONES
+        if hasattr(pointer, 'pose') and pointer.pose:
+            dumper.depth = 3
+            bones = {}
+            for bone in pointer.pose.bones:
+                bones[bone.name] = {}
+                bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
+
+            data['pose'] = {'bones': bones}
 
         # CHILDS
         if len(pointer.children) > 0:
             childs = []
             for child in pointer.children:
                 childs.append(child.name)
-           
+
             data["children"] = childs
 
         # VERTEx GROUP
-        if len(pointer.vertex_groups)>0:
+        if len(pointer.vertex_groups) > 0:
             vg_data = []
             for vg in pointer.vertex_groups:
                 dumped_vg = {}
                 dumped_vg['name'] = vg.name
-                dumped_vg['vertices'] = [ {'index':v.index,'weight':v.groups[vg.index].weight} for v in pointer.data.vertices if vg.index in [ vg.group for vg in v.groups ] ]
-                
-                vg_data.append(dumped_vg)
+                dumped_vg['vertices'] = [{'index': v.index, 'weight': v.groups[vg.index].weight}
+                                         for v in pointer.data.vertices if vg.index in [vg.group for vg in v.groups]]
 
+                vg_data.append(dumped_vg)
 
             data['vertex_groups'] = vg_data
         return data
 
     def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
+        self.pointer = utils.find_from_attr(
+            'uuid', self.uuid, bpy.data.objects)
 
     def resolve_dependencies(self):
         deps = super().resolve_dependencies()
@@ -183,7 +210,7 @@ class BlObject(BlDatablock):
                         deps.append(attr_ref)
 
         if self.pointer.instance_type == 'COLLECTION':
-            #TODO: uuid based
+            # TODO: uuid based
             deps.append(self.pointer.instance_collection)
 
         return deps
