@@ -39,42 +39,40 @@ class BlArmature(BlDatablock):
         
         override = bpy.context.copy()
        
-        if override['area'] is not None:
-            current_mode = bpy.context.mode
-            current_active_object = bpy.context.view_layer.objects.active
+        current_mode = bpy.context.mode
+        current_active_object = bpy.context.view_layer.objects.active
 
-            # LOAD ARMATURE BONES
-            if bpy.context.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.context.view_layer.objects.active = parent_object 
-            
-            bpy.ops.object.mode_set(mode='EDIT')
-            print(bpy.context.mode)
+        # LOAD ARMATURE BONES
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.view_layer.objects.active = parent_object 
         
-            for bone in data['bones']:
-                if bone not in self.pointer.edit_bones:
-                    new_bone = self.pointer.edit_bones.new(bone)
-                else:
-                    new_bone = self.pointer.edit_bones[bone]
-                
-                new_bone.tail = data['bones'][bone]['tail_local']
-                new_bone.head = data['bones'][bone]['head_local'] 
-                new_bone.tail_radius = data['bones'][bone]['tail_radius']
-                new_bone.head_radius = data['bones'][bone]['head_radius']
-
-                if 'parent' in data['bones'][bone]:
-                    new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['use_connect']['name']]
-                    new_bone.use_connect = data['bones'][bone]['use_connect']
-            bpy.data.objects['Armature'].update_from_editmode()
-            if bpy.context.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.context.view_layer.objects.active = current_active_object
+        bpy.ops.object.mode_set(mode='EDIT')
+        print(bpy.context.mode)
+    
+        for bone in data['bones']:
+            if bone not in self.pointer.edit_bones:
+                new_bone = self.pointer.edit_bones.new(bone)
+            else:
+                new_bone = self.pointer.edit_bones[bone]
             
-            # TODO: clean way to restore previous context 
-            if 'EDIT' in current_mode :
-                bpy.ops.object.mode_set(mode='EDIT')
-        else:
-            raise Exception("Wrong context")
+            new_bone.tail = data['bones'][bone]['tail_local']
+            new_bone.head = data['bones'][bone]['head_local'] 
+            new_bone.tail_radius = data['bones'][bone]['tail_radius']
+            new_bone.head_radius = data['bones'][bone]['head_radius']
+
+            if 'parent' in data['bones'][bone]:
+                new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['use_connect']['name']]
+                new_bone.use_connect = data['bones'][bone]['use_connect']
+        bpy.data.objects['Armature'].update_from_editmode()
+        if bpy.context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.view_layer.objects.active = current_active_object
+        
+        # TODO: clean way to restore previous context 
+        if 'EDIT' in current_mode :
+            bpy.ops.object.mode_set(mode='EDIT')
+
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
