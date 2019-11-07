@@ -20,6 +20,15 @@ def load_constraints(target, data):
         utils.dump_anything.load(
             target_constraint, data[constraint])
 
+def get_collection_deps(collection):
+    deps = []
+    for item in collection:
+            attributes = dir(item)
+            for attr in attributes:
+                attr_ref = getattr(item, attr)
+                if attr_ref and isinstance(attr_ref, bpy.types.Object):
+                    deps.append(attr_ref)
+    return deps
 
 class BlObject(BlDatablock):
     def construct(self, data):
@@ -202,12 +211,14 @@ class BlObject(BlDatablock):
             deps.append(self.pointer.library)
 
         if hasattr(self.pointer, 'modifiers'):
-            for mod in self.pointer.modifiers:
-                attributes = dir(mod)
-                for attr in attributes:
-                    attr_ref = getattr(mod, attr)
-                    if attr_ref and isinstance(attr_ref, bpy.types.Object):
-                        deps.append(attr_ref)
+            deps.extend(get_collection_deps(self.pointer.modifiers))
+
+        if hasattr(self.pointer,'constraints'):
+            deps.extend(get_collection_deps(self.pointer.constraints))
+        
+        if hasattr(self.pointer,'pose') and self.pointer.pose:
+            for b in self.pointer.pose.bones:
+                deps.extend(get_collection_deps(b.constraints))
 
         if self.pointer.instance_type == 'COLLECTION':
             # TODO: uuid based
