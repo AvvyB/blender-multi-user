@@ -46,6 +46,15 @@ class BlObject(BlDatablock):
     def load_implementation(self, data, target):
         if "matrix_world" in data:
             target.matrix_world = mathutils.Matrix(data["matrix_world"])
+
+        # vertex groups
+        if 'vertex_groups' in data:
+            target.vertex_groups.clear()
+            for vg in data['vertex_groups']:
+                vertex_group = target.vertex_groups.new(name=vg['name'])
+                # TODO: assign vertex
+                for vert in vg['vertices']:
+                    vertex_group.add([vert['index']],vert['weight'],'REPLACE')
         
         target.name = data["name"]
         # Load modifiers
@@ -62,15 +71,21 @@ class BlObject(BlDatablock):
 
                 utils.dump_anything.load(
                     target_modifier, data['modifiers'][modifier])
-        # vertex groups
-        if 'vertex_groups' in data:
-            target.vertex_groups.clear()
-            for vg in data['vertex_groups']:
-                vertex_group = target.vertex_groups.new(name=vg['name'])
-                # TODO: assign vertex
-                for vert in vg['vertices']:
-                    vertex_group.add([vert['index']],vert['weight'],'REPLACE')
-                    
+        
+        # Load constraints
+        if hasattr(target, 'constraints'):
+            for local_constraint in target.constraints:
+                if local_constraint.name not in data['modifiers']:
+                    target.modifiers.remove(local_constraint)
+
+            for constraint in data['constraints']:
+                target_constraint = target.constraints.get(modifier)
+
+                if not target_constraint:
+                    target_constraint = target.constraints.new(data['constraints'][constraint]['type'])
+
+                utils.dump_anything.load(
+                    target_constraint, data['constraints'][constraint])
 
         # Load relations
         if 'children' in data.keys():
@@ -116,6 +131,12 @@ class BlObject(BlDatablock):
             dumper.depth = 3
             data["modifiers"] = dumper.dump(pointer.modifiers)
         
+        # CONSTRAINTS
+        if hasattr(pointer, 'constraints'):
+            dumper.include_filter = None
+            dumper.depth = 3
+            data["constraints"] = dumper.dump(pointer.constraints)
+
         # CHILDS
         if len(pointer.children) > 0:
             childs = []
@@ -157,10 +178,9 @@ class BlObject(BlDatablock):
             for mod in self.pointer.modifiers:
                 attributes = dir(mod)
                 for attr in attributes:
-                    if 'object' in attr:
-                        attr_ref = getattr(mod, attr)
-                        if attr_ref and isinstance(attr_ref, bpy.types.Object):
-                            deps.append(attr_ref)
+                    attr_ref = getattr(mod, attr)
+                    if attr_ref and isinstance(attr_ref, bpy.types.Object):
+                        deps.append(attr_ref)
 
         if self.pointer.instance_type == 'COLLECTION':
             #TODO: uuid based
