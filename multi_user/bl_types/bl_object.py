@@ -62,6 +62,15 @@ class BlObject(BlDatablock):
 
                 utils.dump_anything.load(
                     target_modifier, data['modifiers'][modifier])
+        # vertex groups
+        if 'vertex_groups' in data:
+            target.vertex_groups.clear()
+            for vg in data['vertex_groups']:
+                vertex_group = target.vertex_groups.new(name=vg['name'])
+                # TODO: assign vertex
+                for vert in vg['vertices']:
+                    vertex_group.add([vert['index']],vert['weight'],'REPLACE')
+                    
 
         # Load relations
         if 'children' in data.keys():
@@ -76,12 +85,6 @@ class BlObject(BlDatablock):
         target.instance_type =  data['instance_type']
         if data['instance_type'] == 'COLLECTION':
             target.instance_collection = bpy.data.collections[data['instance_collection']]
-
-        # vertex groups
-        if 'vertex_groups' in data:
-            target.vertex_groups.clear()
-            for vg in data['vertex_groups']:
-                target.vertex_groups.new(name=vg)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
@@ -125,7 +128,12 @@ class BlObject(BlDatablock):
         if len(pointer.vertex_groups)>0:
             vg_data = []
             for vg in pointer.vertex_groups:
-                vg_data.append(vg.name)
+                dumped_vg = {}
+                dumped_vg['name'] = vg.name
+                dumped_vg['vertices'] = [ {'index':v.index,'weight':v.groups[vg.index].weight} for v in pointer.data.vertices if vg.index in [ vg.group for vg in v.groups ] ]
+                
+                vg_data.append(dumped_vg)
+
 
             data['vertex_groups'] = vg_data
         return data
