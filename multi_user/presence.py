@@ -56,6 +56,18 @@ def get_target_far(region, rv3d, coord, distance):
 
     return [target.x, target.y, target.z]
 
+def get_default_bbox(obj, radius):
+    coords = [
+        (-radius, -radius, -radius), (+radius, -radius, -radius),
+        (-radius, +radius, -radius), (+radius, +radius, -radius),
+        (-radius, -radius, +radius), (+radius, -radius, +radius),
+        (-radius, +radius, +radius), (+radius, +radius, +radius)]
+
+    base = obj.matrix_world
+    bbox_corners =  [base @ mathutils.Vector(corner) for corner in coords]
+
+    return [(point.x, point.y, point.z)
+                for point in bbox_corners]
 
 def get_client_cam_points():
     area, region, rv3d = view3d_find()
@@ -211,11 +223,7 @@ class DrawFactory(object):
 
             for select_ob in client_selection:
                 drawable_key = "{}_select_{}".format(client_uuid, select_ob)
-                indices = (
-                    (0, 1), (1, 2), (2, 3), (0, 3),
-                    (4, 5), (5, 6), (6, 7), (4, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7)
-                )
+               
                 ob = utils.find_from_attr("uuid",select_ob,bpy.data.objects)
                 if not ob:
                     return
@@ -235,12 +243,28 @@ class DrawFactory(object):
                                     indices)
                     
                 if ob.type == 'MESH':
+                    indices = (
+                        (0, 1), (1, 2), (2, 3), (0, 3),
+                        (4, 5), (5, 6), (6, 7), (4, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7))
+                        
                     self.append_3d_item(
                         drawable_key,
                         client_color,
                         get_bb_coords_from_obj(ob),
                         indices)
-    
+                else:
+                    indices = (
+                        (0, 1), (0, 2), (1, 3), (2, 3),
+                        (4, 5), (4, 6), (5, 7), (6, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7))
+
+                    self.append_3d_item(
+                        drawable_key,
+                        client_color,
+                        get_default_bbox(ob, ob.scale.x),
+                        indices)
+                        
     def append_3d_item(self,key,color, coords, indices):
         shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
         color = color
