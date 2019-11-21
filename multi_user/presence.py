@@ -193,7 +193,7 @@ class DrawFactory(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
-    def flush_selection(self, user):
+    def flush_selection(self, user=None):
         key_to_remove = []
         select_key = "{}_select".format(user) if user else "select"
         for k in self.d3d_items.keys():
@@ -224,19 +224,17 @@ class DrawFactory(object):
             for select_ob in client_selection:
                 drawable_key = "{}_select_{}".format(client_uuid, select_ob)
                
-                ob = utils.find_from_attr("uuid",select_ob,bpy.data.objects)
+                ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
                 if not ob:
                     return
             
-                item_to_draw = [] 
                 if ob.type == 'EMPTY':
-                    # Child case
-
+                    # TODO: Child case
                     # Collection instance case
                     if ob.instance_collection:
                         for obj in ob.instance_collection.objects:
                             if obj.type == 'MESH':
-                                 self.append_3d_item(
+                                self.append_3d_item(
                                     drawable_key,
                                     client_color,
                                     get_bb_coords_from_obj(obj, parent=ob),
@@ -301,6 +299,9 @@ class DrawFactory(object):
     def draw3d_callback(self):
         bgl.glLineWidth(1.5)
         bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+
         try:
             for shader, batch, color in self.d3d_items.values():
                 shader.bind()
