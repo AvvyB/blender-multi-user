@@ -85,9 +85,11 @@ class BlObject(BlDatablock):
         target.name = data["name"]
         # Load modifiers
         if hasattr(target, 'modifiers'):
-            for local_modifier in target.modifiers:
-                if local_modifier.name not in data['modifiers']:
-                    target.modifiers.remove(local_modifier)
+            for local_modifier_index, local_modifier in enumerate(target.modifiers):
+                if local_modifier.name not in data['modifiers'] or \
+                   local_modifier_index != data['modifiers'][local_modifier.name]["m_index"]:
+                    target.modifiers.clear()
+                    break
             for modifier in data['modifiers']:
                 target_modifier = target.modifiers.get(modifier)
 
@@ -153,8 +155,11 @@ class BlObject(BlDatablock):
         # MODIFIERS
         if hasattr(pointer, 'modifiers'):
             dumper.include_filter = None
-            dumper.depth = 3
-            data["modifiers"] = dumper.dump(pointer.modifiers)
+            dumper.depth = 2
+            data["modifiers"] = {}
+            for index, modifier in enumerate(pointer.modifiers):
+                data["modifiers"][modifier.name] = dumper.dump(modifier)
+                data["modifiers"][modifier.name]['m_index'] = index
 
         # CONSTRAINTS
         # OBJECT
