@@ -240,7 +240,7 @@ class DrawFactory(object):
                                     get_bb_coords_from_obj(obj, parent=ob),
                                     indices)
                     
-                if ob.type == 'MESH':
+                if ob.type in ['MESH','META']:
                     indices = (
                         (0, 1), (1, 2), (2, 3), (0, 3),
                         (4, 5), (5, 6), (6, 7), (4, 7),
