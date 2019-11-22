@@ -77,7 +77,6 @@ class BlObject(BlDatablock):
             target.vertex_groups.clear()
             for vg in data['vertex_groups']:
                 vertex_group = target.vertex_groups.new(name=vg['name'])
-                # TODO: assign vertex
                 for vert in vg['vertices']:
                     vertex_group.add(
                         [vert['index']], vert['weight'], 'REPLACE')
@@ -85,11 +84,9 @@ class BlObject(BlDatablock):
         target.name = data["name"]
         # Load modifiers
         if hasattr(target, 'modifiers'):
-            for local_modifier_index, local_modifier in enumerate(target.modifiers):
-                if local_modifier.name not in data['modifiers'] or \
-                   local_modifier_index != data['modifiers'][local_modifier.name]["m_index"]:
-                    target.modifiers.clear()
-                    break
+            # TODO: smarter selective update 
+            target.modifiers.clear()
+
             for modifier in data['modifiers']:
                 target_modifier = target.modifiers.get(modifier)
 
