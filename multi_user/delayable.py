@@ -74,74 +74,91 @@ class ApplyTimer(Timer):
                     try:
                         operators.client.apply(node)
                     except Exception as e:
-                            logger.error("fail to apply {}: {}".format(node_ref.uuid,e))
+                        logger.error(
+                            "fail to apply {}: {}".format(node_ref.uuid, e))
 
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=.1):
         super().__init__(timout)
-        self.last_selection = []
+        self._last_selection = []
+        self._user = None
+        self._user_node = None
+        self._right_strategy = RP_COMMON
 
     def execute(self):
-        if operators.client:
-            users = operators.client.list(filter=BlUser)
+        repo = operators.client
+        if repo:
+            settings = bpy.context.window_manager.session
 
-            for user in users:
-                user_ref = operators.client.get(uuid=user)
-                settings = bpy.context.window_manager.session
+            # Find user
+            if self._user is None:
+                users = repo.list(filter=BlUser)
 
-                # Local user
-                if user_ref.pointer:
-                    current_selection = utils.get_selected_objects(
-                        bpy.context.scene)
-                    if current_selection != self.last_selection:
-                        right_strategy = operators.client.get_config()[
-                            'right_strategy']
-                        if right_strategy == RP_COMMON:
-                            obj_common = [
-                                o for o in self.last_selection if o not in current_selection]
-                            obj_ours = [
-                                o for o in current_selection if o not in self.last_selection]
+                for user in users:
+                    user_node = repo.get(uuid=user)
+                    if user_node.pointer:
+                        self._user = user_node.pointer
+                        self._user_node = user_node
 
-                            # change new selection to our
-                            for obj in obj_ours:
-                                node = operators.client.get(uuid=obj)
-                               
-                                if node and node.owner == RP_COMMON:
-                                    recursive = True
-                                    if node.data and 'instance_type' in node.data.keys():
-                                        recursive = node.data['instance_type'] != 'COLLECTION'
-                                        
-                                    operators.client.change_owner(
-                                        node.uuid,
-                                        settings.username,
-                                        recursive=recursive)
-                                else:
-                                    return
+            if self._right_strategy is None:
+                self._right_strategy = repo.get_config()[
+                    'right_strategy']
 
-                            self.last_selection = current_selection
-                            user_ref.pointer.update_selected_objects(
-                                bpy.context)
-                            user_ref.update()
+            if self._user:
+                current_selection = utils.get_selected_objects(
+                    bpy.context.scene)
+                if current_selection != self._last_selection:
+                    if self._right_strategy == RP_COMMON:
+                        obj_common = [
+                            o for o in self._last_selection if o not in current_selection]
+                        obj_ours = [
+                            o for o in current_selection if o not in self._last_selection]
 
-                            # change old selection right to common
-                            for obj in obj_common:
-                                node = operators.client.get(uuid=obj)
-                                
-                                if node and (node.owner == settings.username or node.owner == RP_COMMON):
-                                    recursive = True
-                                    if node.data and 'instance_type' in node.data.keys():
-                                        recursive = node.data['instance_type'] != 'COLLECTION'
-                                    operators.client.change_owner(
-                                        node.uuid,
-                                        RP_COMMON,
-                                        recursive=recursive)
-                else:
-                    for obj in bpy.data.objects:
-                        if obj.hide_select and obj.uuid not in user_ref.data['selected_objects']:
-                            obj.hide_select = False
-                        elif not obj.hide_select and obj.uuid in user_ref.data['selected_objects']:
-                            obj.hide_select = True
+                        # change old selection right to common
+                        for obj in obj_common:
+                            node = repo.get(uuid=obj)
+
+                            if node and (node.owner == settings.username or node.owner == RP_COMMON):
+                                recursive = True
+                                if node.data and 'instance_type' in node.data.keys():
+                                    recursive = node.data['instance_type'] != 'COLLECTION'
+                                repo.change_owner(
+                                    node.uuid,
+                                    RP_COMMON,
+                                    recursive=recursive)
+
+                        # change new selection to our
+                        for obj in obj_ours:
+                            node = repo.get(uuid=obj)
+
+                            if node and node.owner == RP_COMMON:
+                                recursive = True
+                                if node.data and 'instance_type' in node.data.keys():
+                                    recursive = node.data['instance_type'] != 'COLLECTION'
+
+                                repo.change_owner(
+                                    node.uuid,
+                                    settings.username,
+                                    recursive=recursive)
+                            else:
+                                return
+        
+                        self._last_selection = current_selection
+                        self._user.update_selected_objects(
+                            bpy.context)
+                        repo.push(self._user_node.uuid)             
+
+                        # Fix deselection until right managment refactoring (with Roles concepts)
+                        if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
+                            owned_keys = repo.list(filter_owner=settings.username)
+                            for key in owned_keys:
+                                node  = repo.get(uuid=key)
+                                if not isinstance(node, BlUser):
+                                    repo.change_owner(
+                                            key,
+                                            RP_COMMON,
+                                            recursive=recursive)
 
 
 class Draw(Delayable):
