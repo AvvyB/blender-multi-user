@@ -60,7 +60,6 @@ class BlArmature(BlDatablock):
             if 'parent' in data['bones'][bone]:
                 new_bone.parent = self.pointer.edit_bones[data['bones'][bone]['use_connect']['name']]
                 new_bone.use_connect = data['bones'][bone]['use_connect']
-        bpy.data.objects['Armature'].update_from_editmode()
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = current_active_object
