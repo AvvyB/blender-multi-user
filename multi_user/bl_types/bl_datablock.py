@@ -19,9 +19,12 @@ def load_driver(target_datablock, src_driver):
     src_driver_data = src_driver['driver']
     new_driver = drivers.new(src_driver['data_path'])
 
+    # Settings
     new_driver.driver.type = src_driver_data['type']
     new_driver.driver.expression = src_driver_data['expression']
+    utils.dump_anything.load(new_driver,  src_driver)
 
+    # Variables
     for src_variable in src_driver_data['variables']:
         src_var_data =  src_driver_data['variables'][src_variable]
         new_var = new_driver.driver.variables.new()
@@ -32,6 +35,17 @@ def load_driver(target_datablock, src_driver):
             src_target_data = src_var_data['targets'][src_target]
             new_var.targets[src_target].id = utils.resolve_from_id(src_target_data['id'],src_target_data['id_type'])
             utils.dump_anything.load(new_var.targets[src_target],  src_target_data)
+
+    # Fcurve
+    new_fcurve = new_driver.keyframe_points
+    for p in reversed(new_fcurve):
+        new_fcurve.remove(p, fast=True)
+
+    new_fcurve.add(len(src_driver['keyframe_points']))
+
+    for index, src_point in enumerate(src_driver['keyframe_points']):
+        new_point = new_fcurve[index]
+        utils.dump_anything.load(new_point, src_driver['keyframe_points'][src_point])
 
 class BlDatablock(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
