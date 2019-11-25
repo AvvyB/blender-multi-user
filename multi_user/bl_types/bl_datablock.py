@@ -6,18 +6,6 @@ from ..libs.replication.replication.data import ReplicatedDatablock
 from ..libs.replication.replication.constants import UP
 
 
-def has_action(target):
-    return (hasattr(target, 'animation_data')
-            and target.animation_data
-            and target.animation_data.action)
-
-
-def has_driver(target):
-    return (hasattr(target, 'animation_data')
-            and target.animation_data
-            and target.animation_data.drivers)
-
-
 def dump_driver(driver):
     dumper = utils.dump_anything.Dumper()
     dumper.depth = 6
@@ -91,12 +79,12 @@ class BlDatablock(ReplicatedDatablock):
 
     def dump(self, pointer=None):
         data = {}
-        if has_action(pointer):
+        if utils.has_action(pointer):
             dumper = utils.dump_anything.Dumper()
             dumper.include_filter = ['action']
             data['animation_data'] = dumper.dump(pointer.animation_data)
 
-        if has_driver(pointer):
+        if utils.has_driver(pointer):
             dumped_drivers = {'animation_data':{'drivers': []}}
             for driver in pointer.animation_data.drivers:
                 dumped_drivers['animation_data']['drivers'].append(dump_driver(driver))
@@ -133,7 +121,7 @@ class BlDatablock(ReplicatedDatablock):
     def resolve_dependencies(self):
         dependencies = []
 
-        if has_action(self.pointer):
+        if utils.has_action(self.pointer):
             dependencies.append(self.pointer.animation_data.action)
 
         return dependencies

@@ -16,6 +16,16 @@ from .libs import dump_anything
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
+def has_action(target):
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.action)
+
+
+def has_driver(target):
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.drivers)
 
 def find_from_attr(attr_name, attr_value, list):
     for item in list:
