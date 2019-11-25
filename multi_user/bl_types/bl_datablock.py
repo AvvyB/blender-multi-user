@@ -96,12 +96,12 @@ class BlDatablock(ReplicatedDatablock):
             dumper.include_filter = ['action']
             data['animation_data'] = dumper.dump(pointer.animation_data)
 
-        # if has_driver(pointer):
-        #     dumped_drivers = {'animation_data':{'drivers': []}}
-        #     for driver in pointer.animation_data.drivers:
-        #         dumped_drivers['animation_data']['drivers'].append(dump_driver(driver))
+        if has_driver(pointer):
+            dumped_drivers = {'animation_data':{'drivers': []}}
+            for driver in pointer.animation_data.drivers:
+                dumped_drivers['animation_data']['drivers'].append(dump_driver(driver))
 
-        #     data.update(dumped_drivers)
+            data.update(dumped_drivers)
         data.update(self.dump_implementation(data, pointer=pointer))
 
         return data
