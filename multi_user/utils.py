@@ -5,6 +5,7 @@ import random
 import string
 import sys
 from uuid import uuid4
+from collections.abc import Iterable
 
 import bpy
 import mathutils
@@ -139,3 +140,12 @@ def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None)
                 pass
 
         return data
+
+def resolve_from_id(id, optionnal_type=None):
+    for category in dir(bpy.data):
+        root = getattr(bpy.data, category)
+        if isinstance(root, Iterable):
+            if id in root and ((optionnal_type is None) or (optionnal_type.lower() in root[id].__class__.__name__.lower())):
+                return root[id]
+    return None
+            

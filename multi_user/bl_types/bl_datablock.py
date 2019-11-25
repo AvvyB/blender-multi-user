@@ -5,10 +5,45 @@ from .. import utils
 from ..libs.replication.replication.data import ReplicatedDatablock
 from ..libs.replication.replication.constants import UP
 
-def has_animation(target):
-    return (hasattr(target, 'animation_data') \
-                and target.animation_data \
-                and target.animation_data.action)
+
+def has_action(target):
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.action)
+
+
+def has_driver(target):
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.drivers)
+
+
+def dump_driver(driver):
+    dumper = utils.dump_anything.Dumper()
+    dumper.depth = 6
+    data = dumper.dump(driver)
+
+    return data
+
+
+def load_driver(target_datablock, src_driver):
+    drivers = target_datablock.animation_data.drivers
+    src_driver_data = src_driver['driver']
+    new_driver = drivers.new(src_driver['data_path'])
+
+    new_driver.driver.type = src_driver_data['type']
+    new_driver.driver.expression = src_driver_data['expression']
+
+    for src_variable in src_driver_data['variables']:
+        src_var_data =  src_driver_data['variables'][src_variable]
+        new_var = new_driver.driver.variables.new()
+        new_var.name = src_var_data['name']
+        new_var.type = src_var_data['type']
+
+        for src_target in src_var_data['targets']:
+            src_target_data = src_var_data['targets'][src_target]
+            new_var.targets[src_target].id = utils.resolve_from_id(src_target_data['id'],src_target_data['id_type'])
+            utils.dump_anything.load(new_var.targets[src_target],  src_target_data)
 
 class BlDatablock(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
@@ -56,14 +91,20 @@ class BlDatablock(ReplicatedDatablock):
 
     def dump(self, pointer=None):
         data = {}
-        if has_animation(pointer):
+        if has_action(pointer):
             dumper = utils.dump_anything.Dumper()
             dumper.include_filter = ['action']
             data['animation_data'] = dumper.dump(pointer.animation_data)
-            
+
+        # if has_driver(pointer):
+        #     dumped_drivers = {'animation_data':{'drivers': []}}
+        #     for driver in pointer.animation_data.drivers:
+        #         dumped_drivers['animation_data']['drivers'].append(dump_driver(driver))
+
+        #     data.update(dumped_drivers)
         data.update(self.dump_implementation(data, pointer=pointer))
 
-        return data        
+        return data
 
     def dump_implementation(self, data, target):
         raise NotImplementedError
@@ -73,9 +114,16 @@ class BlDatablock(ReplicatedDatablock):
         if 'animation_data' in data.keys():
             if target.animation_data is None:
                 target.animation_data_create()
-            
-            
-            target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
+
+            for d in target.animation_data.drivers:
+                target.animation_data.drivers.remove(d)
+
+            if 'drivers' in data['animation_data']:
+                for driver in data['animation_data']['drivers']:
+                    load_driver(target, driver)
+
+            if 'action'  in data['animation_data']:
+                target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
 
         self.load_implementation(data, target)
 
@@ -85,11 +133,10 @@ class BlDatablock(ReplicatedDatablock):
     def resolve_dependencies(self):
         dependencies = []
 
-        if has_animation(self.pointer):
+        if has_action(self.pointer):
             dependencies.append(self.pointer.animation_data.action)
 
         return dependencies
-
 
     def is_valid(self):
         raise NotImplementedError
