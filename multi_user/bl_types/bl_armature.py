@@ -70,7 +70,7 @@ class BlArmature(BlDatablock):
 
             if 'parent' in data['bones'][bone]:
                 new_bone.parent = self.pointer.edit_bones[data['bones']
-                                                          [bone]['use_connect']['name']]
+                                                          [bone]['parent']]
                 new_bone.use_connect = data['bones'][bone]['use_connect']
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -92,11 +92,15 @@ class BlArmature(BlDatablock):
             'tail_radius',
             'head_radius',
             'use_connect',
-            'name',
             'parent',
+            'name'
 
         ]
         data = dumper.dump(pointer)
+
+        for bone in pointer.bones:
+            if bone.parent:
+                data['bones'][bone.name]['parent'] = bone.parent.name
         # get the parent Object
         object_users = utils.get_datablock_users(pointer)[0]
         data['user'] = object_users.uuid
