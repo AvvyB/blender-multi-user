@@ -43,6 +43,13 @@ class BlCurve(BlDatablock):
             spline_data['bezier_points'] = dumper.dump(spline.bezier_points)
             spline_data['type'] = dumper.dump(spline.type)
             data['splines'][index] = spline_data
+
+        if isinstance(pointer,'TextCurve'):
+            data['type'] = 'TEXT'
+        if isinstance(pointer,'SurfaceCurve'):
+            data['type'] = 'SURFACE'
+        if isinstance(pointer,'TextCurve'):
+            data['type'] = 'CURVE'
         return data
 
     def resolve(self):

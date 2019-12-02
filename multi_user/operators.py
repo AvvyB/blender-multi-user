@@ -20,7 +20,11 @@ from . import bl_types, delayable, environment, presence, ui, utils
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
-from .libs.replication.replication.constants import FETCHED
+from .libs.replication.replication.constants import (
+    STATE_ACTIVE,
+    STATE_INITIAL,
+    STATE_SYNCING,
+    FETCHED)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -376,13 +380,23 @@ classes = (
     SessionCommit,
     ApplyArmatureOperator,
 )
+@persistent
+def load_pre_handler(dummy):
+    global client
 
+    if client and client.state in [STATE_ACTIVE, STATE_SYNCING]:
+        bpy.ops.session.stop()
+    
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
 
+<<<<<<< HEAD
+=======
+    bpy.app.handlers.load_pre.append(load_pre_handler)
+>>>>>>> master
 
 def unregister():
     global client
@@ -394,6 +408,8 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+    
+    bpy.app.handlers.load_pre.remove(load_pre_handler) 
 
 
 if __name__ == "__main__":

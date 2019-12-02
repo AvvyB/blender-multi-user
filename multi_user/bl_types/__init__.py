@@ -14,8 +14,11 @@ __all__ = [
     'bl_armature',
     'bl_action',
     'bl_world',
-    'bl_metaball'
-] 
+    'bl_metaball',
+    'bl_lattice',
+    'bl_lightprobe',
+    'bl_speaker'
+]  # Order here defines execution order
 
 from . import *
 from ..libs.replication.replication.data import ReplicatedDataFactory
