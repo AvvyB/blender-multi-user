@@ -32,6 +32,8 @@ stop_modal_executor = False
 modal_executor_queue = None
 
 # OPERATORS
+
+
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -96,15 +98,13 @@ class SessionStartOperator(bpy.types.Operator):
             )
 
         time.sleep(1)
-        
+
         if client.state == 0:
             settings.is_admin = False
             self.report(
                 {'ERROR'},
                 "A session is already hosted on this address")
             return {"CANCELLED"}
-
-        
 
         # Init user settings
         usr = presence.User(
@@ -114,14 +114,14 @@ class SessionStartOperator(bpy.types.Operator):
                    settings.client_color.b,
                    1),
         )
-        
-        settings.user_uuid = client.add(usr,owner=settings.username)
+
+        settings.user_uuid = client.add(usr, owner=settings.username)
         client.commit(settings.user_uuid)
 
         if settings.init_scene and self.host:
             for scene in bpy.data.scenes:
                 scene_uuid = client.add(scene)
-            
+
                 # for node in client.list():
                 client.commit(scene_uuid)
         delayables.append(delayable.ClientUpdate(
@@ -139,10 +139,10 @@ class SessionStartOperator(bpy.types.Operator):
         # Register blender main thread tools
         for d in delayables:
             d.register()
-        
+
         global modal_executor_queue
         modal_executor_queue = queue.Queue()
-        bpy.ops.wm.modal_executor_operator()
+        bpy.ops.session.apply_armature_operator()
 
         self.report(
             {'INFO'},
@@ -163,7 +163,7 @@ class SessionStopOperator(bpy.types.Operator):
     def execute(self, context):
         global client, delayables, stop_modal_executor
 
-        stop_modal_executor= True
+        stop_modal_executor = True
         settings = context.window_manager.session
         settings.is_admin = False
         assert(client)
@@ -177,7 +177,7 @@ class SessionStopOperator(bpy.types.Operator):
             except:
                 continue
         presence.renderer.stop()
-       
+
         return {"FINISHED"}
 
 
@@ -274,7 +274,8 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
             target_client = client.get(uuid=self.target_client)
             if target_client:
-                rv3d.view_matrix = mathutils.Matrix(target_client.data['view_matrix'])
+                rv3d.view_matrix = mathutils.Matrix(
+                    target_client.data['view_matrix'])
             else:
                 return {"CANCELLED"}
 
@@ -320,9 +321,10 @@ class SessionCommit(bpy.types.Operator):
         client.push(self.target)
         return {"FINISHED"}
 
-class ModalExecutorOperator(bpy.types.Operator):
+
+class ApplyArmatureOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
-    bl_idname = "wm.modal_executor_operator"
+    bl_idname = "session.apply_armature_operator"
     bl_label = "Modal Executor Operator"
 
     _timer = None
@@ -344,8 +346,9 @@ class ModalExecutorOperator(bpy.types.Operator):
                     try:
                         client.apply(node)
                     except Exception as e:
-                            logger.error("fail to apply {}: {}".format(node_ref.uuid,e))
-    
+                        logger.error(
+                            "fail to apply {}: {}".format(node_ref.uuid, e))
+
         return {'PASS_THROUGH'}
 
     def execute(self, context):
@@ -361,7 +364,7 @@ class ModalExecutorOperator(bpy.types.Operator):
         wm.event_timer_remove(self._timer)
 
         stop_modal_executor = False
-        
+
 
 classes = (
     SessionStartOperator,
@@ -371,7 +374,7 @@ classes = (
     SessionPropertyRightOperator,
     SessionApply,
     SessionCommit,
-    ModalExecutorOperator,
+    ApplyArmatureOperator,
 )
 
 
@@ -379,6 +382,7 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
+
 
 def unregister():
     global client
@@ -390,6 +394,7 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+
 
 if __name__ == "__main__":
     register()
