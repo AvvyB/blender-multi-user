@@ -393,10 +393,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
-<<<<<<< HEAD
-=======
     bpy.app.handlers.load_pre.append(load_pre_handler)
->>>>>>> master
 
 def unregister():
     global client
