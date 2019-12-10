@@ -61,8 +61,10 @@ class BlScene(BlDatablock):
     def resolve(self):
         scene_name = self.data['name']
         
-        self.pointer = bpy.data.scenes.get(scene_name)
-        # self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.objects)
+        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.scenes)
+        if not self.pointer:
+            self.pointer = bpy.data.scenes.get(scene_name)
+       
 
     def resolve_dependencies(self):
         deps = []
