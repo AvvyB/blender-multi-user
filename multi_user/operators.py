@@ -122,7 +122,7 @@ class SessionStartOperator(bpy.types.Operator):
         settings.user_uuid = client.add(usr, owner=settings.username)
         client.commit(settings.user_uuid)
 
-        if settings.init_scene and self.host:
+        if self.host:
             for scene in bpy.data.scenes:
                 scene_uuid = client.add(scene)
 

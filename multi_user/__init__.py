@@ -109,25 +109,14 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Distant host port',
         default=5555
         )
-    add_property_depth: bpy.props.IntProperty(
-        name="add_property_depth",
-        default=1
-        )
-    outliner_filter: bpy.props.StringProperty(name="None")
     is_admin: bpy.props.BoolProperty(
         name="is_admin",
         default=False
-        )
-    init_scene: bpy.props.BoolProperty(
-        name="init_scene",
-        default=True
         )
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
         default=True
         )
-    active_object: bpy.props.PointerProperty(
-        name="active_object", type=bpy.types.Object)
     session_mode: bpy.props.EnumProperty(
         name='session_mode',
         description='session mode',
@@ -177,11 +166,6 @@ class SessionProps(bpy.types.PropertyGroup):
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',
-        default=True
-    )
-    use_select_right: bpy.props.BoolProperty(
-        name="Selection right",
-        description='Change right on selection',
         default=True
     )
 
