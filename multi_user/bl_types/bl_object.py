@@ -22,6 +22,13 @@ def load_constraints(target, data):
 
 
 class BlObject(BlDatablock):
+    bl_id = "objects"
+    bl_class = bpy.types.Object
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'OBJECT_DATA'
+
     def construct(self, data):
         pointer = None
 
@@ -245,10 +252,6 @@ class BlObject(BlDatablock):
 
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr(
-            'uuid', self.uuid, bpy.data.objects)
-
     def resolve_dependencies(self):
         deps = super().resolve_dependencies()
 
@@ -272,10 +275,3 @@ class BlObject(BlDatablock):
         return bpy.data.objects.get(self.data['name'])
 
 
-bl_id = "objects"
-bl_class = bpy.types.Object
-bl_rep_class = BlObject
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'OBJECT_DATA'

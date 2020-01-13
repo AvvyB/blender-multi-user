@@ -24,6 +24,13 @@ def dump_image(image):
     return pixels
 
 class BlImage(BlDatablock):
+    bl_id = "images"
+    bl_class = bpy.types.Image
+    bl_delay_refresh = 0
+    bl_delay_apply = 0
+    bl_automatic_push = False
+    bl_icon = 'IMAGE_DATA'
+
     def construct(self, data):
         return bpy.data.images.new(
                 name=data['name'],
@@ -57,19 +64,9 @@ class BlImage(BlDatablock):
             2,
             data)
         return data
-    
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.images)
 
     def diff(self):
         return False
     
     def is_valid(self):
         return bpy.data.images.get(self.data['name'])
-bl_id = "images"
-bl_class = bpy.types.Image
-bl_rep_class = BlImage
-bl_delay_refresh = 0
-bl_delay_apply = 0
-bl_automatic_push = False
-bl_icon = 'IMAGE_DATA'

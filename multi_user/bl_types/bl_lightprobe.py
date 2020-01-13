@@ -5,7 +5,14 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 
-class BlLightProbe(BlDatablock):
+class BlLightprobe(BlDatablock):
+    bl_id = "lightprobes"
+    bl_class = bpy.types.LightProbe
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'LIGHTPROBE_GRID'
+
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 
@@ -33,17 +40,5 @@ class BlLightProbe(BlDatablock):
 
         return dumper.dump(pointer)
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.lattices)
-
     def is_valid(self):
         return bpy.data.lattices.get(self.data['name'])
-
-
-bl_id = "lightprobes"
-bl_class = bpy.types.LightProbe
-bl_rep_class = BlLightProbe
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'LIGHTPROBE_GRID'

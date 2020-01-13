@@ -68,6 +68,13 @@ def load_link(target_node_tree, source):
 
 
 class BlMaterial(BlDatablock):
+    bl_id = "materials"
+    bl_class = bpy.types.Material
+    bl_delay_refresh = 10
+    bl_delay_apply = 10
+    bl_automatic_push = True
+    bl_icon = 'MATERIAL_DATA'
+
     def construct(self, data):
         return bpy.data.materials.new(data["name"])
 
@@ -175,9 +182,6 @@ class BlMaterial(BlDatablock):
             utils.dump_datablock_attibutes(pointer, ["grease_pencil"], 3, data)
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.materials)
-
     def resolve_dependencies(self):
         # TODO: resolve node group deps
         deps = []
@@ -194,11 +198,3 @@ class BlMaterial(BlDatablock):
     def is_valid(self):
         return bpy.data.materials.get(self.data['name'])
 
-
-bl_id = "materials"
-bl_class = bpy.types.Material
-bl_rep_class = BlMaterial
-bl_delay_refresh = 10
-bl_delay_apply = 10
-bl_automatic_push = True
-bl_icon = 'MATERIAL_DATA'

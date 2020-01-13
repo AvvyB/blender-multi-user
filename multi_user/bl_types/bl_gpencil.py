@@ -34,6 +34,13 @@ def load_gpencil_layer(target=None, data=None, create=False):
 
 
 class BlGpencil(BlDatablock):
+    bl_id = "grease_pencils"
+    bl_class = bpy.types.GreasePencil
+    bl_delay_refresh = 5
+    bl_delay_apply = 5
+    bl_automatic_push = True
+    bl_icon = 'GREASEPENCIL'
+
     def construct(self, data):
         return bpy.data.grease_pencils.new(data["name"])
 
@@ -64,9 +71,6 @@ class BlGpencil(BlDatablock):
             pointer, ['layers'], 9, data)
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.grease_pencils)
-
     def resolve_dependencies(self):
         deps = []
 
@@ -77,11 +81,3 @@ class BlGpencil(BlDatablock):
 
     def is_valid(self):
         return bpy.data.grease_pencils.get(self.data['name'])
-
-bl_id = "grease_pencils"
-bl_class = bpy.types.GreasePencil
-bl_rep_class = BlGpencil
-bl_delay_refresh = 5
-bl_delay_apply = 5
-bl_automatic_push = True
-bl_icon = 'GREASEPENCIL'

@@ -6,6 +6,13 @@ from .bl_datablock import BlDatablock
 
 
 class BlCollection(BlDatablock):
+    bl_id = "collections"
+    bl_icon = 'FILE_FOLDER'
+    bl_class = bpy.types.Collection
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+
     def construct(self, data):
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
@@ -68,18 +75,7 @@ class BlCollection(BlDatablock):
 
         data['children'] = collection_children
 
-        # dumper = utils.dump_anything.Dumper()
-        # dumper.depth = 2
-        # dumper.include_filter = ['name','objects', 'children']
-
-        # return dumper.dump(pointer)
         return data
-
-    def resolve(self):
-        self.pointer = utils.find_from_attr(
-            'uuid',
-            self.uuid,
-            bpy.data.collections)
 
     def resolve_dependencies(self):
         deps = []
@@ -94,11 +90,3 @@ class BlCollection(BlDatablock):
     def is_valid(self):
         return bpy.data.collections.get(self.data['name'])
 
-
-bl_id = "collections"
-bl_icon = 'FILE_FOLDER'
-bl_class = bpy.types.Collection
-bl_rep_class = BlCollection
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True

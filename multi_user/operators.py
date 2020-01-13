@@ -8,7 +8,6 @@ import subprocess
 import time
 from operator import itemgetter
 from pathlib import Path
-
 import msgpack
 
 import bpy
@@ -61,22 +60,25 @@ class SessionStartOperator(bpy.types.Operator):
         ui_context = context.copy()
         # init the factory with supported types
         for type in bl_types.types_to_register():
-            _type = getattr(bl_types, type)
-            supported_bl_types.append(_type.bl_id)
+            type_module = getattr(bl_types, type)
+            type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
+            type_module_class = getattr(type_module, type_impl_name)
+            
+            supported_bl_types.append(type_module_class.bl_id)
 
             # Retreive local replicated types settings
-            type_local_config = settings.supported_datablock[_type.bl_rep_class.__name__]
+            type_local_config = settings.supported_datablock[type_impl_name]
 
             bpy_factory.register_type(
-                _type.bl_class,
-                _type.bl_rep_class,
+                type_module_class.bl_class,
+                type_module_class,
                 timer=type_local_config.bl_delay_refresh,
                 automatic=type_local_config.auto_push)
 
             if type_local_config.bl_delay_apply > 0:
                 delayables.append(delayable.ApplyTimer(
                     timout=type_local_config.bl_delay_apply,
-                    target_type=_type.bl_rep_class))
+                    target_type=type_module_class))
 
         client = Session(factory=bpy_factory)
 

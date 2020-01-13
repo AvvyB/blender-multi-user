@@ -7,7 +7,13 @@ from .bl_datablock import BlDatablock
 # WIP
 
 class BlAction(BlDatablock):
-
+    bl_id = "actions"
+    bl_class = bpy.types.Action
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'ACTION_TWEAK'
+    
     def construct(self, data):
         return bpy.data.actions.new(data["name"])
 
@@ -108,18 +114,8 @@ class BlAction(BlDatablock):
             data["fcurves"].append(fc)
 
         return data
-    
-    def resolve(self):
-        assert(self.data)      
-        self.pointer = bpy.data.actions.get(self.data['name'])
 
     def is_valid(self):
         return bpy.data.actions.get(self.data['name'])
 
-bl_id = "actions"
-bl_class = bpy.types.Action
-bl_rep_class = BlAction
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'ACTION_TWEAK'
+

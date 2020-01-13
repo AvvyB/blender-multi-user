@@ -6,6 +6,13 @@ from .bl_datablock import BlDatablock
 
 
 class BlSpeaker(BlDatablock):
+    bl_id = "speakers"
+    bl_class = bpy.types.Speaker
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'SPEAKER'
+
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 
@@ -34,17 +41,6 @@ class BlSpeaker(BlDatablock):
 
         return dumper.dump(pointer)
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.lattices)
-
     def is_valid(self):
         return bpy.data.lattices.get(self.data['name'])
 
-
-bl_id = "speakers"
-bl_class = bpy.types.Speaker
-bl_rep_class = BlSpeaker
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'SPEAKER'

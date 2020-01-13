@@ -38,16 +38,19 @@ logger.setLevel(logging.ERROR)
 def generate_supported_types():
     stype_dict = {'supported_types':{}}
     for type in bl_types.types_to_register():
-        _type = getattr(bl_types, type)
-        props = {}
-        props['bl_delay_refresh']=_type.bl_delay_refresh
-        props['bl_delay_apply']=_type.bl_delay_apply
-        props['use_as_filter'] = False
-        props['icon'] = _type.bl_icon
-        props['auto_push']=_type.bl_automatic_push
-        props['bl_name']=_type.bl_id
+        type_module = getattr(bl_types, type)
+        type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
+        type_module_class = getattr(type_module, type_impl_name)
 
-        stype_dict['supported_types'][_type.bl_rep_class.__name__] = props
+        props = {}
+        props['bl_delay_refresh']=type_module_class.bl_delay_refresh
+        props['bl_delay_apply']=type_module_class.bl_delay_apply
+        props['use_as_filter'] = False
+        props['icon'] = type_module_class.bl_icon
+        props['auto_push']=type_module_class.bl_automatic_push
+        props['bl_name']=type_module_class.bl_id
+
+        stype_dict['supported_types'][type_impl_name] = props
 
     return stype_dict
 

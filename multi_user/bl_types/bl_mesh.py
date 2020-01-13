@@ -75,6 +75,13 @@ def dump_mesh(mesh, data={}):
     return mesh_data
 
 class BlMesh(BlDatablock):
+    bl_id = "meshes"
+    bl_class = bpy.types.Mesh
+    bl_delay_refresh = 10
+    bl_delay_apply = 10
+    bl_automatic_push = True
+    bl_icon = 'MESH_DATA'
+
     def construct(self, data):
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
@@ -154,9 +161,6 @@ class BlMesh(BlDatablock):
 
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.meshes) 
-
     def resolve_dependencies(self):
         deps = []
         
@@ -168,11 +172,4 @@ class BlMesh(BlDatablock):
     
     def is_valid(self):
         return bpy.data.meshes.get(self.data['name'])
-        
-bl_id = "meshes"
-bl_class = bpy.types.Mesh
-bl_rep_class = BlMesh
-bl_delay_refresh = 10
-bl_delay_apply = 10
-bl_automatic_push = True
-bl_icon = 'MESH_DATA'
+

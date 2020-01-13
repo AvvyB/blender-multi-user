@@ -5,6 +5,13 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 class BlScene(BlDatablock):
+    bl_id = "scenes"
+    bl_class = bpy.types.Scene
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'SCENE_DATA'
+
     def construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
         instance.uuid = self.uuid
@@ -58,14 +65,6 @@ class BlScene(BlDatablock):
 
         return data
 
-    def resolve(self):
-        scene_name = self.data['name']
-        
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.scenes)
-        if not self.pointer:
-            self.pointer = bpy.data.scenes.get(scene_name)
-       
-
     def resolve_dependencies(self):
         deps = []
 
@@ -89,10 +88,3 @@ class BlScene(BlDatablock):
     
     def is_valid(self):
         return bpy.data.scenes.get(self.data['name'])
-bl_id = "scenes"
-bl_class = bpy.types.Scene
-bl_rep_class = BlScene
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'SCENE_DATA'

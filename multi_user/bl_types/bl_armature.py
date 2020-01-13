@@ -10,6 +10,13 @@ from .bl_datablock import BlDatablock
 
 
 class BlArmature(BlDatablock):
+    bl_id = "armatures"
+    bl_class = bpy.types.Armature
+    bl_delay_refresh = 1
+    bl_delay_apply = 0
+    bl_automatic_push = True
+    bl_icon = 'ARMATURE_DATA'
+    
     def construct(self, data):
         return bpy.data.armatures.new(data["name"])
 
@@ -114,18 +121,5 @@ class BlArmature(BlDatablock):
             item.name for item in container_users if isinstance(item, bpy.types.Scene)]
         return data
 
-    def resolve(self):
-        assert(self.data)
-        self.pointer = bpy.data.armatures.get(self.data['name'])
-
     def is_valid(self):
         return bpy.data.armatures.get(self.data['name'])
-
-
-bl_id = "armatures"
-bl_class = bpy.types.Armature
-bl_rep_class = BlArmature
-bl_delay_refresh = 1
-bl_delay_apply = 0
-bl_automatic_push = True
-bl_icon = 'ARMATURE_DATA'
