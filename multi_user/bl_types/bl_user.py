@@ -41,6 +41,9 @@ class BlUser(BlDatablock):
 
     def update(self):
         self.pointer.is_dirty = True
+    
+    def resolve(self):
+        pass
 
     def is_valid(self):
         return True

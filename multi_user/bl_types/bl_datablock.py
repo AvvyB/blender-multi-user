@@ -107,14 +107,20 @@ class BlDatablock(ReplicatedDatablock):
         return [self.pointer.library]
 
     def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.scenes)
+        datablock_ref = None
+        datablock_root = getattr(bpy.data, self.bl_id)
+        datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
-        if not self.pointer:
-            self.pointer = getattr(bpy.data,self.bl_id).get(self.data['name'])
-            print(self.data['name'])
-            if self.pointer:
-                setattr(self.pointer, 'uuid', self.uuid)
-                
+        # In case of lost uuid (ex: undo), resolve by name and reassign it
+        # TODO: avoid reference storing
+        if not datablock_ref:
+            datablock_ref = getattr(
+                bpy.data, self.bl_id).get(self.data['name'])
+
+            if datablock_ref:
+                setattr(datablock_ref, 'uuid', self.uuid)
+
+        self.pointer = datablock_ref
 
     def dump(self, pointer=None):
         data = {}

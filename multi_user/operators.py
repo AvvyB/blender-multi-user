@@ -41,7 +41,6 @@ class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
     bl_description = "connect to a net server"
-    bl_options = {"REGISTER"}
 
     host: bpy.props.BoolProperty(default=False)
 
@@ -382,6 +381,7 @@ classes = (
     SessionCommit,
     ApplyArmatureOperator,
 )
+
 @persistent
 def load_pre_handler(dummy):
     global client
@@ -389,6 +389,19 @@ def load_pre_handler(dummy):
     if client and client.state in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
     
+@persistent
+def sanitize_deps_graph(dummy):
+    """sanitize deps graph
+
+    Temporary solution to resolve each node pointers after a Undo.
+    A future solution should be to avoid storing dataclock reference...  
+
+    """
+    global client
+
+    if client and client.state in [STATE_ACTIVE]:
+        for node_key in client.list():
+            client.get(node_key).resolve()
 
 def register():
     from bpy.utils import register_class
@@ -396,6 +409,9 @@ def register():
         register_class(cls)
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
+
+    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
+    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
 def unregister():
     global client
@@ -410,6 +426,8 @@ def unregister():
     
     bpy.app.handlers.load_pre.remove(load_pre_handler) 
 
+    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
+    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
 if __name__ == "__main__":
     register()
