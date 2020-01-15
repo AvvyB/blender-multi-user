@@ -8,7 +8,8 @@ Welcome to multi-user's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+    install
 
 
 
