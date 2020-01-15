@@ -7,9 +7,9 @@ Welcome to multi-user's documentation!
 ======================================
 
 .. toctree::
-   :maxdepth: 2
-
+    
     install
+    quickstart
 
 
 
