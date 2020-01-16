@@ -98,6 +98,7 @@ class Dumper:
         self._dump_array = (self._dump_default_as_leaf, self._dump_array_as_branch)
         self._dump_matrix = (self._dump_matrix_as_leaf, self._dump_matrix_as_leaf)
         self._dump_vector = (self._dump_vector_as_leaf, self._dump_vector_as_leaf)
+        self._dump_quaternion = (self._dump_quaternion_as_leaf, self._dump_quaternion_as_leaf)
         self._dump_default = (self._dump_default_as_leaf, self._dump_default_as_branch)
         self._dump_color = (self._dump_color_as_leaf, self._dump_color_as_leaf)
 
@@ -112,6 +113,7 @@ class Dumper:
         self._match_type_array = (_dump_filter_array, self._dump_array)
         self._match_type_matrix = (_dump_filter_type(mathutils.Matrix), self._dump_matrix)
         self._match_type_vector = (_dump_filter_type(mathutils.Vector), self._dump_vector)
+        self._match_type_quaternion = (_dump_filter_type(mathutils.Quaternion), self._dump_quaternion)
         self._match_type_color = (_dump_filter_type_by_name("Color"), self._dump_color)
         self._match_default = (_dump_filter_default, self._dump_default)
 
@@ -137,6 +139,9 @@ class Dumper:
 
     def _dump_vector_as_leaf(self, vector, depth):
         return list(vector)
+    
+    def _dump_quaternion_as_leaf(self, quaternion, depth):
+        return list(quaternion)
 
     def _dump_color_as_leaf(self, color, depth):
         return list(color)
@@ -187,7 +192,7 @@ class Dumper:
             self._match_type_array,
             self._match_type_matrix,
             self._match_type_vector,
-            self._match_type_color,
+            self._match_type_quaternion,
             self._match_type_color,
             self._match_default
         ]
@@ -315,6 +320,9 @@ class Loader:
 
     def _load_vector(self, vector, dump):
         vector.write(mathutils.Vector(dump))
+    
+    def _load_quaternion(self, quaternion, dump):
+        quaternion.write(mathutils.Quaternion(dump))
 
     def _ordered_keys(self, keys):
         ordered_keys = []
@@ -345,6 +353,7 @@ class Loader:
             (_load_filter_type(T.IntProperty), self._load_identity),
             (_load_filter_type(mathutils.Matrix, use_bl_rna=False), self._load_matrix), # before float because bl_rna type of matrix if FloatProperty
             (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector), # before float because bl_rna type of vector if FloatProperty
+            (_load_filter_type(mathutils.Quaternion, use_bl_rna=False), self._load_quaternion),
             (_load_filter_type(T.FloatProperty), self._load_identity),
             (_load_filter_type(T.StringProperty), self._load_identity),
             (_load_filter_type(T.EnumProperty), self._load_identity),
