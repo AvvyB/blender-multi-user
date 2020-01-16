@@ -168,8 +168,8 @@ class BlObject(BlDatablock):
             "instance_collection",
             "instance_type"
         ]
-        if not utils.has_action(pointer):
-            dumper.include_filter.append('matrix_world')
+        # if not utils.has_action(pointer):
+        dumper.include_filter.append('matrix_world')
 
         data = dumper.dump(pointer)
 
