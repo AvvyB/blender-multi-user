@@ -36,6 +36,7 @@ class BlUser(BlDatablock):
         data['color'] = pointer.color
         data['selected_objects'] = pointer.selected_objects
         data['view_matrix'] = pointer.view_matrix
+        data['current_keyframe'] = bpy.context.scene.frame_current
 
         return data
 

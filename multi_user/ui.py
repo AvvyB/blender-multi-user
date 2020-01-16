@@ -206,13 +206,16 @@ class SESSION_PT_user(bpy.types.Panel):
 
                     detail_item_row.label(
                         text="{} {}".format(username, info))
+                    
+                    detail_item_row.label(
+                        text="{}".format(client.get('current_keyframe')))
 
                     if not is_local_user:
                         detail_item_row.operator(
                             "session.snapview",
                             text="",
                             icon='VIEW_CAMERA').target_client = key
-                    row = layout.row()
+                    row = layout.row(align=True)
         else:
             row.label(text="Empty")
 
