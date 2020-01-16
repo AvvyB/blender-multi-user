@@ -20,6 +20,10 @@ def load_constraints(target, data):
         utils.dump_anything.load(
             target_constraint, data[constraint])
 
+def load_pose(target_bone, data):
+    target_bone.rotation_mode = data['rotation_mode']
+
+    utils.dump_anything.load(target_bone, data)
 
 class BlObject(BlDatablock):
     bl_id = "objects"
@@ -107,6 +111,9 @@ class BlObject(BlDatablock):
                 target_bone = target.pose.bones.get(bone)
                 load_constraints(
                     target_bone, data['pose']['bones'][bone]['constraints'])
+                
+                load_pose(target_bone,data['pose']['bones'][bone])
+                
 
         # Load relations
         if 'children' in data.keys():
@@ -198,6 +205,16 @@ class BlObject(BlDatablock):
             for bone in pointer.pose.bones:
                 bones[bone.name] = {}
                 bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
+                dumper.depth = 1
+                rotation = 'rotation_quaternion' if bone.rotation_mode == 'QUATERNION' else 'rotation_euler'
+                dumper.include_filter = [
+                    'rotation_mode',
+                    'location',
+                    'scale',
+                    rotation
+                ]
+                bones[bone.name].update(dumper.dump(bone))
+                print(dumper.include_filter)
 
             data['pose'] = {'bones': bones}
 
