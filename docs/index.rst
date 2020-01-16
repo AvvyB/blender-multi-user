@@ -3,19 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to multi-user's documentation!
-======================================
+Multi-user's documentation
+==========================
+
+Welcome to the multi-user documentation !
 
 .. toctree::
+    :maxdepth: 1
+    :caption: About
+    :name: sec-about
+
+    introduction
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Getting started
+    :name: sec-learn
     
     install
     quickstart
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
