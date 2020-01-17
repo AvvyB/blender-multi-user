@@ -93,6 +93,15 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
+class SessionUser(bpy.types.PropertyGroup):
+    """Session User
+
+    Blender user information property 
+    """
+    username: bpy.props.StringProperty(name="username")
+    current_frame: bpy.props.IntProperty(name="current_frame")
+
+
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
@@ -226,6 +235,7 @@ class SessionProps(bpy.types.PropertyGroup):
 
 
 classes = (
+    SessionUser,
     ReplicatedDatablock,
     SessionProps,
 
@@ -254,7 +264,10 @@ def register():
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
     bpy.types.ID.uuid = bpy.props.StringProperty(default="")
-    
+    bpy.types.WindowManager.online_users = bpy.props.CollectionProperty(
+        type=SessionUser
+    )
+    bpy.types.WindowManager.user_index = bpy.props.IntProperty()
     bpy.context.window_manager.session.load()
 
     presence.register()

@@ -16,10 +16,18 @@ class BlUser(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'CON_ARMATURE'
 
-    def construct(self, name):
-        return presence.User()
+    def construct(self, data):
+        user = bpy.data.window_managers['WinMan'].online_users.add()
+        user.name = self.uuid
+        user.username = data['name']
+        user.current_frame = data['current_frame']
 
     def apply(self):
+        if self.pointer is None:
+            self.set_pointer()
+
+        self.load(self.data,self.pointer)
+
         for obj in bpy.data.objects:
             if obj.hide_select and obj.uuid not in self.data['selected_objects']:
                 obj.hide_select = False
@@ -30,13 +38,16 @@ class BlUser(BlDatablock):
 
         self.state = UP
 
+    def load(self, data, target):
+        target.current_frame = data['current_frame']
+
     def dump(self, pointer=None):
         data = utils.dump_anything.dump(pointer)
         data['location'] = pointer.location
         data['color'] = pointer.color
         data['selected_objects'] = pointer.selected_objects
         data['view_matrix'] = pointer.view_matrix
-        data['current_keyframe'] = bpy.context.scene.frame_current
+        data['current_frame'] = bpy.context.scene.frame_current
 
         return data
 
@@ -44,7 +55,7 @@ class BlUser(BlDatablock):
         self.pointer.is_dirty = True
     
     def resolve(self):
-        pass
+        self.pointer = bpy.data.window_managers['WinMan'].online_users.get(self.uuid)
 
     def is_valid(self):
         return True

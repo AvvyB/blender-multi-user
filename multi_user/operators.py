@@ -51,6 +51,17 @@ class SessionStartOperator(bpy.types.Operator):
     def execute(self, context):
         global client, delayables, ui_context
         settings = context.window_manager.session
+        users = bpy.data.window_managers['WinMan'].online_users
+        
+        # TODO: Sync server clients
+    
+        users.clear()
+        #load our infos into the local user list 
+        local_user = users.add()
+        local_user.name = 'localhost'
+        local_user.username = settings.username
+        local_user.current_frame = context.scene.frame_current
+
         # save config
         settings.save(context)
 

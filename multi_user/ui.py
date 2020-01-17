@@ -167,7 +167,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
-    bl_label = "Users"
+    bl_label = "Online users"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
@@ -179,48 +179,42 @@ class SESSION_PT_user(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
+        online_users = context.window_manager.online_users
+        selected_user = context.window_manager.user_index
         settings = context.window_manager.session
+        active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
+        
 
         # Create a simple row.
-        col = layout.column(align=True)
-
-        client_keys = operators.client.list(filter=BlUser)
-        if client_keys and len(client_keys) > 0:
-            for key in client_keys:
-                area_msg = col.row(align=True)
-                item_box = area_msg.box()
-                client = operators.client.get(uuid=key).data
-
-                info = ""
-
-                detail_item_row = item_box.row(align=True)
-
-                if client.get('name'):
-                    username = client['name']
-
-                    is_local_user = username == settings.username
-
-                    if is_local_user:
-                        info = "(self)"
-
-                    detail_item_row.label(
-                        text="{} {}".format(username, info))
-                    
-                    detail_item_row.label(
-                        text="{}".format(client.get('current_keyframe')))
-
-                    if not is_local_user:
-                        detail_item_row.operator(
-                            "session.snapview",
-                            text="",
-                            icon='VIEW_CAMERA').target_client = key
-                    row = layout.row(align=True)
-        else:
-            row.label(text="Empty")
+        row = layout.row()
+        box = row.box()
+        split = box.split(factor=0.3)
+        split.label(text="user")
+        split.label(text="frame")
+        split.label(text="ping")
 
         row = layout.row()
+        layout.template_list("SESSION_UL_users", "",  context.window_manager, "online_users", context.window_manager,  "user_index")
 
+        if active_user != 0 and active_user.username != settings.username:
+            row = layout.row()
+            user_operations = row.split()
+            user_operations.operator(
+                "session.snapview",
+                text="",
+                icon='VIEW_CAMERA').target_client = online_users[selected_user].name
+
+
+class SESSION_UL_users(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        settings = context.window_manager.session
+        is_local_user = item.username == settings.username
+
+        split = layout.split(factor=0.3)
+        split.label(text=item.username)
+        split.label(text=str(item.current_frame))
+        split.label(text='-')
+    
 
 class SESSION_PT_presence(bpy.types.Panel):
     bl_idname = "MULTIUSER_MODULE_PT_panel"
@@ -368,6 +362,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
 
 classes = (
+    SESSION_UL_users,
     SESSION_PT_settings,
     SESSION_PT_settings_user,
     SESSION_PT_settings_network,
