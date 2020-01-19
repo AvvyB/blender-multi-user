@@ -31,7 +31,7 @@ DEPENDENCIES = {
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 #TODO: refactor config 
 # UTILITY FUNCTIONS

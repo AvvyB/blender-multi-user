@@ -26,7 +26,7 @@ from .libs.replication.replication.constants import (
     FETCHED)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 client = None
 delayables = []
@@ -184,7 +184,6 @@ class SessionStopOperator(bpy.types.Operator):
         settings.is_admin = False
         assert(client)
 
-        client.remove(settings.user_uuid)
         client.disconnect()
 
         for d in delayables:
