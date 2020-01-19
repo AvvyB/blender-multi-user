@@ -207,13 +207,22 @@ class SESSION_PT_user(bpy.types.Panel):
 
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        session = operators.client
         settings = context.window_manager.session
         is_local_user = item.username == settings.username
+        ping = '-'
+
+        if session:
+            users = session.online_users
+            for user, user_stat in users.items():    
+                if item.username in user:
+                    ping = str(user_stat['latency'])
+                    break
 
         split = layout.split(factor=0.3)
         split.label(text=item.username)
         split.label(text=str(item.current_frame))
-        split.label(text='-')
+        split.label(text=ping)
     
 
 class SESSION_PT_presence(bpy.types.Panel):
