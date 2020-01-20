@@ -218,7 +218,7 @@ class SESSION_UL_users(bpy.types.UIList):
                 if item.username in user:
                     ping = str(user_stat['latency'])
                     break
-
+        
         split = layout.split(factor=0.3)
         split.label(text=item.username)
         split.label(text=str(item.current_frame))

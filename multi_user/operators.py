@@ -56,11 +56,12 @@ class SessionStartOperator(bpy.types.Operator):
         # TODO: Sync server clients
     
         users.clear()
-        #load our infos into the local user list 
-        local_user = users.add()
-        local_user.name = 'localhost'
-        local_user.username = settings.username
-        local_user.current_frame = context.scene.frame_current
+
+        # #load our infos into the local user list 
+        # local_user = users.add()
+        # local_user.name = 'localhost'
+        # local_user.username = settings.username
+        # local_user.current_frame = context.scene.frame_current
 
         # save config
         settings.save(context)

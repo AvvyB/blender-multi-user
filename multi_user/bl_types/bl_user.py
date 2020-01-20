@@ -18,7 +18,7 @@ class BlUser(BlDatablock):
 
     def construct(self, data):
         user = bpy.data.window_managers['WinMan'].online_users.add()
-        user.name = self.uuid
+        user.name = data['name']
         user.username = data['name']
         user.current_frame = data['current_frame']
 
@@ -55,7 +55,7 @@ class BlUser(BlDatablock):
         self.pointer.is_dirty = True
     
     def resolve(self):
-        self.pointer = bpy.data.window_managers['WinMan'].online_users.get(self.uuid)
+        self.pointer = bpy.data.window_managers['WinMan'].online_users.get(self.data['name'])
 
     def is_valid(self):
         return True

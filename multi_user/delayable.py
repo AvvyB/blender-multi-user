@@ -211,3 +211,21 @@ class ClientUpdate(Timer):
 
             if client:
                 client.pointer.update_location()
+            
+            # sync online users
+            session_users = operators.client.online_users
+            ui_users = bpy.context.window_manager.online_users
+
+            for index, user in enumerate(ui_users):
+                if user.username not in session_users.keys():
+                    ui_users.remove(index)
+                    bpy.context.window_manager.session.presence_show_user = False
+                    bpy.context.window_manager.session.presence_show_user = True
+                    presence.refresh_3d_view()
+                    break
+
+            for user in session_users:
+                if user not in ui_users:
+                    new_key = ui_users.add()
+                    new_key.name = user
+                    new_key.username = user
