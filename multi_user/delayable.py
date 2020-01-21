@@ -143,22 +143,23 @@ class DynamicRightSelectTimer(Timer):
                                     recursive=recursive)
                             else:
                                 return
-        
+
                         self._last_selection = current_selection
                         self._user.update_selected_objects(
                             bpy.context)
-                        repo.push(self._user_node.uuid)             
+                        repo.push(self._user_node.uuid)
 
                         # Fix deselection until right managment refactoring (with Roles concepts)
                         if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
-                            owned_keys = repo.list(filter_owner=settings.username)
+                            owned_keys = repo.list(
+                                filter_owner=settings.username)
                             for key in owned_keys:
-                                node  = repo.get(uuid=key)
+                                node = repo.get(uuid=key)
                                 if not isinstance(node, BlUser):
                                     repo.change_owner(
-                                            key,
-                                            RP_COMMON,
-                                            recursive=recursive)
+                                        key,
+                                        RP_COMMON,
+                                        recursive=recursive)
 
 
 class Draw(Delayable):
@@ -182,21 +183,20 @@ class Draw(Delayable):
 
 class DrawClient(Draw):
     def execute(self):
-        repo = operators.client
-        if repo and presence.renderer:
+        session = operators.client
+        if session and presence.renderer:
             settings = bpy.context.window_manager.session
-            client_list = [key for key in repo.list(filter=BlUser) if
-                           key != settings.user_uuid]
+            users = session.online_users
 
-            for cli in client_list:
-                cli_ref = repo.get(uuid=cli)
-                if cli_ref.data.get('name'):
-                    if settings.presence_show_selected:
-                        presence.renderer.draw_client_selection(
-                            cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
-                    if settings.presence_show_user:
-                        presence.renderer.draw_client_camera(
-                            cli_ref.data['name'], cli_ref.data['location'], cli_ref.data['color'])
+            for user in users.values():
+                metadata = user.get('metadata')
+
+                    # if settings.presence_show_selected:
+                    #     presence.renderer.draw_client_selection(
+                    #         cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
+                if settings.presence_show_user:
+                    presence.renderer.draw_client_camera(
+                        user['id'], metadata['view_corners'], metadata['color'])
 
 
 class ClientUpdate(Timer):
@@ -206,12 +206,29 @@ class ClientUpdate(Timer):
         super().__init__(timout)
 
     def execute(self):
+        settings = bpy.context.window_manager.session
+        session_info = bpy.context.window_manager.session
+        session = operators.client
         if self._client_uuid and operators.client:
             client = operators.client.get(uuid=self._client_uuid)
+            local_user = operators.client.online_users[session_info.username]
 
+            metadata = {
+                'view_corners': presence.get_view_corners(),
+                'view_matrix': presence.get_view_matrix(),
+                'color': (settings.client_color.r,
+                          settings.client_color.g,
+                          settings.client_color.b,
+                          1),
+                'selected_objects':utils.get_selected_objects(bpy.context.scene)
+            }
+
+            session.update_user_metadata(metadata)
+
+            logger.info("{}".format(local_user))
             if client:
                 client.pointer.update_location()
-            
+
             # sync online users
             session_users = operators.client.online_users
             ui_users = bpy.context.window_manager.online_users

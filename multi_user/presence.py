@@ -69,7 +69,7 @@ def get_default_bbox(obj, radius):
     return [(point.x, point.y, point.z)
                 for point in bbox_corners]
 
-def get_client_cam_points():
+def get_view_corners():
     area, region, rv3d = view3d_find()
 
     v1 = [0, 0, 0]
@@ -113,6 +113,15 @@ def get_bb_coords_from_obj(object, parent=None):
     return [(point.x, point.y, point.z)
                 for point in bbox_corners]
 
+
+def get_view_matrix():
+    area, region, rv3d = view3d_find()
+
+    if area and region and rv3d:
+        matrix_dumper = utils.dump_anything.Dumper()
+
+        return matrix_dumper.dump(rv3d.view_matrix)
+
 class User():
     def __init__(self, username=None, color=(0, 0, 0, 1)):
         self.is_dirty = False
@@ -124,11 +133,11 @@ class User():
         self.view_matrix = None
 
     def update_location(self):
-        current_coords = get_client_cam_points()
+        current_coords = get_view_corners()
         area, region, rv3d = view3d_find()
 
         if area and region and rv3d:
-            current_coords = list(get_client_cam_points())
+            current_coords = list(get_view_corners())
             if current_coords and self.location != current_coords:
                 self.location = current_coords
 
