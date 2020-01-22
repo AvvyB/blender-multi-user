@@ -36,7 +36,6 @@ modal_executor_queue = None
 
 # OPERATORS
 
-
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -54,14 +53,7 @@ class SessionStartOperator(bpy.types.Operator):
         users = bpy.data.window_managers['WinMan'].online_users
         
         # TODO: Sync server clients
-    
         users.clear()
-
-        # #load our infos into the local user list 
-        # local_user = users.add()
-        # local_user.name = 'localhost'
-        # local_user.username = settings.username
-        # local_user.current_frame = context.scene.frame_current
 
         # save config
         settings.save(context)
@@ -69,6 +61,7 @@ class SessionStartOperator(bpy.types.Operator):
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
         ui_context = context.copy()
+
         # init the factory with supported types
         for type in bl_types.types_to_register():
             type_module = getattr(bl_types, type)
@@ -92,6 +85,8 @@ class SessionStartOperator(bpy.types.Operator):
                     target_type=type_module_class))
 
         client = Session(factory=bpy_factory)
+        
+        
 
         if self.host:
             # Scene setup
@@ -123,26 +118,14 @@ class SessionStartOperator(bpy.types.Operator):
                 "A session is already hosted on this address")
             return {"CANCELLED"}
 
-        # Init user settings
-        usr = presence.User(
-            username=settings.username,
-            color=(settings.client_color.r,
-                   settings.client_color.g,
-                   settings.client_color.b,
-                   1),
-        )
-
-        settings.user_uuid = client.add(usr, owner=settings.username)
-        client.commit(settings.user_uuid)
-
         if self.host:
             for scene in bpy.data.scenes:
                 scene_uuid = client.add(scene)
 
                 # for node in client.list():
                 client.commit(scene_uuid)
-        delayables.append(delayable.ClientUpdate(
-            client_uuid=settings.user_uuid))
+        
+        delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
@@ -288,10 +271,12 @@ class SessionSnapUserOperator(bpy.types.Operator):
             area, region, rv3d = presence.view3d_find()
             global client
 
-            target_client = client.get(uuid=self.target_client)
-            if target_client:
-                rv3d.view_matrix = mathutils.Matrix(
-                    target_client.data['view_matrix'])
+            if client:
+                target_ref = client.online_users.get(self.target_client)
+
+                if target_ref:
+                    rv3d.view_matrix = mathutils.Matrix(
+                        target_ref['metadata']['view_matrix'])
             else:
                 return {"CANCELLED"}
 

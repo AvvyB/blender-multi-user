@@ -1,7 +1,6 @@
 import bpy
 
 from . import operators
-from .bl_types.bl_user import BlUser
 from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP)
 
@@ -188,7 +187,7 @@ class SESSION_PT_user(bpy.types.Panel):
         # Create a simple row.
         row = layout.row()
         box = row.box()
-        split = box.split(factor=0.3)
+        split = box.split(factor=0.5)
         split.label(text="user")
         split.label(text="frame")
         split.label(text="ping")
@@ -202,7 +201,7 @@ class SESSION_PT_user(bpy.types.Panel):
             user_operations.operator(
                 "session.snapview",
                 text="",
-                icon='VIEW_CAMERA').target_client = online_users[selected_user].name
+                icon='VIEW_CAMERA').target_client = active_user.username
 
 
 class SESSION_UL_users(bpy.types.UIList):
@@ -219,7 +218,7 @@ class SESSION_UL_users(bpy.types.UIList):
                     ping = str(user_stat['latency'])
                     break
         
-        split = layout.split(factor=0.3)
+        split = layout.split(factor=0.5)
         split.label(text=item.username)
         split.label(text=str(item.current_frame))
         split.label(text=ping)
@@ -256,7 +255,7 @@ def draw_property(context, parent, property_uuid, level=0):
     settings = context.window_manager.session
     item = operators.client.get(uuid=property_uuid)
 
-    if item.str_type == 'BlUser' or item.state == ERROR:
+    if item.state == ERROR:
         return
 
     area_msg = parent.row(align=True)
