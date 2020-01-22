@@ -271,10 +271,12 @@ class SessionSnapUserOperator(bpy.types.Operator):
             area, region, rv3d = presence.view3d_find()
             global client
 
-            target_client = client.get(uuid=self.target_client)
-            if target_client:
-                rv3d.view_matrix = mathutils.Matrix(
-                    target_client.data['view_matrix'])
+            if client:
+                target_ref = client.online_users.get(self.target_client)
+
+                if target_ref:
+                    rv3d.view_matrix = mathutils.Matrix(
+                        target_ref['metadata']['view_matrix'])
             else:
                 return {"CANCELLED"}
 

@@ -201,7 +201,7 @@ class SESSION_PT_user(bpy.types.Panel):
             user_operations.operator(
                 "session.snapview",
                 text="",
-                icon='VIEW_CAMERA').target_client = online_users[selected_user].name
+                icon='VIEW_CAMERA').target_client = active_user.username
 
 
 class SESSION_UL_users(bpy.types.UIList):

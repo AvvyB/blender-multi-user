@@ -192,8 +192,8 @@ class Draw(Delayable):
 
 class DrawClient(Draw):
     def execute(self):
-        session = getattr(operators, 'client')
-        renderer = getattr(presence, 'renderer')
+        session = getattr(operators, 'client', None)
+        renderer = getattr(presence, 'renderer', None)
         if session and renderer:
             settings = bpy.context.window_manager.session
             users = session.online_users
@@ -216,8 +216,10 @@ class ClientUpdate(Timer):
     def execute(self):
         settings = bpy.context.window_manager.session
         session_info = bpy.context.window_manager.session
-        session = getattr(operators, 'client')
-        if session:
+        session = getattr(operators, 'client', None)
+        renderer = getattr(presence, 'renderer', None)
+        
+        if session and renderer:
             local_user = operators.client.online_users.get(
                 session_info.username)
             if not local_user:
@@ -240,6 +242,7 @@ class ClientUpdate(Timer):
             elif current_view_corners != local_user_metadata['view_corners']:
                 logger.info('update user metadata')
                 local_user_metadata['view_corners'] = current_view_corners
+                local_user_metadata['view_matrix'] = presence.get_view_matrix()
                 session.update_user_metadata(local_user_metadata)
 
             # sync online users
@@ -249,9 +252,11 @@ class ClientUpdate(Timer):
             for index, user in enumerate(ui_users):
                 if user.username not in session_users.keys():
                     ui_users.remove(index)
-                    bpy.context.window_manager.session.presence_show_user = False
-                    bpy.context.window_manager.session.presence_show_user = True
-
+                    
+                    renderer.flush_selection()
+                    renderer.flush_users()
+                    
+                    
                     break
 
             for user in session_users:
