@@ -187,7 +187,7 @@ class Draw(Delayable):
             bpy.types.SpaceView3D.draw_handler_remove(
                 self._handler, "WINDOW")
         except:
-            logger.error("draw already unregistered")
+            pass
 
 
 class DrawClient(Draw):
