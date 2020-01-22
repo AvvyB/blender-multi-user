@@ -122,33 +122,6 @@ def get_view_matrix():
 
         return matrix_dumper.dump(rv3d.view_matrix)
 
-class User():
-    def __init__(self, username=None, color=(0, 0, 0, 1)):
-        self.is_dirty = False
-        self.name = username
-        self.color = color
-        self.location = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        self.selected_objects = []
-        self.last_select_objects = []
-        self.view_matrix = None
-
-    def update_location(self):
-        current_coords = get_view_corners()
-        area, region, rv3d = view3d_find()
-
-        if area and region and rv3d:
-            current_coords = list(get_view_corners())
-            if current_coords and self.location != current_coords:
-                self.location = current_coords
-
-            matrix_dumper = utils.dump_anything.Dumper()
-            current_vm = matrix_dumper.dump(rv3d.view_matrix)
-            if self.view_matrix != current_vm:
-                self.view_matrix = current_vm 
-
-    def update_selected_objects(self, context):
-        self.selected_objects = utils.get_selected_objects(context.scene)
-
 def update_presence(self, context):
     global renderer
 
@@ -226,14 +199,14 @@ class DrawFactory(object):
 
         self.d2d_items.clear()
 
-    def draw_client_selection(self, client_uuid, client_color, client_selection):
-        local_user = bpy.context.window_manager.session.user_uuid
+    def draw_client_selection(self, client_id, client_color, client_selection):
+        local_user = bpy.context.window_manager.session.username
 
-        if local_user != client_uuid:
-            self.flush_selection(client_uuid)
+        if local_user != client_id:
+            self.flush_selection(client_id)
 
             for select_ob in client_selection:
-                drawable_key = "{}_select_{}".format(client_uuid, select_ob)
+                drawable_key = "{}_select_{}".format(client_id, select_ob)
                
                 ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
                 if not ob:
@@ -282,11 +255,11 @@ class DrawFactory(object):
 
         self.d3d_items[key] = (shader, batch, color)
 
-    def draw_client_camera(self, client_uuid, client_location, client_color):
+    def draw_client_camera(self, client_id, client_location, client_color):
         if client_location:
-            local_user = bpy.context.window_manager.session.user_uuid
+            local_user = bpy.context.window_manager.session.username
 
-            if local_user != client_uuid:
+            if local_user != client_id:
                 try:
                     indices = (
                         (1, 3), (2, 1), (3, 0),
@@ -301,8 +274,8 @@ class DrawFactory(object):
                     batch = batch_for_shader(
                         shader, 'LINES', {"pos": position}, indices=indices)
 
-                    self.d3d_items[client_uuid] = (shader, batch, color)
-                    self.d2d_items[client_uuid] = (position[1], client_uuid, color)
+                    self.d3d_items[client_id] = (shader, batch, color)
+                    self.d2d_items[client_id] = (position[1], client_id, color)
 
                 except Exception as e:
                     logger.error("Draw client exception {}".format(e))

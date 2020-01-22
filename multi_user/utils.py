@@ -27,6 +27,7 @@ def has_driver(target):
             and target.animation_data
             and target.animation_data.drivers)
 
+
 def find_from_attr(attr_name, attr_value, list):
     for item in list:
         if getattr(item, attr_name, None) == attr_value:
@@ -56,7 +57,7 @@ def get_datablock_users(datablock):
 def random_string_digits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+    return ''.join(random.choices(lettersAndDigits, k=stringLength))
 
 
 def clean_scene():
@@ -150,6 +151,7 @@ def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None)
                 pass
 
         return data
+
 
 def resolve_from_id(id, optionnal_type=None):
     for category in dir(bpy.data):

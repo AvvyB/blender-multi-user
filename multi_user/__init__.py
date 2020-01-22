@@ -57,22 +57,19 @@ def generate_supported_types():
 
 def client_list_callback(scene, context):
     from . import operators
-    from .bl_types.bl_user import BlUser
     
     items = [(RP_COMMON, RP_COMMON, "")]
 
     username = bpy.context.window_manager.session.username
     cli = operators.client
     if cli:
-        client_keys = cli.list(filter=BlUser)
-        for k in client_keys:
-                name = cli.get(uuid=k).data["name"]
-
-                name_desc = name
-                if name == username:
+        client_ids = cli.online_users.keys()
+        for id in client_ids:
+                name_desc = id
+                if id == username:
                     name_desc += " (self)"
 
-                items.append((name, name_desc, ""))
+                items.append((id, name_desc, ""))
 
     return items
 

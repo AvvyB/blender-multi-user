@@ -36,7 +36,6 @@ modal_executor_queue = None
 
 # OPERATORS
 
-
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -54,9 +53,7 @@ class SessionStartOperator(bpy.types.Operator):
         users = bpy.data.window_managers['WinMan'].online_users
         
         # TODO: Sync server clients
-    
         users.clear()
-
 
         # save config
         settings.save(context)
@@ -64,6 +61,7 @@ class SessionStartOperator(bpy.types.Operator):
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
         ui_context = context.copy()
+
         # init the factory with supported types
         for type in bl_types.types_to_register():
             type_module = getattr(bl_types, type)
@@ -87,6 +85,8 @@ class SessionStartOperator(bpy.types.Operator):
                     target_type=type_module_class))
 
         client = Session(factory=bpy_factory)
+        
+        
 
         if self.host:
             # Scene setup
@@ -117,18 +117,6 @@ class SessionStartOperator(bpy.types.Operator):
                 {'ERROR'},
                 "A session is already hosted on this address")
             return {"CANCELLED"}
-
-        # Init user settings
-        usr = presence.User(
-            username=settings.username,
-            color=(settings.client_color.r,
-                   settings.client_color.g,
-                   settings.client_color.b,
-                   1),
-        )
-
-        settings.user_uuid = client.add(usr, owner=settings.username)
-        client.commit(settings.user_uuid)
 
         if self.host:
             for scene in bpy.data.scenes:

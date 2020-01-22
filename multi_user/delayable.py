@@ -3,10 +3,10 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .bl_types.bl_user import BlUser
 from .libs.replication.replication.constants import FETCHED, RP_COMMON
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Delayable():
@@ -83,7 +83,6 @@ class DynamicRightSelectTimer(Timer):
         super().__init__(timout)
         self._last_selection = []
         self._user = None
-        self._user_metadata = None
         self._right_strategy = RP_COMMON
 
     def execute(self):
@@ -94,7 +93,6 @@ class DynamicRightSelectTimer(Timer):
             # Find user
             if self._user is None:
                 self._user = session.online_users.get(settings.username)
-                self._user_metadata = self._user.get('metadata')
 
             if self._right_strategy is None:
                 self._right_strategy = session.get_config()[
@@ -140,21 +138,25 @@ class DynamicRightSelectTimer(Timer):
                                 return
 
                         self._last_selection = current_selection
-                        self._user_metadata['selected_objects'] = current_selection
 
-                        session.update_user_metadata(self._user_metadata)
+                        user_metadata = {
+                            'selected_objects': current_selection
+                        }
+
+                        session.update_user_metadata(user_metadata)
                         logger.info("Update selection")
+
                         # Fix deselection until right managment refactoring (with Roles concepts)
                         if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
                             owned_keys = session.list(
                                 filter_owner=settings.username)
                             for key in owned_keys:
                                 node = session.get(uuid=key)
-                                if not isinstance(node, BlUser):
-                                    session.change_owner(
-                                        key,
-                                        RP_COMMON,
-                                        recursive=recursive)
+
+                                session.change_owner(
+                                    key,
+                                    RP_COMMON,
+                                    recursive=recursive)
 
             for user, user_info in session.online_users.items():
                 if user != settings.username:
@@ -190,8 +192,9 @@ class Draw(Delayable):
 
 class DrawClient(Draw):
     def execute(self):
-        session = operators.client
-        if session and presence.renderer:
+        session = getattr(operators, 'client')
+        renderer = getattr(presence, 'renderer')
+        if session and renderer:
             settings = bpy.context.window_manager.session
             users = session.online_users
 
@@ -199,10 +202,10 @@ class DrawClient(Draw):
                 metadata = user.get('metadata')
 
                 if settings.presence_show_selected and 'selected_objects' in metadata.keys():
-                    presence.renderer.draw_client_selection(
+                    renderer.draw_client_selection(
                         user['id'], metadata['color'], metadata['selected_objects'])
                 if settings.presence_show_user and 'view_corners' in metadata:
-                    presence.renderer.draw_client_camera(
+                    renderer.draw_client_camera(
                         user['id'], metadata['view_corners'], metadata['color'])
 
 
@@ -213,23 +216,31 @@ class ClientUpdate(Timer):
     def execute(self):
         settings = bpy.context.window_manager.session
         session_info = bpy.context.window_manager.session
-        session = operators.client
+        session = getattr(operators, 'client')
         if session:
             local_user = operators.client.online_users.get(
                 session_info.username)
+            if not local_user:
+                return
 
-            metadata = {
-                'view_corners': presence.get_view_corners(),
-                'view_matrix': presence.get_view_matrix(),
-                'color': (settings.client_color.r,
-                          settings.client_color.g,
-                          settings.client_color.b,
-                          1),
-            }
+            local_user_metadata = local_user.get('metadata')
+            current_view_corners = presence.get_view_corners()
 
-            session.update_user_metadata(metadata)
-
-            logger.info("{}".format(local_user))
+            if not local_user_metadata:
+                logger.info("init user metadata")
+                metadata = {
+                    'view_corners': current_view_corners,
+                    'view_matrix': presence.get_view_matrix(),
+                    'color': (settings.client_color.r,
+                              settings.client_color.g,
+                              settings.client_color.b,
+                              1),
+                }
+                session.update_user_metadata(metadata)
+            elif current_view_corners != local_user_metadata['view_corners']:
+                logger.info('update user metadata')
+                local_user_metadata['view_corners'] = current_view_corners
+                session.update_user_metadata(local_user_metadata)
 
             # sync online users
             session_users = operators.client.online_users
@@ -240,7 +251,7 @@ class ClientUpdate(Timer):
                     ui_users.remove(index)
                     bpy.context.window_manager.session.presence_show_user = False
                     bpy.context.window_manager.session.presence_show_user = True
-                    presence.refresh_3d_view()
+
                     break
 
             for user in session_users:
@@ -248,3 +259,6 @@ class ClientUpdate(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
+
+            # TODO: event drivent 3d view refresh
+            presence.refresh_3d_view()
