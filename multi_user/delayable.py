@@ -194,6 +194,7 @@ class DrawClient(Draw):
     def execute(self):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
+        
         if session and renderer:
             settings = bpy.context.window_manager.session
             users = session.online_users
@@ -220,6 +221,10 @@ class ClientUpdate(Timer):
         renderer = getattr(presence, 'renderer', None)
         
         if session and renderer:
+            # Check if session has been closes prematurely
+            if session.state == 0:
+                bpy.ops.session.stop()
+
             local_user = operators.client.online_users.get(
                 session_info.username)
             if not local_user:

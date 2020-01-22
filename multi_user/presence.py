@@ -155,7 +155,11 @@ class DrawFactory(object):
         self.register_handlers()
 
     def stop(self):
+        self.flush_users()
+        self.flush_selection()
         self.unregister_handlers()
+
+        refresh_3d_view()
 
     def register_handlers(self):
         self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
