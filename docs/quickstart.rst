@@ -6,7 +6,7 @@ Quick start
 
 Session setup
 =============
-This section describe how to create or join a session.
+This section describe how to create or join a collaborative session.
 
 ---------------------
 1. User information's
@@ -62,6 +62,8 @@ On each strategy, when a user is the owner he can choose to pass his rights to s
 
 Session Management
 ==================
+
+This section describe tools available during a collaborative session.
 
 ---------------
 Connected users

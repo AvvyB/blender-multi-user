@@ -22,6 +22,9 @@ Main Features
 Status
 ======
 
+.. image:: img/homepage_roadmap.png
+
+
 Follow the `roadmap <https://gitlab.com/slumber/multi-user/-/boards/929107>`_ to be aware of last news.
 
 Documentation is organized into the following sections:
