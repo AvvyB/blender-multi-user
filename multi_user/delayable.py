@@ -83,26 +83,21 @@ class DynamicRightSelectTimer(Timer):
         super().__init__(timout)
         self._last_selection = []
         self._user = None
-        self._user_node = None
+        self._user_metadata = None
         self._right_strategy = RP_COMMON
 
     def execute(self):
-        repo = operators.client
-        if repo:
-            settings = bpy.context.window_manager.session
+        session = operators.client
+        settings = bpy.context.window_manager.session
 
+        if session:
             # Find user
             if self._user is None:
-                users = repo.list(filter=BlUser)
-
-                for user in users:
-                    user_node = repo.get(uuid=user)
-                    if user_node.pointer:
-                        self._user = user_node.pointer
-                        self._user_node = user_node
+                self._user = session.online_users.get(settings.username)
+                self._user_metadata = self._user.get('metadata')
 
             if self._right_strategy is None:
-                self._right_strategy = repo.get_config()[
+                self._right_strategy = session.get_config()[
                     'right_strategy']
 
             if self._user:
@@ -117,27 +112,27 @@ class DynamicRightSelectTimer(Timer):
 
                         # change old selection right to common
                         for obj in obj_common:
-                            node = repo.get(uuid=obj)
+                            node = session.get(uuid=obj)
 
                             if node and (node.owner == settings.username or node.owner == RP_COMMON):
                                 recursive = True
                                 if node.data and 'instance_type' in node.data.keys():
                                     recursive = node.data['instance_type'] != 'COLLECTION'
-                                repo.change_owner(
+                                session.change_owner(
                                     node.uuid,
                                     RP_COMMON,
                                     recursive=recursive)
 
                         # change new selection to our
                         for obj in obj_ours:
-                            node = repo.get(uuid=obj)
+                            node = session.get(uuid=obj)
 
                             if node and node.owner == RP_COMMON:
                                 recursive = True
                                 if node.data and 'instance_type' in node.data.keys():
                                     recursive = node.data['instance_type'] != 'COLLECTION'
 
-                                repo.change_owner(
+                                session.change_owner(
                                     node.uuid,
                                     settings.username,
                                     recursive=recursive)
@@ -145,21 +140,33 @@ class DynamicRightSelectTimer(Timer):
                                 return
 
                         self._last_selection = current_selection
-                        self._user.update_selected_objects(
-                            bpy.context)
-                        repo.push(self._user_node.uuid)
+                        self._user_metadata['selected_objects'] = current_selection
 
+                        session.update_user_metadata(self._user_metadata)
+                        logger.info("Update selection")
                         # Fix deselection until right managment refactoring (with Roles concepts)
                         if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
-                            owned_keys = repo.list(
+                            owned_keys = session.list(
                                 filter_owner=settings.username)
                             for key in owned_keys:
-                                node = repo.get(uuid=key)
+                                node = session.get(uuid=key)
                                 if not isinstance(node, BlUser):
-                                    repo.change_owner(
+                                    session.change_owner(
                                         key,
                                         RP_COMMON,
                                         recursive=recursive)
+
+            for user, user_info in session.online_users.items():
+                if user != settings.username:
+                    metadata = user_info.get('metadata')
+
+                    if 'selected_objects' in metadata:
+                        # Update selectionnable objects
+                        for obj in bpy.data.objects:
+                            if obj.hide_select and obj.uuid not in metadata['selected_objects']:
+                                obj.hide_select = False
+                            elif not obj.hide_select and obj.uuid in metadata['selected_objects']:
+                                obj.hide_select = True
 
 
 class Draw(Delayable):
@@ -191,27 +198,25 @@ class DrawClient(Draw):
             for user in users.values():
                 metadata = user.get('metadata')
 
-                    # if settings.presence_show_selected:
-                    #     presence.renderer.draw_client_selection(
-                    #         cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
-                if settings.presence_show_user:
+                if settings.presence_show_selected and 'selected_objects' in metadata.keys():
+                    presence.renderer.draw_client_selection(
+                        user['id'], metadata['color'], metadata['selected_objects'])
+                if settings.presence_show_user and 'view_corners' in metadata:
                     presence.renderer.draw_client_camera(
                         user['id'], metadata['view_corners'], metadata['color'])
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=1, client_uuid=None):
-        assert(client_uuid)
-        self._client_uuid = client_uuid
+    def __init__(self, timout=1):
         super().__init__(timout)
 
     def execute(self):
         settings = bpy.context.window_manager.session
         session_info = bpy.context.window_manager.session
         session = operators.client
-        if self._client_uuid and operators.client:
-            client = operators.client.get(uuid=self._client_uuid)
-            local_user = operators.client.online_users[session_info.username]
+        if session:
+            local_user = operators.client.online_users.get(
+                session_info.username)
 
             metadata = {
                 'view_corners': presence.get_view_corners(),
@@ -220,14 +225,11 @@ class ClientUpdate(Timer):
                           settings.client_color.g,
                           settings.client_color.b,
                           1),
-                'selected_objects':utils.get_selected_objects(bpy.context.scene)
             }
 
             session.update_user_metadata(metadata)
 
             logger.info("{}".format(local_user))
-            if client:
-                client.pointer.update_location()
 
             # sync online users
             session_users = operators.client.online_users

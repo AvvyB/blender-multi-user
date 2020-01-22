@@ -57,11 +57,6 @@ class SessionStartOperator(bpy.types.Operator):
     
         users.clear()
 
-        # #load our infos into the local user list 
-        # local_user = users.add()
-        # local_user.name = 'localhost'
-        # local_user.username = settings.username
-        # local_user.current_frame = context.scene.frame_current
 
         # save config
         settings.save(context)
@@ -141,8 +136,8 @@ class SessionStartOperator(bpy.types.Operator):
 
                 # for node in client.list():
                 client.commit(scene_uuid)
-        delayables.append(delayable.ClientUpdate(
-            client_uuid=settings.user_uuid))
+        
+        delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
