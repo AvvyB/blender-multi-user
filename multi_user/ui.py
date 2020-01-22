@@ -198,10 +198,17 @@ class SESSION_PT_user(bpy.types.Panel):
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
+            user_operations.alert = context.window_manager.session.time_snap_running
             user_operations.operator(
                 "session.snapview",
                 text="",
                 icon='VIEW_CAMERA').target_client = active_user.username
+            
+            user_operations.alert = context.window_manager.session.user_snap_running
+            user_operations.operator(
+                "session.snaptime",
+                text="",
+                icon='TIME').target_client = active_user.username
 
 
 class SESSION_UL_users(bpy.types.UIList):
@@ -210,17 +217,18 @@ class SESSION_UL_users(bpy.types.UIList):
         settings = context.window_manager.session
         is_local_user = item.username == settings.username
         ping = '-'
-
+        frame_current = '-'
         if session:
-            users = session.online_users
-            for user, user_stat in users.items():    
-                if item.username in user:
-                    ping = str(user_stat['latency'])
-                    break
+            user = session.online_users.get(item.username)
+            if user:
+                ping = str(user['latency'])
+                metadata = user.get('metadata')
+                if metadata:
+                    frame_current = str(metadata['frame_current'])
         
         split = layout.split(factor=0.5)
         split.label(text=item.username)
-        split.label(text=str(item.current_frame))
+        split.label(text=frame_current)
         split.label(text=ping)
     
 

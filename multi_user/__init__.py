@@ -177,6 +177,12 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Show only owned datablocks',
         default=True
     )
+    user_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
+    time_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
 
     def load(self):
         config = environment.load_config()

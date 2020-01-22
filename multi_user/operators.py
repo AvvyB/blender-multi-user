@@ -36,6 +36,7 @@ modal_executor_queue = None
 
 # OPERATORS
 
+
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -51,7 +52,7 @@ class SessionStartOperator(bpy.types.Operator):
         global client, delayables, ui_context
         settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
-        
+
         # TODO: Sync server clients
         users.clear()
 
@@ -67,7 +68,7 @@ class SessionStartOperator(bpy.types.Operator):
             type_module = getattr(bl_types, type)
             type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
             type_module_class = getattr(type_module, type_impl_name)
-            
+
             supported_bl_types.append(type_module_class.bl_id)
 
             # Retreive local replicated types settings
@@ -85,8 +86,6 @@ class SessionStartOperator(bpy.types.Operator):
                     target_type=type_module_class))
 
         client = Session(factory=bpy_factory)
-        
-        
 
         if self.host:
             # Scene setup
@@ -124,7 +123,7 @@ class SessionStartOperator(bpy.types.Operator):
 
                 # for node in client.list():
                 client.commit(scene_uuid)
-        
+
         delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
@@ -254,6 +253,14 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
+        settings = context.window_manager.session
+
+        if settings.time_snap_running:
+            settings.time_snap_running = False
+            return {'CANCELLED'}
+        else:
+            settings.time_snap_running = True
+
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -263,7 +270,9 @@ class SessionSnapUserOperator(bpy.types.Operator):
         wm.event_timer_remove(self._timer)
 
     def modal(self, context, event):
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
+        is_running = context.window_manager.session.time_snap_running
+
+        if event.type in {'RIGHTMOUSE', 'ESC'} or not is_running:
             self.cancel(context)
             return {'CANCELLED'}
 
@@ -277,6 +286,58 @@ class SessionSnapUserOperator(bpy.types.Operator):
                 if target_ref:
                     rv3d.view_matrix = mathutils.Matrix(
                         target_ref['metadata']['view_matrix'])
+            else:
+                return {"CANCELLED"}
+
+        return {'PASS_THROUGH'}
+
+
+class SessionSnapTimeOperator(bpy.types.Operator):
+    bl_idname = "session.snaptime"
+    bl_label = "snap to user time"
+    bl_description = "Snap time to selected user time's"
+    bl_options = {"REGISTER"}
+
+    _timer = None
+
+    target_client: bpy.props.StringProperty(default="None")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        settings = context.window_manager.session
+
+        if settings.user_snap_running:
+            settings.user_snap_running = False
+            return {'CANCELLED'}
+        else:
+            settings.user_snap_running = True
+
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        wm = context.window_manager
+        wm.event_timer_remove(self._timer)
+
+    def modal(self, context, event):
+        is_running = context.window_manager.session.user_snap_running
+        if event.type in {'RIGHTMOUSE', 'ESC'} or not is_running:
+            self.cancel(context)
+            return {'CANCELLED'}
+
+        if event.type == 'TIMER':
+            global client
+
+            if client:
+                target_ref = client.online_users.get(self.target_client)
+
+                if target_ref:
+                    context.scene.frame_current = target_ref['metadata']['frame_current']
             else:
                 return {"CANCELLED"}
 
@@ -372,11 +433,15 @@ classes = (
     SessionStopOperator,
     SessionPropertyRemoveOperator,
     SessionSnapUserOperator,
+    SessionSnapTimeOperator,
     SessionPropertyRightOperator,
     SessionApply,
     SessionCommit,
     ApplyArmatureOperator,
+
+
 )
+
 
 @persistent
 def load_pre_handler(dummy):
@@ -384,13 +449,14 @@ def load_pre_handler(dummy):
 
     if client and client.state in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
-    
+
+
 @persistent
 def sanitize_deps_graph(dummy):
     """sanitize deps graph
 
     Temporary solution to resolve each node pointers after a Undo.
-    A future solution should be to avoid storing dataclock reference...  
+    A future solution should be to avoid storing dataclock reference...
 
     """
     global client
@@ -398,6 +464,15 @@ def sanitize_deps_graph(dummy):
     if client and client.state in [STATE_ACTIVE]:
         for node_key in client.list():
             client.get(node_key).resolve()
+
+
+@persistent
+def update_client_frame(scene):
+    if client and client.state == STATE_ACTIVE:
+        client.update_user_metadata({
+            'frame_current': scene.frame_current
+        })
+
 
 def register():
     from bpy.utils import register_class
@@ -409,6 +484,9 @@ def register():
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
+    bpy.app.handlers.frame_change_pre.append(update_client_frame)
+
+
 def unregister():
     global client
 
@@ -419,11 +497,14 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-    
-    bpy.app.handlers.load_pre.remove(load_pre_handler) 
+
+    bpy.app.handlers.load_pre.remove(load_pre_handler)
 
     bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
+
+    bpy.app.handlers.frame_change_pre.remove(update_client_frame)
+
 
 if __name__ == "__main__":
     register()

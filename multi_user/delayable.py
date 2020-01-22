@@ -237,6 +237,7 @@ class ClientUpdate(Timer):
                               settings.client_color.g,
                               settings.client_color.b,
                               1),
+                    'frame_current':bpy.context.scene.frame_current
                 }
                 session.update_user_metadata(metadata)
             elif current_view_corners != local_user_metadata['view_corners']:
