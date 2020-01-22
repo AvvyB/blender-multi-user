@@ -44,3 +44,9 @@ Documentation is organized into the following sections:
     install
     quickstart
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Community
+    :name: sec-community
+    
+    ways_to_contribute
