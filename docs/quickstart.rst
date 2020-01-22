@@ -51,13 +51,14 @@ If 5555 is given in host settings, it will use 5555, 5556 (5555+1), 5557 (5555+2
 - **Strict**: Host is the king, by default the host own each properties, only him can grant modification rights.
 - **Common**: Each properties are under common rights by default, on selection, a property is only modifiable by the owner.
   
-_On each strategy, when a user is the owner he can choose to pass his rights to someone else._
+On each strategy, when a user is the owner he can choose to pass his rights to someone else.
 
 **Properties frequency gird** allow to set a custom replication frequency for each type of data-block:
-- **Refresh**: pushed data update rate
-- **Apply**: pulled data update rate
 
-*Note: Per-data type settings will soon be revamped for simplification purposes*
+- **Refresh**: pushed data update rate (in second)
+- **Apply**: pulled data update rate (in second)
+
+.. note:: Per-data type settings will soon be revamped for simplification purposes
 
 Session Management
 ==================
@@ -68,8 +69,11 @@ Connected users
 
 .. image:: img/quickstart_users.png
 
-This panel displays all connected users, including you. 
-The **camera button** allow you to focus on a user (Press `ESC` to stop focus).
+This panel displays all connected users information's, including yours. 
+By selecting a user in the list you'll have access to different **actions**:
+
+- The **camera button** allow you to snap on the user viewpoint.
+- The **time button** allow you to snap on the user time.
 
 ---------------------
 Replicated properties
