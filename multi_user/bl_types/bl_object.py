@@ -1,9 +1,11 @@
 import bpy
 import mathutils
+import logging
 
 from .. import utils
 from .bl_datablock import BlDatablock
 
+logger = logging.getLogger(__name__)
 
 def load_constraints(target, data):
     for local_constraint in target.constraints:
@@ -69,10 +71,11 @@ class BlObject(BlDatablock):
         elif data["data"] in bpy.data.speakers.keys():
             pointer = bpy.data.speakers[data["data"]]
         elif data["data"] in bpy.data.lightprobes.keys():
-            pass
-            # bpy need to support correct lightprobe creation from python
-            # pointer = bpy.data.lightprobes[data["data"]]
-
+            # Only supported since 2.83
+            if bpy.app.version[1] >= 83:
+                pointer = bpy.data.lightprobes[data["data"]]
+            else:
+                logger.error("Lightprobe replication only supported since 2.83")
         instance = bpy.data.objects.new(data["name"], pointer)
         instance.uuid = self.uuid
 
