@@ -20,7 +20,7 @@ class BlArmature(BlDatablock):
     def construct(self, data):
         return bpy.data.armatures.new(data["name"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         # Load parent object
         parent_object = utils.find_from_attr(
             'uuid',
