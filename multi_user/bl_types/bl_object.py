@@ -203,11 +203,9 @@ class BlObject(BlDatablock):
 
         # POSE BONES
         if hasattr(pointer, 'pose') and pointer.pose:
-            dumper.depth = 3
             bones = {}
             for bone in pointer.pose.bones:
                 bones[bone.name] = {}
-                bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
                 dumper.depth = 1
                 rotation = 'rotation_quaternion' if bone.rotation_mode == 'QUATERNION' else 'rotation_euler'
                 dumper.include_filter = [
@@ -216,8 +214,11 @@ class BlObject(BlDatablock):
                     'scale',
                     rotation
                 ]
-                bones[bone.name].update(dumper.dump(bone))
-                print(dumper.include_filter)
+                bones[bone.name] = dumper.dump(bone)
+                
+                dumper.include_filter = []
+                dumper.depth = 3
+                bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
 
             data['pose'] = {'bones': bones}
 
@@ -233,10 +234,23 @@ class BlObject(BlDatablock):
         if len(pointer.vertex_groups) > 0:
             vg_data = []
             for vg in pointer.vertex_groups:
+                vg_idx = vg.index
                 dumped_vg = {}
                 dumped_vg['name'] = vg.name
-                dumped_vg['vertices'] = [{'index': v.index, 'weight': v.groups[vg.index].weight}
-                                         for v in pointer.data.vertices if vg.index in [vg.group for vg in v.groups]]
+
+                vertices = []
+                
+                for v in pointer.data.vertices:
+                    for vg in v.groups:
+                        if vg.group == vg_idx:
+                            # logger.error("VG {} : Adding vertex {} to group {}".format(vg_idx, v.index, vg_idx))
+                            
+                            vertices.append({
+                                'index': v.index,
+                                'weight': vg.weight
+                            })
+                       
+                dumped_vg['vertices'] = vertices
 
                 vg_data.append(dumped_vg)
 
