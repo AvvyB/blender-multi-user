@@ -106,17 +106,35 @@ class BlObject(BlDatablock):
         if hasattr(target, 'constraints') and 'constraints' in data:
             load_constraints(target, data['constraints'])
 
-        # Pose bone
+
+        # Pose 
         if 'pose' in data:
             if not target.pose:
                 raise Exception('No pose...')
+            # Bone groups
+            for bg_name in data['pose']['bone_groups']:
+                bg_data = data['pose']['bone_groups'].get(bg_name)
+                bg_target = target.pose.bone_groups.get(bg_name)
+
+                if not bg_target:
+                    bg_target = target.pose.bone_groups.new(name=bg_name)
+                
+                utils.dump_anything.load(bg_target, bg_data)
+                # target.pose.bone_groups.get
+
+            # Bones
             for bone in data['pose']['bones']:
                 target_bone = target.pose.bones.get(bone)
+                bone_data = data['pose']['bones'].get(bone)
+
                 load_constraints(
-                    target_bone, data['pose']['bones'][bone]['constraints'])
+                    target_bone, bone_data['constraints'])
                 
-                load_pose(target_bone,data['pose']['bones'][bone])
-                
+                load_pose(target_bone,bone_data)
+
+                if 'bone_index' in bone_data:
+                    target_bone.bone_group = target.pose.bone_group[bone_data[bone_group_index]]
+            
 
         # Load relations
         if 'children' in data.keys():
@@ -200,18 +218,23 @@ class BlObject(BlDatablock):
         if hasattr(pointer, 'constraints'):
             dumper.depth = 3
             data["constraints"] = dumper.dump(pointer.constraints)
+        
+        
 
-        # POSE BONES
+        # POSE
         if hasattr(pointer, 'pose') and pointer.pose:
+            # BONES
             bones = {}
             for bone in pointer.pose.bones:
                 bones[bone.name] = {}
                 dumper.depth = 1
                 rotation = 'rotation_quaternion' if bone.rotation_mode == 'QUATERNION' else 'rotation_euler'
+                group_index = 'bone_group_index' if bone.bone_group else None
                 dumper.include_filter = [
                     'rotation_mode',
                     'location',
                     'scale',
+                    group_index,
                     rotation
                 ]
                 bones[bone.name] = dumper.dump(bone)
@@ -221,6 +244,18 @@ class BlObject(BlDatablock):
                 bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
 
             data['pose'] = {'bones': bones}
+
+            # GROUPS
+            bone_groups = {}
+            for group in pointer.pose.bone_groups:
+                dumper.depth = 3
+                dumper.include_filter = [
+                    'name',
+                    'color_set'
+                ]
+                bone_groups[group.name] = dumper.dump(group)
+            data['pose']['bone_groups'] = bone_groups
+
 
         # CHILDS
         if len(pointer.children) > 0:
