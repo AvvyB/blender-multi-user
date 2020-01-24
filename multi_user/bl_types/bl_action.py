@@ -7,22 +7,77 @@ from .bl_datablock import BlDatablock
 # WIP
 
 class BlAction(BlDatablock):
-    def load(self, data, target):
-        utils.dump_anything.load(target, data)
-
+    bl_id = "actions"
+    bl_class = bpy.types.Action
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'ACTION_TWEAK'
+    
     def construct(self, data):
         return bpy.data.actions.new(data["name"])
 
     def load(self, data, target):
-        pass
-        # # find target object
-        # object_ = bpy.context.scene.objects.active
-        # if object_ is None:
-        #     raise RuntimeError("Nothing is selected.")
-        # if object_.mode != 'POSE':  # object must be in pose mode
-        #     raise RuntimeError("Object must be in pose mode.")
-        # if object_.animation_data.action is None:
-        #     raise RuntimeError("Object needs an active action.")
+        begin_frame = 100000
+        end_frame = -100000
+
+        for dumped_fcurve in data["fcurves"]:
+            begin_frame = min(
+                begin_frame,
+                min(
+                    [begin_frame] + [dkp["co"][0] for dkp in dumped_fcurve["keyframe_points"]]
+                )
+            )
+            end_frame = max(
+                end_frame,
+                max(
+                    [end_frame] + [dkp["co"][0] for dkp in dumped_fcurve["keyframe_points"]]
+                )
+            )
+        begin_frame = 0
+
+        loader = utils.dump_anything.Loader()
+        for dumped_fcurve in data["fcurves"]:
+            dumped_data_path = dumped_fcurve["data_path"]
+            dumped_array_index = dumped_fcurve["dumped_array_index"]
+
+            # create fcurve if needed
+            fcurve = target.fcurves.find(dumped_data_path, index=dumped_array_index)
+            if fcurve is None:
+                fcurve = target.fcurves.new(dumped_data_path, index=dumped_array_index)
+
+
+            # remove keyframes within dumped_action range
+            for keyframe in reversed(fcurve.keyframe_points):
+                if end_frame >= (keyframe.co[0] + begin_frame ) >= begin_frame:
+                    fcurve.keyframe_points.remove(keyframe, fast=True)
+
+            # paste dumped keyframes
+            for dumped_keyframe_point in dumped_fcurve["keyframe_points"]:
+                new_kf = fcurve.keyframe_points.insert(
+                    dumped_keyframe_point["co"][0] - begin_frame,
+                    dumped_keyframe_point["co"][1],
+                    options={'FAST', 'REPLACE'}
+                )
+                loader.load(
+                    new_kf,
+                    utils.dump_anything.remove_items_from_dict(
+                        dumped_keyframe_point,
+                        ["co", "handle_left", "handle_right"]
+                    )
+                )
+                new_kf.handle_left = [
+                    dumped_keyframe_point["handle_left"][0] - begin_frame,
+                    dumped_keyframe_point["handle_left"][1]
+                ]
+                new_kf.handle_right = [
+                    dumped_keyframe_point["handle_right"][0] - begin_frame,
+                    dumped_keyframe_point["handle_right"][1]
+                ]
+
+            # clearing (needed for blender to update well)
+            if len(fcurve.keyframe_points) == 0:
+                target.fcurves.remove(fcurve)
 
     def dump(self, pointer=None):
         assert(pointer)
@@ -30,7 +85,18 @@ class BlAction(BlDatablock):
 
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 2
-
+        dumper.exclude_filter =[
+            'name_full',
+            'original',
+            'use_fake_user',
+            'user',
+            'is_library_indirect',
+            'id_root',
+            'select_control_point',
+            'select_right_handle',
+            'select_left_handle',
+            'uuid'
+        ]
 
         data["fcurves"] = []
         for fcurve in self.pointer.fcurves:
@@ -48,21 +114,8 @@ class BlAction(BlDatablock):
             data["fcurves"].append(fc)
 
         return data
-    
-    def resolve(self):
-        assert(self.data)      
-        self.pointer = bpy.data.actions.get(self.data['name'])
-    
-    def diff(self):
-        return False
 
     def is_valid(self):
         return bpy.data.actions.get(self.data['name'])
 
-bl_id = "actions"
-bl_class = bpy.types.Action
-bl_rep_class = BlAction
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'ACTION_TWEAK'
+

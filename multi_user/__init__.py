@@ -31,45 +31,45 @@ DEPENDENCIES = {
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 #TODO: refactor config 
 # UTILITY FUNCTIONS
 def generate_supported_types():
     stype_dict = {'supported_types':{}}
     for type in bl_types.types_to_register():
-        _type = getattr(bl_types, type)
-        props = {}
-        props['bl_delay_refresh']=_type.bl_delay_refresh
-        props['bl_delay_apply']=_type.bl_delay_apply
-        props['use_as_filter'] = False
-        props['icon'] = _type.bl_icon
-        props['auto_push']=_type.bl_automatic_push
-        props['bl_name']=_type.bl_id
+        type_module = getattr(bl_types, type)
+        type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
+        type_module_class = getattr(type_module, type_impl_name)
 
-        stype_dict['supported_types'][_type.bl_rep_class.__name__] = props
+        props = {}
+        props['bl_delay_refresh']=type_module_class.bl_delay_refresh
+        props['bl_delay_apply']=type_module_class.bl_delay_apply
+        props['use_as_filter'] = False
+        props['icon'] = type_module_class.bl_icon
+        props['auto_push']=type_module_class.bl_automatic_push
+        props['bl_name']=type_module_class.bl_id
+
+        stype_dict['supported_types'][type_impl_name] = props
 
     return stype_dict
 
 
 def client_list_callback(scene, context):
     from . import operators
-    from .bl_types.bl_user import BlUser
     
     items = [(RP_COMMON, RP_COMMON, "")]
 
     username = bpy.context.window_manager.session.username
     cli = operators.client
     if cli:
-        client_keys = cli.list(filter=BlUser)
-        for k in client_keys:
-                name = cli.get(uuid=k).data["name"]
-
-                name_desc = name
-                if name == username:
+        client_ids = cli.online_users.keys()
+        for id in client_ids:
+                name_desc = id
+                if id == username:
                     name_desc += " (self)"
 
-                items.append((name, name_desc, ""))
+                items.append((id, name_desc, ""))
 
     return items
 
@@ -90,6 +90,15 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
+class SessionUser(bpy.types.PropertyGroup):
+    """Session User
+
+    Blender user information property 
+    """
+    username: bpy.props.StringProperty(name="username")
+    current_frame: bpy.props.IntProperty(name="current_frame")
+
+
 class SessionProps(bpy.types.PropertyGroup):
     username: bpy.props.StringProperty(
         name="Username",
@@ -109,25 +118,14 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Distant host port',
         default=5555
         )
-    add_property_depth: bpy.props.IntProperty(
-        name="add_property_depth",
-        default=1
-        )
-    outliner_filter: bpy.props.StringProperty(name="None")
     is_admin: bpy.props.BoolProperty(
         name="is_admin",
         default=False
-        )
-    init_scene: bpy.props.BoolProperty(
-        name="init_scene",
-        default=True
         )
     start_empty: bpy.props.BoolProperty(
         name="start_empty",
         default=True
         )
-    active_object: bpy.props.PointerProperty(
-        name="active_object", type=bpy.types.Object)
     session_mode: bpy.props.EnumProperty(
         name='session_mode',
         description='session mode',
@@ -179,10 +177,11 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Show only owned datablocks',
         default=True
     )
-    use_select_right: bpy.props.BoolProperty(
-        name="Selection right",
-        description='Change right on selection',
-        default=True
+    user_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
+    time_snap_running: bpy.props.BoolProperty(
+        default=False
     )
 
     def load(self):
@@ -239,6 +238,7 @@ class SessionProps(bpy.types.PropertyGroup):
 
 
 classes = (
+    SessionUser,
     ReplicatedDatablock,
     SessionProps,
 
@@ -267,7 +267,10 @@ def register():
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=SessionProps)
     bpy.types.ID.uuid = bpy.props.StringProperty(default="")
-    
+    bpy.types.WindowManager.online_users = bpy.props.CollectionProperty(
+        type=SessionUser
+    )
+    bpy.types.WindowManager.user_index = bpy.props.IntProperty()
     bpy.context.window_manager.session.load()
 
     presence.register()

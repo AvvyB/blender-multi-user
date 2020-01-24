@@ -5,6 +5,13 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 class BlCurve(BlDatablock):
+    bl_id = "curves"
+    bl_class = bpy.types.Curve
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'CURVE_DATA'
+
     def construct(self, data):
         return bpy.data.curves.new(data["name"], 'CURVE')
 
@@ -29,7 +36,7 @@ class BlCurve(BlDatablock):
                 utils.dump_anything.load(
                     new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = utils.dump_datablock(pointer, 1)
         data['splines'] = {}
@@ -52,15 +59,5 @@ class BlCurve(BlDatablock):
             data['type'] = 'CURVE'
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.curves)
-
     def is_valid(self):
         return bpy.data.curves.get(self.data['name'])
-bl_id = "curves"
-bl_class = bpy.types.Curve
-bl_rep_class = BlCurve
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'CURVE_DATA'

@@ -1,7 +1,6 @@
 import bpy
 
 from . import operators
-from .bl_types.bl_user import BlUser
 from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP)
 
@@ -167,7 +166,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
-    bl_label = "Users"
+    bl_label = "Online users"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
@@ -179,45 +178,59 @@ class SESSION_PT_user(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
+        online_users = context.window_manager.online_users
+        selected_user = context.window_manager.user_index
         settings = context.window_manager.session
+        active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
+        
 
         # Create a simple row.
-        col = layout.column(align=True)
-
-        client_keys = operators.client.list(filter=BlUser)
-        if client_keys and len(client_keys) > 0:
-            for key in client_keys:
-                area_msg = col.row(align=True)
-                item_box = area_msg.box()
-                client = operators.client.get(uuid=key).data
-
-                info = ""
-
-                detail_item_row = item_box.row(align=True)
-
-                if client.get('name'):
-                    username = client['name']
-
-                    is_local_user = username == settings.username
-
-                    if is_local_user:
-                        info = "(self)"
-
-                    detail_item_row.label(
-                        text="{} {}".format(username, info))
-
-                    if not is_local_user:
-                        detail_item_row.operator(
-                            "session.snapview",
-                            text="",
-                            icon='VIEW_CAMERA').target_client = key
-                    row = layout.row()
-        else:
-            row.label(text="Empty")
+        row = layout.row()
+        box = row.box()
+        split = box.split(factor=0.5)
+        split.label(text="user")
+        split.label(text="frame")
+        split.label(text="ping")
 
         row = layout.row()
+        layout.template_list("SESSION_UL_users", "",  context.window_manager, "online_users", context.window_manager,  "user_index")
 
+        if active_user != 0 and active_user.username != settings.username:
+            row = layout.row()
+            user_operations = row.split()
+            user_operations.alert = context.window_manager.session.time_snap_running
+            user_operations.operator(
+                "session.snapview",
+                text="",
+                icon='VIEW_CAMERA').target_client = active_user.username
+            
+            user_operations.alert = context.window_manager.session.user_snap_running
+            user_operations.operator(
+                "session.snaptime",
+                text="",
+                icon='TIME').target_client = active_user.username
+
+
+class SESSION_UL_users(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        session = operators.client
+        settings = context.window_manager.session
+        is_local_user = item.username == settings.username
+        ping = '-'
+        frame_current = '-'
+        if session:
+            user = session.online_users.get(item.username)
+            if user:
+                ping = str(user['latency'])
+                metadata = user.get('metadata')
+                if metadata:
+                    frame_current = str(metadata['frame_current'])
+        
+        split = layout.split(factor=0.5)
+        split.label(text=item.username)
+        split.label(text=frame_current)
+        split.label(text=ping)
+    
 
 class SESSION_PT_presence(bpy.types.Panel):
     bl_idname = "MULTIUSER_MODULE_PT_panel"
@@ -250,7 +263,7 @@ def draw_property(context, parent, property_uuid, level=0):
     settings = context.window_manager.session
     item = operators.client.get(uuid=property_uuid)
 
-    if item.str_type == 'BlUser' or item.state == ERROR:
+    if item.state == ERROR:
         return
 
     area_msg = parent.row(align=True)
@@ -365,6 +378,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
 
 classes = (
+    SESSION_UL_users,
     SESSION_PT_settings,
     SESSION_PT_settings_user,
     SESSION_PT_settings_network,

@@ -92,11 +92,13 @@ class Dumper:
 
     def _build_inline_dump_functions(self):
         self._dump_identity = (lambda x, depth: x, lambda x, depth: x)
+        self._dump_ref = (lambda x, depth: x.name, self._dump_object_as_branch)
         self._dump_ID = (lambda x, depth: x.name, self._dump_default_as_branch)
         self._dump_collection = (self._dump_default_as_leaf, self._dump_collection_as_branch)
         self._dump_array = (self._dump_default_as_leaf, self._dump_array_as_branch)
         self._dump_matrix = (self._dump_matrix_as_leaf, self._dump_matrix_as_leaf)
         self._dump_vector = (self._dump_vector_as_leaf, self._dump_vector_as_leaf)
+        self._dump_quaternion = (self._dump_quaternion_as_leaf, self._dump_quaternion_as_leaf)
         self._dump_default = (self._dump_default_as_leaf, self._dump_default_as_branch)
         self._dump_color = (self._dump_color_as_leaf, self._dump_color_as_leaf)
 
@@ -105,11 +107,13 @@ class Dumper:
         self._match_type_int = (_dump_filter_type(int), self._dump_identity)
         self._match_type_float = (_dump_filter_type(float), self._dump_identity)
         self._match_type_string = (_dump_filter_type(str), self._dump_identity)
+        self._match_type_ref = (_dump_filter_type(T.Object), self._dump_ref)
         self._match_type_ID = (_dump_filter_type(T.ID), self._dump_ID)
         self._match_type_bpy_prop_collection = (_dump_filter_type(T.bpy_prop_collection), self._dump_collection)
         self._match_type_array = (_dump_filter_array, self._dump_array)
         self._match_type_matrix = (_dump_filter_type(mathutils.Matrix), self._dump_matrix)
         self._match_type_vector = (_dump_filter_type(mathutils.Vector), self._dump_vector)
+        self._match_type_quaternion = (_dump_filter_type(mathutils.Quaternion), self._dump_quaternion)
         self._match_type_color = (_dump_filter_type_by_name("Color"), self._dump_color)
         self._match_default = (_dump_filter_default, self._dump_default)
 
@@ -135,9 +139,18 @@ class Dumper:
 
     def _dump_vector_as_leaf(self, vector, depth):
         return list(vector)
+    
+    def _dump_quaternion_as_leaf(self, quaternion, depth):
+        return list(quaternion)
 
     def _dump_color_as_leaf(self, color, depth):
         return list(color)
+
+    def _dump_object_as_branch(self, default, depth):
+        if depth == 1:
+            return self._dump_default_as_branch(default, depth)
+        else:
+            return default.name
 
     def _dump_default_as_branch(self, default, depth):
         def is_valid_property(p):
@@ -173,12 +186,13 @@ class Dumper:
             self._match_type_int,
             self._match_type_float,
             self._match_type_string,
+            self._match_type_ref,
             self._match_type_ID,
             self._match_type_bpy_prop_collection,
             self._match_type_array,
             self._match_type_matrix,
             self._match_type_vector,
-            self._match_type_color,
+            self._match_type_quaternion,
             self._match_type_color,
             self._match_default
         ]
@@ -306,6 +320,9 @@ class Loader:
 
     def _load_vector(self, vector, dump):
         vector.write(mathutils.Vector(dump))
+    
+    def _load_quaternion(self, quaternion, dump):
+        quaternion.write(mathutils.Quaternion(dump))
 
     def _ordered_keys(self, keys):
         ordered_keys = []
@@ -336,6 +353,7 @@ class Loader:
             (_load_filter_type(T.IntProperty), self._load_identity),
             (_load_filter_type(mathutils.Matrix, use_bl_rna=False), self._load_matrix), # before float because bl_rna type of matrix if FloatProperty
             (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector), # before float because bl_rna type of vector if FloatProperty
+            (_load_filter_type(mathutils.Quaternion, use_bl_rna=False), self._load_quaternion),
             (_load_filter_type(T.FloatProperty), self._load_identity),
             (_load_filter_type(T.StringProperty), self._load_identity),
             (_load_filter_type(T.EnumProperty), self._load_identity),

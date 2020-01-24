@@ -6,6 +6,13 @@ from .bl_datablock import BlDatablock
 
 
 class BlMetaball(BlDatablock):
+    bl_id = "metaballs"
+    bl_class = bpy.types.MetaBall
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'META_BALL'
+
     def construct(self, data):
         return bpy.data.metaballs.new(data["name"])
 
@@ -17,7 +24,7 @@ class BlMetaball(BlDatablock):
             new_element = target.elements.new(type=data["elements"][element]['type'])
             utils.dump_anything.load(new_element, data["elements"][element])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 3
@@ -26,16 +33,5 @@ class BlMetaball(BlDatablock):
         data = dumper.dump(pointer)
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.metaballs)
-
     def is_valid(self):
         return bpy.data.metaballs.get(self.data['name'])
-
-bl_id = "metaballs"
-bl_class = bpy.types.MetaBall
-bl_rep_class = BlMetaball
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'META_BALL'

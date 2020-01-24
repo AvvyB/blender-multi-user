@@ -6,6 +6,13 @@ from .bl_datablock import BlDatablock
 
 
 class BlCamera(BlDatablock):
+    bl_id = "cameras"
+    bl_class = bpy.types.Camera
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'CAMERA_DATA'
+
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 
@@ -18,7 +25,7 @@ class BlCamera(BlDatablock):
     def construct(self, data):
         return bpy.data.cameras.new(data["name"])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()
@@ -45,17 +52,5 @@ class BlCamera(BlDatablock):
         ]
         return dumper.dump(pointer)
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.cameras)
-
     def is_valid(self):
         return bpy.data.cameras.get(self.data['name'])
-
-
-bl_id = "cameras"
-bl_class = bpy.types.Camera
-bl_rep_class = BlCamera
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'CAMERA_DATA'

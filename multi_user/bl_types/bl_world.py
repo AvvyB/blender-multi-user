@@ -7,6 +7,13 @@ from .bl_material import load_link, load_node
 
 
 class BlWorld(BlDatablock):
+    bl_id = "worlds"
+    bl_class = bpy.types.World
+    bl_delay_refresh = 4
+    bl_delay_apply = 4
+    bl_automatic_push = True
+    bl_icon = 'WORLD_DATA'
+
     def construct(self, data):
         return bpy.data.worlds.new(data["name"])
 
@@ -26,7 +33,7 @@ class BlWorld(BlDatablock):
             for link in data["node_tree"]["links"]:
                 load_link(target.node_tree, data["node_tree"]["links"][link])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         world_dumper = utils.dump_anything.Dumper()
@@ -83,9 +90,6 @@ class BlWorld(BlDatablock):
                 pointer.node_tree, ["links"], 3, data['node_tree'])
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.worlds)
-
     def resolve_dependencies(self):
         deps = []
 
@@ -100,11 +104,3 @@ class BlWorld(BlDatablock):
     def is_valid(self):
         return bpy.data.worlds.get(self.data['name'])
 
-
-bl_id = "worlds"
-bl_class = bpy.types.World
-bl_rep_class = BlWorld
-bl_delay_refresh = 4
-bl_delay_apply = 4
-bl_automatic_push = True
-bl_icon = 'WORLD_DATA'
