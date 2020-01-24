@@ -110,7 +110,7 @@ class BlObject(BlDatablock):
         # Pose 
         if 'pose' in data:
             if not target.pose:
-                raise Exception('No pose...')
+                raise Exception('No pose data yet (Fixed in a near futur)')
             # Bone groups
             for bg_name in data['pose']['bone_groups']:
                 bg_data = data['pose']['bone_groups'].get(bg_name)
@@ -127,13 +127,14 @@ class BlObject(BlDatablock):
                 target_bone = target.pose.bones.get(bone)
                 bone_data = data['pose']['bones'].get(bone)
 
-                load_constraints(
-                    target_bone, bone_data['constraints'])
+                if 'constraints' in bone_data.keys():
+                    load_constraints(
+                        target_bone, bone_data['constraints'])
                 
                 load_pose(target_bone,bone_data)
 
-                if 'bone_index' in bone_data:
-                    target_bone.bone_group = target.pose.bone_group[bone_data[bone_group_index]]
+                if 'bone_index' in bone_data.keys():
+                    target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
             
 
         # Load relations
