@@ -70,15 +70,20 @@ class BlArmature(BlDatablock):
             else:
                 new_bone = self.pointer.edit_bones[bone]
 
-            new_bone.tail = data['bones'][bone]['tail_local']
-            new_bone.head = data['bones'][bone]['head_local']
-            new_bone.tail_radius = data['bones'][bone]['tail_radius']
-            new_bone.head_radius = data['bones'][bone]['head_radius']
+            bone_data = data['bones'].get(bone)
 
-            if 'parent' in data['bones'][bone]:
+            new_bone.tail = bone_data['tail_local']
+            new_bone.head = bone_data['head_local']
+            new_bone.tail_radius = bone_data['tail_radius']
+            new_bone.head_radius = bone_data['head_radius']
+
+            if 'parent' in bone_data:
                 new_bone.parent = self.pointer.edit_bones[data['bones']
                                                           [bone]['parent']]
-                new_bone.use_connect = data['bones'][bone]['use_connect']
+                new_bone.use_connect = bone_data['use_connect']
+
+            utils.dump_anything.load(new_bone, bone_data)
+            
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = current_active_object
@@ -91,7 +96,7 @@ class BlArmature(BlDatablock):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()
-        dumper.depth = 3
+        dumper.depth = 4
         dumper.include_filter = [
             'bones',
             'tail_local',
@@ -100,7 +105,8 @@ class BlArmature(BlDatablock):
             'head_radius',
             'use_connect',
             'parent',
-            'name'
+            'name',
+            'layers'
 
         ]
         data = dumper.dump(pointer)
