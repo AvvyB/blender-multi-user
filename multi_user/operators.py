@@ -92,12 +92,17 @@ class SessionStartOperator(bpy.types.Operator):
             if settings.start_empty:
                 utils.clean_scene()
 
-            client.host(
-                id=settings.username,
-                address=settings.ip,
-                port=settings.port,
-                right_strategy=settings.right_strategy
-            )
+            try:
+                client.host(
+                    id=settings.username,
+                    address=settings.ip,
+                    port=settings.port,
+                    right_strategy=settings.right_strategy
+                )
+            except Exception as e:
+                self.report({'ERROR'}, repr(e))
+                logger.error(f"Error: {e}")
+
             settings.is_admin = True
         else:
             utils.clean_scene()
