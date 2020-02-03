@@ -11,6 +11,7 @@ def dump_mesh(mesh, data={}):
     mesh_data = data
     mesh_buffer = bmesh.new()
 
+    #https://blog.michelanders.nl/2016/02/copying-vertices-to-numpy-arrays-in_4.html
     mesh_buffer.from_mesh(mesh)
 
     uv_layer = mesh_buffer.loops.layers.uv.verify()
@@ -72,7 +73,7 @@ def dump_mesh(mesh, data={}):
         uv_layers.append(uv_layer.name)
 
     mesh_data["uv_layers"] = uv_layers
-    return mesh_data
+    # return mesh_data
 
 class BlMesh(BlDatablock):
     bl_id = "meshes"
@@ -87,12 +88,9 @@ class BlMesh(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         if not target or not target.is_editmode:
              # 1 - LOAD MATERIAL SLOTS
-            material_to_load = []
-            material_to_load = utils.revers(data["materials"])
-            target.materials.clear()
             # SLots
             i = 0
     
@@ -149,8 +147,13 @@ class BlMesh(BlDatablock):
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        data = utils.dump_datablock(pointer, 2)
-        data = dump_mesh(pointer, data)
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 2
+        dumper.include_filter = [
+            'name',
+        ]
+        data = dumper.dump(pointer)
+        dump_mesh(pointer, data)
         # Fix material index
         m_list = []
         for material in pointer.materials:
