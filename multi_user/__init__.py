@@ -244,7 +244,7 @@ classes = (
 
 )
 
-libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication"
+libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication\\replication"
 
 @persistent
 def load_handler(dummy):

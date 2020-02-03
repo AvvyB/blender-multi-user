@@ -4,7 +4,7 @@ import os
 import queue
 import random
 import string
-import subprocess
+from subprocess import Popen, PIPE,TimeoutExpired
 import time
 from operator import itemgetter
 from pathlib import Path
@@ -33,7 +33,7 @@ delayables = []
 ui_context = None
 stop_modal_executor = False
 modal_executor_queue = None
-
+server_process = None
 # OPERATORS
 
 
@@ -49,7 +49,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, ui_context
+        global client, delayables, ui_context, server_process
         settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
 
@@ -80,10 +80,10 @@ class SessionStartOperator(bpy.types.Operator):
                 timer=type_local_config.bl_delay_refresh,
                 automatic=type_local_config.auto_push)
 
-            if type_local_config.bl_delay_apply > 0:
-                delayables.append(delayable.ApplyTimer(
-                    timout=type_local_config.bl_delay_apply,
-                    target_type=type_module_class))
+            # if type_local_config.bl_delay_apply > 0:
+            #     delayables.append(delayable.ApplyTimer(
+            #         timout=type_local_config.bl_delay_apply,
+            #         target_type=type_module_class))
 
         client = Session(factory=bpy_factory)
 
@@ -92,16 +92,33 @@ class SessionStartOperator(bpy.types.Operator):
             if settings.start_empty:
                 utils.clean_scene()
 
+            python = bpy.app.binary_path_python
+            server_path = bpy.utils.user_resource( 'SCRIPTS','addons\\multi_user\\libs\\replication\\server.py')
+
+            server_process = Popen([python, server_path, '-p',str(settings.port)])
             try:
-                client.host(
-                    id=settings.username,
-                    address=settings.ip,
-                    port=settings.port,
-                    right_strategy=settings.right_strategy
-                )
-            except Exception as e:
-                self.report({'ERROR'}, repr(e))
-                logger.error(f"Error: {e}")
+                outs, errs = server_process.communicate(timeout=1)
+
+                if errs:
+                    server_process.kill()
+            except TimeoutExpired:
+                pass
+            # try:
+            #     client.host(
+            #         id=settings.username,
+            #         address=settings.ip,
+            #         port=settings.port,
+            #         right_strategy=settings.right_strategy
+            #     )
+            # except Exception as e:
+            #     self.report({'ERROR'}, repr(e))
+            #     logger.error(f"Error: {e}")
+
+            client.connect(
+                id=settings.username,
+                address=settings.ip,
+                port=settings.port
+            )
 
             settings.is_admin = True
         else:
@@ -128,13 +145,14 @@ class SessionStartOperator(bpy.types.Operator):
 
                 # for node in client.list():
                 client.commit(scene_uuid)
+                 # Push all added values
+                client.push_all()
 
         delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
-        # Push all added values
-        client.push_all()
+       
 
         # Launch drawing module
         if settings.enable_presence:
@@ -165,7 +183,10 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, stop_modal_executor
+        global client, delayables, stop_modal_executor, server_process
+        
+        if server_process:
+            server_process.kill()
 
         stop_modal_executor = True
         settings = context.window_manager.session
@@ -444,7 +465,6 @@ classes = (
     SessionCommit,
     ApplyArmatureOperator,
 
-
 )
 
 
@@ -504,6 +524,8 @@ def depsgraph_evaluation(scene):
                     if 'EDIT' in context.mode:
                         break
                     logger.error("UPDATE: MODIFIFY {}".format(type(update.id)))
+                    client.commit(node.uuid)
+                    client.push(node.uuid)
                 else:
                     # Distant update
                     continue
@@ -524,7 +546,7 @@ def register():
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
-    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
 
 def unregister():
@@ -545,7 +567,7 @@ def unregister():
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
 
-    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
+    # bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
 
 if __name__ == "__main__":
