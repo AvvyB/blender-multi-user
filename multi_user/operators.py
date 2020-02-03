@@ -478,6 +478,39 @@ def update_client_frame(scene):
             'frame_current': scene.frame_current
         })
 
+@persistent
+def depsgraph_evaluation(scene):
+    if client and client.state == STATE_ACTIVE:
+        context = bpy.context
+        blender_depsgraph = bpy.context.view_layer.depsgraph
+        dependency_updates = [u for u in blender_depsgraph.updates]
+        session_infos = bpy.context.window_manager.session
+
+        # NOTE: maybe we don't need to check each update but only the first
+        # thanks to our deps graph....
+
+        for update in reversed(dependency_updates):
+            # Is the object tracked ?
+            if update.id.uuid:
+                # Retrieve local version
+                node = client.get(update.id.uuid)
+                
+                # Check our right on this update:
+                #   - if its ours or ( under common and diff), launch the
+                # update process
+                #   - if its to someone else, ignore the update (go deeper ?)
+                if node.owner == session_infos.username:
+                    # Avoid slow geometry update
+                    if 'EDIT' in context.mode:
+                        break
+                    logger.error("UPDATE: MODIFIFY {}".format(type(update.id)))
+                else:
+                    # Distant update
+                    continue
+            # else:
+            #     # New items !
+            #     logger.error("UPDATE: ADD")C.obj  
+
 
 def register():
     from bpy.utils import register_class
@@ -490,6 +523,8 @@ def register():
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
+
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
 
 def unregister():
@@ -509,6 +544,8 @@ def unregister():
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
+
+    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
 
 if __name__ == "__main__":
