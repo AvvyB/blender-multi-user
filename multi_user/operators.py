@@ -80,10 +80,10 @@ class SessionStartOperator(bpy.types.Operator):
                 timer=type_local_config.bl_delay_refresh,
                 automatic=type_local_config.auto_push)
 
-            # if type_local_config.bl_delay_apply > 0:
-            #     delayables.append(delayable.ApplyTimer(
-            #         timout=type_local_config.bl_delay_apply,
-            #         target_type=type_module_class))
+            if type_local_config.bl_delay_apply > 0:
+                delayables.append(delayable.ApplyTimer(
+                    timout=type_local_config.bl_delay_apply,
+                    target_type=type_module_class))
 
         client = Session(factory=bpy_factory)
 
@@ -103,16 +103,6 @@ class SessionStartOperator(bpy.types.Operator):
                     server_process.kill()
             except TimeoutExpired:
                 pass
-            # try:
-            #     client.host(
-            #         id=settings.username,
-            #         address=settings.ip,
-            #         port=settings.port,
-            #         right_strategy=settings.right_strategy
-            #     )
-            # except Exception as e:
-            #     self.report({'ERROR'}, repr(e))
-            #     logger.error(f"Error: {e}")
 
             client.connect(
                 id=settings.username,
