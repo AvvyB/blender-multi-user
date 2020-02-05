@@ -511,8 +511,8 @@ def depsgraph_evaluation(scene):
                     if 'EDIT' in context.mode:
                         break
                     logger.error("UPDATE: MODIFIFY {}".format(type(update.id)))
-                    client.commit(node.uuid)
-                    client.push(node.uuid)
+                    # client.commit(node.uuid)
+                    # client.push(node.uuid)
                 else:
                     # Distant update
                     continue

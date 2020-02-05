@@ -3,6 +3,7 @@ import bmesh
 import mathutils
 
 from .. import utils
+
 from .bl_datablock import BlDatablock
 
 def dump_mesh(mesh, data={}):
@@ -81,9 +82,10 @@ class BlMesh(BlDatablock):
     bl_delay_refresh = 10
     bl_delay_apply = 10
     bl_automatic_push = True
-    bl_icon = 'MESH_DATA'
+    bl_icon = 'MESH_DATA'    
 
     def construct(self, data):
+        
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
         return instance
