@@ -4,26 +4,22 @@ import os
 import queue
 import random
 import string
-from subprocess import Popen, PIPE,TimeoutExpired
 import time
 from operator import itemgetter
 from pathlib import Path
-import msgpack
+from subprocess import PIPE, Popen, TimeoutExpired
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-from bpy_extras.io_utils import ExportHelper
 
 from . import bl_types, delayable, environment, presence, ui, utils
+from .libs.replication.replication.constants import (FETCHED, STATE_ACTIVE,
+                                                     STATE_INITIAL,
+                                                     STATE_SYNCING)
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
-from .libs.replication.replication.constants import (
-    STATE_ACTIVE,
-    STATE_INITIAL,
-    STATE_SYNCING,
-    FETCHED)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -94,8 +90,9 @@ class SessionStartOperator(bpy.types.Operator):
 
             python = bpy.app.binary_path_python
             server_path = bpy.utils.user_resource( 'SCRIPTS','addons\\multi_user\\libs\\replication\\server.py')
-
+            
             server_process = Popen([python, server_path, '-p',str(settings.port)])
+            
             try:
                 outs, errs = server_process.communicate(timeout=1)
 
