@@ -95,7 +95,7 @@ class DynamicRightSelectTimer(Timer):
                 self._user = session.online_users.get(settings.username)
 
             if self._right_strategy is None:
-                self._right_strategy = session.get_config()[
+                self._right_strategy = session.config[
                     'right_strategy']
 
             if self._user:
@@ -233,8 +233,8 @@ class ClientUpdate(Timer):
             local_user_metadata = local_user.get('metadata')
             current_view_corners = presence.get_view_corners()
 
-            if not local_user_metadata:
-                logger.info("init user metadata")
+            if not local_user_metadata or 'color' not in local_user_metadata.keys():
+                logger.error("init user metadata")
                 metadata = {
                     'view_corners': current_view_corners,
                     'view_matrix': presence.get_view_matrix(),

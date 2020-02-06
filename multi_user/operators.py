@@ -81,7 +81,9 @@ class SessionStartOperator(bpy.types.Operator):
                     timout=type_local_config.bl_delay_apply,
                     target_type=type_module_class))
 
-        client = Session(factory=bpy_factory)
+        client = Session(
+            factory=bpy_factory,
+            python_path=bpy.app.binary_path_python)
 
         if self.host:
             # Scene setup
@@ -104,7 +106,8 @@ class SessionStartOperator(bpy.types.Operator):
             client.connect(
                 id=settings.username,
                 address=settings.ip,
-                port=settings.port
+                port=settings.port,
+                ttl_port=settings.ttl_port
             )
 
             settings.is_admin = True
@@ -114,7 +117,8 @@ class SessionStartOperator(bpy.types.Operator):
             client.connect(
                 id=settings.username,
                 address=settings.ip,
-                port=settings.port
+                port=settings.port,
+                ttl_port=settings.ttl_port
             )
 
         time.sleep(1)

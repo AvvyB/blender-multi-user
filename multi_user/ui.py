@@ -80,6 +80,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.label(text="Port:")
             row.prop(settings, "port", text="")
             row = box.row()
+            row.label(text="IPC Port:")
+            row.prop(settings, "ttl_port", text="")
+            row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
             box = row.box()
@@ -88,6 +91,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.label(text="Port:")
             row.prop(settings, "port", text="")
+            row = box.row()
+            row.label(text="IPC Port:")
+            row.prop(settings, "ttl_port", text="")
 
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
