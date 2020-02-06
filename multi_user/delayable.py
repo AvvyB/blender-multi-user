@@ -6,7 +6,7 @@ from . import operators, presence, utils
 from .libs.replication.replication.constants import FETCHED, RP_COMMON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 
 class Delayable():
@@ -234,7 +234,6 @@ class ClientUpdate(Timer):
             current_view_corners = presence.get_view_corners()
 
             if not local_user_metadata or 'color' not in local_user_metadata.keys():
-                logger.error("init user metadata")
                 metadata = {
                     'view_corners': current_view_corners,
                     'view_matrix': presence.get_view_matrix(),

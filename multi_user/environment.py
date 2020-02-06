@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
 CONFIG = os.path.join(CONFIG_DIR, "app.yaml")

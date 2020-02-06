@@ -14,7 +14,7 @@ from . import environment, presence
 from .libs import dump_anything
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 def has_action(target):
     return (hasattr(target, 'animation_data')
