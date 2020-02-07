@@ -15,8 +15,11 @@ def dump_image(image):
         image.save()
 
     if image.source == "FILE":
+        image_path = bpy.path.abspath(image.filepath_raw)
+        image_directory = os.path.dirname(image_path)
+        os.makedirs(image_directory, exist_ok=True)
         image.save()
-        file = open(image.filepath_raw, "rb")
+        file = open(image_path, "rb")
         pixels = file.read()
         file.close()
     else:
