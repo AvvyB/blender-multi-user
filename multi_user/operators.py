@@ -103,33 +103,23 @@ class SessionStartOperator(bpy.types.Operator):
             except TimeoutExpired:
                 pass
 
-            client.connect(
-                id=settings.username,
-                address=settings.ip,
-                port=settings.port,
-                ttl_port=settings.ttl_port
-            )
-
             settings.is_admin = True
         else:
             utils.clean_scene()
 
+        try:
             client.connect(
                 id=settings.username,
                 address=settings.ip,
                 port=settings.port,
                 ttl_port=settings.ttl_port
             )
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+            logger.error(f"Error: {e}")
 
-        time.sleep(1)
-
-        if client.state == 0:
-            settings.is_admin = False
-            self.report(
-                {'ERROR'},
-                "A session is already hosted on this address")
-            return {"CANCELLED"}
-
+        time.sleep(1) # Removed as soon as server will be launched from replication
+        
         if self.host:
             for scene in bpy.data.scenes:
                 scene_uuid = client.add(scene)
