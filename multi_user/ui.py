@@ -18,7 +18,7 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
 def get_state_str(state):
     state_str = 'None'
     if state == STATE_WAITING:
-        state_str = 'WAITING'
+        state_str = 'COMMITING DATA'
     elif state == STATE_SYNCING:
         state_str = 'SYNCING'
     elif state == STATE_AUTH:
@@ -67,7 +67,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row.label(text=f"{get_state_str(cli_state['STATE'])}")
                     row = layout.row()
                     
-                    if cli_state['STATE'] in [STATE_SYNCING,STATE_SRV_SYNC]:
+                    if cli_state['STATE'] in [STATE_SYNCING,STATE_SRV_SYNC,STATE_WAITING]:
                         row.label(text=f"{cli_state['CURRENT']}/{cli_state['TOTAL']}")
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
