@@ -85,42 +85,28 @@ class SessionStartOperator(bpy.types.Operator):
             factory=bpy_factory,
             python_path=bpy.app.binary_path_python)
 
+        # Host a session
         if self.host:
             # Scene setup
             if settings.start_empty:
                 utils.clean_scene()
 
-            python = bpy.app.binary_path_python
-            server_path = bpy.utils.user_resource( 'SCRIPTS','addons\\multi_user\\libs\\replication\\server.py')
-            
-            server_process = Popen([python, server_path, '-p',str(settings.port)])
-            
             try:
-                outs, errs = server_process.communicate(timeout=1)
-
-                if errs:
-                    server_process.kill()
-            except TimeoutExpired:
-                pass
+                client.host(
+                    id=settings.username,
+                    address=settings.ip,
+                    port=settings.port,
+                    ttl_port=settings.ttl_port,
+                    right_strategy=settings.right_strategy
+                )
+            except Exception as e:
+                self.report({'ERROR'}, repr(e))
+                logger.error(f"Error: {e}")
 
             settings.is_admin = True
-        else:
-            utils.clean_scene()
 
-        try:
-            client.connect(
-                id=settings.username,
-                address=settings.ip,
-                port=settings.port,
-                ttl_port=settings.ttl_port
-            )
-        except Exception as e:
-            self.report({'ERROR'}, repr(e))
-            logger.error(f"Error: {e}")
-
-        time.sleep(1) # Removed as soon as server will be launched from replication
-        
-        if self.host:
+            time.sleep(2) # Removed as soon as server will be launched from replication
+    
             for scene in bpy.data.scenes:
                 scene_uuid = client.add(scene)
 
@@ -129,6 +115,22 @@ class SessionStartOperator(bpy.types.Operator):
                  # Push all added values
                 client.push_all()
 
+        # Join a session
+        else:
+            utils.clean_scene()
+
+            try:
+                client.connect(
+                    id=settings.username,
+                    address=settings.ip,
+                    port=settings.port,
+                    ttl_port=settings.ttl_port
+                )
+            except Exception as e:
+                self.report({'ERROR'}, repr(e))
+                logger.error(f"Error: {e}")
+
+            
         delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
