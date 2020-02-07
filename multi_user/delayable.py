@@ -3,7 +3,7 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .libs.replication.replication.constants import FETCHED, RP_COMMON
+from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_ACTIVE
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -89,7 +89,7 @@ class DynamicRightSelectTimer(Timer):
         session = operators.client
         settings = bpy.context.window_manager.session
 
-        if session:
+        if session and session.state == STATE_ACTIVE:
             # Find user
             if self._user is None:
                 self._user = session.online_users.get(settings.username)
@@ -195,19 +195,20 @@ class DrawClient(Draw):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         
-        if session and renderer:
+        if session and renderer and session.state == STATE_ACTIVE:
             settings = bpy.context.window_manager.session
             users = session.online_users
 
             for user in users.values():
                 metadata = user.get('metadata')
 
-                if settings.presence_show_selected and 'selected_objects' in metadata.keys():
-                    renderer.draw_client_selection(
-                        user['id'], metadata['color'], metadata['selected_objects'])
-                if settings.presence_show_user and 'view_corners' in metadata:
-                    renderer.draw_client_camera(
-                        user['id'], metadata['view_corners'], metadata['color'])
+                if 'color' in metadata:
+                    if settings.presence_show_selected and 'selected_objects' in metadata.keys():
+                        renderer.draw_client_selection(
+                            user['id'], metadata['color'], metadata['selected_objects'])
+                    if settings.presence_show_user and 'view_corners' in metadata:
+                        renderer.draw_client_camera(
+                            user['id'], metadata['view_corners'], metadata['color'])
 
 
 class ClientUpdate(Timer):
@@ -220,7 +221,7 @@ class ClientUpdate(Timer):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         
-        if session and renderer:
+        if session and renderer and session.state == STATE_ACTIVE:
             # Check if session has been closes prematurely
             if session.state == 0:
                 bpy.ops.session.stop()

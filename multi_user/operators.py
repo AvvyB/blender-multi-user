@@ -83,7 +83,8 @@ class SessionStartOperator(bpy.types.Operator):
 
         client = Session(
             factory=bpy_factory,
-            python_path=bpy.app.binary_path_python)
+            python_path=bpy.app.binary_path_python,
+            default_strategy=settings.right_strategy)
 
         # Host a session
         if self.host:
@@ -92,28 +93,20 @@ class SessionStartOperator(bpy.types.Operator):
                 utils.clean_scene()
 
             try:
+                for scene in bpy.data.scenes:
+                    scene_uuid = client.add(scene)
+                    client.commit(scene_uuid)
+
                 client.host(
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    ttl_port=settings.ttl_port,
-                    right_strategy=settings.right_strategy
-                )
+                    ttl_port=settings.ttl_port)
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
 
             settings.is_admin = True
-
-            time.sleep(2) # Removed as soon as server will be launched from replication
-    
-            for scene in bpy.data.scenes:
-                scene_uuid = client.add(scene)
-
-                # for node in client.list():
-                client.commit(scene_uuid)
-                 # Push all added values
-                client.push_all()
 
         # Join a session
         else:
@@ -130,12 +123,11 @@ class SessionStartOperator(bpy.types.Operator):
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
 
-            
+        # Background client updates service
+        #TODO: Refactoring
         delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
-
-       
 
         # Launch drawing module
         if settings.enable_presence:
@@ -408,17 +400,18 @@ class ApplyArmatureOperator(bpy.types.Operator):
 
         if event.type == 'TIMER':
             global client
-            nodes = client.list(filter=bl_types.bl_armature.BlArmature)
+            if client.state == STATE_ACTIVE:
+                nodes = client.list(filter=bl_types.bl_armature.BlArmature)
 
-            for node in nodes:
-                node_ref = client.get(uuid=node)
+                for node in nodes:
+                    node_ref = client.get(uuid=node)
 
-                if node_ref.state == FETCHED:
-                    try:
-                        client.apply(node)
-                    except Exception as e:
-                        logger.error(
-                            "fail to apply {}: {}".format(node_ref.uuid, e))
+                    if node_ref.state == FETCHED:
+                        try:
+                            client.apply(node)
+                        except Exception as e:
+                            logger.error(
+                                "fail to apply {}: {}".format(node_ref.uuid, e))
 
         return {'PASS_THROUGH'}
 

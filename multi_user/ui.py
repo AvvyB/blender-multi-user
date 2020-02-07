@@ -229,7 +229,7 @@ class SESSION_UL_users(bpy.types.UIList):
             if user:
                 ping = str(user['latency'])
                 metadata = user.get('metadata')
-                if metadata:
+                if metadata and 'frame_current' in metadata:
                     frame_current = str(metadata['frame_current'])
         
         split = layout.split(factor=0.5)
