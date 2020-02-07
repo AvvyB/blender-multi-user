@@ -400,7 +400,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
 
         if event.type == 'TIMER':
             global client
-            if client.state == STATE_ACTIVE:
+            if client.state['STATE'] == STATE_ACTIVE:
                 nodes = client.list(filter=bl_types.bl_armature.BlArmature)
 
                 for node in nodes:
@@ -448,7 +448,7 @@ classes = (
 def load_pre_handler(dummy):
     global client
 
-    if client and client.state in [STATE_ACTIVE, STATE_SYNCING]:
+    if client and client.state['STATE'] in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
 
 
@@ -462,21 +462,21 @@ def sanitize_deps_graph(dummy):
     """
     global client
 
-    if client and client.state in [STATE_ACTIVE]:
+    if client and client.state['STATE'] in [STATE_ACTIVE]:
         for node_key in client.list():
             client.get(node_key).resolve()
 
 
 @persistent
 def update_client_frame(scene):
-    if client and client.state == STATE_ACTIVE:
+    if client and client.state['STATE'] == STATE_ACTIVE:
         client.update_user_metadata({
             'frame_current': scene.frame_current
         })
 
 @persistent
 def depsgraph_evaluation(scene):
-    if client and client.state == STATE_ACTIVE:
+    if client and client.state['STATE'] == STATE_ACTIVE:
         context = bpy.context
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
@@ -528,7 +528,7 @@ def register():
 def unregister():
     global client
 
-    if client and client.state == 2:
+    if client and client.state['STATE'] == 2:
         client.disconnect()
         client = None
 

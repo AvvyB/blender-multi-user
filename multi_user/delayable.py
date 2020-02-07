@@ -89,7 +89,7 @@ class DynamicRightSelectTimer(Timer):
         session = operators.client
         settings = bpy.context.window_manager.session
 
-        if session and session.state == STATE_ACTIVE:
+        if session and session.state['STATE'] == STATE_ACTIVE:
             # Find user
             if self._user is None:
                 self._user = session.online_users.get(settings.username)
@@ -195,7 +195,7 @@ class DrawClient(Draw):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         
-        if session and renderer and session.state == STATE_ACTIVE:
+        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             settings = bpy.context.window_manager.session
             users = session.online_users
 
@@ -221,9 +221,9 @@ class ClientUpdate(Timer):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         
-        if session and renderer and session.state == STATE_ACTIVE:
+        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             # Check if session has been closes prematurely
-            if session.state == 0:
+            if session.state['STATE'] == 0:
                 bpy.ops.session.stop()
 
             local_user = operators.client.online_users.get(

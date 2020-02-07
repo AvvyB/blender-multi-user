@@ -2,7 +2,11 @@ import bpy
 
 from . import operators
 from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
-                                                     MODIFIED, RP_COMMON, UP)
+                                                     MODIFIED, RP_COMMON, UP,
+                                                     STATE_ACTIVE, STATE_AUTH,
+                                                     STATE_CONFIG, STATE_SYNCING,
+                                                     STATE_INITIAL, STATE_SRV_SYNC,
+                                                     STATE_WAITING)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -11,6 +15,21 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'FILE_REFRESH',   # UP
                      'TRIA_UP']  # CHANGED
 
+def get_state_str(state):
+    state_str = 'None'
+    if state == STATE_WAITING:
+        state_str = 'WAITING'
+    elif state == STATE_SYNCING:
+        state_str = 'SYNCING'
+    elif state == STATE_AUTH:
+        state_str = 'AUTHENTIFICATION'
+    elif state == STATE_CONFIG:
+        state_str = 'CONFIGURATION'
+    elif state == STATE_ACTIVE:
+        state_str = 'ACTIVE'
+    elif state == STATE_SRV_SYNC:
+        state_str = 'SERVER SYNC'
+    return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
@@ -31,19 +50,25 @@ class SESSION_PT_settings(bpy.types.Panel):
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
             if not operators.client \
-               or (operators.client and operators.client.state == 0):
+               or (operators.client and operators.client.state['STATE'] == STATE_INITIAL):
                 pass
             else:
+                cli_state = operators.client.state
                 # STATE ACTIVE
-                if operators.client.state == 2:
+                if cli_state['STATE'] == STATE_ACTIVE:
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
 
                 # STATE SYNCING
                 else:
-                    status = "connecting..."
-                    row.label(text=status)
+                    row.label(text='Connecting:')
+                    row = layout.row()
+                    row.label(text=f"{get_state_str(cli_state['STATE'])}")
+                    row = layout.row()
+                    
+                    if cli_state['STATE'] in [STATE_SYNCING,STATE_SRV_SYNC]:
+                        row.label(text=f"{cli_state['CURRENT']}/{cli_state['TOTAL']}")
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
 
@@ -59,7 +84,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not operators.client \
-            or (operators.client and operators.client.state == 0)
+            or (operators.client and operators.client.state['STATE'] == 0)
 
     def draw(self, context):
         layout = self.layout
@@ -110,7 +135,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not operators.client \
-            or (operators.client and operators.client.state == 0)
+            or (operators.client and operators.client.state['STATE'] == 0)
 
     def draw(self, context):
         layout = self.layout
@@ -138,7 +163,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not operators.client \
-            or (operators.client and operators.client.state == 0)
+            or (operators.client and operators.client.state['STATE'] == 0)
 
     def draw(self, context):
         layout = self.layout
@@ -180,7 +205,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return operators.client and operators.client.state == 2
+        return operators.client and operators.client.state['STATE'] == 2
 
     def draw(self, context):
         layout = self.layout
@@ -336,7 +361,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return operators.client and operators.client.state == 2
+        return operators.client and operators.client.state['STATE'] == 2
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
