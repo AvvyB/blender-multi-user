@@ -31,7 +31,7 @@ class BlLightprobe(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        if bpy.app.version[1] < 84:
+        if bpy.app.version[1] < 83:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
         dumper = utils.dump_anything.Dumper()
