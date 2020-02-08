@@ -3,7 +3,7 @@ import bmesh
 import mathutils
 
 from .. import utils
-
+from ..libs.replication.replication.constants import DIFF_BINARY
 from .bl_datablock import BlDatablock
 
 def dump_mesh(mesh, data={}):
@@ -85,7 +85,7 @@ class BlMesh(BlDatablock):
     bl_icon = 'MESH_DATA'    
 
     def construct(self, data):
-        
+        self.diff_method = DIFF_BINARY
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
         return instance
@@ -136,8 +136,10 @@ class BlMesh(BlDatablock):
 
             # 3 - LOAD METADATA
             # uv's
-            for uv_layer in data['uv_layers']:
-                target.uv_layers.new(name=uv_layer)
+            # target.uv_layers.clear()
+            utils.dump_anything.load(target.uv_layers, data['uv_layers'])
+            # for uv_layer in data['uv_layers']:
+            #     target.uv_layers.new(name=uv_layer)
     
             bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
             skin_layer = mesh_buffer.verts.layers.skin.verify()

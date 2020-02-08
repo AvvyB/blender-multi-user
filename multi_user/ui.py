@@ -18,9 +18,9 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
 def get_state_str(state):
     state_str = 'None'
     if state == STATE_WAITING:
-        state_str = 'COMMITING DATA'
+        state_str = 'WRMING UP DATA'
     elif state == STATE_SYNCING:
-        state_str = 'SYNCING'
+        state_str = 'FETCHING FROM SERVER'
     elif state == STATE_AUTH:
         state_str = 'AUTHENTIFICATION'
     elif state == STATE_CONFIG:
@@ -28,7 +28,7 @@ def get_state_str(state):
     elif state == STATE_ACTIVE:
         state_str = 'ACTIVE'
     elif state == STATE_SRV_SYNC:
-        state_str = 'SERVER SYNC'
+        state_str = 'PUSHING TO SERVER'
     return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -274,7 +274,8 @@ class SESSION_PT_presence(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return True
+        return not operators.client \
+            or (operators.client and operators.client.state['STATE'] in [STATE_INITIAL, STATE_ACTIVE])
 
     def draw_header(self, context):
         self.layout.prop(context.window_manager.session, "enable_presence", text="")
