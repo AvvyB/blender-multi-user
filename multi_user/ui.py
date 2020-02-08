@@ -15,10 +15,27 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'FILE_REFRESH',   # UP
                      'TRIA_UP']  # CHANGED
 
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', fill_empty='  '):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + fill_empty * (length - filledLength)
+    return '{} |{}| {}%{}'.format(prefix, bar, percent, suffix)
+
 def get_state_str(state):
     state_str = 'None'
     if state == STATE_WAITING:
-        state_str = 'WRMING UP DATA'
+        state_str = 'WARMING UP DATA'
     elif state == STATE_SYNCING:
         state_str = 'FETCHING FROM SERVER'
     elif state == STATE_AUTH:
@@ -26,7 +43,7 @@ def get_state_str(state):
     elif state == STATE_CONFIG:
         state_str = 'CONFIGURATION'
     elif state == STATE_ACTIVE:
-        state_str = 'ACTIVE'
+        state_str = 'ONLINE'
     elif state == STATE_SRV_SYNC:
         state_str = 'PUSHING TO SERVER'
     return state_str
@@ -54,21 +71,25 @@ class SESSION_PT_settings(bpy.types.Panel):
                 pass
             else:
                 cli_state = operators.client.state
+                
+                row.label(text=f"Status : {get_state_str(cli_state['STATE'])}")
+                row = layout.row()
+                
                 # STATE ACTIVE
                 if cli_state['STATE'] == STATE_ACTIVE:
-                    row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
 
                 # STATE SYNCING
                 else:
-                    row.label(text='Connecting:')
-                    row = layout.row()
-                    row.label(text=f"{get_state_str(cli_state['STATE'])}")
-                    row = layout.row()
-                    
+                    box = row.box()
                     if cli_state['STATE'] in [STATE_SYNCING,STATE_SRV_SYNC,STATE_WAITING]:
-                        row.label(text=f"{cli_state['CURRENT']}/{cli_state['TOTAL']}")
+                        box.label(text=printProgressBar(
+                            cli_state['CURRENT'],
+                            cli_state['TOTAL'],
+                            length=16
+                        ))
+
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
 

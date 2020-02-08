@@ -3,7 +3,7 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_ACTIVE
+from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -212,7 +212,7 @@ class DrawClient(Draw):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=1):
+    def __init__(self, timout=.5):
         super().__init__(timout)
 
     def execute(self):
@@ -272,4 +272,7 @@ class ClientUpdate(Timer):
                     new_key.username = user
 
             # TODO: event drivent 3d view refresh
+            presence.refresh_3d_view()
+        # ui update
+        elif session:
             presence.refresh_3d_view()
