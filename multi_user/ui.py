@@ -30,7 +30,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + fill_empty * (length - filledLength)
-    return '{} |{}| {}%{}'.format(prefix, bar, percent, suffix)
+    return '{} |{}| {}/{}{}'.format(prefix, bar, iteration,total, suffix)
 
 def get_state_str(state):
     state_str = 'None'
