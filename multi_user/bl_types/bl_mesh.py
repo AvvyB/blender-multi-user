@@ -6,13 +6,14 @@ from .. import utils
 from ..libs.replication.replication.constants import DIFF_BINARY
 from .bl_datablock import BlDatablock
 
+
 def dump_mesh(mesh, data={}):
     import bmesh
 
     mesh_data = data
     mesh_buffer = bmesh.new()
 
-    #https://blog.michelanders.nl/2016/02/copying-vertices-to-numpy-arrays-in_4.html
+    # https://blog.michelanders.nl/2016/02/copying-vertices-to-numpy-arrays-in_4.html
     mesh_buffer.from_mesh(mesh)
 
     uv_layer = mesh_buffer.loops.layers.uv.verify()
@@ -76,13 +77,14 @@ def dump_mesh(mesh, data={}):
     mesh_data["uv_layers"] = uv_layers
     # return mesh_data
 
+
 class BlMesh(BlDatablock):
     bl_id = "meshes"
     bl_class = bpy.types.Mesh
     bl_delay_refresh = 10
     bl_delay_apply = 10
     bl_automatic_push = True
-    bl_icon = 'MESH_DATA'    
+    bl_icon = 'MESH_DATA'
 
     def construct(self, data):
         self.diff_method = DIFF_BINARY
@@ -95,7 +97,7 @@ class BlMesh(BlDatablock):
              # 1 - LOAD MATERIAL SLOTS
             # SLots
             i = 0
-    
+
             for m in data["material_list"]:
                 target.materials.append(bpy.data.materials[m])
 
@@ -106,7 +108,7 @@ class BlMesh(BlDatablock):
                 v = mesh_buffer.verts.new(data["verts"][i]["co"])
                 v.normal = data["verts"][i]["normal"]
             mesh_buffer.verts.ensure_lookup_table()
-    
+
             for i in data["edges"]:
                 verts = mesh_buffer.verts
                 v1 = data["edges"][i]["verts"][0]
@@ -117,12 +119,12 @@ class BlMesh(BlDatablock):
                 verts = []
                 for v in data["faces"][p]["verts"]:
                     verts.append(mesh_buffer.verts[v])
-    
+
                 if len(verts) > 0:
                     f = mesh_buffer.faces.new(verts)
-    
+
                     uv_layer = mesh_buffer.loops.layers.uv.verify()
-                    
+
                     f.smooth = data["faces"][p]["smooth"]
                     f.normal = data["faces"][p]["normal"]
                     f.index = data["faces"][p]["index"]
@@ -136,17 +138,12 @@ class BlMesh(BlDatablock):
 
             # 3 - LOAD METADATA
             # uv's
-            # target.uv_layers.clear()
             utils.dump_anything.load(target.uv_layers, data['uv_layers'])
-            # for uv_layer in data['uv_layers']:
-            #     target.uv_layers.new(name=uv_layer)
-    
+
             bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
             skin_layer = mesh_buffer.verts.layers.skin.verify()
-            
+
             utils.dump_anything.load(target, data)
-    
-           
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
@@ -170,13 +167,12 @@ class BlMesh(BlDatablock):
 
     def resolve_dependencies(self):
         deps = []
-        
+
         for material in self.pointer.materials:
             if material:
                 deps.append(material)
-        
+
         return deps
-    
+
     def is_valid(self):
         return bpy.data.meshes.get(self.data['name'])
-
