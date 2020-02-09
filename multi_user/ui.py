@@ -26,6 +26,8 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         decimals    - Optional  : positive number of decimals in percent complete (Int)
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
+    From here:    
+    https://gist.github.com/greenstick/b23e475d2bfdc3a82e34eaa1f6781ee4
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
