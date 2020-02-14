@@ -64,15 +64,16 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        if operators.client:
-            nodes = operators.client.list(filter=self._type)
+        client =  operators.client
+        if client and  client.state['STATE'] == STATE_ACTIVE:
+            nodes = client.list(filter=self._type)
 
             for node in nodes:
-                node_ref = operators.client.get(uuid=node)
+                node_ref = client.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        operators.client.apply(node)
+                        client.apply(node)
                     except Exception as e:
                         logger.error(
                             "fail to apply {}: {}".format(node_ref.uuid, e))
