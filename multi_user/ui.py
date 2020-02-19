@@ -121,30 +121,24 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row.prop(settings, "session_mode", expand=True)
         row = layout.row()
 
+        box = row.box()
+        
+        row = box.row()
+        row.prop(settings, "ip", text="IP")
+        row = box.row()
+        row.label(text="Port:")
+        row.prop(settings, "port", text="")
+        row = box.row()
+        row.label(text="IPC Port:")
+        row.prop(settings, "ipc_port", text="")
+
         if settings.session_mode == 'HOST':
-            box = row.box()
             row = box.row()
             row.label(text="Start empty:")
             row.prop(settings, "start_empty", text="")
             row = box.row()
-            row.label(text="Port:")
-            row.prop(settings, "port", text="")
-            row = box.row()
-            row.label(text="IPC Port:")
-            row.prop(settings, "ttl_port", text="")
-            row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
-            box = row.box()
-            row = box.row()
-            row.prop(settings, "ip", text="IP")
-            row = box.row()
-            row.label(text="Port:")
-            row.prop(settings, "port", text="")
-            row = box.row()
-            row.label(text="IPC Port:")
-            row.prop(settings, "ttl_port", text="")
-
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 
@@ -334,13 +328,12 @@ class SESSION_PT_services(bpy.types.Panel):
         settings = context.window_manager.session
         active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
         
-
         # Create a simple row.
-        row = layout.row()
         for name, state in operators.client.services_state.items():
+            row = layout.row()
             row.label(text=name)
             row.label(text=get_state_str(state))
-            row = layout.row()
+            
 
 
 

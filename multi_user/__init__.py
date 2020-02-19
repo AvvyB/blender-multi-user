@@ -118,8 +118,8 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Distant host port',
         default=5555
         )
-    ttl_port: bpy.props.IntProperty(
-        name="ttl_port",
+    ipc_port: bpy.props.IntProperty(
+        name="ipc_port",
         description='internal ttl port(only usefull for multiple local instances)',
         default=5561
         )
