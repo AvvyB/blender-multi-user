@@ -48,6 +48,8 @@ def get_state_str(state):
         state_str = 'ONLINE'
     elif state == STATE_SRV_SYNC:
         state_str = 'PUSHING TO SERVER'
+    elif state == STATE_INITIAL:
+        state_str = 'INIT'
     return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -313,6 +315,34 @@ class SESSION_PT_presence(bpy.types.Panel):
         col.prop(settings,"presence_show_user")
         row = layout.row()
 
+class SESSION_PT_services(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SERVICE_PT_panel"
+    bl_label = "Services"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+
+    @classmethod
+    def poll(cls, context):
+        return operators.client and operators.client.state['STATE'] == 2
+
+    def draw(self, context):
+        layout = self.layout
+        online_users = context.window_manager.online_users
+        selected_user = context.window_manager.user_index
+        settings = context.window_manager.session
+        active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
+        
+
+        # Create a simple row.
+        row = layout.row()
+        for name, state in operators.client.services_state.items():
+            row.label(text=name)
+            row.label(text=get_state_str(state))
+            row = layout.row()
+
+
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = context.window_manager.session
@@ -440,7 +470,8 @@ classes = (
     SESSION_PT_presence,
     SESSION_PT_settings_replication,
     SESSION_PT_user,
-    SESSION_PT_outliner
+    SESSION_PT_outliner,
+    SESSION_PT_services
 )
 
 
