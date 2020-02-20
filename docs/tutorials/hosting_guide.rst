@@ -15,6 +15,9 @@ The multi-user network architecture is based on a clients-server model. The comm
 * Publisher: push data 
 * TTL (time to leave): used to ping each clients
 
+.. warning::
+    Until now, those communications are not encrypted but are planned to be in a mid-term future (`Status <https://gitlab.com/slumber/multi-user/issues/62>`_).
+
 To know which ports will be used, you just have to read the port in your preference.
 
 .. image:: img/hosting_guide_port.png
