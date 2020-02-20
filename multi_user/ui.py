@@ -329,6 +329,7 @@ class SESSION_PT_services(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):

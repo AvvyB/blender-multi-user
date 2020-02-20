@@ -483,7 +483,6 @@ def depsgraph_evaluation(scene):
         session_infos = bpy.context.window_manager.session
 
         # NOTE: maybe we don't need to check each update but only the first
-        # thanks to our deps graph....
 
         for update in reversed(dependency_updates):
             # Is the object tracked ?
