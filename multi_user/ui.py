@@ -109,7 +109,19 @@ class SESSION_PT_settings(bpy.types.Panel):
                 elif current_state == STATE_QUITTING:
                     row = layout.row()
                     box = row.box()
-                    box.label(text="waiting services to close...")
+
+                    num_online_services = 0
+                    for name, state in operators.client.services_state.items():
+                        if state == STATE_ACTIVE:
+                            num_online_services += 1
+
+                    total_online_services = len(operators.client.services_state)
+
+                    box.label(text=printProgressBar(
+                            total_online_services-num_online_services,
+                            total_online_services,
+                            length=16
+                        ))
 
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
