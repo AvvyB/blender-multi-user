@@ -6,7 +6,7 @@ from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_ACTIVE, STATE_AUTH,
                                                      STATE_CONFIG, STATE_SYNCING,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
-                                                     STATE_WAITING)
+                                                     STATE_WAITING, STATE_QUITTING)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -50,6 +50,8 @@ def get_state_str(state):
         state_str = 'PUSHING TO SERVER'
     elif state == STATE_INITIAL:
         state_str = 'INIT'
+    elif state == STATE_QUITTING:
+        state_str = 'QUITTING SESSION'
     return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -79,15 +81,23 @@ class SESSION_PT_settings(bpy.types.Panel):
                 row.label(text=f"Status : {get_state_str(cli_state['STATE'])}")
                 row = layout.row()
                 
+                current_state = cli_state['STATE']
+
                 # STATE ACTIVE
-                if cli_state['STATE'] == STATE_ACTIVE:
+                if current_state == STATE_ACTIVE:
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
 
-                # STATE SYNCING
-                else:
-                    box = row.box()
+                # CONNECTION STATE
+                elif current_state in [
+                                        STATE_SRV_SYNC,
+                                        STATE_SYNCING,
+                                        STATE_AUTH,
+                                        STATE_CONFIG,
+                                        STATE_WAITING]:
+                    
                     if cli_state['STATE'] in [STATE_SYNCING,STATE_SRV_SYNC,STATE_WAITING]:
+                        box = row.box()
                         box.label(text=printProgressBar(
                             cli_state['CURRENT'],
                             cli_state['TOTAL'],
@@ -96,7 +106,10 @@ class SESSION_PT_settings(bpy.types.Panel):
 
                     row = layout.row()
                     row.operator("session.stop", icon='QUIT', text="CANCEL")
-
+                elif current_state == STATE_QUITTING:
+                    row = layout.row()
+                    box = row.box()
+                    box.label(text="waiting services to close...")
 
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
