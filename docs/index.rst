@@ -45,6 +45,13 @@ Documentation is organized into the following sections:
     quickstart
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Tutorials
+   :name: sec-tutorials
+
+   tutorials/hosting_guide
+
+.. toctree::
     :maxdepth: 1
     :caption: Community
     :name: sec-community
