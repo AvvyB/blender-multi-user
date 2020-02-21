@@ -159,23 +159,24 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables, stop_modal_executor, server_process
-        
-        if server_process:
-            server_process.kill()
-
+        assert(client)
         stop_modal_executor = True
         settings = context.window_manager.session
         settings.is_admin = False
-        assert(client)
-
-        client.disconnect()
 
         for d in delayables:
             try:
                 d.unregister()
             except:
                 continue
-        presence.renderer.stop()
+        presence.renderer.stop()       
+
+        try:
+            client.disconnect()
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        client = None
 
         return {"FINISHED"}
 
