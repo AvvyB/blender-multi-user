@@ -176,8 +176,6 @@ class SessionStopOperator(bpy.types.Operator):
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
-        client = None
-
         return {"FINISHED"}
 
 
