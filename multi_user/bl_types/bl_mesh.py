@@ -87,7 +87,6 @@ class BlMesh(BlDatablock):
     bl_icon = 'MESH_DATA'
 
     def construct(self, data):
-        self.diff_method = DIFF_BINARY
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
         return instance

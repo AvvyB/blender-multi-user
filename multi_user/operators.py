@@ -399,7 +399,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
 
         if event.type == 'TIMER':
             global client
-            if client.state['STATE'] == STATE_ACTIVE:
+            if client and client.state['STATE'] == STATE_ACTIVE:
                 nodes = client.list(filter=bl_types.bl_armature.BlArmature)
 
                 for node in nodes:

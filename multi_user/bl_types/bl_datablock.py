@@ -80,6 +80,8 @@ class BlDatablock(ReplicatedDatablock):
 
         if self.pointer and hasattr(self.pointer, 'uuid'):
             self.pointer.uuid = self.uuid
+        
+        self.diff_method = DIFF_BINARY
 
     def library_apply(self):
         """Apply stored data
