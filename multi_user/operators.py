@@ -493,19 +493,21 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update (go deeper ?)
-                if node.owner == session_infos.username:
+                if node.owner in [session_infos.username]:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode:
                         break
-                    logger.error("UPDATE: MODIFIFY {}".format(type(update.id)))
-                    # client.commit(node.uuid)
-                    # client.push(node.uuid)
+                    client.stash(node.uuid)
+                # TODO: Do this from replication api...Maybe as a task !
+                if node.owner == 'COMMON':
+                    if node.diff():
+                        client.stash(node.uuid)
                 else:
                     # Distant update
                     continue
             # else:
             #     # New items !
-            #     logger.error("UPDATE: ADD")C.obj  
+            #     logger.error("UPDATE: ADD")
 
 
 def register():
@@ -520,7 +522,7 @@ def register():
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
-    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
 
 def unregister():
@@ -541,7 +543,7 @@ def unregister():
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
 
-    # bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
+    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
 
 if __name__ == "__main__":
