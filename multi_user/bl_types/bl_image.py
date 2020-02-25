@@ -15,8 +15,11 @@ def dump_image(image):
         image.save()
 
     if image.source == "FILE":
+        image_path = bpy.path.abspath(image.filepath_raw)
+        image_directory = os.path.dirname(image_path)
+        os.makedirs(image_directory, exist_ok=True)
         image.save()
-        file = open(image.filepath_raw, "rb")
+        file = open(image_path, "rb")
         pixels = file.read()
         file.close()
     else:
@@ -27,7 +30,7 @@ class BlImage(BlDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
     bl_delay_refresh = 0
-    bl_delay_apply = 0
+    bl_delay_apply = 1
     bl_automatic_push = False
     bl_icon = 'IMAGE_DATA'
 

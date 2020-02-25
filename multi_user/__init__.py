@@ -31,7 +31,7 @@ DEPENDENCIES = {
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 #TODO: refactor config 
 # UTILITY FUNCTIONS
@@ -117,6 +117,11 @@ class SessionProps(bpy.types.PropertyGroup):
         name="port",
         description='Distant host port',
         default=5555
+        )
+    ipc_port: bpy.props.IntProperty(
+        name="ipc_port",
+        description='internal ttl port(only usefull for multiple local instances)',
+        default=5561
         )
     is_admin: bpy.props.BoolProperty(
         name="is_admin",
@@ -244,7 +249,7 @@ classes = (
 
 )
 
-libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication"
+libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication\\replication"
 
 @persistent
 def load_handler(dummy):

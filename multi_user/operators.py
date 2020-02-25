@@ -4,36 +4,32 @@ import os
 import queue
 import random
 import string
-import subprocess
 import time
 from operator import itemgetter
 from pathlib import Path
-import msgpack
+from subprocess import PIPE, Popen, TimeoutExpired
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-from bpy_extras.io_utils import ExportHelper
 
 from . import bl_types, delayable, environment, presence, ui, utils
+from .libs.replication.replication.constants import (FETCHED, STATE_ACTIVE,
+                                                     STATE_INITIAL,
+                                                     STATE_SYNCING)
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
-from .libs.replication.replication.constants import (
-    STATE_ACTIVE,
-    STATE_INITIAL,
-    STATE_SYNCING,
-    FETCHED)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 client = None
 delayables = []
 ui_context = None
 stop_modal_executor = False
 modal_executor_queue = None
-
+server_process = None
 # OPERATORS
 
 
@@ -49,7 +45,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, ui_context
+        global client, delayables, ui_context, server_process
         settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
 
@@ -85,56 +81,53 @@ class SessionStartOperator(bpy.types.Operator):
                     timout=type_local_config.bl_delay_apply,
                     target_type=type_module_class))
 
-        client = Session(factory=bpy_factory)
+        client = Session(
+            factory=bpy_factory,
+            python_path=bpy.app.binary_path_python,
+            default_strategy=settings.right_strategy)
 
+        # Host a session
         if self.host:
             # Scene setup
             if settings.start_empty:
                 utils.clean_scene()
 
             try:
+                for scene in bpy.data.scenes:
+                    scene_uuid = client.add(scene)
+                    client.commit(scene_uuid)
+
                 client.host(
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    right_strategy=settings.right_strategy
-                )
+                    ipc_port=settings.ipc_port)
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
 
             settings.is_admin = True
+
+        # Join a session
         else:
             utils.clean_scene()
 
-            client.connect(
-                id=settings.username,
-                address=settings.ip,
-                port=settings.port
-            )
+            try:
+                client.connect(
+                    id=settings.username,
+                    address=settings.ip,
+                    port=settings.port,
+                    ipc_port=settings.ipc_port
+                )
+            except Exception as e:
+                self.report({'ERROR'}, repr(e))
+                logger.error(f"Error: {e}")
 
-        time.sleep(1)
-
-        if client.state == 0:
-            settings.is_admin = False
-            self.report(
-                {'ERROR'},
-                "A session is already hosted on this address")
-            return {"CANCELLED"}
-
-        if self.host:
-            for scene in bpy.data.scenes:
-                scene_uuid = client.add(scene)
-
-                # for node in client.list():
-                client.commit(scene_uuid)
-
+        # Background client updates service
+        #TODO: Refactoring
         delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
-
-        # Push all added values
-        client.push_all()
 
         # Launch drawing module
         if settings.enable_presence:
@@ -165,21 +158,23 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, stop_modal_executor
-
+        global client, delayables, stop_modal_executor, server_process
+        assert(client)
         stop_modal_executor = True
         settings = context.window_manager.session
         settings.is_admin = False
-        assert(client)
-
-        client.disconnect()
 
         for d in delayables:
             try:
                 d.unregister()
             except:
                 continue
-        presence.renderer.stop()
+        presence.renderer.stop()       
+
+        try:
+            client.disconnect()
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
 
         return {"FINISHED"}
 
@@ -321,7 +316,7 @@ class SessionSnapTimeOperator(bpy.types.Operator):
             settings.user_snap_running = True
 
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
+        self._timer = wm.event_timer_add(0.05, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -404,17 +399,18 @@ class ApplyArmatureOperator(bpy.types.Operator):
 
         if event.type == 'TIMER':
             global client
-            nodes = client.list(filter=bl_types.bl_armature.BlArmature)
+            if client and client.state['STATE'] == STATE_ACTIVE:
+                nodes = client.list(filter=bl_types.bl_armature.BlArmature)
 
-            for node in nodes:
-                node_ref = client.get(uuid=node)
+                for node in nodes:
+                    node_ref = client.get(uuid=node)
 
-                if node_ref.state == FETCHED:
-                    try:
-                        client.apply(node)
-                    except Exception as e:
-                        logger.error(
-                            "fail to apply {}: {}".format(node_ref.uuid, e))
+                    if node_ref.state == FETCHED:
+                        try:
+                            client.apply(node)
+                        except Exception as e:
+                            logger.error(
+                                "fail to apply {}: {}".format(node_ref.uuid, e))
 
         return {'PASS_THROUGH'}
 
@@ -444,7 +440,6 @@ classes = (
     SessionCommit,
     ApplyArmatureOperator,
 
-
 )
 
 
@@ -452,7 +447,7 @@ classes = (
 def load_pre_handler(dummy):
     global client
 
-    if client and client.state in [STATE_ACTIVE, STATE_SYNCING]:
+    if client and client.state['STATE'] in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
 
 
@@ -466,17 +461,51 @@ def sanitize_deps_graph(dummy):
     """
     global client
 
-    if client and client.state in [STATE_ACTIVE]:
+    if client and client.state['STATE'] in [STATE_ACTIVE]:
         for node_key in client.list():
             client.get(node_key).resolve()
 
 
 @persistent
 def update_client_frame(scene):
-    if client and client.state == STATE_ACTIVE:
+    if client and client.state['STATE'] == STATE_ACTIVE:
         client.update_user_metadata({
             'frame_current': scene.frame_current
         })
+
+@persistent
+def depsgraph_evaluation(scene):
+    if client and client.state['STATE'] == STATE_ACTIVE:
+        context = bpy.context
+        blender_depsgraph = bpy.context.view_layer.depsgraph
+        dependency_updates = [u for u in blender_depsgraph.updates]
+        session_infos = bpy.context.window_manager.session
+
+        # NOTE: maybe we don't need to check each update but only the first
+
+        for update in reversed(dependency_updates):
+            # Is the object tracked ?
+            if update.id.uuid:
+                # Retrieve local version
+                node = client.get(update.id.uuid)
+                
+                # Check our right on this update:
+                #   - if its ours or ( under common and diff), launch the
+                # update process
+                #   - if its to someone else, ignore the update (go deeper ?)
+                if node.owner == session_infos.username:
+                    # Avoid slow geometry update
+                    if 'EDIT' in context.mode:
+                        break
+                    logger.error("UPDATE: MODIFIFY {}".format(type(update.id)))
+                    # client.commit(node.uuid)
+                    # client.push(node.uuid)
+                else:
+                    # Distant update
+                    continue
+            # else:
+            #     # New items !
+            #     logger.error("UPDATE: ADD")C.obj  
 
 
 def register():
@@ -491,11 +520,13 @@ def register():
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
+    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+
 
 def unregister():
     global client
 
-    if client and client.state == 2:
+    if client and client.state['STATE'] == 2:
         client.disconnect()
         client = None
 
@@ -509,6 +540,8 @@ def unregister():
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
+
+    # bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
 
 if __name__ == "__main__":

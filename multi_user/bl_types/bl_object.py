@@ -75,7 +75,7 @@ class BlObject(BlDatablock):
             if bpy.app.version[1] >= 83:
                 pointer = bpy.data.lightprobes[data["data"]]
             else:
-                logger.error("Lightprobe replication only supported since 2.83")
+                logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
         instance = bpy.data.objects.new(data["name"], pointer)
         instance.uuid = self.uuid
 
@@ -235,6 +235,9 @@ class BlObject(BlDatablock):
                     'rotation_mode',
                     'location',
                     'scale',
+                    'custom_shape',
+                    'use_custom_shape_bone_size',
+                    'custom_shape_scale',
                     group_index,
                     rotation
                 ]

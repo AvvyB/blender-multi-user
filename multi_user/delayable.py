@@ -3,10 +3,10 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .libs.replication.replication.constants import FETCHED, RP_COMMON
+from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 
 class Delayable():
@@ -64,15 +64,16 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        if operators.client:
-            nodes = operators.client.list(filter=self._type)
+        client =  operators.client
+        if client and  client.state['STATE'] == STATE_ACTIVE:
+            nodes = client.list(filter=self._type)
 
             for node in nodes:
-                node_ref = operators.client.get(uuid=node)
+                node_ref = client.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        operators.client.apply(node)
+                        client.apply(node)
                     except Exception as e:
                         logger.error(
                             "fail to apply {}: {}".format(node_ref.uuid, e))
@@ -89,13 +90,13 @@ class DynamicRightSelectTimer(Timer):
         session = operators.client
         settings = bpy.context.window_manager.session
 
-        if session:
+        if session and session.state['STATE'] == STATE_ACTIVE:
             # Find user
             if self._user is None:
                 self._user = session.online_users.get(settings.username)
 
             if self._right_strategy is None:
-                self._right_strategy = session.get_config()[
+                self._right_strategy = session.config[
                     'right_strategy']
 
             if self._user:
@@ -195,23 +196,24 @@ class DrawClient(Draw):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         
-        if session and renderer:
+        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             settings = bpy.context.window_manager.session
             users = session.online_users
 
             for user in users.values():
                 metadata = user.get('metadata')
 
-                if settings.presence_show_selected and 'selected_objects' in metadata.keys():
-                    renderer.draw_client_selection(
-                        user['id'], metadata['color'], metadata['selected_objects'])
-                if settings.presence_show_user and 'view_corners' in metadata:
-                    renderer.draw_client_camera(
-                        user['id'], metadata['view_corners'], metadata['color'])
+                if 'color' in metadata:
+                    if settings.presence_show_selected and 'selected_objects' in metadata.keys():
+                        renderer.draw_client_selection(
+                            user['id'], metadata['color'], metadata['selected_objects'])
+                    if settings.presence_show_user and 'view_corners' in metadata:
+                        renderer.draw_client_camera(
+                            user['id'], metadata['view_corners'], metadata['color'])
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=1):
+    def __init__(self, timout=.5):
         super().__init__(timout)
 
     def execute(self):
@@ -220,9 +222,9 @@ class ClientUpdate(Timer):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         
-        if session and renderer:
+        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             # Check if session has been closes prematurely
-            if session.state == 0:
+            if session.state['STATE'] == 0:
                 bpy.ops.session.stop()
 
             local_user = operators.client.online_users.get(
@@ -233,8 +235,7 @@ class ClientUpdate(Timer):
             local_user_metadata = local_user.get('metadata')
             current_view_corners = presence.get_view_corners()
 
-            if not local_user_metadata:
-                logger.info("init user metadata")
+            if not local_user_metadata or 'color' not in local_user_metadata.keys():
                 metadata = {
                     'view_corners': current_view_corners,
                     'view_matrix': presence.get_view_matrix(),
@@ -272,4 +273,7 @@ class ClientUpdate(Timer):
                     new_key.username = user
 
             # TODO: event drivent 3d view refresh
+            presence.refresh_3d_view()
+        # ui update
+        elif session:
             presence.refresh_3d_view()

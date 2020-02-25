@@ -1,9 +1,11 @@
 import bpy
 import mathutils
+import logging
 
 from .. import utils
 from .bl_datablock import BlDatablock
 
+logger = logging.getLogger(__name__)
 
 class BlLightprobe(BlDatablock):
     bl_id = "lightprobes"
@@ -18,10 +20,19 @@ class BlLightprobe(BlDatablock):
 
     def construct(self, data):
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
-        return bpy.data.lightprobes.new(data["name"], type)
+        # See https://developer.blender.org/D6396
+        if bpy.app.version[1] >= 83:
+            return bpy.data.lightprobes.new(data["name"], type)
+        else:
+            logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+
+        
+        
 
     def dump(self, pointer=None):
         assert(pointer)
+        if bpy.app.version[1] < 83:
+            logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 1
