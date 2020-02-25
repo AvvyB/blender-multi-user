@@ -235,6 +235,9 @@ class BlObject(BlDatablock):
                     'rotation_mode',
                     'location',
                     'scale',
+                    'custom_shape',
+                    'use_custom_shape_bone_size',
+                    'custom_shape_scale',
                     group_index,
                     rotation
                 ]

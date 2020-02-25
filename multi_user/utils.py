@@ -104,8 +104,8 @@ def get_armature_edition_context(armature):
     return override
 
 
-def get_selected_objects(scene):
-    return [obj.uuid for obj in scene.objects if obj.select_get()]
+def get_selected_objects(scene, active_view_layer):
+    return [obj.uuid for obj in scene.objects if obj.select_get(view_layer=active_view_layer)]
 
 
 def load_dict(src_dict, target):

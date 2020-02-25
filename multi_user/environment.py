@@ -48,12 +48,6 @@ def module_can_be_imported(name):
         return False
 
 
-def get_package_install_directory():
-    for path in sys.path:
-        if os.path.basename(path) in ("dist-packages", "site-packages"):
-            return path
-
-
 def install_pip():
     # pip can not necessarily be imported into Blender after this
     get_pip_path = Path(__file__).parent / "libs" / "get-pip.py"
@@ -61,10 +55,8 @@ def install_pip():
 
 
 def install_package(name):
-    target = get_package_install_directory()
-
     subprocess.run([str(PYTHON_PATH), "-m", "pip", "install",
-                    name, '--target', target], cwd=SUBPROCESS_DIR)
+                    name], cwd=SUBPROCESS_DIR)
 
 def check_dir(dir):
     if not os.path.exists(dir):

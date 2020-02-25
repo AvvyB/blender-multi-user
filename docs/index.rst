@@ -34,15 +34,22 @@ Documentation is organized into the following sections:
     :caption: About
     :name: sec-about
 
-    introduction
+    about/introduction
 
 .. toctree::
     :maxdepth: 1
     :caption: Getting started
     :name: sec-learn
     
-    install
-    quickstart
+    getting_started/install
+    getting_started/quickstart
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials
+   :name: sec-tutorials
+
+   tutorials/hosting_guide
 
 .. toctree::
     :maxdepth: 1
