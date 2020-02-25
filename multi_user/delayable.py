@@ -101,7 +101,9 @@ class DynamicRightSelectTimer(Timer):
 
             if self._user:
                 current_selection = utils.get_selected_objects(
-                    bpy.context.scene)
+                    bpy.context.scene,
+                    bpy.data.window_managers['WinMan'].windows[0].view_layer
+                )
                 if current_selection != self._last_selection:
                     if self._right_strategy == RP_COMMON:
                         obj_common = [
