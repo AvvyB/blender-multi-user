@@ -122,6 +122,7 @@ class BlMaterial(BlDatablock):
         node_dumper.depth = 1
         node_dumper.exclude_filter = [
             "dimensions",
+            "show_expanded"
             "select",
             "bl_height_min",
             "bl_height_max",
@@ -140,7 +141,12 @@ class BlMaterial(BlDatablock):
         input_dumper.include_filter = ["default_value"]
         links_dumper = utils.dump_anything.Dumper()
         links_dumper.depth = 3
-        links_dumper.exclude_filter = ["dimensions"]
+        links_dumper.include_filter = [
+            "name",
+            "to_node",
+            "from_node",
+            "from_socket",
+            "to_socket"]
         data = mat_dumper.dump(pointer)
 
         if pointer.use_nodes:
