@@ -54,18 +54,26 @@ class BlImage(BlDatablock):
 
         image.source = 'FILE'
         image.filepath = img_path
+        image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)
-        utils.dump_datablock_attibutes(pointer, [], 2, data)
-        data = utils.dump_datablock_attibutes(
-            pointer, 
-            ["name", 'size', 'height', 'alpha', 'float_buffer', 'filepath', 'source'],
-            2,
-            data)
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 2
+        dumper.include_filter = [   
+                "name",
+                'size',
+                'height',
+                'alpha',
+                'float_buffer',
+                'filepath',
+                'source',
+                'colorspace_settings']
+        data.update(dumper.dump(pointer))
+
         return data
 
     def diff(self):
