@@ -7,6 +7,7 @@ from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
 
+
 def load_constraints(target, data):
     for local_constraint in target.constraints:
         if local_constraint.name not in data:
@@ -22,10 +23,12 @@ def load_constraints(target, data):
         utils.dump_anything.load(
             target_constraint, data[constraint])
 
+
 def load_pose(target_bone, data):
     target_bone.rotation_mode = data['rotation_mode']
 
     utils.dump_anything.load(target_bone, data)
+
 
 class BlObject(BlDatablock):
     bl_id = "objects"
@@ -75,20 +78,25 @@ class BlObject(BlDatablock):
             if bpy.app.version[1] >= 83:
                 pointer = bpy.data.lightprobes[data["data"]]
             else:
-                logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+                logger.warning(
+                    "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
         instance = bpy.data.objects.new(data["name"], pointer)
         instance.uuid = self.uuid
 
         return instance
 
     def load_implementation(self, data, target):
-        if "matrix_world" in data:
-            target.matrix_world = mathutils.Matrix(data["matrix_world"])
+        # Load transformation data
+        rot_mode = 'rotation_quaternion' if data['rotation_mode'] == 'QUATERNION' else 'rotation_euler'
+        target.rotation_mode = data['rotation_mode']
+        target.location = data['location']
+        setattr(target, rot_mode, data[rot_mode])
+        target.scale = data['scale']
 
         target.name = data["name"]
         # Load modifiers
         if hasattr(target, 'modifiers'):
-            # TODO: smarter selective update 
+            # TODO: smarter selective update
             target.modifiers.clear()
 
             for modifier in data['modifiers']:
@@ -106,8 +114,7 @@ class BlObject(BlDatablock):
         if hasattr(target, 'constraints') and 'constraints' in data:
             load_constraints(target, data['constraints'])
 
-
-        # Pose 
+        # Pose
         if 'pose' in data:
             if not target.pose:
                 raise Exception('No pose data yet (Fixed in a near futur)')
@@ -118,7 +125,7 @@ class BlObject(BlDatablock):
 
                 if not bg_target:
                     bg_target = target.pose.bone_groups.new(name=bg_name)
-                
+
                 utils.dump_anything.load(bg_target, bg_data)
                 # target.pose.bone_groups.get
 
@@ -130,12 +137,11 @@ class BlObject(BlDatablock):
                 if 'constraints' in bone_data.keys():
                     load_constraints(
                         target_bone, bone_data['constraints'])
-                
-                load_pose(target_bone,bone_data)
+
+                load_pose(target_bone, bone_data)
 
                 if 'bone_index' in bone_data.keys():
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
-            
 
         # Load relations
         if 'children' in data.keys():
@@ -165,20 +171,21 @@ class BlObject(BlDatablock):
             target.shape_key_clear()
 
             object_data = target.data
-            
+
             # Create keys and load vertices coords
             for key_block in data['shape_keys']['key_blocks']:
                 key_data = data['shape_keys']['key_blocks'][key_block]
                 target.shape_key_add(name=key_block)
-                
-                utils.dump_anything.load(target.data.shape_keys.key_blocks[key_block],key_data)
+
+                utils.dump_anything.load(
+                    target.data.shape_keys.key_blocks[key_block], key_data)
                 for vert in key_data['data']:
                     target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
-            
+
             # Load relative key after all
             for key_block in data['shape_keys']['key_blocks']:
                 reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
-            
+
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
     def dump_implementation(self, data, pointer=None):
@@ -195,10 +202,11 @@ class BlObject(BlDatablock):
             "empty_display_type",
             "empty_display_size",
             "instance_collection",
-            "instance_type"
+            "instance_type",
+            "location",
+            "scale",
+            'rotation_quaternion' if pointer.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
-        # if not utils.has_action(pointer):
-        dumper.include_filter.append('matrix_world')
 
         data = dumper.dump(pointer)
 
@@ -219,8 +227,6 @@ class BlObject(BlDatablock):
         if hasattr(pointer, 'constraints'):
             dumper.depth = 3
             data["constraints"] = dumper.dump(pointer.constraints)
-        
-        
 
         # POSE
         if hasattr(pointer, 'pose') and pointer.pose:
@@ -242,7 +248,7 @@ class BlObject(BlDatablock):
                     rotation
                 ]
                 bones[bone.name] = dumper.dump(bone)
-                
+
                 dumper.include_filter = []
                 dumper.depth = 3
                 bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
@@ -259,7 +265,6 @@ class BlObject(BlDatablock):
                 ]
                 bone_groups[group.name] = dumper.dump(group)
             data['pose']['bone_groups'] = bone_groups
-
 
         # CHILDS
         if len(pointer.children) > 0:
@@ -278,23 +283,21 @@ class BlObject(BlDatablock):
                 dumped_vg['name'] = vg.name
 
                 vertices = []
-                
+
                 for v in pointer.data.vertices:
                     for vg in v.groups:
                         if vg.group == vg_idx:
-                            # logger.error("VG {} : Adding vertex {} to group {}".format(vg_idx, v.index, vg_idx))
-                            
                             vertices.append({
                                 'index': v.index,
                                 'weight': vg.weight
                             })
-                       
+
                 dumped_vg['vertices'] = vertices
 
                 vg_data.append(dumped_vg)
 
             data['vertex_groups'] = vg_data
-        
+
         #  SHAPE KEYS
         pointer_data = pointer.data
         if hasattr(pointer_data, 'shape_keys') and pointer_data.shape_keys:
@@ -337,7 +340,6 @@ class BlObject(BlDatablock):
         if self.is_library:
             deps.append(self.pointer.library)
 
-
         if self.pointer.instance_type == 'COLLECTION':
             # TODO: uuid based
             deps.append(self.pointer.instance_collection)
@@ -346,5 +348,3 @@ class BlObject(BlDatablock):
 
     def is_valid(self):
         return bpy.data.objects.get(self.data['name'])
-
-
