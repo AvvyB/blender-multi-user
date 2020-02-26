@@ -30,6 +30,18 @@ ui_context = None
 stop_modal_executor = False
 modal_executor_queue = None
 server_process = None
+
+def unregister_delayables():
+    global delayables, stop_modal_executor
+
+    for d in delayables:
+            try:
+                d.unregister()
+            except:
+                continue
+    
+    stop_modal_executor = True
+    
 # OPERATORS
 
 
@@ -51,7 +63,7 @@ class SessionStartOperator(bpy.types.Operator):
 
         # TODO: Sync server clients
         users.clear()
-
+        delayables.clear()
         # save config
         settings.save(context)
 
@@ -105,8 +117,8 @@ class SessionStartOperator(bpy.types.Operator):
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
-
-            settings.is_admin = True
+            finally:
+                settings.is_admin = True
 
         # Join a session
         else:
@@ -122,6 +134,8 @@ class SessionStartOperator(bpy.types.Operator):
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
+            finally:
+                settings.is_admin = False
 
         # Background client updates service
         #TODO: Refactoring
@@ -158,18 +172,8 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, stop_modal_executor, server_process
-        assert(client)
-        stop_modal_executor = True
-        settings = context.window_manager.session
-        settings.is_admin = False
-
-        for d in delayables:
-            try:
-                d.unregister()
-            except:
-                continue
-        presence.renderer.stop()       
+        global client, delayables, stop_modal_executor
+        assert(client)     
 
         try:
             client.disconnect()
