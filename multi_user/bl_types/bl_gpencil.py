@@ -13,7 +13,7 @@ def load_gpencil_layer(target=None, data=None, create=False):
         
     for frame in data["frames"]:
         
-        tframe = target.frames.new(frame)
+        tframe = target.frames.new(data["frames"][frame]['frame_number'])
 
         # utils.dump_anything.load(tframe, data["frames"][frame])
         for stroke in data["frames"][frame]["strokes"]:
