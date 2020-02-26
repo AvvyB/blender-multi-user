@@ -1,5 +1,6 @@
 import bpy
 import mathutils
+import copy
 
 from .. import utils
 from .bl_datablock import BlDatablock
@@ -54,18 +55,27 @@ class BlAction(BlDatablock):
 
             # paste dumped keyframes
             for dumped_keyframe_point in dumped_fcurve["keyframe_points"]:
+                if dumped_keyframe_point['type'] == '':
+                    dumped_keyframe_point['type'] = 'KEYFRAME' 
+
                 new_kf = fcurve.keyframe_points.insert(
                     dumped_keyframe_point["co"][0] - begin_frame,
                     dumped_keyframe_point["co"][1],
                     options={'FAST', 'REPLACE'}
                 )
+
+                keycache  = copy.copy(dumped_keyframe_point)
+                keycache =  utils.dump_anything.remove_items_from_dict(
+                        keycache,
+                        ["co", "handle_left", "handle_right",'type']
+                    )
+                
                 loader.load(
                     new_kf,
-                    utils.dump_anything.remove_items_from_dict(
-                        dumped_keyframe_point,
-                        ["co", "handle_left", "handle_right"]
-                    )
+                    keycache
                 )
+
+                new_kf.type = dumped_keyframe_point['type']
                 new_kf.handle_left = [
                     dumped_keyframe_point["handle_left"][0] - begin_frame,
                     dumped_keyframe_point["handle_left"][1]
@@ -78,27 +88,29 @@ class BlAction(BlDatablock):
             # clearing (needed for blender to update well)
             if len(fcurve.keyframe_points) == 0:
                 target.fcurves.remove(fcurve)
+        target.id_root= data['id_root']
 
     def dump(self, pointer=None):
         assert(pointer)
-        data =  utils.dump_datablock(pointer, 1)
-
         dumper = utils.dump_anything.Dumper()
-        dumper.depth = 2
         dumper.exclude_filter =[
             'name_full',
             'original',
             'use_fake_user',
             'user',
             'is_library_indirect',
-            'id_root',
             'select_control_point',
             'select_right_handle',
             'select_left_handle',
-            'uuid'
+            'uuid',
+            'users'
         ]
+        dumper.depth = 1
+        data =  dumper.dump(pointer)
 
+        
         data["fcurves"] = []
+        dumper.depth = 2
         for fcurve in self.pointer.fcurves:
             fc = {
                 "data_path": fcurve.data_path,
