@@ -78,7 +78,7 @@ class BlMaterial(BlDatablock):
     def construct(self, data):
         return bpy.data.materials.new(data["name"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         target.name = data['name']
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
@@ -95,6 +95,8 @@ class BlMaterial(BlDatablock):
 
             target.node_tree.nodes.clear()
 
+            utils.dump_anything.load(target,data)
+            
             # Load nodes
             for node in data["node_tree"]["nodes"]:
                 load_node(target.node_tree, data["node_tree"]["nodes"][node])
