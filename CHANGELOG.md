@@ -35,3 +35,4 @@ All notable changes to this project will be documented in this file.
 - Right management takes view-layer in account for object selection.
 - Use a basic BFS approach for replication graph pre-load.
 - Serialization is now based on marshal (2x performance improvements).
+- Let pip chose python dependencies install path.
