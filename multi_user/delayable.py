@@ -3,7 +3,7 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
+from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_INITIAL,STATE_QUITTING, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -217,13 +217,14 @@ class DrawClient(Draw):
 class ClientUpdate(Timer):
     def __init__(self, timout=.5):
         super().__init__(timout)
+        self.handle_quit = False
 
     def execute(self):
         settings = bpy.context.window_manager.session
         session_info = bpy.context.window_manager.session
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
-        
+       
         if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             # Check if session has been closes prematurely
             if session.state['STATE'] == 0:
@@ -276,6 +277,16 @@ class ClientUpdate(Timer):
 
             # TODO: event drivent 3d view refresh
             presence.refresh_3d_view()
-        # ui update
+        elif session.state['STATE'] == STATE_QUITTING:
+            presence.refresh_3d_view()
+            self.handle_quit = True
+        elif session.state['STATE'] == STATE_INITIAL and self.handle_quit:
+            self.handle_quit = False
+            presence.refresh_3d_view()
+            
+            operators.unregister_delayables()
+            
+            presence.renderer.stop()
+        # # ui update
         elif session:
             presence.refresh_3d_view()

@@ -78,7 +78,7 @@ class BlMaterial(BlDatablock):
     def construct(self, data):
         return bpy.data.materials.new(data["name"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         target.name = data['name']
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
@@ -95,6 +95,8 @@ class BlMaterial(BlDatablock):
 
             target.node_tree.nodes.clear()
 
+            utils.dump_anything.load(target,data)
+            
             # Load nodes
             for node in data["node_tree"]["nodes"]:
                 load_node(target.node_tree, data["node_tree"]["nodes"][node])
@@ -122,6 +124,7 @@ class BlMaterial(BlDatablock):
         node_dumper.depth = 1
         node_dumper.exclude_filter = [
             "dimensions",
+            "show_expanded"
             "select",
             "bl_height_min",
             "bl_height_max",
@@ -140,7 +143,12 @@ class BlMaterial(BlDatablock):
         input_dumper.include_filter = ["default_value"]
         links_dumper = utils.dump_anything.Dumper()
         links_dumper.depth = 3
-        links_dumper.exclude_filter = ["dimensions"]
+        links_dumper.include_filter = [
+            "name",
+            "to_node",
+            "from_node",
+            "from_socket",
+            "to_socket"]
         data = mat_dumper.dump(pointer)
 
         if pointer.use_nodes:

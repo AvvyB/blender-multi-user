@@ -1,11 +1,15 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "description": "",
+    "version": (0, 0, 2),
+    "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 80, 0),
-    "location": "",
+    "location": "3D View > Sidebar > Multi-User tab",
     "warning": "Unstable addon, use it at your own risks",
-    "category": "Collaboration"
+    "category": "Collaboration",
+    "wiki_url": "https://multi-user.readthedocs.io/en/develop/index.html",
+    "tracker_url": "https://gitlab.com/slumber/multi-user/issues",
+    "support": "COMMUNITY"
 }
 
 

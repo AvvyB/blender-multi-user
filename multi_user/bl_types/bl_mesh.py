@@ -114,6 +114,8 @@ class BlMesh(BlDatablock):
                 v2 = data["edges"][i]["verts"][1]
                 edge = mesh_buffer.edges.new([verts[v1], verts[v2]])
                 edge.smooth = data["edges"][i]["smooth"]
+            
+            mesh_buffer.edges.ensure_lookup_table()
             for p in data["faces"]:
                 verts = []
                 for v in data["faces"][p]["verts"]:
@@ -151,6 +153,8 @@ class BlMesh(BlDatablock):
         dumper.depth = 2
         dumper.include_filter = [
             'name',
+            'use_auto_smooth',
+            'auto_smooth_angle'
         ]
         data = dumper.dump(pointer)
         dump_mesh(pointer, data)
