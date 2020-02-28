@@ -497,15 +497,11 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update (go deeper ?)
-                if node.owner in [session_infos.username]:
+                if node.owner in [session_infos.username, 'COMMON']:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode:
                         break
                     client.stash(node.uuid)
-                # TODO: Do this from replication api...Maybe as a task !
-                if node.owner == 'COMMON':
-                    if node.diff():
-                        client.stash(node.uuid)
                 else:
                     # Distant update
                     continue
