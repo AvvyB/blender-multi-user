@@ -5,6 +5,7 @@ import random
 import string
 import sys
 from uuid import uuid4
+from collections.abc import Iterable
 
 import bpy
 import mathutils
@@ -13,7 +14,18 @@ from . import environment, presence
 from .libs import dump_anything
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.WARNING)
+
+def has_action(target):
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.action)
+
+
+def has_driver(target):
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.drivers)
 
 
 def find_from_attr(attr_name, attr_value, list):
@@ -45,7 +57,7 @@ def get_datablock_users(datablock):
 def random_string_digits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
+    return ''.join(random.choices(lettersAndDigits, k=stringLength))
 
 
 def clean_scene():
@@ -92,8 +104,8 @@ def get_armature_edition_context(armature):
     return override
 
 
-def get_selected_objects(scene):
-    return [obj.uuid for obj in scene.objects if obj.select_get()]
+def get_selected_objects(scene, active_view_layer):
+    return [obj.uuid for obj in scene.objects if obj.select_get(view_layer=active_view_layer)]
 
 
 def load_dict(src_dict, target):
@@ -139,3 +151,13 @@ def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None)
                 pass
 
         return data
+
+
+def resolve_from_id(id, optionnal_type=None):
+    for category in dir(bpy.data):
+        root = getattr(bpy.data, category)
+        if isinstance(root, Iterable):
+            if id in root and ((optionnal_type is None) or (optionnal_type.lower() in root[id].__class__.__name__.lower())):
+                return root[id]
+    return None
+            

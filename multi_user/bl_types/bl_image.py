@@ -15,8 +15,11 @@ def dump_image(image):
         image.save()
 
     if image.source == "FILE":
+        image_path = bpy.path.abspath(image.filepath_raw)
+        image_directory = os.path.dirname(image_path)
+        os.makedirs(image_directory, exist_ok=True)
         image.save()
-        file = open(image.filepath_raw, "rb")
+        file = open(image_path, "rb")
         pixels = file.read()
         file.close()
     else:
@@ -24,6 +27,13 @@ def dump_image(image):
     return pixels
 
 class BlImage(BlDatablock):
+    bl_id = "images"
+    bl_class = bpy.types.Image
+    bl_delay_refresh = 0
+    bl_delay_apply = 1
+    bl_automatic_push = False
+    bl_icon = 'IMAGE_DATA'
+
     def construct(self, data):
         return bpy.data.images.new(
                 name=data['name'],
@@ -44,32 +54,30 @@ class BlImage(BlDatablock):
 
         image.source = 'FILE'
         image.filepath = img_path
+        image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)
-        utils.dump_datablock_attibutes(pointer, [], 2, data)
-        data = utils.dump_datablock_attibutes(
-            pointer, 
-            ["name", 'size', 'height', 'alpha', 'float_buffer', 'filepath', 'source'],
-            2,
-            data)
+        dumper = utils.dump_anything.Dumper()
+        dumper.depth = 2
+        dumper.include_filter = [   
+                "name",
+                'size',
+                'height',
+                'alpha',
+                'float_buffer',
+                'filepath',
+                'source',
+                'colorspace_settings']
+        data.update(dumper.dump(pointer))
+
         return data
-    
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.images)
 
     def diff(self):
         return False
     
     def is_valid(self):
         return bpy.data.images.get(self.data['name'])
-bl_id = "images"
-bl_class = bpy.types.Image
-bl_rep_class = BlImage
-bl_delay_refresh = 0
-bl_delay_apply = 0
-bl_automatic_push = False
-bl_icon = 'IMAGE_DATA'

@@ -6,6 +6,13 @@ from .bl_datablock import BlDatablock
 
 
 class BlLattice(BlDatablock):
+    bl_id = "lattices"
+    bl_class = bpy.types.Lattice
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
+    bl_automatic_push = True
+    bl_icon = 'LATTICE_DATA'
+
     def load(self, data, target):
         utils.dump_anything.load(target, data)
 
@@ -38,17 +45,8 @@ class BlLattice(BlDatablock):
 
         return data
 
-    def resolve(self):
-        self.pointer = utils.find_from_attr('uuid', self.uuid, bpy.data.lattices)
-
     def is_valid(self):
         return bpy.data.lattices.get(self.data['name'])
 
 
-bl_id = "lattices"
-bl_class = bpy.types.Lattice
-bl_rep_class = BlLattice
-bl_delay_refresh = 1
-bl_delay_apply = 1
-bl_automatic_push = True
-bl_icon = 'LATTICE_DATA'
+

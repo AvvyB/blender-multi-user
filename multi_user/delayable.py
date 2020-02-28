@@ -3,10 +3,10 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .bl_types.bl_user import BlUser
-from .libs.replication.replication.constants import FETCHED, RP_COMMON
+from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_INITIAL,STATE_QUITTING, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class Delayable():
@@ -64,84 +64,114 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        if operators.client:
-            nodes = operators.client.list(filter=self._type)
+        client =  operators.client
+        if client and  client.state['STATE'] == STATE_ACTIVE:
+            nodes = client.list(filter=self._type)
 
             for node in nodes:
-                node_ref = operators.client.get(uuid=node)
+                node_ref = client.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        operators.client.apply(node)
+                        client.apply(node)
                     except Exception as e:
-                            logger.error("fail to apply {}: {}".format(node_ref.uuid,e))
+                        logger.error(
+                            "fail to apply {}: {}".format(node_ref.uuid, e))
 
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=.1):
         super().__init__(timout)
-        self.last_selection = []
+        self._last_selection = []
+        self._user = None
+        self._right_strategy = RP_COMMON
 
     def execute(self):
-        if operators.client:
-            users = operators.client.list(filter=BlUser)
+        session = operators.client
+        settings = bpy.context.window_manager.session
 
-            for user in users:
-                user_ref = operators.client.get(uuid=user)
-                settings = bpy.context.window_manager.session
+        if session and session.state['STATE'] == STATE_ACTIVE:
+            # Find user
+            if self._user is None:
+                self._user = session.online_users.get(settings.username)
 
-                # Local user
-                if user_ref.pointer:
-                    current_selection = utils.get_selected_objects(
-                        bpy.context.scene)
-                    if current_selection != self.last_selection:
-                        right_strategy = operators.client.get_config()[
-                            'right_strategy']
-                        if right_strategy == RP_COMMON:
-                            obj_common = [
-                                o for o in self.last_selection if o not in current_selection]
-                            obj_ours = [
-                                o for o in current_selection if o not in self.last_selection]
+            if self._right_strategy is None:
+                self._right_strategy = session.config[
+                    'right_strategy']
 
-                            # change new selection to our
-                            for obj in obj_ours:
-                                node = operators.client.get(uuid=obj)
-                               
-                                if node and node.owner == RP_COMMON:
-                                    recursive = True
-                                    if node.data and 'instance_type' in node.data.keys():
-                                        recursive = node.data['instance_type'] != 'COLLECTION'
-                                        
-                                    operators.client.change_owner(
-                                        node.uuid,
-                                        settings.username,
-                                        recursive=recursive)
-                                else:
-                                    return
+            if self._user:
+                current_selection = utils.get_selected_objects(
+                    bpy.context.scene,
+                    bpy.data.window_managers['WinMan'].windows[0].view_layer
+                )
+                if current_selection != self._last_selection:
+                    if self._right_strategy == RP_COMMON:
+                        obj_common = [
+                            o for o in self._last_selection if o not in current_selection]
+                        obj_ours = [
+                            o for o in current_selection if o not in self._last_selection]
 
-                            self.last_selection = current_selection
-                            user_ref.pointer.update_selected_objects(
-                                bpy.context)
-                            user_ref.update()
+                        # change old selection right to common
+                        for obj in obj_common:
+                            node = session.get(uuid=obj)
 
-                            # change old selection right to common
-                            for obj in obj_common:
-                                node = operators.client.get(uuid=obj)
-                                
-                                if node and (node.owner == settings.username or node.owner == RP_COMMON):
-                                    recursive = True
-                                    if node.data and 'instance_type' in node.data.keys():
-                                        recursive = node.data['instance_type'] != 'COLLECTION'
-                                    operators.client.change_owner(
-                                        node.uuid,
-                                        RP_COMMON,
-                                        recursive=recursive)
-                else:
-                    for obj in bpy.data.objects:
-                        if obj.hide_select and obj.uuid not in user_ref.data['selected_objects']:
-                            obj.hide_select = False
-                        elif not obj.hide_select and obj.uuid in user_ref.data['selected_objects']:
-                            obj.hide_select = True
+                            if node and (node.owner == settings.username or node.owner == RP_COMMON):
+                                recursive = True
+                                if node.data and 'instance_type' in node.data.keys():
+                                    recursive = node.data['instance_type'] != 'COLLECTION'
+                                session.change_owner(
+                                    node.uuid,
+                                    RP_COMMON,
+                                    recursive=recursive)
+
+                        # change new selection to our
+                        for obj in obj_ours:
+                            node = session.get(uuid=obj)
+
+                            if node and node.owner == RP_COMMON:
+                                recursive = True
+                                if node.data and 'instance_type' in node.data.keys():
+                                    recursive = node.data['instance_type'] != 'COLLECTION'
+
+                                session.change_owner(
+                                    node.uuid,
+                                    settings.username,
+                                    recursive=recursive)
+                            else:
+                                return
+
+                        self._last_selection = current_selection
+
+                        user_metadata = {
+                            'selected_objects': current_selection
+                        }
+
+                        session.update_user_metadata(user_metadata)
+                        logger.info("Update selection")
+
+                        # Fix deselection until right managment refactoring (with Roles concepts)
+                        if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
+                            owned_keys = session.list(
+                                filter_owner=settings.username)
+                            for key in owned_keys:
+                                node = session.get(uuid=key)
+
+                                session.change_owner(
+                                    key,
+                                    RP_COMMON,
+                                    recursive=recursive)
+
+            for user, user_info in session.online_users.items():
+                if user != settings.username:
+                    metadata = user_info.get('metadata')
+
+                    if 'selected_objects' in metadata:
+                        # Update selectionnable objects
+                        for obj in bpy.data.objects:
+                            if obj.hide_select and obj.uuid not in metadata['selected_objects']:
+                                obj.hide_select = False
+                            elif not obj.hide_select and obj.uuid in metadata['selected_objects']:
+                                obj.hide_select = True
 
 
 class Draw(Delayable):
@@ -160,37 +190,103 @@ class Draw(Delayable):
             bpy.types.SpaceView3D.draw_handler_remove(
                 self._handler, "WINDOW")
         except:
-            logger.error("draw already unregistered")
+            pass
 
 
 class DrawClient(Draw):
     def execute(self):
-        repo = operators.client
-        if repo and presence.renderer:
+        session = getattr(operators, 'client', None)
+        renderer = getattr(presence, 'renderer', None)
+        
+        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             settings = bpy.context.window_manager.session
-            client_list = [key for key in repo.list(filter=BlUser) if
-                           key != settings.user_uuid]
+            users = session.online_users
 
-            for cli in client_list:
-                cli_ref = repo.get(uuid=cli)
-                if cli_ref.data.get('name'):
-                    if settings.presence_show_selected:
-                        presence.renderer.draw_client_selection(
-                            cli_ref.data['name'], cli_ref.data['color'], cli_ref.data['selected_objects'])
-                    if settings.presence_show_user:
-                        presence.renderer.draw_client_camera(
-                            cli_ref.data['name'], cli_ref.data['location'], cli_ref.data['color'])
+            for user in users.values():
+                metadata = user.get('metadata')
+
+                if 'color' in metadata:
+                    if settings.presence_show_selected and 'selected_objects' in metadata.keys():
+                        renderer.draw_client_selection(
+                            user['id'], metadata['color'], metadata['selected_objects'])
+                    if settings.presence_show_user and 'view_corners' in metadata:
+                        renderer.draw_client_camera(
+                            user['id'], metadata['view_corners'], metadata['color'])
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=1, client_uuid=None):
-        assert(client_uuid)
-        self._client_uuid = client_uuid
+    def __init__(self, timout=.5):
         super().__init__(timout)
+        self.handle_quit = False
 
     def execute(self):
-        if self._client_uuid and operators.client:
-            client = operators.client.get(uuid=self._client_uuid)
+        settings = bpy.context.window_manager.session
+        session_info = bpy.context.window_manager.session
+        session = getattr(operators, 'client', None)
+        renderer = getattr(presence, 'renderer', None)
+       
+        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
+            # Check if session has been closes prematurely
+            if session.state['STATE'] == 0:
+                bpy.ops.session.stop()
 
-            if client:
-                client.pointer.update_location()
+            local_user = operators.client.online_users.get(
+                session_info.username)
+            if not local_user:
+                return
+
+            local_user_metadata = local_user.get('metadata')
+            current_view_corners = presence.get_view_corners()
+
+            if not local_user_metadata or 'color' not in local_user_metadata.keys():
+                metadata = {
+                    'view_corners': current_view_corners,
+                    'view_matrix': presence.get_view_matrix(),
+                    'color': (settings.client_color.r,
+                              settings.client_color.g,
+                              settings.client_color.b,
+                              1),
+                    'frame_current':bpy.context.scene.frame_current
+                }
+                session.update_user_metadata(metadata)
+            elif current_view_corners != local_user_metadata['view_corners']:
+                logger.info('update user metadata')
+                local_user_metadata['view_corners'] = current_view_corners
+                local_user_metadata['view_matrix'] = presence.get_view_matrix()
+                session.update_user_metadata(local_user_metadata)
+
+            # sync online users
+            session_users = operators.client.online_users
+            ui_users = bpy.context.window_manager.online_users
+
+            for index, user in enumerate(ui_users):
+                if user.username not in session_users.keys():
+                    ui_users.remove(index)
+                    
+                    renderer.flush_selection()
+                    renderer.flush_users()
+                    
+                    
+                    break
+
+            for user in session_users:
+                if user not in ui_users:
+                    new_key = ui_users.add()
+                    new_key.name = user
+                    new_key.username = user
+
+            # TODO: event drivent 3d view refresh
+            presence.refresh_3d_view()
+        elif session.state['STATE'] == STATE_QUITTING:
+            presence.refresh_3d_view()
+            self.handle_quit = True
+        elif session.state['STATE'] == STATE_INITIAL and self.handle_quit:
+            self.handle_quit = False
+            presence.refresh_3d_view()
+            
+            operators.unregister_delayables()
+            
+            presence.renderer.stop()
+        # # ui update
+        elif session:
+            presence.refresh_3d_view()
