@@ -8,9 +8,6 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config")
-CONFIG = os.path.join(CONFIG_DIR, "app.yaml")
-
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
 PYTHON_PATH = None
@@ -18,27 +15,6 @@ SUBPROCESS_DIR = None
 
 
 rtypes = []
-
-
-def load_config():
-    import yaml
-
-    try:
-        with open(CONFIG, 'r') as config_file:
-            return yaml.safe_load(config_file)
-    except FileNotFoundError:
-        logger.info("no config")
-        return {}
-
-
-def save_config(config):
-    import yaml
-
-    logger.info("saving config")
-
-    with open(CONFIG, 'w') as outfile:
-        yaml.dump(config, outfile, default_flow_style=False)
-
 
 def module_can_be_imported(name):
     try:
@@ -67,9 +43,6 @@ def setup(dependencies, python_path):
 
     PYTHON_PATH = Path(python_path)
     SUBPROCESS_DIR = PYTHON_PATH.parent
-
-    check_dir(CACHE_DIR)
-    check_dir(CONFIG_DIR)
 
     if not module_can_be_imported("pip"):
         install_pip()

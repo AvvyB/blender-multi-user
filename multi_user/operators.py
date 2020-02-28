@@ -58,14 +58,13 @@ class SessionStartOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables, ui_context, server_process
-        settings = context.window_manager.session
+        settings = bpy.context.preferences.addons[__package__].preferences
+        runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
 
         # TODO: Sync server clients
         users.clear()
         delayables.clear()
-        # save config
-        settings.save(context)
 
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
@@ -80,7 +79,7 @@ class SessionStartOperator(bpy.types.Operator):
             supported_bl_types.append(type_module_class.bl_id)
 
             # Retreive local replicated types settings
-            type_local_config = settings.supported_datablock[type_impl_name]
+            type_local_config = settings.supported_datablocks[type_impl_name]
 
             bpy_factory.register_type(
                 type_module_class.bl_class,
@@ -118,7 +117,7 @@ class SessionStartOperator(bpy.types.Operator):
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
             finally:
-                settings.is_admin = True
+                runtime_settings.is_admin = True
 
         # Join a session
         else:
@@ -135,7 +134,7 @@ class SessionStartOperator(bpy.types.Operator):
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
             finally:
-                settings.is_admin = False
+                runtime_settings.is_admin = False
 
         # Background client updates service
         #TODO: Refactoring
@@ -144,7 +143,7 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(delayable.DynamicRightSelectTimer())
 
         # Launch drawing module
-        if settings.enable_presence:
+        if runtime_settings.enable_presence:
             presence.renderer.run()
 
         # Register blender main thread tools
@@ -226,17 +225,17 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        settings = context.window_manager.session
+        runtime_settings = context.window_manager.session
 
         col = layout.column()
-        col.prop(settings, "clients")
+        col.prop(runtime_settings, "clients")
 
     def execute(self, context):
-        settings = context.window_manager.session
+        runtime_settings = context.window_manager.session
         global client
 
         if client:
-            client.change_owner(self.key, settings.clients)
+            client.change_owner(self.key, runtime_settings.clients)
 
         return {"FINISHED"}
 
@@ -257,13 +256,13 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        settings = context.window_manager.session
+        runtime_settings = context.window_manager.session
 
-        if settings.time_snap_running:
-            settings.time_snap_running = False
+        if runtime_settings.time_snap_running:
+            runtime_settings.time_snap_running = False
             return {'CANCELLED'}
         else:
-            settings.time_snap_running = True
+            runtime_settings.time_snap_running = True
 
         self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
@@ -311,13 +310,13 @@ class SessionSnapTimeOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        settings = context.window_manager.session
+        runtime_settings = context.window_manager.session
 
-        if settings.user_snap_running:
-            settings.user_snap_running = False
+        if runtime_settings.user_snap_running:
+            runtime_settings.user_snap_running = False
             return {'CANCELLED'}
         else:
-            settings.user_snap_running = True
+            runtime_settings.user_snap_running = True
 
         wm = context.window_manager
         self._timer = wm.event_timer_add(0.05, window=context.window)
@@ -483,7 +482,7 @@ def depsgraph_evaluation(scene):
         context = bpy.context
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
-        session_infos = bpy.context.window_manager.session
+        session_infos = bpy.context.preferences.addons[__package__].preferences
 
         # NOTE: maybe we don't need to check each update but only the first
 

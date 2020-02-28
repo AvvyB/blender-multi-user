@@ -138,12 +138,13 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
-        settings = context.window_manager.session
+        
+        runtime_settings = context.window_manager.session
+        settings = bpy.context.preferences.addons[__package__].preferences
 
         # USER SETTINGS
         row = layout.row()
-        row.prop(settings, "session_mode", expand=True)
+        row.prop(runtime_settings, "session_mode", expand=True)
         row = layout.row()
 
         box = row.box()
@@ -157,7 +158,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row.label(text="IPC Port:")
         row.prop(settings, "ipc_port", text="")
 
-        if settings.session_mode == 'HOST':
+        if runtime_settings.session_mode == 'HOST':
             row = box.row()
             row.label(text="Start empty:")
             row.prop(settings, "start_empty", text="")
@@ -184,8 +185,9 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        settings = context.window_manager.session
-
+        runtime_settings = context.window_manager.session
+        settings = bpy.context.preferences.addons[__package__].preferences
+        
         row = layout.row()
         # USER SETTINGS
         row.prop(settings, "username", text="name")
@@ -212,9 +214,11 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        settings = context.window_manager.session
+        runtime_settings = context.window_manager.session
+        settings = bpy.context.preferences.addons[__package__].preferences
+
         # Right managment
-        if settings.session_mode == 'HOST':
+        if runtime_settings.session_mode == 'HOST':
             row = layout.row(align=True)
             row.label(text="Right strategy:")
             row.prop(settings,"right_strategy",text="")
@@ -231,7 +235,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         line.label(text="refresh (sec)")
         line.label(text="apply (sec)")
 
-        for item in settings.supported_datablock:
+        for item in settings.supported_datablocks:
             line = flow.row(align=True)
             line.prop(item, "auto_push", text="", icon=item.icon)
             line.separator()
@@ -255,7 +259,7 @@ class SESSION_PT_user(bpy.types.Panel):
         layout = self.layout
         online_users = context.window_manager.online_users
         selected_user = context.window_manager.user_index
-        settings = context.window_manager.session
+        settings = bpy.context.preferences.addons[__package__].preferences
         active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
         
 
@@ -289,7 +293,7 @@ class SESSION_PT_user(bpy.types.Panel):
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         session = operators.client
-        settings = context.window_manager.session
+        settings = bpy.context.preferences.addons[__package__].preferences
         is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
@@ -364,7 +368,8 @@ class SESSION_PT_services(bpy.types.Panel):
 
 
 def draw_property(context, parent, property_uuid, level=0):
-    settings = context.window_manager.session
+    settings = bpy.context.preferences.addons[__package__].preferences
+    runtime_settings = context.window_manager.session
     item = operators.client.get(uuid=property_uuid)
 
     if item.state == ERROR:
@@ -381,12 +386,12 @@ def draw_property(context, parent, property_uuid, level=0):
     detail_item_box = line.row(align=True)
 
     detail_item_box.label(text="",
-                          icon=settings.supported_datablock[item.str_type].icon)
+                          icon=settings.supported_datablocks[item.str_type].icon)
     detail_item_box.label(text="{} ".format(name))
 
     # Operations
 
-    have_right_to_modify = settings.is_admin or \
+    have_right_to_modify = runtime_settings.is_admin or \
         item.owner == settings.username or \
         item.owner == RP_COMMON
         
@@ -444,7 +449,8 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
         if hasattr(context.window_manager, 'session'):
             # Filters
-            settings = context.window_manager.session
+            settings = bpy.context.preferences.addons[__package__].preferences
+            runtime_settings = context.window_manager.session
             flow = layout.grid_flow(
                 row_major=True,
                 columns=0,
@@ -452,21 +458,21 @@ class SESSION_PT_outliner(bpy.types.Panel):
                 even_rows=False,
                 align=True)
 
-            for item in settings.supported_datablock:
+            for item in settings.supported_datablocks:
                 col = flow.column(align=True)
                 col.prop(item, "use_as_filter", text="", icon=item.icon)
 
             row = layout.row(align=True)
-            row.prop(settings, "filter_owned", text="Show only owned")
+            row.prop(runtime_settings, "filter_owned", text="Show only owned")
 
             row = layout.row(align=True)
 
             # Properties
-            types_filter = [t.type_name for t in settings.supported_datablock
+            types_filter = [t.type_name for t in settings.supported_datablocks
                             if t.use_as_filter]
 
             key_to_filter = operators.client.list(
-                filter_owner=settings.username) if settings.filter_owned else operators.client.list()
+                filter_owner=settings.username) if runtime_settings.filter_owned else operators.client.list()
 
             client_keys = [key for key in key_to_filter
                            if operators.client.get(uuid=key).str_type
