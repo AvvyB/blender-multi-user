@@ -37,7 +37,7 @@ def find_from_attr(attr_name, attr_value, list):
 
 def get_datablock_users(datablock):
     users = []
-    supported_types =  bpy.context.preferences.addons[__package__].preferences.supported_datablocks
+    supported_types =  get_preferences().supported_datablocks
     if hasattr(datablock, 'users_collection') and datablock.users_collection:
         users.extend(list(datablock.users_collection))
     if hasattr(datablock, 'users_scene') and datablock.users_scene:
@@ -59,11 +59,13 @@ def random_string_digits(stringLength=6):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choices(lettersAndDigits, k=stringLength))
 
+
 def randomColor():
     r = random.random()
     v = random.random()
     b = random.random()
     return [r, v, b]
+
 
 def clean_scene():
     for type_name in dir(bpy.data):
@@ -166,3 +168,6 @@ def resolve_from_id(id, optionnal_type=None):
                 return root[id]
     return None
             
+
+def get_preferences():
+    return bpy.context.preferences.addons[__package__].preferences

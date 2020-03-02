@@ -204,7 +204,7 @@ class DrawFactory(object):
         self.d2d_items.clear()
 
     def draw_client_selection(self, client_id, client_color, client_selection):
-        local_user = bpy.context.preferences.addons[__package__].preferences.username
+        local_user = utils.get_preferences().username
 
         if local_user != client_id:
             self.flush_selection(client_id)
@@ -261,7 +261,7 @@ class DrawFactory(object):
 
     def draw_client_camera(self, client_id, client_location, client_color):
         if client_location:
-            local_user = bpy.context.preferences.addons[__package__].preferences.username
+            local_user = utils.get_preferences().username
 
             if local_user != client_id:
                 try:

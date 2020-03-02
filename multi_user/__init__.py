@@ -42,7 +42,7 @@ def client_list_callback(scene, context):
     
     items = [(RP_COMMON, RP_COMMON, "")]
 
-    username = bpy.context.preferences.addons[__package__].preferences.username
+    username = utils.get_preferences().username
     cli = operators.client
     if cli:
         client_ids = cli.online_users.keys()

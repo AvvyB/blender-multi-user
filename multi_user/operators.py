@@ -58,7 +58,7 @@ class SessionStartOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables, ui_context, server_process
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
 
@@ -482,7 +482,7 @@ def depsgraph_evaluation(scene):
         context = bpy.context
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
-        session_infos = bpy.context.preferences.addons[__package__].preferences
+        session_infos = utils.get_preferences()
 
         # NOTE: maybe we don't need to check each update but only the first
 

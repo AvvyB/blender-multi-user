@@ -2,15 +2,16 @@ import bpy
 import mathutils
 import os
 
-from .. import utils, environment
+from .. import utils
 from .bl_datablock import BlDatablock
 
 def dump_image(image):
     pixels = None
     if image.source == "GENERATED":
+        prefs = utils.get_preferences()
         img_name = "{}.png".format(image.name)
 
-        image.filepath_raw = os.path.join(environment.CACHE_DIR, img_name)
+        image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
         image.file_format = "PNG"
         image.save()
 
@@ -43,10 +44,11 @@ class BlImage(BlDatablock):
 
     def load(self, data, target):
         image = target
+        prefs = utils.get_preferences()
 
         img_name = "{}.png".format(image.name)
 
-        img_path = os.path.join(environment.CACHE_DIR, img_name)
+        img_path = os.path.join(prefs.cache_directory, img_name)
 
         file = open(img_path, 'wb')
         file.write(data["pixels"])

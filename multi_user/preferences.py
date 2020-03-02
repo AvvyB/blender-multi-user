@@ -1,7 +1,7 @@
 import logging
 import bpy
 
-from . import utils, bl_types
+from . import utils, bl_types, environment
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,10 @@ class SessionPrefs(bpy.types.AddonPreferences):
             ('STRICT', 'strict', 'strict right repartition'),
             ('COMMON', 'common', 'relaxed right repartition')},
         default='COMMON')
+    cache_directory: bpy.props.StringProperty(
+        name="cache directory",
+        subtype="DIR_PATH",
+        default=environment.DEFAULT_CACHE_DIR)
     # for UI
     category: bpy.props.EnumProperty(
         name="Category",
@@ -77,6 +81,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
     conf_session_net_expanded: bpy.props.BoolProperty(
         name="Net",
         description="net",
+        default=True
+    )
+    conf_session_cache_expanded: bpy.props.BoolProperty(
+        name="Cache",
+        description="cache",
         default=True
     )
 
@@ -139,6 +148,15 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.label(text="Start with an empty scene:")
                 row.prop(self, "start_empty", text="")
+            
+            # CACHE SETTINGS
+            box = grid.box()
+            box.prop(
+                self, "conf_session_cache_expanded", text="Cache",
+                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_cache_expanded
+                else 'DISCLOSURE_TRI_RIGHT')
+            if self.conf_session_cache_expanded:
+                box.row().prop(self, "cache_directory", text="Cache directory")
 
     def generate_supported_types(self):
         self.supported_datablocks.clear()

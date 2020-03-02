@@ -1,6 +1,6 @@
 import bpy
 
-from . import operators
+from . import operators, utils
 from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP,
                                                      STATE_ACTIVE, STATE_AUTH,
@@ -140,7 +140,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         layout = self.layout
         
         runtime_settings = context.window_manager.session
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
 
         # USER SETTINGS
         row = layout.row()
@@ -186,7 +186,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
         
         row = layout.row()
         # USER SETTINGS
@@ -215,7 +215,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
 
         # Right managment
         if runtime_settings.session_mode == 'HOST':
@@ -259,7 +259,7 @@ class SESSION_PT_user(bpy.types.Panel):
         layout = self.layout
         online_users = context.window_manager.online_users
         selected_user = context.window_manager.user_index
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
         active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
         
 
@@ -293,7 +293,7 @@ class SESSION_PT_user(bpy.types.Panel):
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         session = operators.client
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
         is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
@@ -368,7 +368,7 @@ class SESSION_PT_services(bpy.types.Panel):
 
 
 def draw_property(context, parent, property_uuid, level=0):
-    settings = bpy.context.preferences.addons[__package__].preferences
+    settings = utils.get_preferences()
     runtime_settings = context.window_manager.session
     item = operators.client.get(uuid=property_uuid)
 
@@ -449,7 +449,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
 
         if hasattr(context.window_manager, 'session'):
             # Filters
-            settings = bpy.context.preferences.addons[__package__].preferences
+            settings = utils.get_preferences()
             runtime_settings = context.window_manager.session
             flow = layout.grid_flow(
                 row_major=True,

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
 PYTHON_PATH = None
 SUBPROCESS_DIR = None
 

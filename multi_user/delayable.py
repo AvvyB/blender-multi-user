@@ -88,7 +88,7 @@ class DynamicRightSelectTimer(Timer):
 
     def execute(self):
         session = operators.client
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
 
         if session and session.state['STATE'] == STATE_ACTIVE:
             # Find user
@@ -220,7 +220,7 @@ class ClientUpdate(Timer):
         self.handle_quit = False
 
     def execute(self):
-        settings = bpy.context.preferences.addons[__package__].preferences
+        settings = utils.get_preferences()
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
        
