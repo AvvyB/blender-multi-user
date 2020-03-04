@@ -73,20 +73,26 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Identity",
         default=True
     )
-    conf_session_rights_expanded: bpy.props.BoolProperty(
-        name="Rights",
-        description="Rights",
-        default=True
-    )
     conf_session_net_expanded: bpy.props.BoolProperty(
         name="Net",
         description="net",
         default=True
     )
+    conf_session_hosting_expanded: bpy.props.BoolProperty(
+        name="Rights",
+        description="Rights",
+        default=False
+    )
+    conf_session_timing_expanded: bpy.props.BoolProperty(
+        name="timings",
+        description="timings",
+        default=False
+    )
+
     conf_session_cache_expanded: bpy.props.BoolProperty(
         name="Cache",
         description="cache",
-        default=True
+        default=False
     )
 
 
@@ -106,7 +112,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box.prop(
                 self, "conf_session_identity_expanded", text="User informations",
                 icon='DISCLOSURE_TRI_DOWN' if self.conf_session_identity_expanded
-                else 'DISCLOSURE_TRI_RIGHT')
+                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             if self.conf_session_identity_expanded:
                 box.row().prop(self, "username", text="name")
                 box.row().prop(self, "client_color", text="color")
@@ -116,7 +122,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box.prop(
                 self, "conf_session_net_expanded", text="Netorking",
                 icon='DISCLOSURE_TRI_DOWN' if self.conf_session_net_expanded
-                else 'DISCLOSURE_TRI_RIGHT')
+                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+
             if self.conf_session_net_expanded:
                 box.row().prop(self, "ip", text="Address")
                 row = box.row()
@@ -126,24 +133,31 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row.label(text="Start with an empty scene:")
                 row.prop(self, "start_empty", text="")
 
-                line = box.row(align=True)
-                line.label(text=" ")
-                line.separator()
-                line.label(text="refresh (sec)")
-                line.label(text="apply (sec)")
+                table = box.box()
+                table.row().prop(
+                    self, "conf_session_timing_expanded", text="Refresh rates",
+                    icon='DISCLOSURE_TRI_DOWN' if self.conf_session_timing_expanded
+                    else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                
+                if self.conf_session_timing_expanded:
+                    line = table.row()
+                    line.label(text=" ")
+                    line.separator()
+                    line.label(text="refresh (sec)")
+                    line.label(text="apply (sec)")
 
-                for item in self.supported_datablocks:
-                    line =  box.row(align=True)
-                    line.label(text="", icon=item.icon)
-                    line.prop(item, "bl_delay_refresh", text="")
-                    line.prop(item, "bl_delay_apply", text="")
+                    for item in self.supported_datablocks:
+                        line =  table.row(align=True)
+                        line.label(text="", icon=item.icon)
+                        line.prop(item, "bl_delay_refresh", text="")
+                        line.prop(item, "bl_delay_apply", text="")
             # HOST SETTINGS
             box = grid.box()
             box.prop(
-                self, "conf_session_rights_expanded", text="Hosting",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_rights_expanded
-                else 'DISCLOSURE_TRI_RIGHT')
-            if self.conf_session_rights_expanded:
+                self, "conf_session_hosting_expanded", text="Hosting",
+                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
+                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+            if self.conf_session_hosting_expanded:
                 box.row().prop(self, "right_strategy", text="Right model")
                 row = box.row()
                 row.label(text="Start with an empty scene:")
@@ -154,7 +168,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box.prop(
                 self, "conf_session_cache_expanded", text="Cache",
                 icon='DISCLOSURE_TRI_DOWN' if self.conf_session_cache_expanded
-                else 'DISCLOSURE_TRI_RIGHT')
+                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
 
