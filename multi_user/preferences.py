@@ -58,16 +58,16 @@ class SessionPrefs(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
         default=environment.DEFAULT_CACHE_DIR)
     # for UI
-    category: bpy.props.EnumProperty(
-        name="Category",
-        description="Preferences Category",
-        items=[
-            ('INFO', "Information", "Information about this add-on"),
-            ('CONFIG', "Configuration", "Configuration about this add-on"),
-            # ('UPDATE', "Update", "Update this add-on"),
-        ],
-        default='INFO'
-    )
+    # category: bpy.props.EnumProperty(
+    #     name="Category",
+    #     description="Preferences Category",
+    #     items=[
+    #         ('INFO', "Information", "Information about this add-on"),
+    #         ('CONFIG', "Configuration", "Configuration about this add-on"),
+    #         ('UPDATE', "Update", "Update this add-on"),
+    #     ],
+    #     default='INFO'
+    # )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
         description="Identity",
@@ -88,7 +88,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="timings",
         default=False
     )
-
     conf_session_cache_expanded: bpy.props.BoolProperty(
         name="Cache",
         description="cache",
@@ -99,78 +98,78 @@ class SessionPrefs(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        layout.row().prop(self, "category", expand=True)
+        # layout.row().prop(self, "category", expand=True)
 
-        if self.category == 'INFO':
-            layout.separator()
-            layout.label(text="WIP")
-        if self.category == 'CONFIG':
-            grid = layout.column()
+        # if self.category == 'INFO':
+        #     layout.separator()
+        #     layout.label(text="Enable real-time collaborative workflow inside blender")
+        # if self.category == 'CONFIG':
+        grid = layout.column()
+        
+        # USER INFORMATIONS
+        box = grid.box()
+        box.prop(
+            self, "conf_session_identity_expanded", text="User informations",
+            icon='DISCLOSURE_TRI_DOWN' if self.conf_session_identity_expanded
+            else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+        if self.conf_session_identity_expanded:
+            box.row().prop(self, "username", text="name")
+            box.row().prop(self, "client_color", text="color")
+
+        # NETWORK SETTINGS
+        box = grid.box()
+        box.prop(
+            self, "conf_session_net_expanded", text="Netorking",
+            icon='DISCLOSURE_TRI_DOWN' if self.conf_session_net_expanded
+            else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+
+        if self.conf_session_net_expanded:
+            box.row().prop(self, "ip", text="Address")
+            row = box.row()
+            row.label(text="Port:")
+            row.prop(self, "port", text="Address")
+            row = box.row()
+            row.label(text="Start with an empty scene:")
+            row.prop(self, "start_empty", text="")
+
+            table = box.box()
+            table.row().prop(
+                self, "conf_session_timing_expanded", text="Refresh rates",
+                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_timing_expanded
+                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             
-            # USER INFORMATIONS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_identity_expanded", text="User informations",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_identity_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
-            if self.conf_session_identity_expanded:
-                box.row().prop(self, "username", text="name")
-                box.row().prop(self, "client_color", text="color")
+            if self.conf_session_timing_expanded:
+                line = table.row()
+                line.label(text=" ")
+                line.separator()
+                line.label(text="refresh (sec)")
+                line.label(text="apply (sec)")
 
-            # NETWORK SETTINGS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_net_expanded", text="Netorking",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_net_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
-
-            if self.conf_session_net_expanded:
-                box.row().prop(self, "ip", text="Address")
-                row = box.row()
-                row.label(text="Port:")
-                row.prop(self, "port", text="Address")
-                row = box.row()
-                row.label(text="Start with an empty scene:")
-                row.prop(self, "start_empty", text="")
-
-                table = box.box()
-                table.row().prop(
-                    self, "conf_session_timing_expanded", text="Refresh rates",
-                    icon='DISCLOSURE_TRI_DOWN' if self.conf_session_timing_expanded
-                    else 'DISCLOSURE_TRI_RIGHT', emboss=False)
-                
-                if self.conf_session_timing_expanded:
-                    line = table.row()
-                    line.label(text=" ")
-                    line.separator()
-                    line.label(text="refresh (sec)")
-                    line.label(text="apply (sec)")
-
-                    for item in self.supported_datablocks:
-                        line =  table.row(align=True)
-                        line.label(text="", icon=item.icon)
-                        line.prop(item, "bl_delay_refresh", text="")
-                        line.prop(item, "bl_delay_apply", text="")
-            # HOST SETTINGS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_hosting_expanded", text="Hosting",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
-            if self.conf_session_hosting_expanded:
-                box.row().prop(self, "right_strategy", text="Right model")
-                row = box.row()
-                row.label(text="Start with an empty scene:")
-                row.prop(self, "start_empty", text="")
-            
-            # CACHE SETTINGS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_cache_expanded", text="Cache",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_cache_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
-            if self.conf_session_cache_expanded:
-                box.row().prop(self, "cache_directory", text="Cache directory")
+                for item in self.supported_datablocks:
+                    line =  table.row(align=True)
+                    line.label(text="", icon=item.icon)
+                    line.prop(item, "bl_delay_refresh", text="")
+                    line.prop(item, "bl_delay_apply", text="")
+        # HOST SETTINGS
+        box = grid.box()
+        box.prop(
+            self, "conf_session_hosting_expanded", text="Hosting",
+            icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
+            else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+        if self.conf_session_hosting_expanded:
+            box.row().prop(self, "right_strategy", text="Right model")
+            row = box.row()
+            row.label(text="Start with an empty scene:")
+            row.prop(self, "start_empty", text="")
+        
+        # CACHE SETTINGS
+        box = grid.box()
+        box.prop(
+            self, "conf_session_cache_expanded", text="Cache",
+            icon='DISCLOSURE_TRI_DOWN' if self.conf_session_cache_expanded
+            else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+        if self.conf_session_cache_expanded:
+            box.row().prop(self, "cache_directory", text="Cache directory")
 
     def generate_supported_types(self):
         self.supported_datablocks.clear()
