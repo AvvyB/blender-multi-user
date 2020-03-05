@@ -219,6 +219,10 @@ class DrawFactory(object):
                 if ob.type == 'EMPTY':
                     # TODO: Child case
                     # Collection instance case
+                    indices = (
+                        (0, 1), (1, 2), (2, 3), (0, 3),
+                        (4, 5), (5, 6), (6, 7), (4, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7))
                     if ob.instance_collection:
                         for obj in ob.instance_collection.objects:
                             if obj.type == 'MESH':

@@ -204,15 +204,21 @@ class DrawClient(Draw):
 
             for user in users.values():
                 metadata = user.get('metadata')
-
-                if 'color' in metadata:
+                color = metadata.get('color')
+                scene_current = metadata.get('scene_current')
+                user_showable = scene_current == bpy.context.scene.name or settings.presence_show_far_user
+                if color and scene_current and user_showable:
                     if settings.presence_show_selected and 'selected_objects' in metadata.keys():
                         renderer.draw_client_selection(
-                            user['id'], metadata['color'], metadata['selected_objects'])
+                            user['id'], color, metadata['selected_objects'])
                     if settings.presence_show_user and 'view_corners' in metadata:
                         renderer.draw_client_camera(
-                            user['id'], metadata['view_corners'], metadata['color'])
-
+                            user['id'], metadata['view_corners'], color)
+                if not user_showable:
+                    # TODO: remove this when user event drivent update will be 
+                    # ready
+                    renderer.flush_selection()
+                    renderer.flush_users()
 
 class ClientUpdate(Timer):
     def __init__(self, timout=.5):

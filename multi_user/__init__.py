@@ -98,6 +98,12 @@ class SessionProps(bpy.types.PropertyGroup):
         default=True,
         update=presence.update_overlay_settings
         )
+    presence_show_far_user: bpy.props.BoolProperty(
+        name="Show different scenes",
+        description="Show user on different scenes",
+        default=False,
+        update=presence.update_overlay_settings
+        )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',

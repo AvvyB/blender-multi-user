@@ -341,7 +341,10 @@ class SESSION_PT_presence(bpy.types.Panel):
         col = layout.column()
         col.prop(settings,"presence_show_selected")
         col.prop(settings,"presence_show_user")
-        row = layout.row()
+        row = layout.column()
+        row.active =  settings.presence_show_user
+        row.prop(settings,"presence_show_far_user") 
+        
 
 class SESSION_PT_services(bpy.types.Panel):
     bl_idname = "MULTIUSER_SERVICE_PT_panel"
