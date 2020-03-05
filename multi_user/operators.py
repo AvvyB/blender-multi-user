@@ -87,15 +87,12 @@ class SessionStartOperator(bpy.types.Operator):
                 timer=type_local_config.bl_delay_refresh,
                 automatic=type_local_config.auto_push)
 
-            if type_local_config.bl_delay_apply > 0:
-                delayables.append(delayable.ApplyTimer(
-                    timout=type_local_config.bl_delay_apply,
-                    target_type=type_module_class))
-
         client = Session(
             factory=bpy_factory,
             python_path=bpy.app.binary_path_python,
             default_strategy=settings.right_strategy)
+
+        delayables.append(delayable.ApplyTimer())
 
         # Host a session
         if self.host:
@@ -500,6 +497,8 @@ def depsgraph_evaluation(scene):
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode:
                         break
+
+                    logger.error(node.data['name'])
                     client.stash(node.uuid)
                 else:
                     # Distant update
