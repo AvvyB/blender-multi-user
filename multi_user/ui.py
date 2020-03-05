@@ -266,8 +266,10 @@ class SESSION_PT_user(bpy.types.Panel):
         # Create a simple row.
         row = layout.row()
         box = row.box()
-        split = box.split(factor=0.5)
+        split = box.split(factor=0.3)
         split.label(text="user")
+        split = split.split(factor=0.5)
+        split.label(text="localisation")
         split.label(text="frame")
         split.label(text="ping")
 
@@ -297,6 +299,7 @@ class SESSION_UL_users(bpy.types.UIList):
         is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
+        scene_current = '-'
         if session:
             user = session.online_users.get(item.username)
             if user:
@@ -304,12 +307,14 @@ class SESSION_UL_users(bpy.types.UIList):
                 metadata = user.get('metadata')
                 if metadata and 'frame_current' in metadata:
                     frame_current = str(metadata['frame_current'])
-        
-        split = layout.split(factor=0.5)
+                    scene_current = metadata['scene_current']
+        split = layout.split(factor=0.3)
         split.label(text=item.username)
+        split = split.split(factor=0.5)
+        split.label(text=scene_current)
         split.label(text=frame_current)
         split.label(text=ping)
-    
+
 
 class SESSION_PT_presence(bpy.types.Panel):
     bl_idname = "MULTIUSER_MODULE_PT_panel"

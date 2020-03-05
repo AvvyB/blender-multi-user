@@ -236,7 +236,7 @@ class ClientUpdate(Timer):
 
             local_user_metadata = local_user.get('metadata')
             current_view_corners = presence.get_view_corners()
-
+            scene_current = bpy.context.scene.name
             if not local_user_metadata or 'color' not in local_user_metadata.keys():
                 metadata = {
                     'view_corners': current_view_corners,
@@ -245,13 +245,17 @@ class ClientUpdate(Timer):
                               settings.client_color.g,
                               settings.client_color.b,
                               1),
-                    'frame_current':bpy.context.scene.frame_current
+                    'frame_current':bpy.context.scene.frame_current,
+                    'scene_current': scene_current
                 }
                 session.update_user_metadata(metadata)
             elif current_view_corners != local_user_metadata['view_corners']:
                 logger.info('update user metadata')
                 local_user_metadata['view_corners'] = current_view_corners
                 local_user_metadata['view_matrix'] = presence.get_view_matrix()
+                session.update_user_metadata(local_user_metadata)
+            elif scene_current != local_user_metadata['scene_current']:
+                local_user_metadata['scene_current'] = scene_current
                 session.update_user_metadata(local_user_metadata)
 
             # sync online users
@@ -260,12 +264,9 @@ class ClientUpdate(Timer):
 
             for index, user in enumerate(ui_users):
                 if user.username not in session_users.keys():
-                    ui_users.remove(index)
-                    
+                    ui_users.remove(index)    
                     renderer.flush_selection()
                     renderer.flush_users()
-                    
-                    
                     break
 
             for user in session_users:
