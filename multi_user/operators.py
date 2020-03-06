@@ -287,6 +287,10 @@ class SessionSnapUserOperator(bpy.types.Operator):
                 target_ref = client.online_users.get(self.target_client)
 
                 if target_ref:
+                    target_scene = target_ref['metadata']['scene_current']
+                    if  target_scene != context.scene.name:
+                        bpy.context.window.scene = bpy.data.scenes[target_scene]
+
                     rv3d.view_matrix = mathutils.Matrix(
                         target_ref['metadata']['view_matrix'])
             else:
