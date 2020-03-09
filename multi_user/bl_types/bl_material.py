@@ -204,6 +204,3 @@ class BlMaterial(BlDatablock):
 
         return deps
 
-    def is_valid(self):
-        return bpy.data.materials.get(self.data['name'])
-

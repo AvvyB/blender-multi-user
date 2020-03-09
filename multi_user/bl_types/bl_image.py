@@ -83,6 +83,3 @@ class BlImage(BlDatablock):
     
     def resolve_deps_implementation(self):
         return []
-
-    def is_valid(self):
-        return bpy.data.images.get(self.data['name'])

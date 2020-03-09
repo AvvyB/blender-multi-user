@@ -173,4 +173,4 @@ class BlDatablock(ReplicatedDatablock):
         raise NotImplementedError
 
     def is_valid(self):
-        raise NotImplementedError
+        return getattr(bpy.data, self.bl_id).get(self.data['name'])

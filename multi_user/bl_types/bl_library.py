@@ -26,6 +26,3 @@ class BlLibrary(BlDatablock):
 
     def resolve_deps_implementation(self):
         return []
-
-    def is_valid(self):
-        return bpy.data.libraries.get(self.data['name'])

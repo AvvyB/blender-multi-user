@@ -87,6 +87,3 @@ class BlCollection(BlDatablock):
 
         return deps
 
-    def is_valid(self):
-        return bpy.data.collections.get(self.data['name'])
-

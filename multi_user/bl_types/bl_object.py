@@ -346,5 +346,3 @@ class BlObject(BlDatablock):
 
         return deps
 
-    def is_valid(self):
-        return bpy.data.objects.get(self.data['name'])

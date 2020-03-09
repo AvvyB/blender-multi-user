@@ -129,6 +129,3 @@ class BlArmature(BlDatablock):
 
     def resolve_deps_implementation(self):
         return []
-
-    def is_valid(self):
-        return bpy.data.armatures.get(self.data['name'])

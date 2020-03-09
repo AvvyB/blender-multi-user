@@ -44,6 +44,4 @@ class BlSpeaker(BlDatablock):
     def resolve_deps_implementation(self):
         return []
 
-    def is_valid(self):
-        return bpy.data.lattices.get(self.data['name'])
 

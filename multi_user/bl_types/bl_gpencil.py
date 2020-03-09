@@ -77,6 +77,3 @@ class BlGpencil(BlDatablock):
             deps.append(material)
 
         return deps
-
-    def is_valid(self):
-        return bpy.data.grease_pencils.get(self.data['name'])

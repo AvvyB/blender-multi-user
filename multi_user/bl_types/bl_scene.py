@@ -85,6 +85,3 @@ class BlScene(BlDatablock):
             deps.append(self.pointer.grease_pencil)
 
         return deps
-    
-    def is_valid(self):
-        return bpy.data.scenes.get(self.data['name'])
