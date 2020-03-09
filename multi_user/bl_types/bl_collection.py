@@ -77,7 +77,7 @@ class BlCollection(BlDatablock):
 
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         for child in self.pointer.children:

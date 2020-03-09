@@ -59,7 +59,7 @@ class BlImage(BlDatablock):
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def dump_implementation(self, data, pointer=None):
+    def dump(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)
@@ -81,5 +81,8 @@ class BlImage(BlDatablock):
     def diff(self):
         return False
     
+    def resolve_deps_implementation(self):
+        return []
+
     def is_valid(self):
         return bpy.data.images.get(self.data['name'])

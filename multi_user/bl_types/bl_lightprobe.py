@@ -15,7 +15,7 @@ class BlLightprobe(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LIGHTPROBE_GRID'
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
     def construct(self, data):
@@ -24,12 +24,9 @@ class BlLightprobe(BlDatablock):
         if bpy.app.version[1] >= 83:
             return bpy.data.lightprobes.new(data["name"], type)
         else:
-            logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+            logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")   
 
-        
-        
-
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
         if bpy.app.version[1] < 83:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
@@ -58,6 +55,9 @@ class BlLightprobe(BlDatablock):
         ]
 
         return dumper.dump(pointer)
+
+    def resolve_deps_implementation(self):
+        return []
 
     def is_valid(self):
         return bpy.data.lattices.get(self.data['name'])

@@ -90,7 +90,7 @@ class BlWorld(BlDatablock):
                 pointer.node_tree, ["links"], 3, data['node_tree'])
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         if self.pointer.use_nodes:

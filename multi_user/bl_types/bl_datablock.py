@@ -3,11 +3,11 @@ import mathutils
 
 from .. import utils
 from ..libs.replication.replication.data import ReplicatedDatablock
-from ..libs.replication.replication.constants import UP
-from ..libs.replication.replication.constants import DIFF_BINARY
+from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
+from ..libs import dump_anything 
 
 def dump_driver(driver):
-    dumper = utils.dump_anything.Dumper()
+    dumper = dump_anything.Dumper()
     dumper.depth = 6
     data = dumper.dump(driver)
 
@@ -22,7 +22,7 @@ def load_driver(target_datablock, src_driver):
     # Settings
     new_driver.driver.type = src_driver_data['type']
     new_driver.driver.expression = src_driver_data['expression']
-    utils.dump_anything.load(new_driver,  src_driver)
+    dump_anything.load(new_driver,  src_driver)
 
     # Variables
     for src_variable in src_driver_data['variables']:
@@ -35,7 +35,7 @@ def load_driver(target_datablock, src_driver):
             src_target_data = src_var_data['targets'][src_target]
             new_var.targets[src_target].id = utils.resolve_from_id(
                 src_target_data['id'], src_target_data['id_type'])
-            utils.dump_anything.load(
+            dump_anything.load(
                 new_var.targets[src_target],  src_target_data)
 
     # Fcurve
@@ -47,7 +47,7 @@ def load_driver(target_datablock, src_driver):
 
     for index, src_point in enumerate(src_driver['keyframe_points']):
         new_point = new_fcurve[index]
-        utils.dump_anything.load(
+        dump_anything.load(
             new_point, src_driver['keyframe_points'][src_point])
 
 
@@ -72,12 +72,6 @@ class BlDatablock(ReplicatedDatablock):
                            pointer.library) or \
             (self.data and 'library' in self.data)
 
-        if self.is_library:
-            self.load = self.load_library
-            self.dump = self.dump_library
-            self.diff = self.diff_library
-            self.resolve_dependencies = self.resolve_dependencies_library
-
         if self.pointer and hasattr(self.pointer, 'uuid'):
             self.pointer.uuid = self.uuid
         
@@ -93,19 +87,10 @@ class BlDatablock(ReplicatedDatablock):
         """Generic datablock diff"""
         return self.pointer.name != self.data['name']
 
-    def construct_library(self, data):
-        return None
-
-    def load_library(self, data, target):
-        pass
-
-    def dump_library(self, pointer=None):
-        return utils.dump_datablock(pointer, 1)
-
     def diff_library(self):
         return False
 
-    def resolve_dependencies_library(self):
+    def resolve_deps_library(self):
         return [self.pointer.library]
 
     def resolve(self):
@@ -116,8 +101,7 @@ class BlDatablock(ReplicatedDatablock):
         # In case of lost uuid (ex: undo), resolve by name and reassign it
         # TODO: avoid reference storing
         if not datablock_ref:
-            datablock_ref = getattr(
-                bpy.data, self.bl_id).get(self.data['name'])
+            datablock_ref = getattr(bpy.data, self.bl_id).get(self.data['name'])
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
@@ -126,6 +110,7 @@ class BlDatablock(ReplicatedDatablock):
 
     def dump(self, pointer=None):
         data = {}
+        # Dump animation data
         if utils.has_action(pointer):
             dumper = utils.dump_anything.Dumper()
             dumper.include_filter = ['action']
@@ -138,7 +123,11 @@ class BlDatablock(ReplicatedDatablock):
                     dump_driver(driver))
 
             data.update(dumped_drivers)
-        data.update(self.dump_implementation(data, pointer=pointer))
+        
+        if self.is_library:
+            data.update(dump_anything.dump(pointer))
+        else:
+            data.update(self.dump_implementation(data, pointer=pointer))
 
         return data
 
@@ -161,18 +150,27 @@ class BlDatablock(ReplicatedDatablock):
             if 'action' in data['animation_data']:
                 target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
 
-        self.load_implementation(data, target)
+        if self.is_library:
+            return
+        else:
+            self.load_implementation(data, target)
 
     def load_implementation(self, data, target):
         raise NotImplementedError
 
-    def resolve_dependencies(self):
+    def resolve_deps(self):
         dependencies = []
 
         if utils.has_action(self.pointer):
             dependencies.append(self.pointer.animation_data.action)
 
+        if not self.is_library:
+            dependencies.extend(self.resolve_deps_implementation())
+        print(dependencies)  
         return dependencies
+
+    def resolve_deps_implementation(self):
+        raise NotImplementedError
 
     def is_valid(self):
         raise NotImplementedError

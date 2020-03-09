@@ -65,7 +65,7 @@ class BlScene(BlDatablock):
 
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         # child collections

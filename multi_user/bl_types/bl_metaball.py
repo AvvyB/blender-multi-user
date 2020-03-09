@@ -33,5 +33,8 @@ class BlMetaball(BlDatablock):
         data = dumper.dump(pointer)
         return data
 
+    def resolve_deps_implementation(self):
+        return []
+
     def is_valid(self):
         return bpy.data.metaballs.get(self.data['name'])

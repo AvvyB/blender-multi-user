@@ -328,9 +328,9 @@ class BlObject(BlDatablock):
 
         return data
 
-    def resolve_dependencies(self):
-        deps = super().resolve_dependencies()
-
+    def resolve_deps_implementation(self):
+        deps = []
+    
         # Avoid Empty case
         if self.pointer.data:
             deps.append(self.pointer.data)
