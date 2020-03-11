@@ -25,22 +25,22 @@ See the [documentation](https://multi-user.readthedocs.io/en/latest/) for detail
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
 
-| Name        |       Status       |    Comment     |
-| ----------- | :----------------: | :------------: |
-| action      |   :exclamation:    |   Not stable   |
-| armature    |   :exclamation:    |   Not stable   |
-| camera      | :white_check_mark: |                |
-| collection  | :white_check_mark: |                |
-| curve       | :white_check_mark: |   Not tested   |
-| gpencil     | :white_check_mark: |                |
-| image       |   :exclamation:    | Not stable yet |
-| mesh        | :white_check_mark: |                |
-| material    | :white_check_mark: |                |
-| metaball    | :white_check_mark: |                |
-| object      | :white_check_mark: |                |
-| scene       | :white_check_mark: |                |
-| world       | :white_check_mark: |                |
-| lightprobes | :white_check_mark: |                |
+| Name        |       Status       |              Comment               |
+| ----------- | :----------------: | :--------------------------------: |
+| action      |   :exclamation:    |             Not stable             |
+| armature    |   :exclamation:    |             Not stable             |
+| camera      | :white_check_mark: |                                    |
+| collection  | :white_check_mark: |                                    |
+| curve       | :white_check_mark: | Nurbs surface don't load correctly |
+| gpencil     | :white_check_mark: |                                    |
+| image       |   :exclamation:    |           Not stable yet           |
+| mesh        | :white_check_mark: |                                    |
+| material    | :white_check_mark: |                                    |
+| metaball    | :white_check_mark: |                                    |
+| object      | :white_check_mark: |                                    |
+| scene       | :white_check_mark: |                                    |
+| world       | :white_check_mark: |                                    |
+| lightprobes | :white_check_mark: |                                    |
 
 ### Performance issues
 
