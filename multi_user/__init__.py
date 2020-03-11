@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 0, 2),
+    "version": (0, 0, 1),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 80, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -133,6 +133,7 @@ def register():
     from . import operators
     from . import ui
     from . import preferences
+    from . import addon_updater_ops
 
     for cls in classes:
         bpy.utils.register_class(cls)
@@ -146,6 +147,7 @@ def register():
     bpy.types.WindowManager.user_index = bpy.props.IntProperty()
 
     preferences.register()
+    addon_updater_ops.register(bl_info)
     presence.register()
     operators.register()
     ui.register()
@@ -155,8 +157,10 @@ def unregister():
     from . import operators
     from . import ui
     from . import preferences
+    from . import addon_updater_ops
 
     presence.unregister()
+    addon_updater_ops.unregister()
     ui.unregister()
     operators.unregister()
     preferences.unregister()
