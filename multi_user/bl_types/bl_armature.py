@@ -127,5 +127,4 @@ class BlArmature(BlDatablock):
             item.name for item in container_users if isinstance(item, bpy.types.Scene)]
         return data
 
-    def resolve_deps_implementation(self):
-        return []
+

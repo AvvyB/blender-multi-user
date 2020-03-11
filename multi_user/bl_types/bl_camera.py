@@ -52,5 +52,4 @@ class BlCamera(BlDatablock):
         ]
         return dumper.dump(pointer)
     
-    def resolve_deps_implementation(self):
-        return []
+

@@ -46,7 +46,6 @@ class BlLight(BlDatablock):
         data = dumper.dump(pointer)
         return data
 
-    def resolve_deps_implementation(self):
-        return []
+
 
 

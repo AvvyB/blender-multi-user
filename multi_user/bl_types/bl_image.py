@@ -81,5 +81,4 @@ class BlImage(BlDatablock):
     def diff(self):
         return False
     
-    def resolve_deps_implementation(self):
-        return []
+

@@ -24,5 +24,4 @@ class BlLibrary(BlDatablock):
         assert(pointer)
         return dump_anything.dump(pointer, 1)
 
-    def resolve_deps_implementation(self):
-        return []
+

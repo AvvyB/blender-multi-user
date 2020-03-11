@@ -170,7 +170,7 @@ class BlDatablock(ReplicatedDatablock):
         return dependencies
 
     def resolve_deps_implementation(self):
-        raise NotImplementedError
+        return []
 
     def is_valid(self):
         return getattr(bpy.data, self.bl_id).get(self.data['name'])

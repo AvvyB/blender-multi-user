@@ -127,7 +127,6 @@ class BlAction(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
-        return []
+
 
 

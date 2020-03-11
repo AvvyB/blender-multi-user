@@ -69,5 +69,3 @@ class BlCurve(BlDatablock):
             data['type'] = 'CURVE'
         return data
 
-    def resolve_deps_implementation(self):
-        return []
