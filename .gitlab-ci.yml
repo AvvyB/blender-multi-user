@@ -2,14 +2,13 @@ image: python:latest
 
 build:
   script:
-    - ls
-    - cd multi-user
-    - rm -rf cache tests .git .gitignore .gitmodules docs
-    # run the command here 
-    - cd multi-user/libs/replication
+    - git submodules init
+    - git submodules update
+    - cd multi_user/libs/replication
     - rm -rf tests .git .gitignore
-    
+    - cd ../../
+    - ls
   artifacts:
     paths:
-      - multi-user
+      - multi_user
 
