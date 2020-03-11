@@ -340,6 +340,9 @@ class BlObject(BlDatablock):
                 key_blocks[key.name]['relative_key'] = key.relative_key.name
             data['shape_keys']['key_blocks'] = key_blocks
 
+        if pointer.particle_systems:
+            psys = pointer.evaluated_get(bpy.context.evaluated_depsgraph_get()).particle_systems
+            print(len(psys[0].particles))
         return data
 
     def resolve_deps_implementation(self):
