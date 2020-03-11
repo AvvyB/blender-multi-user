@@ -127,7 +127,7 @@ class BlAction(BlDatablock):
 
         return data
 
-    def is_valid(self):
-        return bpy.data.actions.get(self.data['name'])
+    def resolve_deps_implementation(self):
+        return []
 
 

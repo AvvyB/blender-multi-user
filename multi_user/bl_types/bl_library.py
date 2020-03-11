@@ -1,7 +1,7 @@
 import bpy
 import mathutils
 
-from .. import utils
+from ..libs import dump_anything
 from .bl_datablock import BlDatablock
 
 
@@ -22,7 +22,7 @@ class BlLibrary(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        return utils.dump_datablock(pointer, 1)
+        return dump_anything.dump(pointer, 1)
 
-    def is_valid(self):
-        return bpy.data.libraries.get(self.data['name'])
+    def resolve_deps_implementation(self):
+        return []

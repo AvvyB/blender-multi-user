@@ -69,5 +69,5 @@ class BlCurve(BlDatablock):
             data['type'] = 'CURVE'
         return data
 
-    def is_valid(self):
-        return bpy.data.curves.get(self.data['name'])
+    def resolve_deps_implementation(self):
+        return []

@@ -65,7 +65,7 @@ class BlScene(BlDatablock):
 
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         # child collections
@@ -85,6 +85,3 @@ class BlScene(BlDatablock):
             deps.append(self.pointer.grease_pencil)
 
         return deps
-    
-    def is_valid(self):
-        return bpy.data.scenes.get(self.data['name'])

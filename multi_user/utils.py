@@ -126,19 +126,6 @@ def load_dict(src_dict, target):
         pass
 
 
-def dump_datablock(datablock, depth):
-    if datablock:
-        dumper = dump_anything.Dumper()
-        dumper.type_subset = dumper.match_subset_all
-        dumper.depth = depth
-
-        datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type, datablock.name)
-        data = dumper.dump(datablock)
-
-        return data
-
-
 def dump_datablock_attibutes(datablock=None, attributes=[], depth=1, dickt=None):
     if datablock:
         dumper = dump_anything.Dumper()

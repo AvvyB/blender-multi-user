@@ -13,13 +13,13 @@ class BlSpeaker(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'SPEAKER'
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
     def construct(self, data):
         return bpy.data.speakers.new(data["name"])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()
@@ -41,6 +41,7 @@ class BlSpeaker(BlDatablock):
 
         return dumper.dump(pointer)
 
-    def is_valid(self):
-        return bpy.data.lattices.get(self.data['name'])
+    def resolve_deps_implementation(self):
+        return []
+
 

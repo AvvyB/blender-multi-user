@@ -20,8 +20,10 @@ def _is_dictionnary(v):
 def _dump_filter_type(t):
     return lambda x: isinstance(x, t)
 
+
 def _dump_filter_type_by_name(t_name):
     return lambda x: t_name == x.__class__.__name__
+
 
 def _dump_filter_array(array):
     # only primitive type array
@@ -57,8 +59,10 @@ def _load_filter_array(array):
         return False
     return True
 
+
 def _load_filter_color(color):
     return color.__class__.__name__ == 'Color'
+
 
 def _load_filter_default(default):
     if default.read() is None:
@@ -69,7 +73,6 @@ def _load_filter_default(default):
 
 
 class Dumper:
-
     def __init__(self):
         self.verbose = False
         self.depth = 1
@@ -94,28 +97,41 @@ class Dumper:
         self._dump_identity = (lambda x, depth: x, lambda x, depth: x)
         self._dump_ref = (lambda x, depth: x.name, self._dump_object_as_branch)
         self._dump_ID = (lambda x, depth: x.name, self._dump_default_as_branch)
-        self._dump_collection = (self._dump_default_as_leaf, self._dump_collection_as_branch)
-        self._dump_array = (self._dump_default_as_leaf, self._dump_array_as_branch)
-        self._dump_matrix = (self._dump_matrix_as_leaf, self._dump_matrix_as_leaf)
-        self._dump_vector = (self._dump_vector_as_leaf, self._dump_vector_as_leaf)
-        self._dump_quaternion = (self._dump_quaternion_as_leaf, self._dump_quaternion_as_leaf)
-        self._dump_default = (self._dump_default_as_leaf, self._dump_default_as_branch)
+        self._dump_collection = (
+            self._dump_default_as_leaf, self._dump_collection_as_branch)
+        self._dump_array = (self._dump_default_as_leaf,
+                            self._dump_array_as_branch)
+        self._dump_matrix = (self._dump_matrix_as_leaf,
+                             self._dump_matrix_as_leaf)
+        self._dump_vector = (self._dump_vector_as_leaf,
+                             self._dump_vector_as_leaf)
+        self._dump_quaternion = (
+            self._dump_quaternion_as_leaf, self._dump_quaternion_as_leaf)
+        self._dump_default = (self._dump_default_as_leaf,
+                              self._dump_default_as_branch)
         self._dump_color = (self._dump_color_as_leaf, self._dump_color_as_leaf)
 
     def _build_match_elements(self):
         self._match_type_bool = (_dump_filter_type(bool), self._dump_identity)
         self._match_type_int = (_dump_filter_type(int), self._dump_identity)
-        self._match_type_float = (_dump_filter_type(float), self._dump_identity)
+        self._match_type_float = (
+            _dump_filter_type(float), self._dump_identity)
         self._match_type_string = (_dump_filter_type(str), self._dump_identity)
         self._match_type_ref = (_dump_filter_type(T.Object), self._dump_ref)
         self._match_type_ID = (_dump_filter_type(T.ID), self._dump_ID)
-        self._match_type_bpy_prop_collection = (_dump_filter_type(T.bpy_prop_collection), self._dump_collection)
+        self._match_type_bpy_prop_collection = (
+            _dump_filter_type(T.bpy_prop_collection), self._dump_collection)
         self._match_type_array = (_dump_filter_array, self._dump_array)
-        self._match_type_matrix = (_dump_filter_type(mathutils.Matrix), self._dump_matrix)
-        self._match_type_vector = (_dump_filter_type(mathutils.Vector), self._dump_vector)
-        self._match_type_quaternion = (_dump_filter_type(mathutils.Quaternion), self._dump_quaternion)
-        self._match_type_euler = (_dump_filter_type(mathutils.Euler), self._dump_quaternion)
-        self._match_type_color = (_dump_filter_type_by_name("Color"), self._dump_color)
+        self._match_type_matrix = (_dump_filter_type(
+            mathutils.Matrix), self._dump_matrix)
+        self._match_type_vector = (_dump_filter_type(
+            mathutils.Vector), self._dump_vector)
+        self._match_type_quaternion = (_dump_filter_type(
+            mathutils.Quaternion), self._dump_quaternion)
+        self._match_type_euler = (_dump_filter_type(
+            mathutils.Euler), self._dump_quaternion)
+        self._match_type_color = (
+            _dump_filter_type_by_name("Color"), self._dump_color)
         self._match_default = (_dump_filter_default, self._dump_default)
 
     def _dump_collection_as_branch(self, collection, depth):
@@ -140,7 +156,7 @@ class Dumper:
 
     def _dump_vector_as_leaf(self, vector, depth):
         return list(vector)
-    
+
     def _dump_quaternion_as_leaf(self, quaternion, depth):
         return list(quaternion)
 
@@ -168,12 +184,13 @@ class Dumper:
             if p in ["bl_rna", "rna_type"]:
                 return False
             return True
-        
-        all_property_names = [p for p in dir(default) if is_valid_property(p) and p != '' and  p not in self.exclude_filter]
+
+        all_property_names = [p for p in dir(default) if is_valid_property(
+            p) and p != '' and p not in self.exclude_filter]
         dump = {}
         for p in all_property_names:
             if (self.exclude_filter and p in self.exclude_filter) or\
-                (self.include_filter and p not in self.include_filter):
+                    (self.include_filter and p not in self.include_filter):
                 return False
             dp = self._dump_any(getattr(default, p), depth)
             if not (dp is None):
@@ -250,7 +267,8 @@ class Loader:
 
     def load(self, dst_data, src_dumped_data):
         self._load_any(
-            BlenderAPIElement(dst_data, occlude_read_only=self.occlude_read_only),
+            BlenderAPIElement(
+                dst_data, occlude_read_only=self.occlude_read_only),
             src_dumped_data
         )
 
@@ -259,7 +277,6 @@ class Loader:
             if filter_function(any):
                 load_function(any, dump)
                 return
-            
 
     def _load_identity(self, element, dump):
         element.write(dump)
@@ -286,17 +303,20 @@ class Loader:
         }
         element_type = element.bl_rna_property.fixed_type
         constructor = constructors.get(type(element_type))
-        if constructor is None: # collection type not supported
+        if constructor is None:  # collection type not supported
             return
         for dumped_element in dump.values():
             try:
-                constructor_parameters = [dumped_element[name] for name in constructor[1]]
+                constructor_parameters = [dumped_element[name]
+                                          for name in constructor[1]]
             except KeyError:
                 print("Collection load error, missing parameters.")
-                continue # TODO handle error
-            new_element = getattr(element.read(), constructor[0])(*constructor_parameters)
+                continue  # TODO handle error
+            new_element = getattr(element.read(), constructor[0])(
+                *constructor_parameters)
             self._load_any(
-                BlenderAPIElement(new_element, occlude_read_only=self.occlude_read_only),
+                BlenderAPIElement(
+                    new_element, occlude_read_only=self.occlude_read_only),
                 dumped_element
             )
 
@@ -322,10 +342,10 @@ class Loader:
 
     def _load_vector(self, vector, dump):
         vector.write(mathutils.Vector(dump))
-    
+
     def _load_quaternion(self, quaternion, dump):
         quaternion.write(mathutils.Quaternion(dump))
-    
+
     def _load_euler(self, euler, dump):
         euler.write(mathutils.Euler(dump))
 
@@ -341,11 +361,11 @@ class Loader:
 
     def _load_default(self, default, dump):
         if not _is_dictionnary(dump):
-            return # TODO error handling
+            return  # TODO error handling
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                continue # TODO error handling
+                continue  # TODO error handling
             try:
                 self._load_any(default.extend(k), v)
             except:
@@ -356,8 +376,10 @@ class Loader:
         return [
             (_load_filter_type(T.BoolProperty), self._load_identity),
             (_load_filter_type(T.IntProperty), self._load_identity),
-            (_load_filter_type(mathutils.Matrix, use_bl_rna=False), self._load_matrix), # before float because bl_rna type of matrix if FloatProperty
-            (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector), # before float because bl_rna type of vector if FloatProperty
+            # before float because bl_rna type of matrix if FloatProperty
+            (_load_filter_type(mathutils.Matrix, use_bl_rna=False), self._load_matrix),
+            # before float because bl_rna type of vector if FloatProperty
+            (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector),
             (_load_filter_type(mathutils.Quaternion, use_bl_rna=False), self._load_quaternion),
             (_load_filter_type(mathutils.Euler, use_bl_rna=False), self._load_euler),
             (_load_filter_type(T.FloatProperty), self._load_identity),
@@ -372,26 +394,12 @@ class Loader:
 
 
 # Utility functions
-
-
 def dump(any, depth=1):
     dumper = Dumper()
-    dumper.depath = depth
+    dumper.depth = depth
     return dumper.dump(any)
 
-def dump_datablock(datablock, depth):
-    if datablock:
-        dumper = Dumper()
-        dumper.type_subset = dumper.match_subset_all
-        dumper.depth = depth
-
-        datablock_type = datablock.bl_rna.name
-        key = "{}/{}".format(datablock_type, datablock.name)
-        data = dumper.dump(datablock)
-
-        return data
 
 def load(dst, src):
     loader = Loader()
-    # loader.match_subset_all = loader.match_subset_all
     loader.load(dst, src)

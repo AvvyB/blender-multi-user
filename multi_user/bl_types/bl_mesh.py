@@ -168,7 +168,7 @@ class BlMesh(BlDatablock):
 
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         for material in self.pointer.materials:
@@ -176,6 +176,3 @@ class BlMesh(BlDatablock):
                 deps.append(material)
 
         return deps
-
-    def is_valid(self):
-        return bpy.data.meshes.get(self.data['name'])

@@ -1,13 +1,13 @@
 import bpy
 import mathutils
 
-from .. import utils
+from ..libs import dump_anything 
 from .bl_datablock import BlDatablock
 
 
 def load_gpencil_layer(target=None, data=None, create=False):
 
-    utils.dump_anything.load(target, data)
+    dump_anything.load(target, data)
     for k,v in target.frames.items():
         target.frames.remove(v)
         
@@ -15,13 +15,12 @@ def load_gpencil_layer(target=None, data=None, create=False):
         
         tframe = target.frames.new(data["frames"][frame]['frame_number'])
 
-        # utils.dump_anything.load(tframe, data["frames"][frame])
         for stroke in data["frames"][frame]["strokes"]:
             try:
                 tstroke = tframe.strokes[stroke]
             except:
                 tstroke = tframe.strokes.new()
-            utils.dump_anything.load(
+            dump_anything.load(
                 tstroke, data["frames"][frame]["strokes"][stroke])
 
             for point in data["frames"][frame]["strokes"][stroke]["points"]:
@@ -30,7 +29,7 @@ def load_gpencil_layer(target=None, data=None, create=False):
                 tstroke.points.add(1)
                 tpoint = tstroke.points[len(tstroke.points)-1]
 
-                utils.dump_anything.load(tpoint, p)
+                dump_anything.load(tpoint, p)
 
 
 class BlGpencil(BlDatablock):
@@ -44,7 +43,7 @@ class BlGpencil(BlDatablock):
     def construct(self, data):
         return bpy.data.grease_pencils.new(data["name"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         for layer in target.layers:
             target.layers.remove(layer)
 
@@ -57,7 +56,7 @@ class BlGpencil(BlDatablock):
                 load_gpencil_layer(
                     target=gp_layer, data=data["layers"][layer], create=True)
 
-        utils.dump_anything.load(target, data)
+        dump_anything.load(target, data)
 
         target.materials.clear()
         if "materials" in data.keys():
@@ -66,18 +65,15 @@ class BlGpencil(BlDatablock):
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
-        data = utils.dump_datablock(pointer, 2)
-        utils.dump_datablock_attibutes(
-            pointer, ['layers'], 9, data)
+        data = dump_anything.dump(pointer, 2)
+        data['layers'] = dump_anything.dump(pointer.layers, 9)
+
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         for material in self.pointer.materials:
             deps.append(material)
 
         return deps
-
-    def is_valid(self):
-        return bpy.data.grease_pencils.get(self.data['name'])

@@ -13,7 +13,7 @@ class BlLattice(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LATTICE_DATA'
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
         for point in data['points']:
@@ -21,7 +21,7 @@ class BlLattice(BlDatablock):
     def construct(self, data):
         return bpy.data.lattices.new(data["name"])
 
-    def dump(self, pointer=None):
+    def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()
@@ -45,8 +45,8 @@ class BlLattice(BlDatablock):
 
         return data
 
-    def is_valid(self):
-        return bpy.data.lattices.get(self.data['name'])
+    def resolve_deps_implementation(self):
+        return []
 
 
 

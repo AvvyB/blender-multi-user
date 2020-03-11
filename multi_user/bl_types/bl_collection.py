@@ -77,7 +77,7 @@ class BlCollection(BlDatablock):
 
         return data
 
-    def resolve_dependencies(self):
+    def resolve_deps_implementation(self):
         deps = []
 
         for child in self.pointer.children:
@@ -86,7 +86,4 @@ class BlCollection(BlDatablock):
             deps.append(object)
 
         return deps
-
-    def is_valid(self):
-        return bpy.data.collections.get(self.data['name'])
 

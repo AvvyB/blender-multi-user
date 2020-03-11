@@ -13,7 +13,7 @@ class BlCamera(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'CAMERA_DATA'
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
         dof_settings = data.get('dof')
@@ -51,6 +51,6 @@ class BlCamera(BlDatablock):
             'aperture_ratio',
         ]
         return dumper.dump(pointer)
-
-    def is_valid(self):
-        return bpy.data.cameras.get(self.data['name'])
+    
+    def resolve_deps_implementation(self):
+        return []
