@@ -1,19 +1,6 @@
 image: python:latest
 
-
-before_script:
-  - python -V  # Print out python version for debugging
-  - pip install virtualenv
-  - virtualenv venv
-  - source venv/bin/activate
-
-test:
-  script:
-    - python setup.py test
-    - pip install tox flake8  # you can also use tox
-    - tox -e py36,flake8
-
-run:
+build:
   script:
     - cd multi-user
     - rm -rf cache tests .git .gitignore .gitmodules docs
