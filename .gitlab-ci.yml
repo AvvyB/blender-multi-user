@@ -2,6 +2,7 @@ image: python:latest
 
 build:
   script:
+    - ls
     - cd multi-user
     - rm -rf cache tests .git .gitignore .gitmodules docs
     # run the command here 
