@@ -101,14 +101,19 @@ class BlObject(BlDatablock):
 
             for modifier in data['modifiers']:
                 target_modifier = target.modifiers.get(modifier)
-
                 if not target_modifier:
                     target_modifier = target.modifiers.new(
                         data['modifiers'][modifier]['name'], data['modifiers'][modifier]['type'])
 
+                if target_modifier.type == 'PARTICLE_SYSTEM':
+                    tmp_particle_system = target_modifier.particle_system.name
+                
                 utils.dump_anything.load(
                     target_modifier, data['modifiers'][modifier])
 
+                if target_modifier.type == 'PARTICLE_SYSTEM':
+                    target.particle_systems[data['modifiers'][modifier]['name']].settings  = bpy.data.particles[data['modifiers'][modifier]['particle_system']]
+                    # bpy.data.particles.remove(tmp_particle_system)
         # Load constraints
         # Object
         if hasattr(target, 'constraints') and 'constraints' in data:
@@ -188,6 +193,7 @@ class BlObject(BlDatablock):
 
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
+        
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
@@ -219,9 +225,17 @@ class BlObject(BlDatablock):
             dumper.depth = 2
             data["modifiers"] = {}
             for index, modifier in enumerate(pointer.modifiers):
-                data["modifiers"][modifier.name] = dumper.dump(modifier)
-                data["modifiers"][modifier.name]['m_index'] = index
+                modifier_data = {}
 
+                if modifier.type == 'PARTICLE_SYSTEM':
+                    modifier_data['particle_system'] = modifier.particle_system.name
+                    dumper.depth = 1
+                
+                modifier_data.update(dumper.dump(modifier))
+                
+                modifier_data['m_index'] = index
+
+                data["modifiers"][modifier.name] = modifier_data
         # CONSTRAINTS
         # OBJECT
         if hasattr(pointer, 'constraints'):
@@ -334,8 +348,14 @@ class BlObject(BlDatablock):
         # Avoid Empty case
         if self.pointer.data:
             deps.append(self.pointer.data)
+        
+        # Childred
         if len(self.pointer.children) > 0:
             deps.extend(list(self.pointer.children))
+
+        # Particle systems
+        for particle_slot in self.pointer.particle_systems:
+            deps.append(bpy.data.particles[particle_slot.name])
 
         if self.is_library:
             deps.append(self.pointer.library)

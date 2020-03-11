@@ -3,7 +3,7 @@ import mathutils
 
 from .. import utils
 from ..libs.replication.replication.data import ReplicatedDatablock
-from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
+from ..libs.replication.replication.constants import (UP, DIFF_BINARY,DIFF_JSON)
 from ..libs import dump_anything 
 
 def dump_driver(driver):
@@ -75,7 +75,7 @@ class BlDatablock(ReplicatedDatablock):
         if self.pointer and hasattr(self.pointer, 'uuid'):
             self.pointer.uuid = self.uuid
         
-        self.diff_method = DIFF_BINARY
+        self.diff_method = DIFF_JSON
 
     def library_apply(self):
         """Apply stored data
