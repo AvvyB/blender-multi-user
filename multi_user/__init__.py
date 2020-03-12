@@ -7,6 +7,7 @@ bl_info = {
     "location": "3D View > Sidebar > Multi-User tab",
     "warning": "Unstable addon, use it at your own risks",
     "category": "Collaboration",
+    "doc_url": "https://multi-user.readthedocs.io/en/develop/index.html",
     "wiki_url": "https://multi-user.readthedocs.io/en/develop/index.html",
     "tracker_url": "https://gitlab.com/slumber/multi-user/issues",
     "support": "COMMUNITY"
@@ -133,6 +134,7 @@ def register():
     from . import operators
     from . import ui
     from . import preferences
+    from . import addon_updater_ops
 
     for cls in classes:
         bpy.utils.register_class(cls)
@@ -146,6 +148,7 @@ def register():
     bpy.types.WindowManager.user_index = bpy.props.IntProperty()
 
     preferences.register()
+    addon_updater_ops.register(bl_info)
     presence.register()
     operators.register()
     ui.register()
@@ -155,8 +158,10 @@ def unregister():
     from . import operators
     from . import ui
     from . import preferences
+    from . import addon_updater_ops
 
     presence.unregister()
+    addon_updater_ops.unregister()
     ui.unregister()
     operators.unregister()
     preferences.unregister()
