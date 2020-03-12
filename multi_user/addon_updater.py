@@ -1656,7 +1656,11 @@ class GitlabEngine(object):
 		if response == None:
 			return []
 		# Return asset links from release
-		return [{"name": tag["name"], "zipball_url": tag["assets"]["links"][0]["url"]} for tag in response]
+		if updater.use_releases:
+			return [{"name": release["name"], "zipball_url": release["assets"]["links"][0]["url"]} for release in response]
+		else:
+			return [{"name": tag["name"], "zipball_url": self.get_zip_url(tag["commit"]["id"], updater)} for tag in response]
+
 
 
 # -----------------------------------------------------------------------------

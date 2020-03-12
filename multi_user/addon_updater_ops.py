@@ -1368,11 +1368,11 @@ def register(bl_info):
     # the "install {branch}/older version" operator.
     updater.include_branches = True
 
-    # (GitHub only) This options allows the user to use releases over tags for data,
+    # (GitHub/Gitlab only) This options allows the user to use releases over tags for data,
     # which enables pulling down release logs/notes, as well as specify installs from
     # release-attached zips (instead of just the auto-packaged code generated with
     # a release/tag). Setting has no impact on BitBucket or GitLab repos
-    updater.use_releases = False
+    updater.use_releases = True
     # note: Releases always have a tag, but a tag may not always be a release
     # Therefore, setting True above will filter out any non-annoted tags
     # note 2: Using this option will also display the release name instead of
