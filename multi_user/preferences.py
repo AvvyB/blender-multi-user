@@ -64,11 +64,10 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="Category",
         description="Preferences Category",
         items=[
-            ('INFO', "Information", "Information about this add-on"),
             ('CONFIG', "Configuration", "Configuration about this add-on"),
             ('UPDATE', "Update", "Update this add-on"),
         ],
-        default='INFO'
+        default='CONFIG'
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
@@ -133,10 +132,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
         layout = self.layout
 
         layout.row().prop(self, "category", expand=True)
-
-        if self.category == 'INFO':
-            layout.separator()
-            layout.label(text="Enable real-time collaborative workflow inside blender")
         
         if self.category == 'CONFIG':
             grid = layout.column()

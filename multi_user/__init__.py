@@ -7,6 +7,7 @@ bl_info = {
     "location": "3D View > Sidebar > Multi-User tab",
     "warning": "Unstable addon, use it at your own risks",
     "category": "Collaboration",
+    "doc_url": "https://multi-user.readthedocs.io/en/develop/index.html",
     "wiki_url": "https://multi-user.readthedocs.io/en/develop/index.html",
     "tracker_url": "https://gitlab.com/slumber/multi-user/issues",
     "support": "COMMUNITY"
