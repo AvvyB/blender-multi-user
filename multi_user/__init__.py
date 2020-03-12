@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 0, 1),
+    "version": (0, 0, 2),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 80, 0),
     "location": "3D View > Sidebar > Multi-User tab",
