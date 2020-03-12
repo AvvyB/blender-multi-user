@@ -8,8 +8,7 @@ build:
     - rm -rf tests .git .gitignore
 
   artifacts:
-    paths:
-      - name:
-      - paths: 
-        - multi_user
+    name: multi_user
+    paths: 
+     - multi_user
 
