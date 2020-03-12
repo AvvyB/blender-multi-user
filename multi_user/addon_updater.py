@@ -1624,7 +1624,10 @@ class GitlabEngine(object):
 		return "{}{}{}".format(self.api_url,"/api/v4/projects/",updater.repo)
 
 	def form_tags_url(self, updater):
-		return "{}{}".format(self.form_repo_url(updater),"/repository/tags")
+		if updater.use_releases:
+			return "{}{}".format(self.form_repo_url(updater),"/releases")
+		else:
+			return "{}{}".format(self.form_repo_url(updater),"/repository/tags")
 
 	def form_branch_list_url(self, updater):
 		# does not validate branch name.
@@ -1652,7 +1655,8 @@ class GitlabEngine(object):
 	def parse_tags(self, response, updater):
 		if response == None:
 			return []
-		return [{"name": tag["name"], "zipball_url": self.get_zip_url(tag["commit"]["id"], updater)} for tag in response]
+		# Return asset links from release
+		return [{"name": tag["name"], "zipball_url": tag["assets"]["links"][0]["url"]} for tag in response]
 
 
 # -----------------------------------------------------------------------------
