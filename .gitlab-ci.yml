@@ -6,9 +6,10 @@ build:
     - git submodule update
     - cd multi_user/libs/replication
     - rm -rf tests .git .gitignore
-    - cd ../../
-    - ls
+
   artifacts:
     paths:
-      - multi_user
+      - name:
+      - paths: 
+        - multi_user
 
