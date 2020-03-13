@@ -18,7 +18,7 @@ class BlLattice(BlDatablock):
 
         for point in data['points']:
             utils.dump_anything.load(target.points[point], data["points"][point])
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.lattices.new(data["name"])
 
     def dump_implementation(self, data, pointer=None):

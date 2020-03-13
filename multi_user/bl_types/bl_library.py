@@ -13,11 +13,11 @@ class BlLibrary(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LIBRARY_DATA_DIRECT'
 
-    def construct(self, data):
+    def _construct(self, data):
         with bpy.data.libraries.load(filepath=data["filepath"], link=True) as (sourceData, targetData):
             targetData = sourceData
             return sourceData
-    def load(self, data, target):
+    def _load(self, data, target):
         pass
 
     def dump(self, pointer=None):

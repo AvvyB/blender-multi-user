@@ -12,12 +12,12 @@ class BlScene(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'SCENE_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
         instance.uuid = self.uuid
         return instance
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         target = self.pointer
         # Load other meshes metadata
         utils.dump_anything.load(target, data)

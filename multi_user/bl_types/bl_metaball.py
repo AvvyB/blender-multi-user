@@ -13,7 +13,7 @@ class BlMetaball(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'META_BALL'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.metaballs.new(data["name"])
 
     def load(self, data, target):

@@ -22,7 +22,7 @@ class BlCamera(BlDatablock):
         if dof_settings:
             utils.dump_anything.load(target.dof, dof_settings)
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.cameras.new(data["name"])
 
     def dump_implementation(self, data, pointer=None):

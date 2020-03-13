@@ -15,10 +15,10 @@ class BlAction(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'ACTION_TWEAK'
     
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.actions.new(data["name"])
 
-    def load(self, data, target):
+    def _load(self, data, target):
         begin_frame = 100000
         end_frame = -100000
 
@@ -90,7 +90,7 @@ class BlAction(BlDatablock):
                 target.fcurves.remove(fcurve)
         target.id_root= data['id_root']
 
-    def dump(self, pointer=None):
+    def _dump(self, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.exclude_filter =[

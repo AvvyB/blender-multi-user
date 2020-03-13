@@ -61,7 +61,6 @@ class BlDatablock(ReplicatedDatablock):
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
     """
-    bl_id = "scenes"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -77,7 +76,7 @@ class BlDatablock(ReplicatedDatablock):
         
         self.diff_method = DIFF_BINARY
 
-    def resolve(self):
+    def _resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
@@ -92,7 +91,7 @@ class BlDatablock(ReplicatedDatablock):
 
         self.pointer = datablock_ref
 
-    def dump(self, pointer=None):
+    def _dump(self, pointer=None):
         data = {}
         # Dump animation data
         if utils.has_action(pointer):
@@ -118,7 +117,7 @@ class BlDatablock(ReplicatedDatablock):
     def dump_implementation(self, data, target):
         raise NotImplementedError
 
-    def load(self, data, target):
+    def _load(self, data, target):
         # Load animation data
         if 'animation_data' in data.keys():
             if target.animation_data is None:
@@ -150,7 +149,7 @@ class BlDatablock(ReplicatedDatablock):
 
         if not self.is_library:
             dependencies.extend(self.resolve_deps_implementation())
-        print(dependencies)  
+
         return dependencies
 
     def resolve_deps_implementation(self):

@@ -13,7 +13,7 @@ class BlCollection(BlDatablock):
     bl_delay_apply = 1
     bl_automatic_push = True
 
-    def construct(self, data):
+    def _construct(self, data):
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.collections = [
@@ -28,7 +28,7 @@ class BlCollection(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         # Load other meshes metadata
         # dump_anything.load(target, data)
         target.name = data["name"]

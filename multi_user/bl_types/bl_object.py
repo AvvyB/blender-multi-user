@@ -38,7 +38,7 @@ class BlObject(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'OBJECT_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         pointer = None
 
         if self.is_library:

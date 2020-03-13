@@ -13,10 +13,10 @@ class BlLight(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LIGHT_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.lights.new(data["name"], data["type"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
     def dump_implementation(self, data, pointer=None):

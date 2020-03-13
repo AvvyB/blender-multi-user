@@ -18,7 +18,7 @@ class BlLightprobe(BlDatablock):
     def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
-    def construct(self, data):
+    def _construct(self, data):
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
         # See https://developer.blender.org/D6396
         if bpy.app.version[1] >= 83:

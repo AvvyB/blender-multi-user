@@ -14,10 +14,10 @@ class BlWorld(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'WORLD_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.worlds.new(data["name"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -100,7 +100,4 @@ class BlWorld(BlDatablock):
         if self.is_library:
             deps.append(self.pointer.library)
         return deps
-
-    def is_valid(self):
-        return bpy.data.worlds.get(self.data['name'])
 

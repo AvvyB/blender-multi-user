@@ -35,14 +35,14 @@ class BlImage(BlDatablock):
     bl_automatic_push = False
     bl_icon = 'IMAGE_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.images.new(
                 name=data['name'],
                 width=data['size'][0],
                 height=data['size'][1]
             )
 
-    def load(self, data, target):
+    def _load(self, data, target):
         image = target
         prefs = utils.get_preferences()
 
@@ -59,7 +59,7 @@ class BlImage(BlDatablock):
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def dump(self, data, pointer=None):
+    def _dump(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)

@@ -16,7 +16,7 @@ class BlSpeaker(BlDatablock):
     def load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.speakers.new(data["name"])
 
     def dump_implementation(self, data, pointer=None):

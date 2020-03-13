@@ -15,7 +15,7 @@ class BlCurve(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'CURVE_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.curves.new(data["name"], data["type"])
 
     def load_implementation(self, data, target):

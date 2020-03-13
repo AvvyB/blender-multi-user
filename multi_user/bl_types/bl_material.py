@@ -76,7 +76,7 @@ class BlMaterial(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'MATERIAL_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.materials.new(data["name"])
 
     def load_implementation(self, data, target):
