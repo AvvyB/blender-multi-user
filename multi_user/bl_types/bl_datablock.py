@@ -77,22 +77,6 @@ class BlDatablock(ReplicatedDatablock):
         
         self.diff_method = DIFF_BINARY
 
-    def library_apply(self):
-        """Apply stored data
-        """
-        # UP in case we want to reset our pointer data
-        self.state = UP
-
-    def bl_diff(self):
-        """Generic datablock diff"""
-        return self.pointer.name != self.data['name']
-
-    def diff_library(self):
-        return False
-
-    def resolve_deps_library(self):
-        return [self.pointer.library]
-
     def resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
