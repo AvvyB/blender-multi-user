@@ -2,7 +2,9 @@
 
 > Enable real-time collaborative workflow inside blender  
 
-![demo](https://i.imgur.com/X0B7O1Q.gif)
+[![Documentation Status](https://readthedocs.org/projects/multi-user/badge/?version=latest)](https://multi-user.readthedocs.io/en/latest/?badge=latest) [![Chat on Discord](https://img.shields.io/badge/chat-Discord-brightgreen.svg)](https://discord.gg/Q3TSmb4) [![pipeline status](https://gitlab.com/slumber/multi-user/badges/master/pipeline.svg)](https://gitlab.com/slumber/multi-user/-/commits/master)
+
+<img src="https://i.imgur.com/X0B7O1Q.gif" width=600>
 
 
 :warning: Under development, use it at your own risks. Currently tested on Windows platform. :warning:
@@ -25,22 +27,28 @@ See the [documentation](https://multi-user.readthedocs.io/en/latest/) for detail
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
 
-| Name        |       Status       |              Comment               |
-| ----------- | :----------------: | :--------------------------------: |
-| action      |   :exclamation:    |             Not stable             |
-| armature    |   :exclamation:    |             Not stable             |
-| camera      | :white_check_mark: |                                    |
-| collection  | :white_check_mark: |                                    |
-| curve       | :white_check_mark: | Nurbs surface don't load correctly |
-| gpencil     | :white_check_mark: |                                    |
-| image       |   :exclamation:    |           Not stable yet           |
-| mesh        | :white_check_mark: |                                    |
-| material    | :white_check_mark: |                                    |
-| metaball    | :white_check_mark: |                                    |
-| object      | :white_check_mark: |                                    |
-| scene       | :white_check_mark: |                                    |
-| world       | :white_check_mark: |                                    |
-| lightprobes | :white_check_mark: |                                    |
+| Name        | Status |                            Comment                            |
+| ----------- | :----: | :-----------------------------------------------------------: |
+| action      |   ❗    |                          Not stable                           |
+| armature    |   ❗    |                          Not stable                           |
+| camera      |   ✔️   |                                                               |
+| collection  |   ✔️   |                                                               |
+| curve       |   ✔️   |              Nurbs surface don't load correctly               |
+| gpencil     |   ✔️   |                                                               |
+| image       |   ❗    |                        Not stable yet                         |
+| mesh        |   ✔️   |                                                               |
+| material    |   ✔️   |                                                               |
+| metaball    |   ✔️   |                                                               |
+| object      |   ✔️   |                                                               |
+| scene       |   ✔️   |                                                               |
+| world       |   ✔️   |                                                               |
+| lightprobes |   ✔️   |                                                               |
+| particles   |   ❌    | [On-going](https://gitlab.com/slumber/multi-user/-/issues/24) |
+| speakers    |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/65)  |
+| vse         |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)  |
+| physics     |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)  |
+| libraries   |   ❗    |                            Partial                            |
+
 
 ### Performance issues
 
@@ -53,7 +61,6 @@ I'm working on it.
 | ------------ | :-----: | -----: |
 | ZeroMQ       | latest  |    yes |
 | msgpack      | latest  |    yes |
-| PyYAML       | latest  |    yes |
 | JsonDiff     | latest  |    yes |
 
 
@@ -65,4 +72,3 @@ See [contributing section](https://multi-user.readthedocs.io/en/latest/ways_to_c
 
 See [license](LICENSE)
 
-[![Documentation Status](https://readthedocs.org/projects/multi-user/badge/?version=latest)](https://multi-user.readthedocs.io/en/latest/?badge=latest)
