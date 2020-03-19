@@ -2,8 +2,6 @@
 
 > Enable real-time collaborative workflow inside blender  
 
-[![Documentation Status](https://readthedocs.org/projects/multi-user/badge/?version=latest)](https://multi-user.readthedocs.io/en/latest/?badge=latest) [![Chat on Discord](https://img.shields.io/badge/chat-Discord-brightgreen.svg)](https://discord.gg/Q3TSmb4) [![pipeline status](https://gitlab.com/slumber/multi-user/badges/master/pipeline.svg)](https://gitlab.com/slumber/multi-user/-/commits/master)
-
 <img src="https://i.imgur.com/X0B7O1Q.gif" width=600>
 
 
