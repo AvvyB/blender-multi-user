@@ -1,17 +1,2 @@
-image: python:latest
-
-build:
-  script:
-    - git submodule init
-    - git submodule update
-    - cd multi_user/libs/replication
-    - rm -rf tests .git .gitignore
-
-  artifacts:
-    name: multi_user
-    paths: 
-     - multi_user
-
-  only:
-    - master
-    - develop
+include:
+  - local: .gitlab/ci/build.gitlab-ci.yml
