@@ -166,7 +166,7 @@ class BlDatablock(ReplicatedDatablock):
 
         if not self.is_library:
             dependencies.extend(self.resolve_deps_implementation())
-        print(dependencies)  
+
         return dependencies
 
     def resolve_deps_implementation(self):

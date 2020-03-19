@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 0, 2),
+    "version": (0, 0, 3),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 80, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -29,8 +29,6 @@ from .libs.replication.replication.constants import  RP_COMMON
 # TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
     ("zmq","zmq"),
-    ("msgpack","msgpack"),
-    ("yaml","pyyaml"),
     ("jsondiff","jsondiff")
 }
 

@@ -60,7 +60,6 @@ I'm working on it.
 | Dependencies | Version | Needed |
 | ------------ | :-----: | -----: |
 | ZeroMQ       | latest  |    yes |
-| msgpack      | latest  |    yes |
 | JsonDiff     | latest  |    yes |
 
 
