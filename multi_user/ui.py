@@ -6,7 +6,8 @@ from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_ACTIVE, STATE_AUTH,
                                                      STATE_CONFIG, STATE_SYNCING,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
-                                                     STATE_WAITING, STATE_QUITTING)
+                                                     STATE_WAITING, STATE_QUITTING,
+                                                     STATE_LAUNCHING_SERVICES)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -35,7 +36,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     return '{} |{}| {}/{}{}'.format(prefix, bar, iteration,total, suffix)
 
 def get_state_str(state):
-    state_str = 'None'
+    state_str = 'UNKNOWN'
     if state == STATE_WAITING:
         state_str = 'WARMING UP DATA'
     elif state == STATE_SYNCING:
@@ -52,6 +53,9 @@ def get_state_str(state):
         state_str = 'INIT'
     elif state == STATE_QUITTING:
         state_str = 'QUITTING SESSION'
+    elif state == STATE_LAUNCHING_SERVICES:
+        state_str = 'LAUNCHING SERVICES'
+
     return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):

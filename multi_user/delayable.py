@@ -294,5 +294,5 @@ class ClientUpdate(Timer):
             
             presence.renderer.stop()
         # # ui update
-        elif session:
+        elif  session.state['STATE'] != STATE_INITIAL:
             presence.refresh_3d_view()
