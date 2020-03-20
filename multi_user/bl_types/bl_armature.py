@@ -19,7 +19,6 @@
 import bpy
 import mathutils
 
-from ..libs.overrider import Overrider
 from .. import utils
 from .. import presence, operators
 from .bl_datablock import BlDatablock

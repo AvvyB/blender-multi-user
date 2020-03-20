@@ -26,22 +26,6 @@ from .bl_datablock import BlDatablock
 logger = logging.getLogger(__name__)
 
 
-def load_constraints(target, data):
-    for local_constraint in target.constraints:
-        if local_constraint.name not in data:
-            target.constraints.remove(local_constraint)
-
-    for constraint in data:
-        target_constraint = target.constraints.get(constraint)
-
-        if not target_constraint:
-            target_constraint = target.constraints.new(
-                data[constraint]['type'])
-
-        utils.dump_anything.load(
-            target_constraint, data[constraint])
-
-
 def load_pose(target_bone, data):
     target_bone.rotation_mode = data['rotation_mode']
 
@@ -105,32 +89,7 @@ class BlObject(BlDatablock):
 
     def load_implementation(self, data, target):
         # Load transformation data
-        rot_mode = 'rotation_quaternion' if data['rotation_mode'] == 'QUATERNION' else 'rotation_euler'
-        target.rotation_mode = data['rotation_mode']
-        target.location = data['location']
-        setattr(target, rot_mode, data[rot_mode])
-        target.scale = data['scale']
-
-        target.name = data["name"]
-        # Load modifiers
-        if hasattr(target, 'modifiers'):
-            # TODO: smarter selective update
-            target.modifiers.clear()
-
-            for modifier in data['modifiers']:
-                target_modifier = target.modifiers.get(modifier)
-
-                if not target_modifier:
-                    target_modifier = target.modifiers.new(
-                        data['modifiers'][modifier]['name'], data['modifiers'][modifier]['type'])
-
-                utils.dump_anything.load(
-                    target_modifier, data['modifiers'][modifier])
-
-        # Load constraints
-        # Object
-        if hasattr(target, 'constraints') and 'constraints' in data:
-            load_constraints(target, data['constraints'])
+        utils.dump_anything.load(target, data)
 
         # Pose
         if 'pose' in data:
@@ -153,27 +112,13 @@ class BlObject(BlDatablock):
                 bone_data = data['pose']['bones'].get(bone)
 
                 if 'constraints' in bone_data.keys():
-                    load_constraints(
-                        target_bone, bone_data['constraints'])
+                    utils.dump_anything.load(target_bone, bone_data['constraints'])
+
 
                 load_pose(target_bone, bone_data)
 
                 if 'bone_index' in bone_data.keys():
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
-
-        # Load relations
-        if 'children' in data.keys():
-            for child in data['children']:
-                bpy.data.objects[child].parent = self.pointer
-
-        # Load empty representation
-        target.empty_display_size = data['empty_display_size']
-        target.empty_display_type = data['empty_display_type']
-
-        # Instancing
-        target.instance_type = data['instance_type']
-        if data['instance_type'] == 'COLLECTION':
-            target.instance_collection = bpy.data.collections[data['instance_collection']]
 
         # vertex groups
         if 'vertex_groups' in data:
@@ -238,7 +183,6 @@ class BlObject(BlDatablock):
             data["modifiers"] = {}
             for index, modifier in enumerate(pointer.modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
-                data["modifiers"][modifier.name]['m_index'] = index
 
         # CONSTRAINTS
         # OBJECT

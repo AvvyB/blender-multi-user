@@ -15,11 +15,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+import logging
 
 import bpy
 import bpy.types as T
 import mathutils
 
+logger = logging.getLogger(__name__)
 
 def remove_items_from_dict(d, keys, recursive=False):
     copy = dict(d)
@@ -316,19 +318,29 @@ class Loader:
         CONSTRUCTOR_ADD = "add"
 
         constructors = {
-            T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
-            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, [])
+            T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"], True),
+            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, [], False),
+            T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"], True),
+            T.Constraint: (CONSTRUCTOR_NEW, ["type"], True),
+            # T.VertexGroup: (CONSTRUCTOR_NEW, ["name"], True),
         }
         element_type = element.bl_rna_property.fixed_type
+        
         constructor = constructors.get(type(element_type))
+
         if constructor is None:  # collection type not supported
             return
+
+        # Try to clear existing 
+        if constructor[2]:
+            getattr(element.read(), 'clear')()
+        
         for dumped_element in dump.values():
             try:
                 constructor_parameters = [dumped_element[name]
                                           for name in constructor[1]]
             except KeyError:
-                print("Collection load error, missing parameters.")
+                logger.error("Collection load error, missing parameters.")
                 continue  # TODO handle error
             new_element = getattr(element.read(), constructor[0])(
                 *constructor_parameters)
@@ -354,6 +366,8 @@ class Loader:
             pointer.write(bpy.data.meshes.get(dump))
         elif isinstance(rna_property_type, T.Material):
             pointer.write(bpy.data.materials.get(dump))
+        elif isinstance(rna_property_type, T.Collection):
+            pointer.write(bpy.data.collections.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))
@@ -386,8 +400,8 @@ class Loader:
                 continue  # TODO error handling
             try:
                 self._load_any(default.extend(k), v)
-            except:
-                pass
+            except Exception as e:
+                logger.error(e)
 
     @property
     def match_subset_all(self):
