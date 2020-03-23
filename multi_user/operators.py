@@ -488,7 +488,7 @@ def sanitize_deps_graph(dummy):
 
     if client and client.state['STATE'] in [STATE_ACTIVE]:
         for node_key in client.list():
-            client.get(node_key).resolve()
+            client.get(node_key)._resolve()
 
 
 @persistent

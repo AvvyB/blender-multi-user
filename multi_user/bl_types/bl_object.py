@@ -52,7 +52,7 @@ class BlObject(BlDatablock):
             instance.uuid = self.uuid
             return instance
 
-        # Object specific constructor...
+        # TODO: refactoring
         if "data" not in data:
             pass
         elif data["data"] in bpy.data.meshes.keys():

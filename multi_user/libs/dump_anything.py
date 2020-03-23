@@ -196,7 +196,7 @@ class Dumper:
                     return False
                 getattr(default, p)
             except AttributeError as err:
-                logger.error(err)
+                logger.debug(err)
                 return False
             if p.startswith("__"):
                 return False
@@ -306,7 +306,7 @@ class Loader:
             for i in range(len(dump)):
                 element.read()[i] = dump[i]
         except AttributeError as err:
-            logger.error(err)
+            logger.debug(err)
             if not self.occlude_read_only:
                 raise err
 
@@ -340,7 +340,7 @@ class Loader:
                 constructor_parameters = [dumped_element[name]
                                           for name in constructor[1]]
             except KeyError:
-                logger.error("Collection load error, missing parameters.")
+                logger.debug("Collection load error, missing parameters.")
                 continue  # TODO handle error
             new_element = getattr(element.read(), constructor[0])(
                 *constructor_parameters)
@@ -397,11 +397,11 @@ class Loader:
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                logger.error(f"Load default, skipping {default} : {k}")
+                logger.debug(f"Load default, skipping {default} : {k}")
             try:
                 self._load_any(default.extend(k), v)
             except Exception as err:
-                logger.error(f"Cannot load {k}: {err}")
+                logger.debug(f"Cannot load {k}: {err}")
 
     @property
     def match_subset_all(self):
