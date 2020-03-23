@@ -259,12 +259,9 @@ class BlenderAPIElement:
 
     def write(self, value):
         # take precaution if property is read-only
-        if self.api_element.is_property_readonly(self.sub_element_name) and \
-            self.occlude_read_only:
-            logger.error(f"Skipping {self.sub_element_name}")
-            return
+        if self.sub_element_name and \
+            not self.api_element.is_property_readonly(self.sub_element_name):
         
-        if self.sub_element_name:
             setattr(self.api_element, self.sub_element_name, value)
         else:
             self.api_element = value
