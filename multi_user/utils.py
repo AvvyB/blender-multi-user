@@ -22,6 +22,7 @@ import os
 import random
 import string
 import sys
+import time
 from uuid import uuid4
 from collections.abc import Iterable
 
@@ -176,3 +177,6 @@ def resolve_from_id(id, optionnal_type=None):
 
 def get_preferences():
     return bpy.context.preferences.addons[__package__].preferences
+
+def current_milli_time():
+    return int(round(time.time() * 1000))

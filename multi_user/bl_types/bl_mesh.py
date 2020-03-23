@@ -19,82 +19,90 @@
 import bpy
 import bmesh
 import mathutils
+import logging
+import numpy as np
 
 from .. import utils
 from ..libs.replication.replication.constants import DIFF_BINARY
 from .bl_datablock import BlDatablock
 
+logger = logging.getLogger(__name__)
 
 def dump_mesh(mesh, data={}):
     import bmesh
 
     mesh_data = data
-    mesh_buffer = bmesh.new()
-
     # https://blog.michelanders.nl/2016/02/copying-vertices-to-numpy-arrays-in_4.html
-    mesh_buffer.from_mesh(mesh)
 
-    uv_layer = mesh_buffer.loops.layers.uv.verify()
-    bevel_layer = mesh_buffer.verts.layers.bevel_weight.verify()
-    skin_layer = mesh_buffer.verts.layers.skin.verify()
+    # VERTICES
+    start = utils.current_milli_time()
 
-    verts = {}
-    for vert in mesh_buffer.verts:
-        v = {}
-        v["co"] = list(vert.co)
+    vert_count = len(mesh.vertices)
+    shape = (vert_count, 3) 
 
-        # vert metadata
-        v['bevel'] = vert[bevel_layer]
-        v['normal'] = list(vert.normal)
-        # v['skin'] = list(vert[skin_layer])
+    verts_co = np.empty(vert_count*3, dtype=np.float64)
+    mesh.vertices.foreach_get('co', verts_co)
+    # verts_co.shape = shape
+    mesh_data["verts_co"] = verts_co.tobytes()
 
-        verts[str(vert.index)] = v
+    verts_normal = np.empty(vert_count*3, dtype=np.float64)
+    mesh.vertices.foreach_get('normal', verts_normal)
+    # verts_normal.shape = shape
+    mesh_data["verts_normal"] = verts_normal.tobytes()
+    
+    verts_bevel = np.empty(vert_count, dtype=np.float64)
+    mesh.vertices.foreach_get('bevel_weight', verts_bevel)
+    mesh_data["verts_bevel"] = verts_bevel.tobytes()
 
-    mesh_data["verts"] = verts
+    logger.error(f"verts {utils.current_milli_time()-start} ms")
+    
+    # EDGES
+    start = utils.current_milli_time()
+    edge_count = len(mesh.edges)
+    
+    edges_vert = np.empty(edge_count*2, dtype=np.int)
+    mesh.edges.foreach_get('vertices', edges_vert)
+    # edges_vert.shape = (edge_count, 2)
+    mesh_data["egdes_vert"] = edges_vert.tobytes()
 
-    edges = {}
-    for edge in mesh_buffer.edges:
-        e = {}
-        e["verts"] = [edge.verts[0].index, edge.verts[1].index]
+    logger.error(f"edges {utils.current_milli_time()-start} ms")
 
-        # Edge metadata
-        e["smooth"] = edge.smooth
+    start = utils.current_milli_time()
 
-        edges[edge.index] = e
-    mesh_data["edges"] = edges
+    # POLYGONS
+    start = utils.current_milli_time()
+    poly_count = len(mesh.polygons)
 
-    faces = {}
-    for face in mesh_buffer.faces:
-        f = {}
-        fverts = []
-        for vert in face.verts:
-            fverts.append(vert.index)
+    poly_mat = np.empty(poly_count, dtype=np.int)
+    mesh.polygons.foreach_get("material_index", poly_mat)
+    mesh_data["poly_mat"] = poly_mat.tobytes()
 
-        f["verts"] = fverts
-        f["material_index"] = face.material_index
-        f["smooth"] = face.smooth
-        f["normal"] = list(face.normal)
-        f["index"] = face.index
+    poly_loop_start = np.empty(poly_count, dtype=np.int)
+    mesh.polygons.foreach_get("loop_start", poly_loop_start)
+    mesh_data["poly_loop_start"] = poly_loop_start.tobytes()
 
-        uvs = []
-        # Face metadata
-        for loop in face.loops:
-            loop_uv = loop[uv_layer]
+    poly_loop_total = np.empty(poly_count, dtype=np.int)
+    mesh.polygons.foreach_get("loop_total", poly_loop_total)
+    mesh_data["poly_loop_total"] = poly_loop_total.tobytes()
 
-            uvs.append(list(loop_uv.uv))
+    poly_smooth = np.empty(poly_count, dtype=np.bool)
+    mesh.polygons.foreach_get("use_smooth", poly_smooth)
+    mesh_data["poly_smooth"] = poly_smooth.tobytes()
+    
+    logger.error(f"polygons {utils.current_milli_time()-start} ms")
 
-        f["uv"] = uvs
-        faces[face.index] = f
+    # UV
+    start = utils.current_milli_time()
+    mesh_data['uv_layers'] = {}
+    for layer in mesh.uv_layers:
+        mesh_data['uv_layers'][layer.name] = {}
+        
+        uv_layer = np.empty(len(layer.data)*2, dtype=np.float64)
+        layer.data.foreach_get("uv", uv_layer)
 
-    mesh_data["faces"] = faces
+        mesh_data['uv_layers'][layer.name]['data'] = uv_layer.tobytes()
 
-    uv_layers = []
-    for uv_layer in mesh.uv_layers:
-        uv_layers.append(uv_layer.name)
-
-    mesh_data["uv_layers"] = uv_layers
-    # return mesh_data
-
+    logger.error(f"uvs {utils.current_milli_time()-start} ms")
 
 class BlMesh(BlDatablock):
     bl_id = "meshes"
@@ -174,8 +182,12 @@ class BlMesh(BlDatablock):
             'use_auto_smooth',
             'auto_smooth_angle'
         ]
+
+        
         data = dumper.dump(pointer)
+        
         dump_mesh(pointer, data)
+        
         # Fix material index
         m_list = []
         for material in pointer.materials:
