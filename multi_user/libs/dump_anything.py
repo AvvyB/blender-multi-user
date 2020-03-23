@@ -93,8 +93,9 @@ def _load_filter_default(default):
 
 
 class Dumper:
+    # TODO: support occlude readonly  
     def __init__(self):
-        self.verbose = False
+        self.verbose = True
         self.depth = 1
         self.keep_compounds_as_leaves = False
         self.accept_read_only = True
@@ -103,7 +104,6 @@ class Dumper:
         self.type_subset = self.match_subset_all
         self.include_filter = []
         self.exclude_filter = []
-        # self._atomic_types = [] # TODO future option?
 
     def dump(self, any):
         return self._dump_any(any, 0)
@@ -195,7 +195,8 @@ class Dumper:
                 if (self.include_filter and p not in self.include_filter):
                     return False
                 getattr(default, p)
-            except AttributeError:
+            except AttributeError as err:
+                logger.error(err)
                 return False
             if p.startswith("__"):
                 return False
@@ -258,14 +259,15 @@ class BlenderAPIElement:
 
     def write(self, value):
         # take precaution if property is read-only
-        try:
-            if self.sub_element_name:
-                setattr(self.api_element, self.sub_element_name, value)
-            else:
-                self.api_element = value
-        except AttributeError as err:
-            if not self.occlude_read_only:
-                raise err
+        if self.api_element.is_property_readonly(self.sub_element_name) and \
+            self.occlude_read_only:
+            logger.error(f"Skipping {self.sub_element_name}")
+            return
+        
+        if self.sub_element_name:
+            setattr(self.api_element, self.sub_element_name, value)
+        else:
+            self.api_element = value
 
     def extend(self, element_name):
         return BlenderAPIElement(self.read(), element_name)
@@ -282,7 +284,7 @@ class BlenderAPIElement:
 class Loader:
     def __init__(self):
         self.type_subset = self.match_subset_all
-        self.occlude_read_only = True
+        self.occlude_read_only = False
         self.order = ['*']
 
     def load(self, dst_data, src_dumped_data):
@@ -307,6 +309,7 @@ class Loader:
             for i in range(len(dump)):
                 element.read()[i] = dump[i]
         except AttributeError as err:
+            logger.error(err)
             if not self.occlude_read_only:
                 raise err
 
@@ -397,11 +400,11 @@ class Loader:
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                continue  # TODO error handling
+                logger.error(f"Load default, skipping {default} : {k}")
             try:
                 self._load_any(default.extend(k), v)
-            except Exception as e:
-                logger.error(e)
+            except Exception as err:
+                logger.error(f"Cannot load {k}: {err}")
 
     @property
     def match_subset_all(self):

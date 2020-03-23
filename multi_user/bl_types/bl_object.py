@@ -261,18 +261,18 @@ class BlObject(BlDatablock):
             data['vertex_groups'] = vg_data
 
         #  SHAPE KEYS
-        pointer_data = pointer.data
-        if hasattr(pointer_data, 'shape_keys') and pointer_data.shape_keys:
+        object_data = pointer.data
+        if hasattr(object_data, 'shape_keys') and object_data.shape_keys:
             dumper = utils.dump_anything.Dumper()
             dumper.depth = 2
             dumper.include_filter = [
                 'reference_key',
                 'use_relative'
             ]
-            data['shape_keys'] = dumper.dump(pointer_data.shape_keys)
-            data['shape_keys']['reference_key'] = pointer_data.shape_keys.reference_key.name
+            data['shape_keys'] = dumper.dump(object_data.shape_keys)
+            data['shape_keys']['reference_key'] = object_data.shape_keys.reference_key.name
             key_blocks = {}
-            for key in pointer_data.shape_keys.key_blocks:
+            for key in object_data.shape_keys.key_blocks:
                 dumper.depth = 3
                 dumper.include_filter = [
                     'name',
