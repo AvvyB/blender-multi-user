@@ -70,9 +70,9 @@ def dump_mesh(mesh, data={}):
     poly_count = len(mesh.polygons)
     mesh_data["poly_count"] = poly_count
 
-    # poly_mat = np.empty(poly_count, dtype=np.int)
-    # mesh.polygons.foreach_get("material_index", poly_mat)
-    # mesh_data["poly_mat"] = poly_mat.tobytes()
+    poly_mat = np.empty(poly_count, dtype=np.int)
+    mesh.polygons.foreach_get("material_index", poly_mat)
+    mesh_data["poly_mat"] = poly_mat.tobytes()
 
     poly_loop_start = np.empty(poly_count, dtype=np.int)
     mesh.polygons.foreach_get("loop_start", poly_loop_start)
@@ -160,14 +160,14 @@ class BlMesh(BlDatablock):
             edge_count = data["egdes_count"]
             target.edges.add(edge_count)
 
-            # 2.c - LOOPS
+            # # 2.c - LOOPS
             loops_count = data["loop_count"]
             target.loops.add(loops_count)
 
             loop_vertex_index = np.frombuffer(data['loop_vertex_index'], dtype=np.int)
             loop_normal = np.frombuffer(data['loop_normal'], dtype=np.float64)
 
-            # 2.b - POLY
+            # # 2.b - POLY
             poly_count = data["poly_count"]
             target.polygons.add(poly_count)
 
@@ -175,6 +175,7 @@ class BlMesh(BlDatablock):
             poly_loop_total = np.frombuffer(data["poly_loop_total"], dtype=np.int)
             poly_smooth = np.frombuffer(data["poly_smooth"], dtype=np.bool)
 
+            poly_mat = np.frombuffer(data["poly_mat"], dtype=np.int)
             
             target.vertices.foreach_set('co', vertices)
             target.edges.foreach_set("vertices", egdes_vert)
@@ -183,14 +184,23 @@ class BlMesh(BlDatablock):
             target.polygons.foreach_set("loop_total", poly_loop_total)
             target.polygons.foreach_set("loop_start", poly_loop_start)
             target.polygons.foreach_set("use_smooth", poly_smooth)
-
+            target.polygons.foreach_set("material_index", poly_mat)
 
 
             # 3 - LOAD METADATA
             # uv's
             # utils.dump_anything.load(target.uv_layers, data['uv_layers'])
+            
+            for layer in data['uv_layers']:
+                if layer not in target.uv_layers:
+                    target.uv_layers.new(name=layer)
+                
+                uv_buffer = np.frombuffer(data["uv_layers"][layer]['data'])
 
-            target.update()
+                target.uv_layers[layer].data.foreach_set('uv', uv_buffer)
+                
+
+            target.validate ()
             # utils.dump_anything.load(target, data)
 
     def dump_implementation(self, data, pointer=None):
