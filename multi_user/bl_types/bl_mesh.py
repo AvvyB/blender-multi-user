@@ -59,7 +59,6 @@ def dump_mesh(mesh, data={}):
     
     edges_vert = np.empty(edge_count*2, dtype=np.int)
     mesh.edges.foreach_get('vertices', edges_vert)
-    # edges_vert.shape = (edge_count, 2)
     mesh_data["egdes_vert"] = edges_vert.tobytes()
     mesh_data["egdes_count"] = len(mesh.edges)
     logger.error(f"edges {utils.current_milli_time()-start} ms")
@@ -69,10 +68,11 @@ def dump_mesh(mesh, data={}):
     # POLYGONS
     start = utils.current_milli_time()
     poly_count = len(mesh.polygons)
+    mesh_data["poly_count"] = poly_count
 
-    poly_mat = np.empty(poly_count, dtype=np.int)
-    mesh.polygons.foreach_get("material_index", poly_mat)
-    mesh_data["poly_mat"] = poly_mat.tobytes()
+    # poly_mat = np.empty(poly_count, dtype=np.int)
+    # mesh.polygons.foreach_get("material_index", poly_mat)
+    # mesh_data["poly_mat"] = poly_mat.tobytes()
 
     poly_loop_start = np.empty(poly_count, dtype=np.int)
     mesh.polygons.foreach_get("loop_start", poly_loop_start)
@@ -88,6 +88,27 @@ def dump_mesh(mesh, data={}):
     
     logger.error(f"polygons {utils.current_milli_time()-start} ms")
 
+    # LOOPS
+    start = utils.current_milli_time()
+    loop_count = len(mesh.loops)
+    mesh_data["loop_count"] = loop_count
+    # loop_bitangent = np.empty(loop_count*3, dtype=np.float64)
+    # mesh.loops.foreach_get("bitangent", loop_bitangent)
+
+    # loop_tangent = np.empty(loop_count*3, dtype=np.float64)   
+    # mesh.loops.foreach_get("tangent", loop_tangent)
+    # mesh_data["loop_tangent"] = loop_tangent.tobytes()
+
+    loop_normal = np.empty(loop_count*3, dtype=np.float64)
+    mesh.loops.foreach_get("normal", loop_normal)
+    mesh_data["loop_normal"] = loop_normal.tobytes()
+
+    loop_vertex_index = np.empty(loop_count, dtype=np.int)
+    mesh.loops.foreach_get("vertex_index", loop_vertex_index)
+    mesh_data["loop_vertex_index"] = loop_vertex_index.tobytes()
+
+    logger.error(f"loops {utils.current_milli_time()-start} ms")
+
     # UV
     start = utils.current_milli_time()
     mesh_data['uv_layers'] = {}
@@ -101,26 +122,7 @@ def dump_mesh(mesh, data={}):
 
     logger.error(f"uvs {utils.current_milli_time()-start} ms")
 
-    # LOOPS
-    start = utils.current_milli_time()
-    loop_count = len(mesh.loops)
-
-    # loop_bitangent = np.empty(loop_count*3, dtype=np.float64)
-    # mesh.loops.foreach_get("bitangent", loop_bitangent)
-
-    loop_tangent = np.empty(loop_count*3, dtype=np.float64)
-    mesh.loops.foreach_get("tangent", loop_tangent)
-    mesh_data["loop_tangent"] = loop_tangent.tobytes()
-
-    loop_normal = np.empty(loop_count*3, dtype=np.float64)
-    mesh.loops.foreach_get("normal", loop_normal)
-    mesh_data["loop_normal"] = loop_normal.tobytes()
-
-    loop_vertex_index = np.empty(loop_count, dtype=np.int)
-    mesh.loops.foreach_get("vertex_index", loop_vertex_index)
-    mesh_data["loop_vertex_index"] = loop_vertex_index.tobytes()
-
-    logger.error(f"loops {utils.current_milli_time()-start} ms")
+   
 
 class BlMesh(BlDatablock):
     bl_id = "meshes"
@@ -145,57 +147,51 @@ class BlMesh(BlDatablock):
                 target.materials.append(bpy.data.materials[m])
 
             # 2 - LOAD GEOMETRY
+            if target.vertices:
+                target.clear_geometry()
+
             # 2.a - VERTS
             vertices = np.frombuffer(data["verts_co"], dtype=np.float64)
             vert_count = int(len(vertices)/3)
-
-            nb_vert_to_add = vert_count - len(target.vertices) 
-            target.vertices.add(nb_vert_to_add)
-            target.vertices.foreach_set('co', vertices)
+            target.vertices.add(vert_count)
 
             # 2.b - EDGES
             egdes_vert = np.frombuffer(data["egdes_vert"], dtype=np.int)
             edge_count = data["egdes_count"]
-
-            nb_edges_to_add = edge_count - len(target.edges)
-            target.edges.add(nb_edges_to_add)
-
-            target.edges.foreach_set("vertices", egdes_vert)
-
-            # 2.b - POLY
-            poly_smooth = np.frombuffer(data["poly_smooth"], dtype=np.int)
-            poly_count = len(poly_smooth)
-
-            nb_poly_to_add = poly_count - len(target.polygons)
-            target.polygons.add(nb_poly_to_add)
-
-            poly_loop_start = np.frombuffer(data["poly_loop_start"], dtype=np.int)
-            target.polygons.foreach_set("loop_start", poly_loop_start)
-
-            poly_loop_total = np.frombuffer(data["poly_loop_total"], dtype=np.int)
-            target.polygons.foreach_set("loop_total", poly_loop_total)
-
+            target.edges.add(edge_count)
 
             # 2.c - LOOPS
-            loop_vertex_index = np.frombuffer(data['loop_vertex_index'], dtype=np.float64)
-            loops_count = len(loop_vertex_index)
-    
-            nb_loop_to_add = loops_count - len(target.loops)
-            target.loops.add(nb_loop_to_add)
+            loops_count = data["loop_count"]
+            target.loops.add(loops_count)
 
-            target.loops.foreach_set("vertex_intex", loop_vertex_index)
+            loop_vertex_index = np.frombuffer(data['loop_vertex_index'], dtype=np.int)
+            loop_normal = np.frombuffer(data['loop_normal'], dtype=np.float64)
+
+            # 2.b - POLY
+            poly_count = data["poly_count"]
+            target.polygons.add(poly_count)
+
+            poly_loop_start = np.frombuffer(data["poly_loop_start"], dtype=np.int)
+            poly_loop_total = np.frombuffer(data["poly_loop_total"], dtype=np.int)
+            poly_smooth = np.frombuffer(data["poly_smooth"], dtype=np.bool)
+
+            
+            target.vertices.foreach_set('co', vertices)
+            target.edges.foreach_set("vertices", egdes_vert)
+            target.loops.foreach_set("vertex_index", loop_vertex_index)
+            target.loops.foreach_set("normal", loop_normal)
+            target.polygons.foreach_set("loop_total", poly_loop_total)
+            target.polygons.foreach_set("loop_start", poly_loop_start)
+            target.polygons.foreach_set("use_smooth", poly_smooth)
 
 
-            # target.loops.foreach_set("vertex_index", loops_vert_idx)
-            # target.polygons.foreach_set("loop_start", faces_loop_start)
-            # target.polygons.foreach_set("loop_total", faces_loop_total)
 
             # 3 - LOAD METADATA
             # uv's
             # utils.dump_anything.load(target.uv_layers, data['uv_layers'])
 
             target.update()
-            utils.dump_anything.load(target, data)
+            # utils.dump_anything.load(target, data)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
