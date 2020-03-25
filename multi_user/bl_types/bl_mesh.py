@@ -44,6 +44,8 @@ class BlMesh(BlDatablock):
 
     def load_implementation(self, data, target):
         if not target or not target.is_editmode:
+            utils.dump_anything.load(target, data)
+            
             # MATERIAL SLOTS
             i = 0
 
@@ -60,9 +62,13 @@ class BlMesh(BlDatablock):
             target.vertices.add(vert_count)
 
             # EDGES
+
             egdes_vert = np.frombuffer(data["egdes_vert"], dtype=np.int)
+            
             edge_count = data["egdes_count"]
             target.edges.add(edge_count)
+            
+    
 
             # LOOPS
             loops_count = data["loop_count"]
@@ -84,14 +90,25 @@ class BlMesh(BlDatablock):
 
             poly_mat = np.frombuffer(data["poly_mat"], dtype=np.int)
 
+            # LOADING 
             target.vertices.foreach_set('co', vertices)
             target.edges.foreach_set("vertices", egdes_vert)
+            
+            if data['use_customdata_edge_crease']:
+                edges_crease = np.frombuffer(data["edges_crease"], dtype=np.float64)
+                target.edges.foreach_set("crease", edges_crease)
+            
+            if data['use_customdata_edge_bevel']:
+                edges_bevel = np.frombuffer(data["edges_bevel"], dtype=np.float64)
+                target.edges.foreach_set("bevel_weight", edges_bevel)
+
             target.loops.foreach_set("vertex_index", loop_vertex_index)
             target.loops.foreach_set("normal", loop_normal)
             target.polygons.foreach_set("loop_total", poly_loop_total)
             target.polygons.foreach_set("loop_start", poly_loop_start)
             target.polygons.foreach_set("use_smooth", poly_smooth)
             target.polygons.foreach_set("material_index", poly_mat)
+            
             
             # UV Layers
             for layer in data['uv_layers']:
@@ -103,7 +120,7 @@ class BlMesh(BlDatablock):
                 target.uv_layers[layer].data.foreach_set('uv', uv_buffer)
 
             target.validate()
-            utils.dump_anything.load(target, data)
+            
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
@@ -115,11 +132,14 @@ class BlMesh(BlDatablock):
         dumper.include_filter = [
             'name',
             'use_auto_smooth',
-            'auto_smooth_angle'
+            'auto_smooth_angle',
+            'use_customdata_edge_bevel',
+            'use_customdata_edge_crease'
         ]
 
         data = dumper.dump(mesh)
 
+        # TODO: selective dump
         # VERTICES
         vert_count = len(mesh.vertices)
 
@@ -135,7 +155,15 @@ class BlMesh(BlDatablock):
         data["egdes_vert"] = edges_vert.tobytes()
         data["egdes_count"] = len(mesh.edges)
 
-        # TODO: edge crease, bevel_weight
+        if mesh.use_customdata_edge_crease:
+            edges_crease = np.empty(edge_count, dtype=np.float64)
+            mesh.edges.foreach_get('crease', edges_crease)
+            data["edges_crease"] = edges_crease.tobytes()
+
+        if mesh.use_customdata_edge_bevel:
+            edges_bevel = np.empty(edge_count, dtype=np.float64)
+            mesh.edges.foreach_get('bevel_weight', edges_bevel)
+            data["edges_bevel"] = edges_bevel.tobytes()
 
         # POLYGONS
         poly_count = len(mesh.polygons)
