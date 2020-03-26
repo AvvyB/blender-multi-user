@@ -91,7 +91,13 @@ def load_stroke(stroke_data, stroke):
     dump_anything.load(stroke, stroke_data)
 
     p_co = np.frombuffer(stroke_data["p_co"], dtype=np.float64)
-    p_pressure = np.frombuffer(strokD
+    p_pressure = np.frombuffer(stroke_data["p_pressure"], dtype=np.float64)
+    p_strength = np.frombuffer(stroke_data["p_strength"], dtype=np.float64)
+
+    stroke.points.add(stroke_data["p_count"])
+
+    stroke.points.foreach_set('co', p_co)
+    stroke.points.foreach_set('pressure', p_pressure)
     stroke.points.foreach_set('strength', p_strength)
 
     if "p_vertex_color" in stroke_data:
