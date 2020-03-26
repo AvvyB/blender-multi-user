@@ -43,7 +43,7 @@ class BlWorld(BlDatablock):
             target.node_tree.nodes.clear()
 
             for node in data["node_tree"]["nodes"]:
-                load_node(target.node_tree, data["node_tree"]["nodes"][node])
+                load_node(data["node_tree"]["nodes"][node], target.node_tree)
 
             # Load nodes links
             target.node_tree.links.clear()

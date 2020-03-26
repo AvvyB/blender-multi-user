@@ -25,55 +25,25 @@ from ..libs import dump_anything
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
-def clean_color_ramp(target_ramp):
-    # clear existing
-    try:
-        for key in target_ramp.elements:
-            target_ramp.elements.remove(key)
-    except:
-        pass
-    
-def load_mapping(target_apping, source_mapping):
-     # clear existing curves
-    for curve in target_apping.curves:
-        for point in curve.points:
-            try:
-                curve.remove(point)
-            except:
-                continue
-    
-    # Load curves
-    for curve in source_mapping['curves']:
-        for point in source_mapping['curves'][curve]['points']:
-            pos = source_mapping['curves'][curve]['points'][point]['location']
-            target_apping.curves[curve].points.new(pos[0],pos[1])
 
+def load_node(node_data, node_tree):
+    """ Load a node into a node_tree from a dict
 
-def load_node(target_node_tree, source):
-    target_node = target_node_tree.nodes.get(source["name"])
+        :arg node_data: dumped node data
+        :type node_data: dict
+        :arg node_tree: target node_tree
+        :type node_tree: bpy.types.NodeTree
+    """
+    target_node = node_tree.nodes.new(type=node_data["bl_idname"])
 
-    if target_node is None:
-        node_type = source["bl_idname"]
+    dump_anything.load(target_node, node_data)    
 
-        target_node = target_node_tree.nodes.new(type=node_type)
-
-    # Clean color ramp before loading it
-    if source['type'] == 'VALTORGB':
-        clean_color_ramp(target_node.color_ramp)
-    if source['type'] == 'CURVE_RGB':
-        load_mapping(target_node.mapping, source['mapping'])
-    dump_anything.load(
-        target_node,
-        source)
-
-    if source['type'] == 'TEX_IMAGE':
-        target_node.image = bpy.data.images[source['image']]
     
 
-    for input in source["inputs"]:
+    for input in node_data["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
             try:
-                target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
+                target_node.inputs[input].default_value = node_data["inputs"][input]["default_value"]
             except:
                 logger.error("{} not supported, skipping".format(input))
 
@@ -144,7 +114,7 @@ class BlMaterial(BlDatablock):
             
             # Load nodes
             for node in data["node_tree"]["nodes"]:
-                load_node(target.node_tree, data["node_tree"]["nodes"][node])
+                load_node(data["node_tree"]["nodes"][node], target.node_tree)
 
             # Load nodes links
             target.node_tree.links.clear()
