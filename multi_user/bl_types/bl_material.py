@@ -126,6 +126,13 @@ class BlMaterial(BlDatablock):
         mat_dumper = dump_anything.Dumper()
         mat_dumper.depth = 2
         mat_dumper.exclude_filter = [
+            "is_embed_data",
+            "is_evaluated",
+            "name_full",
+            "bl_description",
+            "bl_icon",
+            "bl_idname",
+            "bl_label",
             "preview",
             "original",
             "uuid",
@@ -134,40 +141,44 @@ class BlMaterial(BlDatablock):
             "line_color",
             "view_center",
         ]
-        node_dumper = dump_anything.Dumper()
-        node_dumper.depth = 1
-        node_dumper.exclude_filter = [
-            "dimensions",
-            "show_expanded"
-            "select",
-            "bl_height_min",
-            "bl_height_max",
-            "bl_width_min",
-            "bl_width_max",
-            "bl_width_default",
-            "hide",
-            "show_options",
-            "show_tetxures",
-            "show_preview",
-            "outputs",
-            "width_hidden"
-        ]
-        input_dumper = dump_anything.Dumper()
-        input_dumper.depth = 2
-        input_dumper.include_filter = ["default_value"]
-
         data = mat_dumper.dump(pointer)
 
         if pointer.use_nodes:
             nodes = {}
-
+            node_dumper = dump_anything.Dumper()
+            node_dumper.depth = 1
+            node_dumper.exclude_filter = [
+                "dimensions",
+                "show_expanded",
+                "name_full",
+                "select",
+                "bl_height_min",
+                "bl_height_max",
+                "bl_width_min",
+                "bl_width_max",
+                "type",
+                "bl_icon",
+                "bl_width_default",
+                "bl_static_type",
+                "show_tetxure",
+                "hide",
+                "show_options",
+                "show_preview",
+                "outputs",
+                "width_hidden"
+            ]
             for node in pointer.node_tree.nodes:
+                
                 nodes[node.name] = node_dumper.dump(node)
 
                 if hasattr(node, 'inputs'):
                     nodes[node.name]['inputs'] = {}
 
-                    for i in node.inputs:      
+                    for i in node.inputs:
+                        input_dumper = dump_anything.Dumper()
+                        input_dumper.depth = 2
+                        input_dumper.include_filter = ["default_value"]
+
                         if hasattr(i, 'default_value'):
                             nodes[node.name]['inputs'][i.name] = input_dumper.dump(
                                 i)
