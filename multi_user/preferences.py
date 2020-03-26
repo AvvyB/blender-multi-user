@@ -19,7 +19,7 @@
 import logging
 import bpy
 
-from . import utils, bl_types, environment, addon_updater_ops
+from . import utils, bl_types, environment, addon_updater_ops, presence
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +243,89 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.bl_name = type_module_class.bl_id
 
 
+def client_list_callback(scene, context):
+    from . import operators
+    
+    items = [(RP_COMMON, RP_COMMON, "")]
+
+    username = utils.get_preferences().username
+    cli = operators.client
+    if cli:
+        client_ids = cli.online_users.keys()
+        for id in client_ids:
+                name_desc = id
+                if id == username:
+                    name_desc += " (self)"
+
+                items.append((id, name_desc, ""))
+
+    return items
+
+
+class SessionUser(bpy.types.PropertyGroup):
+    """Session User
+
+    Blender user information property 
+    """
+    username: bpy.props.StringProperty(name="username")
+    current_frame: bpy.props.IntProperty(name="current_frame")
+
+
+class SessionProps(bpy.types.PropertyGroup):
+    is_admin: bpy.props.BoolProperty(
+        name="is_admin",
+        default=False
+        )
+    session_mode: bpy.props.EnumProperty(
+        name='session_mode',
+        description='session mode',
+        items={
+            ('HOST', 'hosting', 'host a session'),
+            ('CONNECT', 'connexion', 'connect to a session')},
+        default='HOST')
+    clients: bpy.props.EnumProperty(
+        name="clients",
+        description="client enum",
+        items=client_list_callback)
+    enable_presence: bpy.props.BoolProperty(
+        name="Presence overlay",
+        description='Enable overlay drawing module',
+        default=True,
+        update=presence.update_presence
+        )
+    presence_show_selected: bpy.props.BoolProperty(
+        name="Show selected objects",
+        description='Enable selection overlay ',
+        default=True,
+        update=presence.update_overlay_settings
+    )
+    presence_show_user: bpy.props.BoolProperty(
+        name="Show users",
+        description='Enable user overlay ',
+        default=True,
+        update=presence.update_overlay_settings
+        )
+    presence_show_far_user: bpy.props.BoolProperty(
+        name="Show different scenes",
+        description="Show user on different scenes",
+        default=False,
+        update=presence.update_overlay_settings
+        )
+    filter_owned: bpy.props.BoolProperty(
+        name="filter_owned",
+        description='Show only owned datablocks',
+        default=True
+    )
+    user_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
+    time_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
+
 classes = (
+    SessionUser,
+    SessionProps,
     ReplicatedDatablock,
     SessionPrefs,
 )
