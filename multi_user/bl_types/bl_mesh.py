@@ -47,7 +47,7 @@ class BlMesh(BlDatablock):
             utils.dump_anything.load(target, data)
             
             # MATERIAL SLOTS
-            i = 0
+            target.materials.clear()
 
             for m in data["material_list"]:
                 target.materials.append(bpy.data.materials[m])
