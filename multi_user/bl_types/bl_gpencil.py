@@ -78,6 +78,7 @@ def dump_stroke(stroke):
 
     return dumped_stroke
 
+
 def load_stroke(stroke_data, stroke):
     """ Load a grease pencil stroke from a dict
 
@@ -125,6 +126,7 @@ def dump_frame(frame):
     
     return dumped_frame
 
+
 def load_frame(frame_data, frame):
     """ Load a grease pencil frame from a dict
 
@@ -143,6 +145,7 @@ def load_frame(frame_data, frame):
     for stroke_data in frame_data['strokes']:
         target_stroke = frame.strokes.new()
         load_stroke(stroke_data, target_stroke)
+
 
 def dump_layer(layer):
     """ Dump a grease pencil layer
@@ -199,6 +202,7 @@ def dump_layer(layer):
     
     return dumped_layer
 
+
 def load_layer(layer_data, layer):
     """ Load a grease pencil layer from a dict
 
@@ -220,8 +224,8 @@ def load_layer(layer_data, layer):
 class BlGpencil(BlDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
-    bl_delay_refresh = 5
-    bl_delay_apply = 5
+    bl_delay_refresh = 2
+    bl_delay_apply = 1
     bl_automatic_push = True
     bl_icon = 'GREASEPENCIL'
 

@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
 class BlMesh(BlDatablock):
     bl_id = "meshes"
     bl_class = bpy.types.Mesh
-    bl_delay_refresh = 10
-    bl_delay_apply = 10
+    bl_delay_refresh = 2
+    bl_delay_apply = 1
     bl_automatic_push = True
     bl_icon = 'MESH_DATA'
 
