@@ -206,7 +206,32 @@ class BlMaterial(BlDatablock):
             data["node_tree"]["links"] = links_dumper.dump(pointer.node_tree.links)
         
         elif pointer.is_grease_pencil:
-            data['grease_pencil'] = dump_anything.dump(pointer.grease_pencil, 3)
+            gp_mat_dumper = dump_anything.Dumper()
+            gp_mat_dumper.depth = 3
+
+            gp_mat_dumper.include_filter = [
+                'show_stroke',
+                'mode',
+                'stroke_style',
+                'color',
+                'use_overlap_strokes',
+                'show_fill',
+                'fill_style',
+                'fill_color',
+                'pass_index',
+                'alignment_mode',
+                # 'fill_image',
+                'texture_opacity',
+                'mix_factor',
+                'texture_offset',
+                'texture_angle',
+                'texture_scale',
+                'texture_clamp',
+                'gradient_type',
+                'mix_color',
+                'flip'                
+            ]
+            data['grease_pencil'] = gp_mat_dumper.dump(pointer.grease_pencil)
         return data
 
     def resolve_deps_implementation(self):

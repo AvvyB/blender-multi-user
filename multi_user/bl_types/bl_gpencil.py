@@ -18,36 +18,170 @@
 
 import bpy
 import mathutils
+import numpy as np
 
 from ..libs import dump_anything 
 from .bl_datablock import BlDatablock
 
+# GPencil data api is structured as it follow: 
+# GP-Object --> GP-Layers --> GP-Frames --> GP-Strokes --> GP-Stroke-Points
 
-def load_gpencil_layer(target=None, data=None, create=False):
+def dump_stroke(stroke):
+    """ Dump a grease pencil stroke to a dict
 
-    dump_anything.load(target, data)
-    for k,v in target.frames.items():
-        target.frames.remove(v)
+        :param stroke: target grease pencil stroke
+        :type stroke: bpy.types.GPencilStroke
+        :return: dict
+    """
+<
+    assert(stroke)
+
+    dumper = dump_anything.Dumper()
+    dumper.include_filter = [
+        "aspect",
+        "display_mode",
+        "draw_cyclic",
+        "end_cap_mode",
+        "hardeness",
+        "line_width",
+        "material_index",
+        "start_cap_mode",
+        "uv_rotation",
+        "uv_scale",
+        "uv_translation",
+        "vertex_color_fill",
+    ]
+    dumped_stroke = dump_anything.dump(stroke)
+
+    # Stoke points
+    p_count = len(stroke.points)
+    dumped_stroke['p_count'] = p_count
+    
+    p_co = np.empty(p_count*3, dtype=np.float64)
+    stroke.points.foreach_get('co', p_co)
+
+    p_pressure = np.empty(p_count, dtype=np.float64)
+    stroke.points.foreach_get('pressure', p_pressure)
+
+    p_strength = np.empty(p_count, dtype=np.float64)
+    stroke.points.foreach_get('strength', p_strength)
+
+    p_vertex_color = np.empty(p_count*4, dtype=np.float64)
+    stroke.points.foreach_get('vertex_color', p_vertex_color)
+
+    # TODO: uv_factor, uv_rotation
+
+    dumped_stroke['p_co'] = p_co.tobytes()
+    dumped_stroke['p_pressure'] = p_pressure.tobytes()
+    dumped_stroke['p_strength'] = p_strength.tobytes()
+    dumped_stroke['p_vertex_color'] = p_vertex_color.tobytes()
+
+    return dumped_stroke
+
+def load_stroke(stroke_data, stroke):
+    """ Load a grease pencil stroke from a dict
+
+        :param stroke_data: dumped grease pencil stroke 
+        :type stroke_data: dict
+        :param stroke: target grease pencil stroke
+        :type stroke: bpy.types.GPencilStroke
+    """
+    assert(stroke and stroke_data)
+
+    dump_anything.load(stroke, stroke_data)
+
+    p_co = np.frombuffer(stroke_data["p_co"], dtype=np.float64)
+    p_pressure = np.frombuffer(stroke_data["p_pressure"], dtype=np.float64)
+    p_strength = np.frombuffer(stroke_data["p_strength"], dtype=np.float64)
+    p_vertex_color = np.frombuffer(stroke_data["p_vertex_color"], dtype=np.float64)
+    
+    stroke.points.add(stroke_data["p_count"])
+
+    stroke.points.foreach_set('co', p_co)
+    stroke.points.foreach_set('pressure', p_pressure)
+    stroke.points.foreach_set('strength', p_strength)
+    stroke.points.foreach_set('vertex_color', p_vertex_color)
+
+
+def dump_frame(frame):
+    """ Dump a grease pencil frame to a dict
+
+        :param frame: target grease pencil stroke
+        :type frame: bpy.types.GPencilFrame
+        :return: dict
+    """
+
+    assert(frame)
+
+    dumped_frame = dict()
+    dumped_frame['frame_number'] = frame.frame_number
+    dumped_frame['strokes'] = []
+    
+    # TODO: took existing strokes in account
+    for stroke in frame.strokes:
+        dumped_frame['strokes'].append(dump_stroke(stroke))
+    
+    return dumped_frame
+
+def load_frame(frame_data, frame):
+    """ Load a grease pencil frame from a dict
+
+        :param frame_data: source grease pencil frame
+        :type frame_data: dict
+        :param frame: target grease pencil stroke
+        :type frame: bpy.types.GPencilFrame
+    """
+
+    assert(frame and frame_data)
+
+    frame.frame_number = frame_data['frame_number']
+
+    # TODO: took existing stroke in account
+
+    for stroke_data in frame_data['strokes']:
+        target_stroke = frame.strokes.new()
         
-    for frame in data["frames"]:
-        
-        tframe = target.frames.new(data["frames"][frame]['frame_number'])
+        load_stroke(stroke_data, target_stroke)
 
-        for stroke in data["frames"][frame]["strokes"]:
-            try:
-                tstroke = tframe.strokes[stroke]
-            except:
-                tstroke = tframe.strokes.new()
-            dump_anything.load(
-                tstroke, data["frames"][frame]["strokes"][stroke])
+def dump_layer(layer):
+    """ Dump a grease pencil layer
 
-            for point in data["frames"][frame]["strokes"][stroke]["points"]:
-                p = data["frames"][frame]["strokes"][stroke]["points"][point]
+        :param layer: target grease pencil stroke
+        :type layer: bpy.types.GPencilFrame
+    """
 
-                tstroke.points.add(1)
-                tpoint = tstroke.points[len(tstroke.points)-1]
+    assert(layer)
 
-                dump_anything.load(tpoint, p)
+    dumper = dump_anything.Dumper()
+
+    dumper.exclude_filter = [
+        'parent_type'
+    ]
+    dumped_layer = dumper.dump(layer)
+
+    dumped_layer['frames'] = []
+
+    for frame in layer.frames:
+        dumped_layer['frames'].append(dump_frame(frame))
+    
+    return dumped_layer
+
+def load_layer(layer_data, layer):
+    """ Load a grease pencil layer from a dict
+
+        :param layer_data: source grease pencil layer data
+        :type layer_data: dict
+        :param layer: target grease pencil stroke
+        :type layer: bpy.types.GPencilFrame
+    """
+    # TODO: take existing data in account
+    dump_anything.load(layer, layer_data)
+
+    for frame_data in layer_data["frames"]:
+        target_frame = layer.frames.new(frame_data['frame_number'])
+
+        load_frame(frame_data, target_frame)
+
 
 
 class BlGpencil(BlDatablock):
@@ -65,26 +199,34 @@ class BlGpencil(BlDatablock):
         for layer in target.layers:
             target.layers.remove(layer)
 
-        if "layers" in data.keys():
-            for layer in data["layers"]:
-                if layer not in target.layers.keys():
-                    gp_layer = target.layers.new(data["layers"][layer]["info"])
-                else:
-                    gp_layer = target.layers[layer]
-                load_gpencil_layer(
-                    target=gp_layer, data=data["layers"][layer], create=True)
-
-        dump_anything.load(target, data)
-
         target.materials.clear()
         if "materials" in data.keys():
             for mat in data['materials']:
                 target.materials.append(bpy.data.materials[mat])
 
+        if "layers" in data.keys():
+            for layer in data["layers"]:
+                layer_data = data["layers"].get(layer)
+
+                if layer not in target.layers.keys():
+                    target_layer = target.layers.new(data["layers"][layer]["info"])
+                else:
+                    target_layer = target.layers[layer]
+
+                load_layer(layer_data, target_layer)
+
+        dump_anything.load(target, data)
+
+
+
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = dump_anything.dump(pointer, 2)
-        data['layers'] = dump_anything.dump(pointer.layers, 9)
+
+        data['layers'] = {}
+        
+        for layer in pointer.layers:
+            data['layers'][layer.info] = dump_layer(layer)
 
         return data
 
