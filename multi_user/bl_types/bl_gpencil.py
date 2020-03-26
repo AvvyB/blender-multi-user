@@ -33,7 +33,7 @@ def dump_stroke(stroke):
         :type stroke: bpy.types.GPencilStroke
         :return: dict
     """
-<
+
     assert(stroke)
 
     dumper = dump_anything.Dumper()
@@ -51,7 +51,7 @@ def dump_stroke(stroke):
         "uv_translation",
         "vertex_color_fill",
     ]
-    dumped_stroke = dump_anything.dump(stroke)
+    dumped_stroke = dumper.dump(stroke)
 
     # Stoke points
     p_count = len(stroke.points)
@@ -134,13 +134,12 @@ def load_frame(frame_data, frame):
 
     assert(frame and frame_data)
 
-    frame.frame_number = frame_data['frame_number']
+    # frame.frame_number = frame_data['frame_number']
 
     # TODO: took existing stroke in account
 
     for stroke_data in frame_data['strokes']:
         target_stroke = frame.strokes.new()
-        
         load_stroke(stroke_data, target_stroke)
 
 def dump_layer(layer):
@@ -154,8 +153,40 @@ def dump_layer(layer):
 
     dumper = dump_anything.Dumper()
 
-    dumper.exclude_filter = [
-        'parent_type'
+    dumper.include_filter = [
+        'info',
+        'opacity',
+        'channel_color',
+        'color',
+        # 'thickness',
+        'tint_color',
+        'tint_factor',
+        'vertex_paint_opacity',
+        'line_change',
+        'use_onion_skinning',
+        # 'use_annotation_onion_skinning',
+        # 'annotation_onion_before_range',
+        # 'annotation_onion_after_range',
+        # 'annotation_onion_before_color',
+        # 'annotation_onion_after_color',
+        'pass_index',
+        # 'viewlayer_render',
+        'blend_mode',
+        'hide',
+        'annotation_hide',
+        'lock',
+        # 'lock_frame',
+        # 'lock_material',
+        # 'use_mask_layer',
+        'use_lights',
+        'use_solo_mode',
+        'select',
+        'show_points',
+        'show_in_front',
+        # 'parent',
+        # 'parent_type',
+        # 'parent_bone',
+        # 'matrix_inverse',
     ]
     dumped_layer = dumper.dump(layer)
 
@@ -196,22 +227,24 @@ class BlGpencil(BlDatablock):
         return bpy.data.grease_pencils.new(data["name"])
 
     def load_implementation(self, data, target):
-        for layer in target.layers:
-            target.layers.remove(layer)
-
         target.materials.clear()
         if "materials" in data.keys():
             for mat in data['materials']:
                 target.materials.append(bpy.data.materials[mat])
 
+        # TODO: reuse existing layer
+        for layer in target.layers:
+            target.layers.remove(layer)
+
         if "layers" in data.keys():
             for layer in data["layers"]:
                 layer_data = data["layers"].get(layer)
 
-                if layer not in target.layers.keys():
-                    target_layer = target.layers.new(data["layers"][layer]["info"])
-                else:
-                    target_layer = target.layers[layer]
+                # if layer not in target.layers.keys():
+                target_layer = target.layers.new(data["layers"][layer]["info"])
+                # else:
+                #     target_layer = target.layers[layer]
+                #     target_layer.clear()
 
                 load_layer(layer_data, target_layer)
 
