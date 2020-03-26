@@ -317,12 +317,21 @@ class Loader:
         CONSTRUCTOR_NEW = "new"
         CONSTRUCTOR_ADD = "add"
 
+        DESTRUCTOR_REMOVE = "remove"
+        DESTRUCTOR_CLEAR = "clear"
+ 
         constructors = {
-            T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"], True),
-            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, [], False),
-            T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"], True),
-            T.Constraint: (CONSTRUCTOR_NEW, ["type"], True),
+            T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
+            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
+            T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"]),
+            T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
             # T.VertexGroup: (CONSTRUCTOR_NEW, ["name"], True),
+        }
+
+        destructors = {
+            T.ColorRampElement:DESTRUCTOR_REMOVE,
+            T.Modifier: DESTRUCTOR_CLEAR,
+            T.Constraint: CONSTRUCTOR_NEW,
         }
         element_type = element.bl_rna_property.fixed_type
         
@@ -331,19 +340,30 @@ class Loader:
         if constructor is None:  # collection type not supported
             return
 
+        destructor  = destructors.get(type(element_type))
+
         # Try to clear existing 
-        if constructor[2]:
-            getattr(element.read(), 'clear')()
+        if destructor:
+            if destructor == DESTRUCTOR_REMOVE:
+                collection = element.read()
+                for i in range(len(collection)-1):
+                    collection.remove(collection[0])
+            else:
+                getattr(element.read(), DESTRUCTOR_CLEAR)()
         
-        for dumped_element in dump.values():
-            try:
-                constructor_parameters = [dumped_element[name]
-                                          for name in constructor[1]]
-            except KeyError:
-                logger.debug("Collection load error, missing parameters.")
-                continue  # TODO handle error
-            new_element = getattr(element.read(), constructor[0])(
-                *constructor_parameters)
+        for dump_idx, dumped_element in enumerate(dump.values()):
+            if dump_idx == 0 and len(element.read())>0:
+                new_element = element.read()[0]       
+            else:
+                try:
+                    constructor_parameters = [dumped_element[name]
+                                            for name in constructor[1]]
+                except KeyError:
+                    logger.debug("Collection load error, missing parameters.")
+                    continue  # TODO handle error
+                
+                new_element = getattr(element.read(), constructor[0])(
+                    *constructor_parameters)
             self._load_any(
                 BlenderAPIElement(
                     new_element, occlude_read_only=self.occlude_read_only),
