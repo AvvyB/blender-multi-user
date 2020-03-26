@@ -59,22 +59,22 @@ def dump_stroke(stroke):
     
     p_co = np.empty(p_count*3, dtype=np.float64)
     stroke.points.foreach_get('co', p_co)
+    dumped_stroke['p_co'] = p_co.tobytes()
 
     p_pressure = np.empty(p_count, dtype=np.float64)
     stroke.points.foreach_get('pressure', p_pressure)
+    dumped_stroke['p_pressure'] = p_pressure.tobytes()
 
     p_strength = np.empty(p_count, dtype=np.float64)
     stroke.points.foreach_get('strength', p_strength)
+    dumped_stroke['p_strength'] = p_strength.tobytes()
 
-    p_vertex_color = np.empty(p_count*4, dtype=np.float64)
-    stroke.points.foreach_get('vertex_color', p_vertex_color)
+    if bpy.app.version[1] >= 83: # new in blender 2.83
+        p_vertex_color = np.empty(p_count*4, dtype=np.float64)
+        stroke.points.foreach_get('vertex_color', p_vertex_color)
+        dumped_stroke['p_vertex_color'] = p_vertex_color.tobytes()
 
     # TODO: uv_factor, uv_rotation
-
-    dumped_stroke['p_co'] = p_co.tobytes()
-    dumped_stroke['p_pressure'] = p_pressure.tobytes()
-    dumped_stroke['p_strength'] = p_strength.tobytes()
-    dumped_stroke['p_vertex_color'] = p_vertex_color.tobytes()
 
     return dumped_stroke
 
@@ -91,16 +91,12 @@ def load_stroke(stroke_data, stroke):
     dump_anything.load(stroke, stroke_data)
 
     p_co = np.frombuffer(stroke_data["p_co"], dtype=np.float64)
-    p_pressure = np.frombuffer(stroke_data["p_pressure"], dtype=np.float64)
-    p_strength = np.frombuffer(stroke_data["p_strength"], dtype=np.float64)
-    p_vertex_color = np.frombuffer(stroke_data["p_vertex_color"], dtype=np.float64)
-    
-    stroke.points.add(stroke_data["p_count"])
-
-    stroke.points.foreach_set('co', p_co)
-    stroke.points.foreach_set('pressure', p_pressure)
+    p_pressure = np.frombuffer(strokD
     stroke.points.foreach_set('strength', p_strength)
-    stroke.points.foreach_set('vertex_color', p_vertex_color)
+
+    if "p_vertex_color" in stroke_data:
+        p_vertex_color = np.frombuffer(stroke_data["p_vertex_color"], dtype=np.float64)
+        stroke.points.foreach_set('vertex_color', p_vertex_color)    
 
 
 def dump_frame(frame):
