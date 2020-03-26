@@ -120,6 +120,7 @@ class BlMesh(BlDatablock):
                 target.uv_layers[layer].data.foreach_set('uv', uv_buffer)
 
             target.validate()
+            target.update()
             
 
     def dump_implementation(self, data, pointer=None):

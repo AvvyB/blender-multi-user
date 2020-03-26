@@ -73,7 +73,13 @@ class BlScene(BlDatablock):
 
         scene_dumper = utils.dump_anything.Dumper()
         scene_dumper.depth = 1
-        scene_dumper.include_filter = ['name','world', 'id', 'camera', 'grease_pencil']
+        scene_dumper.include_filter = [
+            'name',
+            'world',
+            'id',
+            'camera',
+            'grease_pencil'
+        ]
         data = scene_dumper.dump(pointer)
 
         scene_dumper.depth = 3
