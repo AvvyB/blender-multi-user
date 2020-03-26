@@ -67,7 +67,7 @@ def _load_filter_type(t, use_bl_rna=True):
         if use_bl_rna and x.bl_rna_property:
             return isinstance(x.bl_rna_property, t)
         else:
-            isinstance(x.read(), t)
+            return isinstance(x.read(), t)
     return filter_function
 
 
@@ -370,6 +370,24 @@ class Loader:
                 dumped_element
             )
 
+    def _load_curve_mapping(self, element, dump):
+        mapping = element.read()
+        # cleanup existing curve
+        for curve in mapping.curves:
+            for idx in range(len(curve.points)):
+                if idx == 0:
+                    break
+
+                curve.points.remove(curve.points[1])
+        for curve_index, curve in dump['curves'].items():
+            for point_idx, point in curve['points'].items():
+                pos = point['location']
+                
+                if len(mapping.curves[curve_index].points) == 1:
+                    mapping.curves[curve_index].points[int(point_idx)].location = pos
+                else:
+                    mapping.curves[curve_index].points.new(pos[0],pos[1])
+
     def _load_pointer(self, pointer, dump):
         rna_property_type = pointer.bl_rna_property.fixed_type
         if not rna_property_type:
@@ -434,6 +452,7 @@ class Loader:
             (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector),
             (_load_filter_type(mathutils.Quaternion, use_bl_rna=False), self._load_quaternion),
             (_load_filter_type(mathutils.Euler, use_bl_rna=False), self._load_euler),
+            (_load_filter_type(T.CurveMapping,  use_bl_rna=False), self._load_curve_mapping),
             (_load_filter_type(T.FloatProperty), self._load_identity),
             (_load_filter_type(T.StringProperty), self._load_identity),
             (_load_filter_type(T.EnumProperty), self._load_identity),
