@@ -21,7 +21,7 @@ import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
-from .bl_material import load_link, load_node
+from .bl_material import load_links, load_node, dump_links
 
 
 class BlWorld(BlDatablock):
@@ -48,8 +48,8 @@ class BlWorld(BlDatablock):
             # Load nodes links
             target.node_tree.links.clear()
 
-            for link in data["node_tree"]["links"]:
-                load_link(target.node_tree, data["node_tree"]["links"][link])
+            
+            load_links(data["node_tree"]["links"], target.node_tree)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
@@ -104,8 +104,9 @@ class BlWorld(BlDatablock):
                             nodes[node.name]['inputs'][i.name] = input_dumper.dump(
                                 i)
             data["node_tree"]['nodes'] = nodes
-            utils.dump_datablock_attibutes(
-                pointer.node_tree, ["links"], 3, data['node_tree'])
+
+            data["node_tree"]['links'] = dump_links(pointer.node_tree.links)
+
         return data
 
     def resolve_deps_implementation(self):

@@ -77,14 +77,40 @@ def load_node(target_node_tree, source):
             except:
                 logger.error("{} not supported, skipping".format(input))
 
-def load_link(target_node_tree, source):
-    input_socket = target_node_tree.nodes[source['to_node']
-                                          ['name']].inputs[source['to_socket']['name']]
-    output_socket = target_node_tree.nodes[source['from_node']
-                                           ['name']].outputs[source['from_socket']['name']]
+def load_links(links_data, node_tree):
+    """ Load node_tree links from a list
+        
+        :arg links_data: dumped node links
+        :type links_data: list
+        :arg node_tree: node links collection
+        :type node_tree: bpy.types.NodeTree
+    """
 
-    target_node_tree.links.new(input_socket, output_socket)
+    for link in links_data:
+        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
+        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
 
+        node_tree.links.new(input_socket, output_socket)
+
+def dump_links(links):
+    """ Dump node_tree links collection to a list
+
+        :arg links: node links collection
+        :type links: bpy.types.NodeLinks
+        :retrun: list
+    """
+
+    links_data = []
+
+    for link in links:
+        links_data.append({
+            'to_node':link.to_node.name,
+            'to_socket':link.to_socket.path_from_id()[-2:-1],
+            'from_node':link.from_node.name,
+            'from_socket':link.from_socket.path_from_id()[-2:-1],
+        })
+
+    return links_data
 
 class BlMaterial(BlDatablock):
     bl_id = "materials"
@@ -123,8 +149,7 @@ class BlMaterial(BlDatablock):
             # Load nodes links
             target.node_tree.links.clear()
 
-            for link in data["node_tree"]["links"]:
-                load_link(target.node_tree, data["node_tree"]["links"][link])
+            load_links(data["node_tree"]["links"], target.node_tree)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
@@ -160,14 +185,7 @@ class BlMaterial(BlDatablock):
         input_dumper = dump_anything.Dumper()
         input_dumper.depth = 2
         input_dumper.include_filter = ["default_value"]
-        links_dumper = dump_anything.Dumper()
-        links_dumper.depth = 3
-        links_dumper.include_filter = [
-            "name",
-            "to_node",
-            "from_node",
-            "from_socket",
-            "to_socket"]
+
         data = mat_dumper.dump(pointer)
 
         if pointer.use_nodes:
@@ -202,8 +220,11 @@ class BlMaterial(BlDatablock):
                         'location'
                     ]
                     nodes[node.name]['mapping'] = curve_dumper.dump(node.mapping)
+            
             data["node_tree"]['nodes'] = nodes
-            data["node_tree"]["links"] = links_dumper.dump(pointer.node_tree.links)
+            
+
+            data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
         
         elif pointer.is_grease_pencil:
             gp_mat_dumper = dump_anything.Dumper()
