@@ -19,14 +19,12 @@
 import bpy
 import mathutils
 import copy
-import logging
 import numpy as np
 from enum import Enum
 
 from .. import utils
 from .bl_datablock import BlDatablock
 
-logger = logging.getLogger(__name__)
 
 ENUM_EASING_TYPE = [
     'AUTO',
@@ -34,12 +32,14 @@ ENUM_EASING_TYPE = [
     'EASE_OUT',
     'EASE_IN_OUT']
 
+
 ENUM_HANDLE_TYPE = [
     'FREE',
     'ALIGNED',
     'VECTOR',
     'AUTO',
     'AUTO_CLAMPED']
+
 
 ENUM_INTERPOLATION_TYPE = [
     'CONSTANT',
@@ -56,6 +56,7 @@ ENUM_INTERPOLATION_TYPE = [
     'BOUNCE',
     'ELASTIC']
 
+
 ENUM_KEY_TYPE = [
     'KEYFRAME',
     'BREAKDOWN',
@@ -63,7 +64,9 @@ ENUM_KEY_TYPE = [
     'EXTREME',
     'JITTER']
 
+
 #TODO: Automatic enum and numpy dump and loading
+
 
 def dump_fcurve(fcurve, use_numpy=True):
     """ Dump a sigle curve to a dict
@@ -218,7 +221,6 @@ class BlAction(BlDatablock):
         target.id_root = data['id_root']
 
     def _dump(self, pointer=None):
-        start = utils.current_milli_time()
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.exclude_filter = [
@@ -241,7 +243,6 @@ class BlAction(BlDatablock):
         for fcurve in self.pointer.fcurves:
             data["fcurves"].append(dump_fcurve(fcurve, use_numpy=True))
 
-        logger.error(
-            f"{self.pointer.name} dumping time: {utils.current_milli_time()-start} ms")
+
         return data
 

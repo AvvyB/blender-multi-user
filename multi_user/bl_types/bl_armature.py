@@ -23,8 +23,6 @@ from .. import utils
 from .. import presence, operators
 from .bl_datablock import BlDatablock
 
-# WIP
-
 
 class BlArmature(BlDatablock):
     bl_id = "armatures"

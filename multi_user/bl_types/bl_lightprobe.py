@@ -33,16 +33,16 @@ class BlLightprobe(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LIGHTPROBE_GRID'
 
-    def load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
-
     def _construct(self, data):
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
         # See https://developer.blender.org/D6396
         if bpy.app.version[1] >= 83:
             return bpy.data.lightprobes.new(data["name"], type)
         else:
-            logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")   
+            logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+
+    def load_implementation(self, data, target):
+        utils.dump_anything.load(target, data)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
