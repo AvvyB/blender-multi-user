@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 import logging
@@ -6,22 +24,6 @@ from .. import utils
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
-
-
-def load_constraints(target, data):
-    for local_constraint in target.constraints:
-        if local_constraint.name not in data:
-            target.constraints.remove(local_constraint)
-
-    for constraint in data:
-        target_constraint = target.constraints.get(constraint)
-
-        if not target_constraint:
-            target_constraint = target.constraints.new(
-                data[constraint]['type'])
-
-        utils.dump_anything.load(
-            target_constraint, data[constraint])
 
 
 def load_pose(target_bone, data):
@@ -38,7 +40,7 @@ class BlObject(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'OBJECT_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         pointer = None
 
         if self.is_library:
@@ -50,7 +52,7 @@ class BlObject(BlDatablock):
             instance.uuid = self.uuid
             return instance
 
-        # Object specific constructor...
+        # TODO: refactoring
         if "data" not in data:
             pass
         elif data["data"] in bpy.data.meshes.keys():
@@ -87,32 +89,7 @@ class BlObject(BlDatablock):
 
     def load_implementation(self, data, target):
         # Load transformation data
-        rot_mode = 'rotation_quaternion' if data['rotation_mode'] == 'QUATERNION' else 'rotation_euler'
-        target.rotation_mode = data['rotation_mode']
-        target.location = data['location']
-        setattr(target, rot_mode, data[rot_mode])
-        target.scale = data['scale']
-
-        target.name = data["name"]
-        # Load modifiers
-        if hasattr(target, 'modifiers'):
-            # TODO: smarter selective update
-            target.modifiers.clear()
-
-            for modifier in data['modifiers']:
-                target_modifier = target.modifiers.get(modifier)
-
-                if not target_modifier:
-                    target_modifier = target.modifiers.new(
-                        data['modifiers'][modifier]['name'], data['modifiers'][modifier]['type'])
-
-                utils.dump_anything.load(
-                    target_modifier, data['modifiers'][modifier])
-
-        # Load constraints
-        # Object
-        if hasattr(target, 'constraints') and 'constraints' in data:
-            load_constraints(target, data['constraints'])
+        utils.dump_anything.load(target, data)
 
         # Pose
         if 'pose' in data:
@@ -135,27 +112,13 @@ class BlObject(BlDatablock):
                 bone_data = data['pose']['bones'].get(bone)
 
                 if 'constraints' in bone_data.keys():
-                    load_constraints(
-                        target_bone, bone_data['constraints'])
+                    utils.dump_anything.load(target_bone, bone_data['constraints'])
+
 
                 load_pose(target_bone, bone_data)
 
                 if 'bone_index' in bone_data.keys():
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
-
-        # Load relations
-        if 'children' in data.keys():
-            for child in data['children']:
-                bpy.data.objects[child].parent = self.pointer
-
-        # Load empty representation
-        target.empty_display_size = data['empty_display_size']
-        target.empty_display_type = data['empty_display_type']
-
-        # Instancing
-        target.instance_type = data['instance_type']
-        if data['instance_type'] == 'COLLECTION':
-            target.instance_collection = bpy.data.collections[data['instance_collection']]
 
         # vertex groups
         if 'vertex_groups' in data:
@@ -220,7 +183,6 @@ class BlObject(BlDatablock):
             data["modifiers"] = {}
             for index, modifier in enumerate(pointer.modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
-                data["modifiers"][modifier.name]['m_index'] = index
 
         # CONSTRAINTS
         # OBJECT
@@ -299,18 +261,18 @@ class BlObject(BlDatablock):
             data['vertex_groups'] = vg_data
 
         #  SHAPE KEYS
-        pointer_data = pointer.data
-        if hasattr(pointer_data, 'shape_keys') and pointer_data.shape_keys:
+        object_data = pointer.data
+        if hasattr(object_data, 'shape_keys') and object_data.shape_keys:
             dumper = utils.dump_anything.Dumper()
             dumper.depth = 2
             dumper.include_filter = [
                 'reference_key',
                 'use_relative'
             ]
-            data['shape_keys'] = dumper.dump(pointer_data.shape_keys)
-            data['shape_keys']['reference_key'] = pointer_data.shape_keys.reference_key.name
+            data['shape_keys'] = dumper.dump(object_data.shape_keys)
+            data['shape_keys']['reference_key'] = object_data.shape_keys.reference_key.name
             key_blocks = {}
-            for key in pointer_data.shape_keys.key_blocks:
+            for key in object_data.shape_keys.key_blocks:
                 dumper.depth = 3
                 dumper.include_filter = [
                     'name',

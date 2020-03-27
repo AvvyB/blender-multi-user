@@ -1,7 +1,27 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+import logging
+
 import bpy
 import bpy.types as T
 import mathutils
 
+logger = logging.getLogger(__name__)
 
 def remove_items_from_dict(d, keys, recursive=False):
     copy = dict(d)
@@ -47,7 +67,7 @@ def _load_filter_type(t, use_bl_rna=True):
         if use_bl_rna and x.bl_rna_property:
             return isinstance(x.bl_rna_property, t)
         else:
-            isinstance(x.read(), t)
+            return isinstance(x.read(), t)
     return filter_function
 
 
@@ -73,8 +93,9 @@ def _load_filter_default(default):
 
 
 class Dumper:
+    # TODO: support occlude readonly  
     def __init__(self):
-        self.verbose = False
+        self.verbose = True
         self.depth = 1
         self.keep_compounds_as_leaves = False
         self.accept_read_only = True
@@ -83,7 +104,6 @@ class Dumper:
         self.type_subset = self.match_subset_all
         self.include_filter = []
         self.exclude_filter = []
-        # self._atomic_types = [] # TODO future option?
 
     def dump(self, any):
         return self._dump_any(any, 0)
@@ -175,7 +195,8 @@ class Dumper:
                 if (self.include_filter and p not in self.include_filter):
                     return False
                 getattr(default, p)
-            except AttributeError:
+            except AttributeError as err:
+                logger.debug(err)
                 return False
             if p.startswith("__"):
                 return False
@@ -238,14 +259,12 @@ class BlenderAPIElement:
 
     def write(self, value):
         # take precaution if property is read-only
-        try:
-            if self.sub_element_name:
-                setattr(self.api_element, self.sub_element_name, value)
-            else:
-                self.api_element = value
-        except AttributeError as err:
-            if not self.occlude_read_only:
-                raise err
+        if self.sub_element_name and \
+            not self.api_element.is_property_readonly(self.sub_element_name):
+        
+            setattr(self.api_element, self.sub_element_name, value)
+        else:
+            self.api_element = value
 
     def extend(self, element_name):
         return BlenderAPIElement(self.read(), element_name)
@@ -262,7 +281,7 @@ class BlenderAPIElement:
 class Loader:
     def __init__(self):
         self.type_subset = self.match_subset_all
-        self.occlude_read_only = True
+        self.occlude_read_only = False
         self.order = ['*']
 
     def load(self, dst_data, src_dumped_data):
@@ -287,6 +306,7 @@ class Loader:
             for i in range(len(dump)):
                 element.read()[i] = dump[i]
         except AttributeError as err:
+            logger.debug(err)
             if not self.occlude_read_only:
                 raise err
 
@@ -297,28 +317,76 @@ class Loader:
         CONSTRUCTOR_NEW = "new"
         CONSTRUCTOR_ADD = "add"
 
+        DESTRUCTOR_REMOVE = "remove"
+        DESTRUCTOR_CLEAR = "clear"
+ 
         constructors = {
             T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
-            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, [])
+            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
+            T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"]),
+            T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
+            # T.VertexGroup: (CONSTRUCTOR_NEW, ["name"], True),
+        }
+
+        destructors = {
+            T.ColorRampElement:DESTRUCTOR_REMOVE,
+            T.Modifier: DESTRUCTOR_CLEAR,
+            T.Constraint: CONSTRUCTOR_NEW,
         }
         element_type = element.bl_rna_property.fixed_type
+        
         constructor = constructors.get(type(element_type))
+
         if constructor is None:  # collection type not supported
             return
-        for dumped_element in dump.values():
-            try:
-                constructor_parameters = [dumped_element[name]
-                                          for name in constructor[1]]
-            except KeyError:
-                print("Collection load error, missing parameters.")
-                continue  # TODO handle error
-            new_element = getattr(element.read(), constructor[0])(
-                *constructor_parameters)
+
+        destructor  = destructors.get(type(element_type))
+
+        # Try to clear existing 
+        if destructor:
+            if destructor == DESTRUCTOR_REMOVE:
+                collection = element.read()
+                for i in range(len(collection)-1):
+                    collection.remove(collection[0])
+            else:
+                getattr(element.read(), DESTRUCTOR_CLEAR)()
+        
+        for dump_idx, dumped_element in enumerate(dump.values()):
+            if dump_idx == 0 and len(element.read())>0:
+                new_element = element.read()[0]       
+            else:
+                try:
+                    constructor_parameters = [dumped_element[name]
+                                            for name in constructor[1]]
+                except KeyError:
+                    logger.debug("Collection load error, missing parameters.")
+                    continue  # TODO handle error
+                
+                new_element = getattr(element.read(), constructor[0])(
+                    *constructor_parameters)
             self._load_any(
                 BlenderAPIElement(
                     new_element, occlude_read_only=self.occlude_read_only),
                 dumped_element
             )
+
+    def _load_curve_mapping(self, element, dump):
+        mapping = element.read()
+        # cleanup existing curve
+        for curve in mapping.curves:
+            for idx in range(len(curve.points)):
+                if idx == 0:
+                    break
+
+                curve.points.remove(curve.points[1])
+        for curve_index, curve in dump['curves'].items():
+            for point_idx, point in curve['points'].items():
+                pos = point['location']
+                
+                if len(mapping.curves[curve_index].points) == 1:
+                    mapping.curves[curve_index].points[int(point_idx)].location = pos
+                else:
+                    mapping.curves[curve_index].points.new(pos[0],pos[1])
 
     def _load_pointer(self, pointer, dump):
         rna_property_type = pointer.bl_rna_property.fixed_type
@@ -336,6 +404,8 @@ class Loader:
             pointer.write(bpy.data.meshes.get(dump))
         elif isinstance(rna_property_type, T.Material):
             pointer.write(bpy.data.materials.get(dump))
+        elif isinstance(rna_property_type, T.Collection):
+            pointer.write(bpy.data.collections.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))
@@ -365,11 +435,11 @@ class Loader:
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                continue  # TODO error handling
+                logger.debug(f"Load default, skipping {default} : {k}")
             try:
                 self._load_any(default.extend(k), v)
-            except:
-                pass
+            except Exception as err:
+                logger.debug(f"Cannot load {k}: {err}")
 
     @property
     def match_subset_all(self):
@@ -382,6 +452,7 @@ class Loader:
             (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector),
             (_load_filter_type(mathutils.Quaternion, use_bl_rna=False), self._load_quaternion),
             (_load_filter_type(mathutils.Euler, use_bl_rna=False), self._load_euler),
+            (_load_filter_type(T.CurveMapping,  use_bl_rna=False), self._load_curve_mapping),
             (_load_filter_type(T.FloatProperty), self._load_identity),
             (_load_filter_type(T.StringProperty), self._load_identity),
             (_load_filter_type(T.EnumProperty), self._load_identity),

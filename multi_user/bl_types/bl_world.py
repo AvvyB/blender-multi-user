@@ -1,9 +1,27 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
-from .bl_material import load_link, load_node
+from .bl_material import load_links, load_node, dump_links
 
 
 class BlWorld(BlDatablock):
@@ -14,10 +32,10 @@ class BlWorld(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'WORLD_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.worlds.new(data["name"])
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -25,13 +43,13 @@ class BlWorld(BlDatablock):
             target.node_tree.nodes.clear()
 
             for node in data["node_tree"]["nodes"]:
-                load_node(target.node_tree, data["node_tree"]["nodes"][node])
+                load_node(data["node_tree"]["nodes"][node], target.node_tree)
 
             # Load nodes links
             target.node_tree.links.clear()
 
-            for link in data["node_tree"]["links"]:
-                load_link(target.node_tree, data["node_tree"]["links"][link])
+            
+            load_links(data["node_tree"]["links"], target.node_tree)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
@@ -86,8 +104,9 @@ class BlWorld(BlDatablock):
                             nodes[node.name]['inputs'][i.name] = input_dumper.dump(
                                 i)
             data["node_tree"]['nodes'] = nodes
-            utils.dump_datablock_attibutes(
-                pointer.node_tree, ["links"], 3, data['node_tree'])
+
+            data["node_tree"]['links'] = dump_links(pointer.node_tree.links)
+
         return data
 
     def resolve_deps_implementation(self):
@@ -100,7 +119,4 @@ class BlWorld(BlDatablock):
         if self.is_library:
             deps.append(self.pointer.library)
         return deps
-
-    def is_valid(self):
-        return bpy.data.worlds.get(self.data['name'])
 

@@ -1,9 +1,28 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import json
 import logging
 import os
 import random
 import string
 import sys
+import time
 from uuid import uuid4
 from collections.abc import Iterable
 
@@ -158,3 +177,6 @@ def resolve_from_id(id, optionnal_type=None):
 
 def get_preferences():
     return bpy.context.preferences.addons[__package__].preferences
+
+def current_milli_time():
+    return int(round(time.time() * 1000))

@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
@@ -12,12 +30,12 @@ class BlScene(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'SCENE_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
         instance.uuid = self.uuid
         return instance
 
-    def load(self, data, target):
+    def load_implementation(self, data, target):
         target = self.pointer
         # Load other meshes metadata
         utils.dump_anything.load(target, data)
@@ -55,7 +73,13 @@ class BlScene(BlDatablock):
 
         scene_dumper = utils.dump_anything.Dumper()
         scene_dumper.depth = 1
-        scene_dumper.include_filter = ['name','world', 'id', 'camera', 'grease_pencil']
+        scene_dumper.include_filter = [
+            'name',
+            'world',
+            'id',
+            'camera',
+            'grease_pencil'
+        ]
         data = scene_dumper.dump(pointer)
 
         scene_dumper.depth = 3

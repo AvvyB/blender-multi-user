@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 import logging
@@ -7,66 +25,62 @@ from ..libs import dump_anything
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
-def clean_color_ramp(target_ramp):
-    # clear existing
-    try:
-        for key in target_ramp.elements:
-            target_ramp.elements.remove(key)
-    except:
-        pass
-    
-def load_mapping(target_apping, source_mapping):
-     # clear existing curves
-    for curve in target_apping.curves:
-        for point in curve.points:
-            try:
-                curve.remove(point)
-            except:
-                continue
-    
-    # Load curves
-    for curve in source_mapping['curves']:
-        for point in source_mapping['curves'][curve]['points']:
-            pos = source_mapping['curves'][curve]['points'][point]['location']
-            target_apping.curves[curve].points.new(pos[0],pos[1])
 
+def load_node(node_data, node_tree):
+    """ Load a node into a node_tree from a dict
 
-def load_node(target_node_tree, source):
-    target_node = target_node_tree.nodes.get(source["name"])
+        :arg node_data: dumped node data
+        :type node_data: dict
+        :arg node_tree: target node_tree
+        :type node_tree: bpy.types.NodeTree
+    """
+    target_node = node_tree.nodes.new(type=node_data["bl_idname"])
 
-    if target_node is None:
-        node_type = source["bl_idname"]
+    dump_anything.load(target_node, node_data)    
 
-        target_node = target_node_tree.nodes.new(type=node_type)
-
-    # Clean color ramp before loading it
-    if source['type'] == 'VALTORGB':
-        clean_color_ramp(target_node.color_ramp)
-    if source['type'] == 'CURVE_RGB':
-        load_mapping(target_node.mapping, source['mapping'])
-    dump_anything.load(
-        target_node,
-        source)
-
-    if source['type'] == 'TEX_IMAGE':
-        target_node.image = bpy.data.images[source['image']]
     
 
-    for input in source["inputs"]:
+    for input in node_data["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
             try:
-                target_node.inputs[input].default_value = source["inputs"][input]["default_value"]
+                target_node.inputs[input].default_value = node_data["inputs"][input]["default_value"]
             except:
                 logger.error("{} not supported, skipping".format(input))
 
-def load_link(target_node_tree, source):
-    input_socket = target_node_tree.nodes[source['to_node']
-                                          ['name']].inputs[source['to_socket']['name']]
-    output_socket = target_node_tree.nodes[source['from_node']
-                                           ['name']].outputs[source['from_socket']['name']]
+def load_links(links_data, node_tree):
+    """ Load node_tree links from a list
+        
+        :arg links_data: dumped node links
+        :type links_data: list
+        :arg node_tree: node links collection
+        :type node_tree: bpy.types.NodeTree
+    """
 
-    target_node_tree.links.new(input_socket, output_socket)
+    for link in links_data:
+        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
+        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
 
+        node_tree.links.new(input_socket, output_socket)
+
+def dump_links(links):
+    """ Dump node_tree links collection to a list
+
+        :arg links: node links collection
+        :type links: bpy.types.NodeLinks
+        :retrun: list
+    """
+
+    links_data = []
+
+    for link in links:
+        links_data.append({
+            'to_node':link.to_node.name,
+            'to_socket':link.to_socket.path_from_id()[-2:-1],
+            'from_node':link.from_node.name,
+            'from_socket':link.from_socket.path_from_id()[-2:-1],
+        })
+
+    return links_data
 
 class BlMaterial(BlDatablock):
     bl_id = "materials"
@@ -76,7 +90,7 @@ class BlMaterial(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'MATERIAL_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.materials.new(data["name"])
 
     def load_implementation(self, data, target):
@@ -100,19 +114,25 @@ class BlMaterial(BlDatablock):
             
             # Load nodes
             for node in data["node_tree"]["nodes"]:
-                load_node(target.node_tree, data["node_tree"]["nodes"][node])
+                load_node(data["node_tree"]["nodes"][node], target.node_tree)
 
             # Load nodes links
             target.node_tree.links.clear()
 
-            for link in data["node_tree"]["links"]:
-                load_link(target.node_tree, data["node_tree"]["links"][link])
+            load_links(data["node_tree"]["links"], target.node_tree)
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
         mat_dumper = dump_anything.Dumper()
         mat_dumper.depth = 2
         mat_dumper.exclude_filter = [
+            "is_embed_data",
+            "is_evaluated",
+            "name_full",
+            "bl_description",
+            "bl_icon",
+            "bl_idname",
+            "bl_label",
             "preview",
             "original",
             "uuid",
@@ -121,47 +141,44 @@ class BlMaterial(BlDatablock):
             "line_color",
             "view_center",
         ]
-        node_dumper = dump_anything.Dumper()
-        node_dumper.depth = 1
-        node_dumper.exclude_filter = [
-            "dimensions",
-            "show_expanded"
-            "select",
-            "bl_height_min",
-            "bl_height_max",
-            "bl_width_min",
-            "bl_width_max",
-            "bl_width_default",
-            "hide",
-            "show_options",
-            "show_tetxures",
-            "show_preview",
-            "outputs",
-            "width_hidden"
-        ]
-        input_dumper = dump_anything.Dumper()
-        input_dumper.depth = 2
-        input_dumper.include_filter = ["default_value"]
-        links_dumper = dump_anything.Dumper()
-        links_dumper.depth = 3
-        links_dumper.include_filter = [
-            "name",
-            "to_node",
-            "from_node",
-            "from_socket",
-            "to_socket"]
         data = mat_dumper.dump(pointer)
 
         if pointer.use_nodes:
             nodes = {}
-
+            node_dumper = dump_anything.Dumper()
+            node_dumper.depth = 1
+            node_dumper.exclude_filter = [
+                "dimensions",
+                "show_expanded",
+                "name_full",
+                "select",
+                "bl_height_min",
+                "bl_height_max",
+                "bl_width_min",
+                "bl_width_max",
+                "type",
+                "bl_icon",
+                "bl_width_default",
+                "bl_static_type",
+                "show_tetxure",
+                "hide",
+                "show_options",
+                "show_preview",
+                "outputs",
+                "width_hidden"
+            ]
             for node in pointer.node_tree.nodes:
+                
                 nodes[node.name] = node_dumper.dump(node)
 
                 if hasattr(node, 'inputs'):
                     nodes[node.name]['inputs'] = {}
 
-                    for i in node.inputs:      
+                    for i in node.inputs:
+                        input_dumper = dump_anything.Dumper()
+                        input_dumper.depth = 2
+                        input_dumper.include_filter = ["default_value"]
+
                         if hasattr(i, 'default_value'):
                             nodes[node.name]['inputs'][i.name] = input_dumper.dump(
                                 i)
@@ -184,11 +201,39 @@ class BlMaterial(BlDatablock):
                         'location'
                     ]
                     nodes[node.name]['mapping'] = curve_dumper.dump(node.mapping)
+            
             data["node_tree"]['nodes'] = nodes
-            data["node_tree"]["links"] = links_dumper.dump(pointer.node_tree.links)
+            
+
+            data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
         
         elif pointer.is_grease_pencil:
-            data['grease_pencil'] = dump_anything.dump(pointer.grease_pencil, 3)
+            gp_mat_dumper = dump_anything.Dumper()
+            gp_mat_dumper.depth = 3
+
+            gp_mat_dumper.include_filter = [
+                'show_stroke',
+                'mode',
+                'stroke_style',
+                'color',
+                'use_overlap_strokes',
+                'show_fill',
+                'fill_style',
+                'fill_color',
+                'pass_index',
+                'alignment_mode',
+                # 'fill_image',
+                'texture_opacity',
+                'mix_factor',
+                'texture_offset',
+                'texture_angle',
+                'texture_scale',
+                'texture_clamp',
+                'gradient_type',
+                'mix_color',
+                'flip'                
+            ]
+            data['grease_pencil'] = gp_mat_dumper.dump(pointer.grease_pencil)
         return data
 
     def resolve_deps_implementation(self):

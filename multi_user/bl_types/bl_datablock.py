@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
@@ -61,7 +79,6 @@ class BlDatablock(ReplicatedDatablock):
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
     """
-    bl_id = "scenes"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -77,23 +94,7 @@ class BlDatablock(ReplicatedDatablock):
         
         self.diff_method = DIFF_BINARY
 
-    def library_apply(self):
-        """Apply stored data
-        """
-        # UP in case we want to reset our pointer data
-        self.state = UP
-
-    def bl_diff(self):
-        """Generic datablock diff"""
-        return self.pointer.name != self.data['name']
-
-    def diff_library(self):
-        return False
-
-    def resolve_deps_library(self):
-        return [self.pointer.library]
-
-    def resolve(self):
+    def _resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
@@ -108,7 +109,7 @@ class BlDatablock(ReplicatedDatablock):
 
         self.pointer = datablock_ref
 
-    def dump(self, pointer=None):
+    def _dump(self, pointer=None):
         data = {}
         # Dump animation data
         if utils.has_action(pointer):
@@ -134,7 +135,7 @@ class BlDatablock(ReplicatedDatablock):
     def dump_implementation(self, data, target):
         raise NotImplementedError
 
-    def load(self, data, target):
+    def _load(self, data, target):
         # Load animation data
         if 'animation_data' in data.keys():
             if target.animation_data is None:
