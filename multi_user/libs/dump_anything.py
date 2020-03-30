@@ -30,6 +30,33 @@ BPY_TO_NUMPY_TYPES = {
     'BOOL': np.bool
 }
 
+def load_collection_attr_from_dict(dikt, collection, attributes):
+    """ Dump a list of attributes from the sane collection
+        to the target dikt
+
+        :arg dikt: target dict
+        :type dikt: dict
+        :arg collection: source collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attributes: list of attributes name
+        :type attributes: list
+    """
+    for attr in attributes:
+        load_collection_attr(collection, attr, dikt[attr])
+
+def dump_collection_attr_to_dict(dikt, collection, attributes):
+    """ Dump a list of attributes from the sane collection
+        to the target dikt
+
+        :arg dikt: target dict
+        :type dikt: dict
+        :arg collection: source collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attributes: list of attributes name
+        :type attributes: list
+    """
+    for attr in attributes:
+        dikt[attr] = dump_collection_attr(collection, attr)
 
 def dump_collection_attr(collection, attribute):
     """ Dump a collection attribute as a sequence
