@@ -27,8 +27,8 @@ from .bl_material import load_links, load_node,dump_node, dump_links
 class BlWorld(BlDatablock):
     bl_id = "worlds"
     bl_class = bpy.types.World
-    bl_delay_refresh = 4
-    bl_delay_apply = 4
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
     bl_automatic_push = True
     bl_icon = 'WORLD_DATA'
 
@@ -69,7 +69,7 @@ class BlWorld(BlDatablock):
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
             nodes = {}
-            
+
             for node in pointer.node_tree.nodes:
                 nodes[node.name] = dump_node(node)
 
