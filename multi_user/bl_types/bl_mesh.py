@@ -22,7 +22,7 @@ import mathutils
 import logging
 import numpy as np
 
-from .. import utils
+from ..libs.dump_anything import Dumper, Loader, load_collection_attr, dump_collection_attr
 from ..libs.replication.replication.constants import DIFF_BINARY
 from .bl_datablock import BlDatablock
 
@@ -44,8 +44,9 @@ class BlMesh(BlDatablock):
 
     def load_implementation(self, data, target):
         if not target or not target.is_editmode:
-            utils.dump_anything.load(target, data)
-            
+            loader = Loader()
+            loader.load(target, data)
+
             # MATERIAL SLOTS
             target.materials.clear()
 
@@ -56,60 +57,34 @@ class BlMesh(BlDatablock):
             if target.vertices:
                 target.clear_geometry()
 
-            # VERTS
-            vertices = np.frombuffer(data["verts_co"], dtype=np.float64)
-            vert_count = int(len(vertices)/3)
-            target.vertices.add(vert_count)
+            target.vertices.add(data["vertex_count"])
+            target.edges.add(data["egdes_count"])
+            target.loops.add(data["loop_count"])
+            target.polygons.add(data["poly_count"])
 
-            # EDGES
-
-            egdes_vert = np.frombuffer(data["egdes_vert"], dtype=np.int)
-            
-            edge_count = data["egdes_count"]
-            target.edges.add(edge_count)
-            
-    
-
-            # LOOPS
-            loops_count = data["loop_count"]
-            target.loops.add(loops_count)
-
-            loop_vertex_index = np.frombuffer(
-                data['loop_vertex_index'], dtype=np.int)
-            loop_normal = np.frombuffer(data['loop_normal'], dtype=np.float64)
-
-            # POLY
-            poly_count = data["poly_count"]
-            target.polygons.add(poly_count)
-
-            poly_loop_start = np.frombuffer(
-                data["poly_loop_start"], dtype=np.int)
-            poly_loop_total = np.frombuffer(
-                data["poly_loop_total"], dtype=np.int)
-            poly_smooth = np.frombuffer(data["poly_smooth"], dtype=np.bool)
-
-            poly_mat = np.frombuffer(data["poly_mat"], dtype=np.int)
-
-            # LOADING 
-            target.vertices.foreach_set('co', vertices)
-            target.edges.foreach_set("vertices", egdes_vert)
-            
+            # LOADING
+            load_collection_attr(target.vertices, 'co', data["verts_co"])
+            load_collection_attr(target.edges, "vertices", data["egdes_vert"])
             if data['use_customdata_edge_crease']:
-                edges_crease = np.frombuffer(data["edges_crease"], dtype=np.float64)
-                target.edges.foreach_set("crease", edges_crease)
-            
-            if data['use_customdata_edge_bevel']:
-                edges_bevel = np.frombuffer(data["edges_bevel"], dtype=np.float64)
-                target.edges.foreach_set("bevel_weight", edges_bevel)
+                load_collection_attr(
+                    target.edges, "crease", data["edges_crease"])
 
-            target.loops.foreach_set("vertex_index", loop_vertex_index)
-            target.loops.foreach_set("normal", loop_normal)
-            target.polygons.foreach_set("loop_total", poly_loop_total)
-            target.polygons.foreach_set("loop_start", poly_loop_start)
-            target.polygons.foreach_set("use_smooth", poly_smooth)
-            target.polygons.foreach_set("material_index", poly_mat)
-            
-            
+            if data['use_customdata_edge_bevel']:
+                load_collection_attr(
+                    target.edges, "bevel_weight", data["edges_bevel"])
+
+            load_collection_attr(
+                target.loops, 'vertex_index', data["loop_vertex_index"])
+            load_collection_attr(target.loops, 'normal', data["loop_normal"])
+            load_collection_attr(
+                target.polygons, 'loop_total', data["poly_loop_total"])
+            load_collection_attr(
+                target.polygons, 'loop_start', data["poly_loop_start"])
+            load_collection_attr(
+                target.polygons, 'use_smooth', data["poly_smooth"])
+            load_collection_attr(
+                target.polygons, 'material_index', data["poly_mat"])
+
             # UV Layers
             for layer in data['uv_layers']:
                 if layer not in target.uv_layers:
@@ -121,14 +96,13 @@ class BlMesh(BlDatablock):
 
             target.validate()
             target.update()
-            
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         mesh = pointer
 
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             'name',
@@ -140,73 +114,43 @@ class BlMesh(BlDatablock):
 
         data = dumper.dump(mesh)
 
-        # TODO: selective dump
         # VERTICES
-        vert_count = len(mesh.vertices)
+        data["vertex_count"] = len(mesh.vertices)
+        data["verts_co"] = dump_collection_attr(mesh.vertices, 'co')
 
-        verts_co = np.empty(vert_count*3, dtype=np.float64)
-        mesh.vertices.foreach_get('co', verts_co)
-        data["verts_co"] = verts_co.tobytes()
-
-        # EDGES 
-        edge_count = len(mesh.edges)
-
-        edges_vert = np.empty(edge_count*2, dtype=np.int)
-        mesh.edges.foreach_get('vertices', edges_vert)
-        data["egdes_vert"] = edges_vert.tobytes()
+        # EDGES
         data["egdes_count"] = len(mesh.edges)
+        data["egdes_vert"] = dump_collection_attr(mesh.edges, 'vertices')
 
         if mesh.use_customdata_edge_crease:
-            edges_crease = np.empty(edge_count, dtype=np.float64)
-            mesh.edges.foreach_get('crease', edges_crease)
-            data["edges_crease"] = edges_crease.tobytes()
+            data["edges_crease"] = dump_collection_attr(mesh.edges, 'crease')
 
         if mesh.use_customdata_edge_bevel:
-            edges_bevel = np.empty(edge_count, dtype=np.float64)
-            mesh.edges.foreach_get('bevel_weight', edges_bevel)
-            data["edges_bevel"] = edges_bevel.tobytes()
+            data["edges_bevel"] = dump_collection_attr(
+                mesh.edges, 'edges_bevel')
 
         # POLYGONS
-        poly_count = len(mesh.polygons)
-        data["poly_count"] = poly_count
-
-        poly_mat = np.empty(poly_count, dtype=np.int)
-        mesh.polygons.foreach_get("material_index", poly_mat)
-        data["poly_mat"] = poly_mat.tobytes()
-
-        poly_loop_start = np.empty(poly_count, dtype=np.int)
-        mesh.polygons.foreach_get("loop_start", poly_loop_start)
-        data["poly_loop_start"] = poly_loop_start.tobytes()
-
-        poly_loop_total = np.empty(poly_count, dtype=np.int)
-        mesh.polygons.foreach_get("loop_total", poly_loop_total)
-        data["poly_loop_total"] = poly_loop_total.tobytes()
-
-        poly_smooth = np.empty(poly_count, dtype=np.bool)
-        mesh.polygons.foreach_get("use_smooth", poly_smooth)
-        data["poly_smooth"] = poly_smooth.tobytes()
+        data["poly_count"] = len(mesh.polygons)
+        data["poly_mat"] = dump_collection_attr(
+            mesh.polygons, 'material_index')
+        data["poly_loop_start"] = dump_collection_attr(
+            mesh.polygons, 'loop_start')
+        data["poly_loop_total"] = dump_collection_attr(
+            mesh.polygons, 'loop_total')
+        data["poly_smooth"] = dump_collection_attr(mesh.polygons, 'use_smooth')
 
         # LOOPS
-        loop_count = len(mesh.loops)
-        data["loop_count"] = loop_count
-
-        loop_normal = np.empty(loop_count*3, dtype=np.float64)
-        mesh.loops.foreach_get("normal", loop_normal)
-        data["loop_normal"] = loop_normal.tobytes()
-
-        loop_vertex_index = np.empty(loop_count, dtype=np.int)
-        mesh.loops.foreach_get("vertex_index", loop_vertex_index)
-        data["loop_vertex_index"] = loop_vertex_index.tobytes()
+        data["loop_count"] = len(mesh.loops)
+        data["loop_normal"] = dump_collection_attr(mesh.loops, 'normal')
+        data["loop_vertex_index"] = dump_collection_attr(
+            mesh.loops, 'vertex_index')
 
         # UV Layers
         data['uv_layers'] = {}
         for layer in mesh.uv_layers:
             data['uv_layers'][layer.name] = {}
-
-            uv_layer = np.empty(len(layer.data)*2, dtype=np.float64)
-            layer.data.foreach_get("uv", uv_layer)
-
-            data['uv_layers'][layer.name]['data'] = uv_layer.tobytes()
+            data['uv_layers'][layer.name]['data'] = dump_collection_attr(
+                layer.data, 'uv')
 
         # Fix material index
         m_list = []

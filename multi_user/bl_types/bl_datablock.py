@@ -22,7 +22,24 @@ import mathutils
 from .. import utils
 from ..libs.replication.replication.data import ReplicatedDatablock
 from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
-from ..libs import dump_anything 
+from ..libs import dump_anything
+
+
+def has_action(target):
+    """ Check if the target datablock has actions
+    """
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.action)
+
+
+def has_driver(target):
+    """ Check if the target datablock is driven
+    """
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.drivers)
+
 
 def dump_driver(driver):
     dumper = dump_anything.Dumper()
@@ -112,12 +129,12 @@ class BlDatablock(ReplicatedDatablock):
     def _dump(self, pointer=None):
         data = {}
         # Dump animation data
-        if utils.has_action(pointer):
+        if has_action(pointer):
             dumper = utils.dump_anything.Dumper()
             dumper.include_filter = ['action']
             data['animation_data'] = dumper.dump(pointer.animation_data)
 
-        if utils.has_driver(pointer):
+        if has_driver(pointer):
             dumped_drivers = {'animation_data': {'drivers': []}}
             for driver in pointer.animation_data.drivers:
                 dumped_drivers['animation_data']['drivers'].append(
@@ -162,7 +179,7 @@ class BlDatablock(ReplicatedDatablock):
     def resolve_deps(self):
         dependencies = []
 
-        if utils.has_action(self.pointer):
+        if has_action(self.pointer):
             dependencies.append(self.pointer.animation_data.action)
 
         if not self.is_library:

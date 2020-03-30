@@ -15,13 +15,27 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
+import random
 import logging
 import bpy
+import string
 
 from . import utils, bl_types, environment, addon_updater_ops, presence
 
 logger = logging.getLogger(__name__)
+
+def randomColor():
+    """Generate a random color """
+    r = random.random()
+    v = random.random()
+    b = random.random()
+    return [r, v, b]
+
+
+def random_string_digits(stringLength=6):
+    """Generate a random string of letters and digits """
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join(random.choices(lettersAndDigits, k=stringLength))
 
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
@@ -43,12 +57,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
         default="127.0.0.1")
     username: bpy.props.StringProperty(
         name="Username",
-        default="user_{}".format(utils.random_string_digits())
+        default=f"user_{random_string_digits()}"
     )
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
         subtype='COLOR',
-        default=utils.randomColor())
+        default=randomColor())
     port: bpy.props.IntProperty(
         name="port",
         description='Distant host port',
