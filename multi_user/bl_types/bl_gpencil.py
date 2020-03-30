@@ -20,7 +20,10 @@ import bpy
 import mathutils
 import numpy as np
 
-from ..libs import dump_anything 
+from ..libs.dump_anything import  (Dumper, 
+                                    Loader,
+                                    dump_collection_attr,
+                                    load_collection_attr)
 from .bl_datablock import BlDatablock
 
 # GPencil data api is structured as it follow: 
@@ -36,7 +39,7 @@ def dump_stroke(stroke):
 
     assert(stroke)
 
-    dumper = dump_anything.Dumper()
+    dumper = Dumper()
     dumper.include_filter = [
         "aspect",
         "display_mode",
@@ -56,23 +59,12 @@ def dump_stroke(stroke):
     # Stoke points
     p_count = len(stroke.points)
     dumped_stroke['p_count'] = p_count
-    
-    p_co = np.empty(p_count*3, dtype=np.float64)
-    stroke.points.foreach_get('co', p_co)
-    dumped_stroke['p_co'] = p_co.tobytes()
-
-    p_pressure = np.empty(p_count, dtype=np.float64)
-    stroke.points.foreach_get('pressure', p_pressure)
-    dumped_stroke['p_pressure'] = p_pressure.tobytes()
-
-    p_strength = np.empty(p_count, dtype=np.float64)
-    stroke.points.foreach_get('strength', p_strength)
-    dumped_stroke['p_strength'] = p_strength.tobytes()
+    dumped_stroke['p_co'] = dump_collection_attr(stroke.points,'co')
+    dumped_stroke['p_pressure'] = dump_collection_attr(stroke.points,'pressure')
+    dumped_stroke['p_strength'] = dump_collection_attr(stroke.points,'strength')
 
     if bpy.app.version[1] >= 83: # new in blender 2.83
-        p_vertex_color = np.empty(p_count*4, dtype=np.float64)
-        stroke.points.foreach_get('vertex_color', p_vertex_color)
-        dumped_stroke['p_vertex_color'] = p_vertex_color.tobytes()
+        dumped_stroke['p_vertex_color'] = dump_collection_attr(stroke.points,'vertex_color')
 
     # TODO: uv_factor, uv_rotation
 
@@ -89,21 +81,17 @@ def load_stroke(stroke_data, stroke):
     """
     assert(stroke and stroke_data)
 
-    dump_anything.load(stroke, stroke_data)
-
-    p_co = np.frombuffer(stroke_data["p_co"], dtype=np.float64)
-    p_pressure = np.frombuffer(stroke_data["p_pressure"], dtype=np.float64)
-    p_strength = np.frombuffer(stroke_data["p_strength"], dtype=np.float64)
+    loader = Loader()
+    loader.load(stroke, stroke_data)
 
     stroke.points.add(stroke_data["p_count"])
 
-    stroke.points.foreach_set('co', p_co)
-    stroke.points.foreach_set('pressure', p_pressure)
-    stroke.points.foreach_set('strength', p_strength)
+    load_collection_attr(stroke.points, 'co',stroke_data["p_co"])
+    load_collection_attr(stroke.points, 'pressure',stroke_data["p_pressure"])
+    load_collection_attr(stroke.points, 'strength',stroke_data["p_strength"])
 
     if "p_vertex_color" in stroke_data:
-        p_vertex_color = np.frombuffer(stroke_data["p_vertex_color"], dtype=np.float64)
-        stroke.points.foreach_set('vertex_color', p_vertex_color)    
+        load_collection_attr(stroke.points, 'vertex_color',stroke_data["p_vertex_color"])    
 
 
 def dump_frame(frame):
@@ -156,24 +144,24 @@ def dump_layer(layer):
 
     assert(layer)
 
-    dumper = dump_anything.Dumper()
+    dumper = Dumper()
 
     dumper.include_filter = [
         'info',
         'opacity',
         'channel_color',
         'color',
-        # 'thickness',
+        'thickness',
         'tint_color',
         'tint_factor',
         'vertex_paint_opacity',
         'line_change',
         'use_onion_skinning',
-        # 'use_annotation_onion_skinning',
-        # 'annotation_onion_before_range',
-        # 'annotation_onion_after_range',
-        # 'annotation_onion_before_color',
-        # 'annotation_onion_after_color',
+        'use_annotation_onion_skinning',
+        'annotation_onion_before_range',
+        'annotation_onion_after_range',
+        'annotation_onion_before_color',
+        'annotation_onion_after_color',
         'pass_index',
         # 'viewlayer_render',
         'blend_mode',
@@ -212,7 +200,8 @@ def load_layer(layer_data, layer):
         :type layer: bpy.types.GPencilFrame
     """
     # TODO: take existing data in account
-    dump_anything.load(layer, layer_data)
+    loader = Loader()
+    loader.load(layer, layer_data)
 
     for frame_data in layer_data["frames"]:
         target_frame = layer.frames.new(frame_data['frame_number'])
@@ -253,14 +242,17 @@ class BlGpencil(BlDatablock):
                 #     target_layer.clear()
 
                 load_layer(layer_data, target_layer)
-
-        dump_anything.load(target, data)
+        
+        loader = Loader()
+        loader.load(target, data)
 
 
 
     def dump_implementation(self, data, pointer=None):
         assert(pointer)
-        data = dump_anything.dump(pointer, 2)
+        dumper = Dumper()
+        dumper.depth = 2
+        data = dumper.dump(pointer)
 
         data['layers'] = {}
         

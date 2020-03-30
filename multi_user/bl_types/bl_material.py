@@ -102,7 +102,6 @@ class BlMaterial(BlDatablock):
             dump_anything.load(
                 target.grease_pencil, data['grease_pencil'])
 
-            utils.load_dict(data['grease_pencil'], target.grease_pencil)
 
         elif data["use_nodes"]:
             if target.node_tree is None:

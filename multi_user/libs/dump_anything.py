@@ -20,8 +20,67 @@ import logging
 import bpy
 import bpy.types as T
 import mathutils
+import numpy as np
 
 logger = logging.getLogger(__name__)
+
+BPY_TO_NUMPY_TYPES = {
+    'FLOAT': np.float,
+    'INT': np.int,
+    'BOOL': np.bool
+}
+
+
+def dump_collection_attr(collection, attribute):
+    """ Dump a collection attribute as a sequence
+
+        !!! warning
+            Only work with int, float and bool attributes
+
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: str
+        :return: numpy byte buffer
+    """
+
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
+
+    size = sum(attr_infos.array_dimensions) if attr_infos.is_array else 1
+
+    dumped_sequence = np.zeros(
+        len(collection)*size,
+        dtype=BPY_TO_NUMPY_TYPES.get(attr_infos.type))
+
+    collection.foreach_get(attribute, dumped_sequence)
+
+    return dumped_sequence.tobytes()
+
+
+def load_collection_attr(collection, attribute, sequence):
+    """ Load a collection attribute from a bytes sequence
+
+        !!! warning
+            Only work with int, float and bool attributes
+
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: str
+        :return: numpy byte buffer
+    """
+
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
+
+    # TODO: check types match
+    collection.foreach_set(
+        attribute, 
+        np.frombuffer(sequence, dtype=BPY_TO_NUMPY_TYPES.get(attr_infos.type)))
+        
 
 def remove_items_from_dict(d, keys, recursive=False):
     copy = dict(d)
@@ -32,7 +91,7 @@ def remove_items_from_dict(d, keys, recursive=False):
             copy[k] = remove_items_from_dict(copy[k], keys, recursive)
     return copy
 
-
+    
 def _is_dictionnary(v):
     return hasattr(v, "items") and callable(v.items)
 
@@ -94,6 +153,7 @@ def _load_filter_default(default):
 
 class Dumper:
     # TODO: support occlude readonly  
+    # TODO: use foreach_set/get on collection compatible properties
     def __init__(self):
         self.verbose = True
         self.depth = 1
@@ -325,7 +385,6 @@ class Loader:
             T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
             T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"]),
             T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
-            # T.VertexGroup: (CONSTRUCTOR_NEW, ["name"], True),
         }
 
         destructors = {

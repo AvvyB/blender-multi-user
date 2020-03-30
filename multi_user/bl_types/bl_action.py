@@ -23,6 +23,8 @@ import numpy as np
 from enum import Enum
 
 from .. import utils
+from ..libs.dump_anything import (
+    Dumper, Loader, dump_collection_attr, load_collection_attr)
 from .bl_datablock import BlDatablock
 
 
@@ -65,7 +67,7 @@ ENUM_KEY_TYPE = [
     'JITTER']
 
 
-#TODO: Automatic enum and numpy dump and loading
+# TODO: Automatic enum and numpy dump and loading
 
 
 def dump_fcurve(fcurve, use_numpy=True):
@@ -84,32 +86,27 @@ def dump_fcurve(fcurve, use_numpy=True):
     }
 
     if use_numpy:
-        keyframes_count = len(fcurve.keyframe_points)
+        points = fcurve.keyframe_points
+        fcurve_data['keyframes_count']  = len(fcurve.keyframe_points)
 
-        k_amplitude = np.empty(keyframes_count, dtype=np.float64)
-        fcurve.keyframe_points.foreach_get('amplitude', k_amplitude)
-        k_co = np.empty(keyframes_count*2, dtype=np.float64)
-        fcurve.keyframe_points.foreach_get('co', k_co)
-        k_back = np.empty(keyframes_count, dtype=np.float64)
-        fcurve.keyframe_points.foreach_get('back', k_back)
-        k_handle_left = np.empty(keyframes_count*2, dtype=np.float64)
-        fcurve.keyframe_points.foreach_get('handle_left', k_handle_left)
-        k_handle_right = np.empty(keyframes_count*2, dtype=np.float64)
-        fcurve.keyframe_points.foreach_get('handle_right', k_handle_right)
+        fcurve_data['amplitude'] = dump_collection_attr(points, 'amplitude')
+        fcurve_data['co'] = dump_collection_attr(points, 'co')
+        fcurve_data['back'] = dump_collection_attr(points, 'back')
+        fcurve_data['handle_left'] = dump_collection_attr(points, 'handle_left')
+        fcurve_data['handle_right'] = dump_collection_attr(points, 'handle_right')
 
-        fcurve_data['amplitude'] = k_amplitude.tobytes()
-        fcurve_data['co'] = k_co.tobytes()
-        fcurve_data['back'] = k_back.tobytes()
-        fcurve_data['handle_left'] = k_handle_left.tobytes()
-        fcurve_data['handle_right'] = k_handle_right.tobytes()
+        fcurve_data['easing'] = [ENUM_EASING_TYPE.index(
+            p.easing) for p in fcurve.keyframe_points]
+        fcurve_data['handle_left_type'] = [ENUM_HANDLE_TYPE.index(
+            p.handle_left_type) for p in fcurve.keyframe_points]
+        fcurve_data['handle_right_type'] = [ENUM_HANDLE_TYPE.index(
+            p.handle_right_type) for p in fcurve.keyframe_points]
+        fcurve_data['type'] = [ENUM_KEY_TYPE.index(
+            p.type) for p in fcurve.keyframe_points]
+        fcurve_data['interpolation'] = [ENUM_INTERPOLATION_TYPE.index(
+            p.interpolation) for p in fcurve.keyframe_points]
 
-        fcurve_data['easing'] = [ENUM_EASING_TYPE.index(p.easing) for p in fcurve.keyframe_points]
-        fcurve_data['handle_left_type'] = [ENUM_HANDLE_TYPE.index(p.handle_left_type) for p in fcurve.keyframe_points]
-        fcurve_data['handle_right_type'] = [ENUM_HANDLE_TYPE.index(p.handle_right_type) for p in fcurve.keyframe_points]
-        fcurve_data['type'] = [ENUM_KEY_TYPE.index(p.type) for p in fcurve.keyframe_points]
-        fcurve_data['interpolation'] = [ENUM_INTERPOLATION_TYPE.index(p.interpolation) for p in fcurve.keyframe_points]
-
-    else: # Legacy method
+    else:  # Legacy method
         dumper = utils.dump_anything.Dumper()
         fcurve_data["keyframe_points"] = []
 
@@ -120,6 +117,7 @@ def dump_fcurve(fcurve, use_numpy=True):
 
     return fcurve_data
 
+
 def load_fcurve(fcurve_data, fcurve):
     """ Load a dumped fcurve
 
@@ -129,31 +127,21 @@ def load_fcurve(fcurve_data, fcurve):
         :type fcurve: bpy.types.FCurve
     """
     use_numpy = fcurve_data.get('use_numpy')
-    
+
     keyframe_points = fcurve.keyframe_points
-    
+
     # Remove all keyframe points
-    for i in range(len(keyframe_points)):   
+    for i in range(len(keyframe_points)):
         keyframe_points.remove(keyframe_points[0], fast=True)
 
     if use_numpy:
-        k_amplitude = np.frombuffer(fcurve_data['amplitude'], dtype=np.float64)
+        keyframe_points.add(fcurve_data['keyframes_count'])
 
-        keyframe_count = len(k_amplitude)
-
-        k_co = np.frombuffer(fcurve_data['co'], dtype=np.float64)
-        k_back = np.frombuffer(fcurve_data['back'], dtype=np.float64)
-        k_amplitude = np.frombuffer(fcurve_data['amplitude'], dtype=np.float64)
-        k_handle_left= np.frombuffer(fcurve_data['handle_left'], dtype=np.float64)
-        k_handle_right= np.frombuffer(fcurve_data['handle_right'], dtype=np.float64)
-
-        keyframe_points.add(keyframe_count)
-
-        keyframe_points.foreach_set('co',k_co)
-        keyframe_points.foreach_set('back',k_back)
-        keyframe_points.foreach_set('amplitude',k_amplitude)
-        keyframe_points.foreach_set('handle_left',k_handle_left)
-        keyframe_points.foreach_set('handle_right',k_handle_right)
+        load_collection_attr(keyframe_points, 'co', fcurve_data['co'])
+        load_collection_attr(keyframe_points, 'back', fcurve_data['back'])
+        load_collection_attr(keyframe_points, 'amplitude', fcurve_data['amplitude'])
+        load_collection_attr(keyframe_points, 'handle_left', fcurve_data['handle_left'])
+        load_collection_attr(keyframe_points, 'handle_right', fcurve_data['handle_right'])
 
         for index, point in enumerate(keyframe_points):
             point.type = ENUM_KEY_TYPE[fcurve_data['type'][index]]
@@ -162,7 +150,7 @@ def load_fcurve(fcurve_data, fcurve):
             point.handle_right_type = ENUM_HANDLE_TYPE[fcurve_data['handle_right_type'][index]]
             point.interpolation = ENUM_INTERPOLATION_TYPE[fcurve_data['interpolation'][index]]
 
-    else: 
+    else:
         # paste dumped keyframes
         for dumped_keyframe_point in fcurve_data["keyframe_points"]:
             if dumped_keyframe_point['type'] == '':
@@ -193,7 +181,6 @@ def load_fcurve(fcurve_data, fcurve):
             ]
 
             fcurve.update()
-        
 
 
 class BlAction(BlDatablock):
@@ -213,9 +200,11 @@ class BlAction(BlDatablock):
             dumped_array_index = dumped_fcurve["dumped_array_index"]
 
             # create fcurve if needed
-            fcurve = target.fcurves.find(dumped_data_path, index=dumped_array_index)
+            fcurve = target.fcurves.find(
+                dumped_data_path, index=dumped_array_index)
             if fcurve is None:
-                fcurve = target.fcurves.new(dumped_data_path, index=dumped_array_index)
+                fcurve = target.fcurves.new(
+                    dumped_data_path, index=dumped_array_index)
 
             load_fcurve(dumped_fcurve, fcurve)
         target.id_root = data['id_root']
@@ -243,6 +232,4 @@ class BlAction(BlDatablock):
         for fcurve in self.pointer.fcurves:
             data["fcurves"].append(dump_fcurve(fcurve, use_numpy=True))
 
-
         return data
-
