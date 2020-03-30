@@ -21,7 +21,7 @@ import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
-from .bl_material import load_links, load_node, dump_links
+from .bl_material import load_links, load_node,dump_node, dump_links
 
 
 class BlWorld(BlDatablock):
@@ -69,40 +69,10 @@ class BlWorld(BlDatablock):
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
             nodes = {}
-            dumper = utils.dump_anything.Dumper()
-            dumper.depth = 2
-            dumper.exclude_filter = [
-                "dimensions",
-                "select",
-                "bl_height_min",
-                "bl_height_max",
-                "bl_width_min",
-                "bl_width_max",
-                "bl_width_default",
-                "hide",
-                "show_options",
-                "show_tetxures",
-                "show_preview",
-                "outputs",
-                "preview",
-                "original",
-                "width_hidden",
-                
-            ]
-
+            
             for node in pointer.node_tree.nodes:
-                nodes[node.name] = dumper.dump(node)
+                nodes[node.name] = dump_node(node)
 
-                if hasattr(node, 'inputs'):
-                    nodes[node.name]['inputs'] = {}
-
-                    for i in node.inputs:
-                        input_dumper = utils.dump_anything.Dumper()
-                        input_dumper.depth = 2
-                        input_dumper.include_filter = ["default_value"]
-                        if hasattr(i, 'default_value'):
-                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(
-                                i)
             data["node_tree"]['nodes'] = nodes
 
             data["node_tree"]['links'] = dump_links(pointer.node_tree.links)

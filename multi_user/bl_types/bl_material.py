@@ -47,6 +47,7 @@ def load_node(node_data, node_tree):
             except:
                 logger.error("{} not supported, skipping".format(input))
 
+
 def load_links(links_data, node_tree):
     """ Load node_tree links from a list
         
@@ -61,6 +62,7 @@ def load_links(links_data, node_tree):
         output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
 
         node_tree.links.new(input_socket, output_socket)
+
 
 def dump_links(links):
     """ Dump node_tree links collection to a list
@@ -81,6 +83,77 @@ def dump_links(links):
         })
 
     return links_data
+
+
+def dump_node(node):
+    """ Dump a single node to a dict
+
+        :arg node: target node
+        :type node: bpy.types.Node
+        :retrun: dict
+    """
+
+    node_dumper = dump_anything.Dumper()
+    node_dumper.depth = 1
+    node_dumper.exclude_filter = [
+        "dimensions",
+        "show_expanded",
+        "name_full",
+        "select",
+        "bl_height_min",
+        "bl_height_max",
+        "bl_height_default",
+        "bl_width_min",
+        "bl_width_max",
+        "type",
+        "bl_icon",
+        "bl_width_default",
+        "bl_static_type",
+        "show_tetxure",
+        "is_active_output",
+        "hide",
+        "show_options",
+        "show_preview",
+        "show_texture",
+        "outputs",
+        "width_hidden"
+    ]
+    
+    dumped_node = node_dumper.dump(node)
+
+    if hasattr(node, 'inputs'):
+        dumped_node['inputs'] = {}
+
+        for i in node.inputs:
+            input_dumper = dump_anything.Dumper()
+            input_dumper.depth = 2
+            input_dumper.include_filter = ["default_value"]
+
+            if hasattr(i, 'default_value'):
+                dumped_node['inputs'][i.name] = input_dumper.dump(
+                    i)
+    if hasattr(node, 'color_ramp'):
+        ramp_dumper = dump_anything.Dumper()
+        ramp_dumper.depth = 4
+        ramp_dumper.include_filter = [
+            'elements',
+            'alpha',
+            'color',
+            'position'
+        ]
+        dumped_node['color_ramp'] = ramp_dumper.dump(node.color_ramp)
+    if hasattr(node, 'mapping'):
+        curve_dumper = dump_anything.Dumper()
+        curve_dumper.depth = 5
+        curve_dumper.include_filter = [
+            'curves',
+            'points',
+            'location'
+        ]
+        dumped_node['mapping'] = curve_dumper.dump(node.mapping)
+    
+    return dumped_node
+
 
 class BlMaterial(BlDatablock):
     bl_id = "materials"
@@ -144,68 +217,11 @@ class BlMaterial(BlDatablock):
 
         if pointer.use_nodes:
             nodes = {}
-            node_dumper = dump_anything.Dumper()
-            node_dumper.depth = 1
-            node_dumper.exclude_filter = [
-                "dimensions",
-                "show_expanded",
-                "name_full",
-                "select",
-                "bl_height_min",
-                "bl_height_max",
-                "bl_width_min",
-                "bl_width_max",
-                "type",
-                "bl_icon",
-                "bl_width_default",
-                "bl_static_type",
-                "show_tetxure",
-                "hide",
-                "show_options",
-                "show_preview",
-                "outputs",
-                "width_hidden"
-            ]
             for node in pointer.node_tree.nodes:
-                
-                nodes[node.name] = node_dumper.dump(node)
-
-                if hasattr(node, 'inputs'):
-                    nodes[node.name]['inputs'] = {}
-
-                    for i in node.inputs:
-                        input_dumper = dump_anything.Dumper()
-                        input_dumper.depth = 2
-                        input_dumper.include_filter = ["default_value"]
-
-                        if hasattr(i, 'default_value'):
-                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(
-                                i)
-                if hasattr(node, 'color_ramp'):
-                    ramp_dumper = dump_anything.Dumper()
-                    ramp_dumper.depth = 4
-                    ramp_dumper.include_filter = [
-                        'elements',
-                        'alpha',
-                        'color',
-                        'position'
-                    ]
-                    nodes[node.name]['color_ramp'] = ramp_dumper.dump(node.color_ramp)
-                if hasattr(node, 'mapping'):
-                    curve_dumper = dump_anything.Dumper()
-                    curve_dumper.depth = 5
-                    curve_dumper.include_filter = [
-                        'curves',
-                        'points',
-                        'location'
-                    ]
-                    nodes[node.name]['mapping'] = curve_dumper.dump(node.mapping)
-            
+                nodes[node.name] = dump_node(node)
             data["node_tree"]['nodes'] = nodes
             
-
             data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
-        
         elif pointer.is_grease_pencil:
             gp_mat_dumper = dump_anything.Dumper()
             gp_mat_dumper.depth = 3
