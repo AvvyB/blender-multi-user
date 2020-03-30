@@ -35,7 +35,7 @@ class BlCamera(BlDatablock):
         return bpy.data.cameras.new(data["name"])
 
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
         dof_settings = data.get('dof')
@@ -44,7 +44,7 @@ class BlCamera(BlDatablock):
         if dof_settings:
             utils.dump_anything.load(target.dof, dof_settings)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         # TODO: background image support

@@ -35,7 +35,7 @@ class BlScene(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         target = self.pointer
         # Load other meshes metadata
         utils.dump_anything.load(target, data)
@@ -67,7 +67,7 @@ class BlScene(BlDatablock):
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
 
@@ -89,7 +89,7 @@ class BlScene(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         # child collections

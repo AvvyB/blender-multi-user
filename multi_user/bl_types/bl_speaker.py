@@ -31,13 +31,13 @@ class BlSpeaker(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'SPEAKER'
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
     def _construct(self, data):
         return bpy.data.speakers.new(data["name"])
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()

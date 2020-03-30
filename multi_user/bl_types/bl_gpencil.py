@@ -221,7 +221,7 @@ class BlGpencil(BlDatablock):
     def _construct(self, data):
         return bpy.data.grease_pencils.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         target.materials.clear()
         if "materials" in data.keys():
             for mat in data['materials']:
@@ -248,7 +248,7 @@ class BlGpencil(BlDatablock):
 
 
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = Dumper()
         dumper.depth = 2
@@ -261,7 +261,7 @@ class BlGpencil(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         for material in self.pointer.materials:

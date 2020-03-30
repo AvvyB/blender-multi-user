@@ -35,7 +35,7 @@ class BlWorld(BlDatablock):
     def _construct(self, data):
         return bpy.data.worlds.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -51,7 +51,7 @@ class BlWorld(BlDatablock):
             
             load_links(data["node_tree"]["links"], target.node_tree)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         world_dumper = utils.dump_anything.Dumper()
@@ -109,7 +109,7 @@ class BlWorld(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         if self.pointer.use_nodes:

@@ -35,7 +35,7 @@ class BlArmature(BlDatablock):
     def _construct(self, data):
         return bpy.data.armatures.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         # Load parent object
         parent_object = utils.find_from_attr(
             'uuid',
@@ -107,7 +107,7 @@ class BlArmature(BlDatablock):
         if 'EDIT' in current_mode:
             bpy.ops.object.mode_set(mode='EDIT')
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         dumper = utils.dump_anything.Dumper()

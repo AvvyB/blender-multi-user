@@ -87,7 +87,7 @@ class BlObject(BlDatablock):
 
         return instance
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         # Load transformation data
         utils.dump_anything.load(target, data)
 
@@ -151,7 +151,7 @@ class BlObject(BlDatablock):
 
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 1
@@ -290,7 +290,7 @@ class BlObject(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
     
         # Avoid Empty case

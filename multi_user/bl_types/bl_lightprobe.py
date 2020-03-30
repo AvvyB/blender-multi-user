@@ -41,10 +41,10 @@ class BlLightprobe(BlDatablock):
         else:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         if bpy.app.version[1] < 83:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")

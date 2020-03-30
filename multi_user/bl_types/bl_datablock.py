@@ -145,11 +145,11 @@ class BlDatablock(ReplicatedDatablock):
         if self.is_library:
             data.update(dump_anything.dump(pointer))
         else:
-            data.update(self.dump_implementation(data, pointer=pointer))
+            data.update(self._dump_implementation(data, pointer=pointer))
 
         return data
 
-    def dump_implementation(self, data, target):
+    def _dump_implementation(self, data, target):
         raise NotImplementedError
 
     def _load(self, data, target):
@@ -171,9 +171,9 @@ class BlDatablock(ReplicatedDatablock):
         if self.is_library:
             return
         else:
-            self.load_implementation(data, target)
+            self._load_implementation(data, target)
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         raise NotImplementedError
 
     def resolve_deps(self):
@@ -183,11 +183,11 @@ class BlDatablock(ReplicatedDatablock):
             dependencies.append(self.pointer.animation_data.action)
 
         if not self.is_library:
-            dependencies.extend(self.resolve_deps_implementation())
+            dependencies.extend(self._resolve_deps_implementation())
 
         return dependencies
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         return []
 
     def is_valid(self):

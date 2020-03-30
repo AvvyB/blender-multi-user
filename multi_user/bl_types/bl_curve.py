@@ -36,7 +36,7 @@ class BlCurve(BlDatablock):
     def _construct(self, data):
         return bpy.data.curves.new(data["name"], data["type"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         dump_anything.load(target, data)
 
         target.splines.clear()
@@ -61,7 +61,7 @@ class BlCurve(BlDatablock):
                     dump_anything.load(
                         new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = dump_anything.Dumper()
 

@@ -42,7 +42,7 @@ class BlMesh(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         if not target or not target.is_editmode:
             loader = Loader()
             loader.load(target, data)
@@ -97,7 +97,7 @@ class BlMesh(BlDatablock):
             target.validate()
             target.update()
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         mesh = pointer
@@ -162,7 +162,7 @@ class BlMesh(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         for material in self.pointer.materials:

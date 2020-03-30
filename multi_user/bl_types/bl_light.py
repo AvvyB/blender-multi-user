@@ -34,10 +34,10 @@ class BlLight(BlDatablock):
     def _construct(self, data):
         return bpy.data.lights.new(data["name"], data["type"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         utils.dump_anything.load(target, data)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         dumper = utils.dump_anything.Dumper()
         dumper.depth = 3

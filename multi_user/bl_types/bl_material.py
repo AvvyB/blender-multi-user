@@ -93,7 +93,7 @@ class BlMaterial(BlDatablock):
     def _construct(self, data):
         return bpy.data.materials.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         target.name = data['name']
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
@@ -120,7 +120,7 @@ class BlMaterial(BlDatablock):
 
             load_links(data["node_tree"]["links"], target.node_tree)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         mat_dumper = dump_anything.Dumper()
         mat_dumper.depth = 2
@@ -235,7 +235,7 @@ class BlMaterial(BlDatablock):
             data['grease_pencil'] = gp_mat_dumper.dump(pointer.grease_pencil)
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         # TODO: resolve node group deps
         deps = []
 
