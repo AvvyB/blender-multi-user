@@ -80,7 +80,6 @@ class BlMetaball(BlDatablock):
         target.elements.clear()
 
         for mtype in data["elements"]['type']:
-            print(mtype)
             new_element = target.elements.new()
 
         load_metaball_elements(data['elements'], target.elements)

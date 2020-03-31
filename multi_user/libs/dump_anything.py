@@ -27,8 +27,7 @@ logger = logging.getLogger(__name__)
 BPY_TO_NUMPY_TYPES = {
     'FLOAT': np.float,
     'INT': np.int,
-    'BOOL': np.bool
-}
+    'BOOL': np.bool}
 
 PRIMITIVE_TYPES = ['FLOAT', 'INT', 'BOOLEAN']
 
@@ -84,8 +83,7 @@ def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: lis
     properties = collection[0].bl_rna.properties
 
     if attributes is None:
-        attributes = [
-            p.identifier for p in properties if p.type in NP_COMPATIBLE_TYPES and not p.is_readonly]
+        attributes = [p.identifier for p in properties if p.type in NP_COMPATIBLE_TYPES and not p.is_readonly]
 
     for attr in attributes:
         attr_type = properties[attr].type
@@ -96,8 +94,7 @@ def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: lis
         elif attr_type == 'ENUM':
             dumped_collection[attr] = np_dump_collection_enum(collection, attr)
         else:
-            logger.error(
-                f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
+            logger.error(f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
 
     return dumped_collection
 
