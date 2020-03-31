@@ -30,9 +30,15 @@ BPY_TO_NUMPY_TYPES = {
     'BOOL': np.bool
 }
 
-def load_collection_attr_from_dict(dikt, collection, attributes):
+PRIMITIVE_TYPES = ['FLOAT', 'INT', 'BOOLEAN']
+
+NP_COMPATIBLE_TYPES = ['FLOAT', 'INT', 'BOOLEAN', 'ENUM']
+
+def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, attributes: list = None):
     """ Dump a list of attributes from the sane collection
-        to the target dikt
+        to the target dikt. 
+        
+        Without attribute given, it try to load all entry from dikt.
 
         :arg dikt: target dict
         :type dikt: dict
@@ -41,24 +47,59 @@ def load_collection_attr_from_dict(dikt, collection, attributes):
         :arg attributes: list of attributes name
         :type attributes: list
     """
-    for attr in attributes:
-        load_collection_attr(collection, attr, dikt[attr])
+    if attributes is None:
+        attributes = dikt.keys()
 
-def dump_collection_attr_to_dict(dikt, collection, attributes):
+    for attr in attributes:
+        attr_type = collection[0].bl_rna.properties.get(attr).type
+
+        if attr_type in PRIMITIVE_TYPES:
+            np_load_collection_primitives(collection, attr, dikt[attr])
+        elif attr_type == 'ENUM':
+            np_load_collection_enum(collection, attr, dikt[attr])
+        else:
+            logger.error(f"{attr} of type {attr_type} not supported.")
+        
+
+def np_dump_collection(collection, attributes=None):
     """ Dump a list of attributes from the sane collection
         to the target dikt
 
-        :arg dikt: target dict
-        :type dikt: dict
+        Without attributes given, it try to dump all properties 
+        that matches NP_COMPATIBLE_TYPES.
+
         :arg collection: source collection
         :type collection: bpy.types.CollectionProperty
         :arg attributes: list of attributes name
         :type attributes: list
+        :retrun: dict
     """
-    for attr in attributes:
-        dikt[attr] = dump_collection_attr(collection, attr)
+    dumped_collection = {}
 
-def dump_collection_attr(collection, attribute):
+    if len(collection) == 0:
+        return dumped_collection
+    
+    # TODO: find a way without getting the first item
+    properties = collection[0].bl_rna.properties
+
+    if attributes is None:
+        attributes =  [p.identifier for p in properties if p.type in NP_COMPATIBLE_TYPES and not p.is_readonly]
+    
+    logger.error(attributes)
+
+    for attr in attributes:
+        attr_type = properties[attr].type
+
+        if attr_type in PRIMITIVE_TYPES:
+            dumped_collection[attr] = np_dump_collection_primitive(collection, attr)
+        elif attr_type == 'ENUM':
+            dumped_collection[attr] = np_dump_collection_enum(collection, attr)
+        else:
+            logger.error(f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
+    
+    return dumped_collection
+
+def np_dump_collection_primitive(collection, attribute):
     """ Dump a collection attribute as a sequence
 
         !!! warning
@@ -85,8 +126,35 @@ def dump_collection_attr(collection, attribute):
 
     return dumped_sequence.tobytes()
 
+def np_dump_collection_enum(collection, attribute):
+    """ Dump a collection enum attribute to an index list
 
-def load_collection_attr(collection, attribute, sequence):
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: bpy.types.EnumProperty
+        :return: list of int
+    """
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+    
+    assert(attr_infos.type == 'ENUM')
+
+    enum_items = attr_infos.enum_items
+    return [enum_items[getattr(i, attribute)].value for i in collection]
+
+
+def np_load_collection_enum(collection, attribute, sequence):
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type == 'ENUM')
+
+    enum_items = attr_infos.enum_items
+    enum_idx = [i.value for i in enum_items]
+    for index, item in enumerate(sequence):
+        setattr(collection[index], attribute, enum_items[enum_idx.index(item)].identifier)
+
+        
+def np_load_collection_primitives(collection, attribute, sequence):
     """ Load a collection attribute from a bytes sequence
 
         !!! warning
@@ -103,9 +171,8 @@ def load_collection_attr(collection, attribute, sequence):
 
     assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
 
-    # TODO: check types match
     collection.foreach_set(
-        attribute, 
+        attribute,
         np.frombuffer(sequence, dtype=BPY_TO_NUMPY_TYPES.get(attr_infos.type)))
         
 

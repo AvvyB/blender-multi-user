@@ -21,21 +21,13 @@ import mathutils
 
 from .. import utils
 from ..libs.dump_anything import (
-    Dumper, Loader, dump_collection_attr, load_collection_attr,
-    dump_collection_attr_to_dict, load_collection_attr_from_dict)
+    Dumper, Loader, np_dump_collection_primitive, np_load_collection_primitives,
+    np_dump_collection, np_load_collection)
 
 from .bl_datablock import BlDatablock
 
-ENUM_METABALL_TYPE = [
-    'BALL',
-    'CAPSULE',
-    'PLANE',
-    'ELLIPSOID',
-    'CUBE'
-]
 
-
-ELEMENTS_FAST_ATTR = [
+ELEMENT = [
     'co',
     'hide',
     'radius',
@@ -43,7 +35,8 @@ ELEMENTS_FAST_ATTR = [
     'size_x',
     'size_y',
     'size_z',
-    'stiffness'
+    'stiffness',
+    'type'
 ]
 
 
@@ -55,11 +48,7 @@ def dump_metaball_elements(elements):
         :return: dict
     """
 
-    dumped_elements = {}
-
-    dump_collection_attr_to_dict(dumped_elements, elements, ELEMENTS_FAST_ATTR)
-
-    dumped_elements['type'] = [ENUM_METABALL_TYPE.index(e.type) for e in elements]
+    dumped_elements = np_dump_collection(elements, ELEMENT)
 
     return dumped_elements
 
@@ -71,7 +60,7 @@ def load_metaball_elements(elements_data, elements):
         :type bpy.types.MetaElement
         :return: dict
     """
-    load_collection_attr_from_dict(elements_data, elements, ELEMENTS_FAST_ATTR)
+    np_load_collection(elements_data, elements, ELEMENT)
 
 
 class BlMetaball(BlDatablock):
@@ -90,9 +79,9 @@ class BlMetaball(BlDatablock):
 
         target.elements.clear()
 
-        for element_type in data["elements"]['type']:
-            new_element = target.elements.new(
-                type=ENUM_METABALL_TYPE[element_type])
+        for mtype in data["elements"]['type']:
+            print(mtype)
+            new_element = target.elements.new()
 
         load_metaball_elements(data['elements'], target.elements)
 

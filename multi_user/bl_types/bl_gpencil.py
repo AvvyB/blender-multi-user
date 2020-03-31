@@ -22,12 +22,24 @@ import numpy as np
 
 from ..libs.dump_anything import  (Dumper, 
                                     Loader,
-                                    dump_collection_attr,
-                                    load_collection_attr)
+                                    np_dump_collection,
+                                    np_load_collection)
 from .bl_datablock import BlDatablock
 
 # GPencil data api is structured as it follow: 
 # GP-Object --> GP-Layers --> GP-Frames --> GP-Strokes --> GP-Stroke-Points
+
+STROKE_POINT = [
+    'co',
+    'pressure',
+    'strength',
+    'uv_factor',
+    'uv_rotation'
+
+]
+
+if bpy.app.version[1] >= 83:
+    STROKE_POINT.append('vertex_color')
 
 def dump_stroke(stroke):
     """ Dump a grease pencil stroke to a dict
@@ -59,12 +71,7 @@ def dump_stroke(stroke):
     # Stoke points
     p_count = len(stroke.points)
     dumped_stroke['p_count'] = p_count
-    dumped_stroke['p_co'] = dump_collection_attr(stroke.points,'co')
-    dumped_stroke['p_pressure'] = dump_collection_attr(stroke.points,'pressure')
-    dumped_stroke['p_strength'] = dump_collection_attr(stroke.points,'strength')
-
-    if bpy.app.version[1] >= 83: # new in blender 2.83
-        dumped_stroke['p_vertex_color'] = dump_collection_attr(stroke.points,'vertex_color')
+    dumped_stroke['points'] = np_dump_collection(stroke.points, STROKE_POINT)
 
     # TODO: uv_factor, uv_rotation
 
@@ -86,13 +93,7 @@ def load_stroke(stroke_data, stroke):
 
     stroke.points.add(stroke_data["p_count"])
 
-    load_collection_attr(stroke.points, 'co',stroke_data["p_co"])
-    load_collection_attr(stroke.points, 'pressure',stroke_data["p_pressure"])
-    load_collection_attr(stroke.points, 'strength',stroke_data["p_strength"])
-
-    if "p_vertex_color" in stroke_data:
-        load_collection_attr(stroke.points, 'vertex_color',stroke_data["p_vertex_color"])    
-
+    np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
 
 def dump_frame(frame):
     """ Dump a grease pencil frame to a dict
