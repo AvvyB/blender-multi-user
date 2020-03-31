@@ -66,33 +66,37 @@ class BlMesh(BlDatablock):
             load_collection_attr(target.vertices, 'co', data["verts_co"])
             load_collection_attr(target.edges, "vertices", data["egdes_vert"])
             if data['use_customdata_edge_crease']:
-                load_collection_attr(
-                    target.edges, "crease", data["edges_crease"])
+                load_collection_attr(target.edges, "crease", data["edges_crease"])
 
             if data['use_customdata_edge_bevel']:
-                load_collection_attr(
-                    target.edges, "bevel_weight", data["edges_bevel"])
+                load_collection_attr(target.edges, "bevel_weight", data["edges_bevel"])
 
-            load_collection_attr(
-                target.loops, 'vertex_index', data["loop_vertex_index"])
+            load_collection_attr(target.loops, 'vertex_index', data["loop_vertex_index"])
             load_collection_attr(target.loops, 'normal', data["loop_normal"])
-            load_collection_attr(
-                target.polygons, 'loop_total', data["poly_loop_total"])
-            load_collection_attr(
-                target.polygons, 'loop_start', data["poly_loop_start"])
-            load_collection_attr(
-                target.polygons, 'use_smooth', data["poly_smooth"])
-            load_collection_attr(
-                target.polygons, 'material_index', data["poly_mat"])
+            load_collection_attr(target.polygons, 'loop_total', data["poly_loop_total"])
+            load_collection_attr(target.polygons, 'loop_start', data["poly_loop_start"])
+            load_collection_attr(target.polygons, 'use_smooth', data["poly_smooth"])
+            load_collection_attr(target.polygons, 'material_index', data["poly_mat"])
 
             # UV Layers
             for layer in data['uv_layers']:
                 if layer not in target.uv_layers:
                     target.uv_layers.new(name=layer)
 
-                uv_buffer = np.frombuffer(data["uv_layers"][layer]['data'])
+                load_collection_attr(
+                    target.uv_layers[layer].data, 
+                    'uv', 
+                    data["uv_layers"][layer]['data'])
+            
+            # Vertex color
+            for color_layer in data['vertex_colors']:
+                if color_layer not in target.vertex_colors:
+                    target.vertex_colors.new(name=color_layer)
 
-                target.uv_layers[layer].data.foreach_set('uv', uv_buffer)
+                load_collection_attr(
+                    target.vertex_colors[color_layer].data, 
+                    'color', 
+                    data["vertex_colors"][color_layer]['data'])
 
             target.validate()
             target.update()
@@ -131,26 +135,27 @@ class BlMesh(BlDatablock):
 
         # POLYGONS
         data["poly_count"] = len(mesh.polygons)
-        data["poly_mat"] = dump_collection_attr(
-            mesh.polygons, 'material_index')
-        data["poly_loop_start"] = dump_collection_attr(
-            mesh.polygons, 'loop_start')
-        data["poly_loop_total"] = dump_collection_attr(
-            mesh.polygons, 'loop_total')
+        data["poly_mat"] = dump_collection_attr(mesh.polygons, 'material_index')
+        data["poly_loop_start"] = dump_collection_attr(mesh.polygons, 'loop_start')
+        data["poly_loop_total"] = dump_collection_attr(mesh.polygons, 'loop_total')
         data["poly_smooth"] = dump_collection_attr(mesh.polygons, 'use_smooth')
 
         # LOOPS
         data["loop_count"] = len(mesh.loops)
         data["loop_normal"] = dump_collection_attr(mesh.loops, 'normal')
-        data["loop_vertex_index"] = dump_collection_attr(
-            mesh.loops, 'vertex_index')
+        data["loop_vertex_index"] = dump_collection_attr(mesh.loops, 'vertex_index')
 
         # UV Layers
         data['uv_layers'] = {}
         for layer in mesh.uv_layers:
             data['uv_layers'][layer.name] = {}
-            data['uv_layers'][layer.name]['data'] = dump_collection_attr(
-                layer.data, 'uv')
+            data['uv_layers'][layer.name]['data'] = dump_collection_attr(layer.data, 'uv')
+
+        # Vertex color
+        data['vertex_colors'] = {}
+        for color_map in mesh.vertex_colors:
+            data['vertex_colors'][color_map.name] = {}
+            data['vertex_colors'][color_map.name]['data'] = dump_collection_attr(color_map.data, 'color')
 
         # Fix material index
         m_list = []
