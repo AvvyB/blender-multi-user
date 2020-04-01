@@ -23,7 +23,7 @@ import numpy as np
 from enum import Enum
 
 from .. import utils
-from ..libs.dump_anything import (
+from .dump_anything import (
     Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
 from .bl_datablock import BlDatablock
 

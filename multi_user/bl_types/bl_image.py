@@ -21,7 +21,7 @@ import mathutils
 import os
 
 from .. import utils
-from ..libs.dump_anything import Loader, Dumper
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 def dump_image(image):

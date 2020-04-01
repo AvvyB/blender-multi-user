@@ -22,7 +22,7 @@ import mathutils
 import logging
 import numpy as np
 
-from ..libs.dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
+from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
 from ..libs.replication.replication.constants import DIFF_BINARY
 from .bl_datablock import BlDatablock
 

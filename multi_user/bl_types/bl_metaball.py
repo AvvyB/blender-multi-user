@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from ..libs.dump_anything import (
+from .dump_anything import (
     Dumper, Loader, np_dump_collection_primitive, np_load_collection_primitives,
     np_dump_collection, np_load_collection)
 

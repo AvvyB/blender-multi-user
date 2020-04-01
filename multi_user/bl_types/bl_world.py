@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from ..libs.dump_anything import Loader, Dumper
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 from .bl_material import load_links, load_node, dump_node, dump_links
 

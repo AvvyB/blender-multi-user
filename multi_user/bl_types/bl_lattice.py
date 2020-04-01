@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from ..libs.dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
+from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from .bl_datablock import BlDatablock
 
 POINT = ['co', 'weight_softbody', 'co_deform']

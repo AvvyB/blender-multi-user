@@ -20,7 +20,7 @@ import bpy
 import mathutils
 import numpy as np
 
-from ..libs.dump_anything import  (Dumper, 
+from .dump_anything import  (Dumper, 
                                     Loader,
                                     np_dump_collection,
                                     np_load_collection)

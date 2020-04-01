@@ -20,7 +20,7 @@ import bpy
 import mathutils
 
 from .. import utils
-from ..libs.dump_anything import Loader, Dumper
+from .dump_anything import Loader, Dumper
 from ..libs.replication.replication.data import ReplicatedDatablock
 from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
 

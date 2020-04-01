@@ -23,7 +23,7 @@ import logging
 
 from .. import utils
 from .bl_datablock import BlDatablock
-from ..libs.dump_anything import (Dumper, Loader,
+from .dump_anything import (Dumper, Loader,
                                   np_load_collection,
                                   np_dump_collection)
 

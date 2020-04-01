@@ -21,7 +21,7 @@ import mathutils
 import logging
 
 from .. import utils
-from ..libs.dump_anything import Loader, Dumper
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
