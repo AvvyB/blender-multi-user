@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from .. import utils
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 class BlScene(BlDatablock):
@@ -38,7 +38,8 @@ class BlScene(BlDatablock):
     def _load_implementation(self, data, target):
         target = self.pointer
         # Load other meshes metadata
-        utils.dump_anything.load(target, data)
+        loader = Loader()
+        loader.load(target, data)
 
         # Load master collection
         for object in data["collection"]["objects"]:
@@ -71,7 +72,7 @@ class BlScene(BlDatablock):
         assert(pointer)
         data = {}
 
-        scene_dumper = utils.dump_anything.Dumper()
+        scene_dumper = Dumper()
         scene_dumper.depth = 1
         scene_dumper.include_filter = [
             'name',

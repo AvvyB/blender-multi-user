@@ -24,7 +24,7 @@ from enum import Enum
 
 from .. import utils
 from ..libs.dump_anything import (
-    Dumper, Loader, np_dump_collection, np_load_collection)
+    Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
 from .bl_datablock import BlDatablock
 
 
@@ -40,8 +40,6 @@ KEYFRAME = [
     'type',
     'interpolation',
 ]
-
-# TODO: Automatic enum and numpy dump and loading
 
 
 def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy:bool =True) -> dict:
@@ -65,7 +63,7 @@ def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy:bool =True) -> dict:
         fcurve_data['keyframe_points'] = np_dump_collection(points, KEYFRAME)
 
     else:  # Legacy method
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         fcurve_data["keyframe_points"] = []
 
         for k in fcurve.keyframe_points:
@@ -109,12 +107,13 @@ def load_fcurve(fcurve_data, fcurve):
             )
 
             keycache = copy.copy(dumped_keyframe_point)
-            keycache = utils.dump_anything.remove_items_from_dict(
+            keycache = remove_items_from_dict(
                 keycache,
                 ["co", "handle_left", "handle_right", 'type']
             )
 
-            utils.dump_anything.load(new_kf, keycache)
+            loader = Loader()
+            loader.load(new_kf, keycache)
 
             new_kf.type = dumped_keyframe_point['type']
             new_kf.handle_left = [
@@ -157,7 +156,7 @@ class BlAction(BlDatablock):
 
     def _dump(self, pointer=None):
         assert(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.exclude_filter = [
             'name_full',
             'original',

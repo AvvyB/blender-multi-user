@@ -48,7 +48,6 @@ class BlCollection(BlDatablock):
 
     def _load_implementation(self, data, target):
         # Load other meshes metadata
-        # dump_anything.load(target, data)
         target.name = data["name"]
         
         # link objects

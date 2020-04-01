@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from .. import utils
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
@@ -35,11 +35,12 @@ class BlLight(BlDatablock):
         return bpy.data.lights.new(data["name"], data["type"])
 
     def _load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+        loader = Loader()
+        loader.load(target, data)
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 3
         dumper.include_filter = [
             "name",

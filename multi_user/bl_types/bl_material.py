@@ -21,7 +21,7 @@ import mathutils
 import logging
 
 from .. import utils
-from ..libs import dump_anything
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,10 @@ def load_node(node_data, node_tree):
         :arg node_tree: target node_tree
         :type node_tree: bpy.types.NodeTree
     """
+    loader = Loader()
     target_node = node_tree.nodes.new(type=node_data["bl_idname"])
 
-    dump_anything.load(target_node, node_data)    
+    loader.load(target_node, node_data)    
 
     
 
@@ -93,7 +94,7 @@ def dump_node(node):
         :retrun: dict
     """
 
-    node_dumper = dump_anything.Dumper()
+    node_dumper = Dumper()
     node_dumper.depth = 1
     node_dumper.exclude_filter = [
         "dimensions",
@@ -125,7 +126,7 @@ def dump_node(node):
         dumped_node['inputs'] = {}
 
         for i in node.inputs:
-            input_dumper = dump_anything.Dumper()
+            input_dumper = Dumper()
             input_dumper.depth = 2
             input_dumper.include_filter = ["default_value"]
 
@@ -133,7 +134,7 @@ def dump_node(node):
                 dumped_node['inputs'][i.name] = input_dumper.dump(
                     i)
     if hasattr(node, 'color_ramp'):
-        ramp_dumper = dump_anything.Dumper()
+        ramp_dumper = Dumper()
         ramp_dumper.depth = 4
         ramp_dumper.include_filter = [
             'elements',
@@ -143,7 +144,7 @@ def dump_node(node):
         ]
         dumped_node['color_ramp'] = ramp_dumper.dump(node.color_ramp)
     if hasattr(node, 'mapping'):
-        curve_dumper = dump_anything.Dumper()
+        curve_dumper = Dumper()
         curve_dumper.depth = 5
         curve_dumper.include_filter = [
             'curves',
@@ -167,12 +168,13 @@ class BlMaterial(BlDatablock):
         return bpy.data.materials.new(data["name"])
 
     def _load_implementation(self, data, target):
+        loader = Loader()
         target.name = data['name']
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
 
-            dump_anything.load(
+            loader.load(
                 target.grease_pencil, data['grease_pencil'])
 
 
@@ -182,7 +184,7 @@ class BlMaterial(BlDatablock):
 
             target.node_tree.nodes.clear()
 
-            dump_anything.load(target,data)
+            loader.load(target,data)
             
             # Load nodes
             for node in data["node_tree"]["nodes"]:
@@ -195,7 +197,7 @@ class BlMaterial(BlDatablock):
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
-        mat_dumper = dump_anything.Dumper()
+        mat_dumper = Dumper()
         mat_dumper.depth = 2
         mat_dumper.exclude_filter = [
             "is_embed_data",
@@ -223,7 +225,7 @@ class BlMaterial(BlDatablock):
             
             data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
         elif pointer.is_grease_pencil:
-            gp_mat_dumper = dump_anything.Dumper()
+            gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
             gp_mat_dumper.include_filter = [

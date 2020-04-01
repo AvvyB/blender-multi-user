@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from .. import utils
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
@@ -36,20 +36,21 @@ class BlCamera(BlDatablock):
 
 
     def _load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+        loader = Loader()
+        loader.load(target, data)
 
         dof_settings = data.get('dof')
         
         # DOF settings
         if dof_settings:
-            utils.dump_anything.load(target.dof, dof_settings)
+            loader.load(target.dof, dof_settings)
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         # TODO: background image support
         
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
             "name",

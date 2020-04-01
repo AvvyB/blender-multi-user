@@ -19,8 +19,9 @@
 import bpy
 import mathutils
 
-from .. import utils
-from .. import presence, operators
+
+from ..libs.dump_anything import Loader, Dumper
+from .. import presence, operators, utils
 from .bl_datablock import BlDatablock
 
 
@@ -97,7 +98,8 @@ class BlArmature(BlDatablock):
                                                           [bone]['parent']]
                 new_bone.use_connect = bone_data['use_connect']
 
-            utils.dump_anything.load(new_bone, bone_data)
+            loader = Loader()
+            loader.load(new_bone, bone_data)
             
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -110,7 +112,7 @@ class BlArmature(BlDatablock):
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 4
         dumper.include_filter = [
             'bones',

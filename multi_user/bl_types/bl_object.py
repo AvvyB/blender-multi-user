@@ -20,7 +20,7 @@ import bpy
 import mathutils
 import logging
 
-from .. import utils
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 def load_pose(target_bone, data):
     target_bone.rotation_mode = data['rotation_mode']
-
-    utils.dump_anything.load(target_bone, data)
+    loader = Loader()
+    loader.load(target_bone, data)
 
 
 class BlObject(BlDatablock):
@@ -89,7 +89,8 @@ class BlObject(BlDatablock):
 
     def _load_implementation(self, data, target):
         # Load transformation data
-        utils.dump_anything.load(target, data)
+        loader = Loader()
+        loader.load(target, data)
 
         # Pose
         if 'pose' in data:
@@ -103,7 +104,7 @@ class BlObject(BlDatablock):
                 if not bg_target:
                     bg_target = target.pose.bone_groups.new(name=bg_name)
 
-                utils.dump_anything.load(bg_target, bg_data)
+                loader.load(bg_target, bg_data)
                 # target.pose.bone_groups.get
 
             # Bones
@@ -112,7 +113,7 @@ class BlObject(BlDatablock):
                 bone_data = data['pose']['bones'].get(bone)
 
                 if 'constraints' in bone_data.keys():
-                    utils.dump_anything.load(target_bone, bone_data['constraints'])
+                    loader.load(target_bone, bone_data['constraints'])
 
 
                 load_pose(target_bone, bone_data)
@@ -140,7 +141,7 @@ class BlObject(BlDatablock):
                 key_data = data['shape_keys']['key_blocks'][key_block]
                 target.shape_key_add(name=key_block)
 
-                utils.dump_anything.load(
+                loader.load(
                     target.data.shape_keys.key_blocks[key_block], key_data)
                 for vert in key_data['data']:
                     target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
@@ -153,7 +154,7 @@ class BlObject(BlDatablock):
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             "name",
@@ -263,7 +264,7 @@ class BlObject(BlDatablock):
         #  SHAPE KEYS
         object_data = pointer.data
         if hasattr(object_data, 'shape_keys') and object_data.shape_keys:
-            dumper = utils.dump_anything.Dumper()
+            dumper = Dumper()
             dumper.depth = 2
             dumper.include_filter = [
                 'reference_key',

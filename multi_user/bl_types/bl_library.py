@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from ..libs import dump_anything
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
@@ -40,6 +40,7 @@ class BlLibrary(BlDatablock):
 
     def dump(self, pointer=None):
         assert(pointer)
-        return dump_anything.dump(pointer, 1)
+        dumper = Dumper()
+        return dumper.dump(pointer, 1)
 
 

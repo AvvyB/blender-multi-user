@@ -19,9 +19,9 @@
 import bpy
 import mathutils
 
-from .. import utils
+from ..libs.dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from .bl_material import load_links, load_node,dump_node, dump_links
+from .bl_material import load_links, load_node, dump_node, dump_links
 
 
 class BlWorld(BlDatablock):
@@ -54,7 +54,7 @@ class BlWorld(BlDatablock):
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        world_dumper = utils.dump_anything.Dumper()
+        world_dumper = Dumper()
         world_dumper.depth = 2
         world_dumper.exclude_filter = [
             "preview",

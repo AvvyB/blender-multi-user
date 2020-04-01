@@ -19,7 +19,6 @@
 import bpy
 import mathutils
 
-from .. import utils
 from ..libs.dump_anything import (
     Dumper, Loader, np_dump_collection_primitive, np_load_collection_primitives,
     np_dump_collection, np_load_collection)
@@ -75,7 +74,8 @@ class BlMetaball(BlDatablock):
         return bpy.data.metaballs.new(data["name"])
 
     def _load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+        loader = Loader()
+        loader.load(target, data)
 
         target.elements.clear()
 
@@ -86,7 +86,7 @@ class BlMetaball(BlDatablock):
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 1
         dumper.exclude_filter = [
             "is_editmode",
