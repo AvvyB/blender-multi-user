@@ -112,6 +112,18 @@ class BlScene(BlDatablock):
         if pref.sync_flags.sync_render_settings:
             scene_dumper.exclude_filter = [
                 'gi_cache_info',
+                'feature_set',
+                'debug_use_hair_bvh',
+                'aa_samples',
+                'blur_glossy',
+                'glossy_bounces',
+                'device',
+                'max_bounces',
+                'preview_aa_samples',
+                'preview_samples',
+                'sample_clamp_indirect',
+                'samples',
+                'volume_bounces'
             ]
             data['eevee'] = scene_dumper.dump(pointer.eevee)
             data['cycles'] = scene_dumper.dump(pointer.cycles)        
