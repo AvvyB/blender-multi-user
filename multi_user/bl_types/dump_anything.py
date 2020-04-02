@@ -544,22 +544,27 @@ class Loader:
 
     def _load_curve_mapping(self, element, dump):
         mapping = element.read()
-        # cleanup existing curve
-        for curve in mapping.curves:
-            for idx in range(len(curve.points)):
-                if idx == 0:
+        curves = mapping.curves
+
+        for curve_index, curve in dump['curves'].items():
+            dst_curve = curves[curve_index]
+
+            # cleanup existing curve
+            for idx in range(len(dst_curve.points), 0, -1):
+                try:
+                    dst_curve.points.remove(dst_curve.points[0])
+                except Exception:
                     break
 
-                curve.points.remove(curve.points[1])
-        for curve_index, curve in dump['curves'].items():
+            default_point_count = len(dst_curve.points)
+            
             for point_idx, point in curve['points'].items():
                 pos = point['location']
-
-                if len(mapping.curves[curve_index].points) == 1:
-                    mapping.curves[curve_index].points[int(
-                        point_idx)].location = pos
+                
+                if point_idx < default_point_count:
+                    dst_curve.points[int(point_idx)].location = pos
                 else:
-                    mapping.curves[curve_index].points.new(pos[0], pos[1])
+                    dst_curve.points.new(pos[0], pos[1])
 
     def _load_pointer(self, pointer, dump):
         rna_property_type = pointer.bl_rna_property.fixed_type

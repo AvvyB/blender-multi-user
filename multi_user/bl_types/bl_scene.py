@@ -68,6 +68,16 @@ class BlScene(BlDatablock):
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
+        if 'eevee' in data.keys():
+            loader.load(target.eevee, data['eevee'])
+        
+        if 'cycles' in data.keys():
+            loader.load(target.eevee, data['cycles'])
+
+        if 'view_settings' in data.keys():
+            loader.load(target.view_settings, data['view_settings'])
+            target.view_settings.curve_mapping.update()
+
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
@@ -79,15 +89,33 @@ class BlScene(BlDatablock):
             'world',
             'id',
             'camera',
-            'grease_pencil'
+            'grease_pencil',
         ]
         data = scene_dumper.dump(pointer)
 
         scene_dumper.depth = 3
+
         scene_dumper.include_filter = ['children','objects','name']
         data['collection'] = scene_dumper.dump(pointer.collection)
-            
-
+        
+        scene_dumper.depth = 1
+        scene_dumper.include_filter = None
+        
+        data['eevee'] = scene_dumper.dump(pointer.eevee)
+        data['cycles'] = scene_dumper.dump(pointer.cycles)        
+        data['view_settings'] = scene_dumper.dump(pointer.view_settings)
+        data['view_settings']['curve_mapping'] = scene_dumper.dump(pointer.view_settings.curve_mapping)
+        
+        if pointer.view_settings.use_curve_mapping:
+            scene_dumper.depth = 5
+            scene_dumper.include_filter = [
+                'curves',
+                'points',
+                'location'
+            ]
+            data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(pointer.view_settings.curve_mapping.curves)
+        
+        
         return data
 
     def _resolve_deps_implementation(self):
