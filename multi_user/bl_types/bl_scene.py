@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 class BlScene(BlDatablock):
@@ -35,10 +35,11 @@ class BlScene(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         target = self.pointer
         # Load other meshes metadata
-        utils.dump_anything.load(target, data)
+        loader = Loader()
+        loader.load(target, data)
 
         # Load master collection
         for object in data["collection"]["objects"]:
@@ -67,11 +68,11 @@ class BlScene(BlDatablock):
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
 
-        scene_dumper = utils.dump_anything.Dumper()
+        scene_dumper = Dumper()
         scene_dumper.depth = 1
         scene_dumper.include_filter = [
             'name',
@@ -89,7 +90,7 @@ class BlScene(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         # child collections

@@ -21,7 +21,7 @@ import mathutils
 import logging
 
 from .. import utils
-from ..libs import dump_anything
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,10 @@ def load_node(node_data, node_tree):
         :arg node_tree: target node_tree
         :type node_tree: bpy.types.NodeTree
     """
+    loader = Loader()
     target_node = node_tree.nodes.new(type=node_data["bl_idname"])
 
-    dump_anything.load(target_node, node_data)    
+    loader.load(target_node, node_data)    
 
     
 
@@ -46,6 +47,7 @@ def load_node(node_data, node_tree):
                 target_node.inputs[input].default_value = node_data["inputs"][input]["default_value"]
             except:
                 logger.error("{} not supported, skipping".format(input))
+
 
 def load_links(links_data, node_tree):
     """ Load node_tree links from a list
@@ -61,6 +63,7 @@ def load_links(links_data, node_tree):
         output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
 
         node_tree.links.new(input_socket, output_socket)
+
 
 def dump_links(links):
     """ Dump node_tree links collection to a list
@@ -82,34 +85,106 @@ def dump_links(links):
 
     return links_data
 
+
+def dump_node(node):
+    """ Dump a single node to a dict
+
+        :arg node: target node
+        :type node: bpy.types.Node
+        :retrun: dict
+    """
+
+    node_dumper = Dumper()
+    node_dumper.depth = 1
+    node_dumper.exclude_filter = [
+        "dimensions",
+        "show_expanded",
+        "name_full",
+        "select",
+        "bl_height_min",
+        "bl_height_max",
+        "bl_height_default",
+        "bl_width_min",
+        "bl_width_max",
+        "type",
+        "bl_icon",
+        "bl_width_default",
+        "bl_static_type",
+        "show_tetxure",
+        "is_active_output",
+        "hide",
+        "show_options",
+        "show_preview",
+        "show_texture",
+        "outputs",
+        "width_hidden"
+    ]
+    
+    dumped_node = node_dumper.dump(node)
+
+    if hasattr(node, 'inputs'):
+        dumped_node['inputs'] = {}
+
+        for i in node.inputs:
+            input_dumper = Dumper()
+            input_dumper.depth = 2
+            input_dumper.include_filter = ["default_value"]
+
+            if hasattr(i, 'default_value'):
+                dumped_node['inputs'][i.name] = input_dumper.dump(
+                    i)
+    if hasattr(node, 'color_ramp'):
+        ramp_dumper = Dumper()
+        ramp_dumper.depth = 4
+        ramp_dumper.include_filter = [
+            'elements',
+            'alpha',
+            'color',
+            'position'
+        ]
+        dumped_node['color_ramp'] = ramp_dumper.dump(node.color_ramp)
+    if hasattr(node, 'mapping'):
+        curve_dumper = Dumper()
+        curve_dumper.depth = 5
+        curve_dumper.include_filter = [
+            'curves',
+            'points',
+            'location'
+        ]
+        dumped_node['mapping'] = curve_dumper.dump(node.mapping)
+    
+    return dumped_node
+
+
 class BlMaterial(BlDatablock):
     bl_id = "materials"
     bl_class = bpy.types.Material
-    bl_delay_refresh = 10
-    bl_delay_apply = 10
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
     bl_automatic_push = True
     bl_icon = 'MATERIAL_DATA'
 
     def _construct(self, data):
         return bpy.data.materials.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
+        loader = Loader()
         target.name = data['name']
         if data['is_grease_pencil']:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
 
-            dump_anything.load(
+            loader.load(
                 target.grease_pencil, data['grease_pencil'])
 
 
-        elif data["use_nodes"]:
+        if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
 
             target.node_tree.nodes.clear()
 
-            dump_anything.load(target,data)
+            loader.load(target,data)
             
             # Load nodes
             for node in data["node_tree"]["nodes"]:
@@ -120,9 +195,9 @@ class BlMaterial(BlDatablock):
 
             load_links(data["node_tree"]["links"], target.node_tree)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
-        mat_dumper = dump_anything.Dumper()
+        mat_dumper = Dumper()
         mat_dumper.depth = 2
         mat_dumper.exclude_filter = [
             "is_embed_data",
@@ -144,70 +219,14 @@ class BlMaterial(BlDatablock):
 
         if pointer.use_nodes:
             nodes = {}
-            node_dumper = dump_anything.Dumper()
-            node_dumper.depth = 1
-            node_dumper.exclude_filter = [
-                "dimensions",
-                "show_expanded",
-                "name_full",
-                "select",
-                "bl_height_min",
-                "bl_height_max",
-                "bl_width_min",
-                "bl_width_max",
-                "type",
-                "bl_icon",
-                "bl_width_default",
-                "bl_static_type",
-                "show_tetxure",
-                "hide",
-                "show_options",
-                "show_preview",
-                "outputs",
-                "width_hidden"
-            ]
             for node in pointer.node_tree.nodes:
-                
-                nodes[node.name] = node_dumper.dump(node)
-
-                if hasattr(node, 'inputs'):
-                    nodes[node.name]['inputs'] = {}
-
-                    for i in node.inputs:
-                        input_dumper = dump_anything.Dumper()
-                        input_dumper.depth = 2
-                        input_dumper.include_filter = ["default_value"]
-
-                        if hasattr(i, 'default_value'):
-                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(
-                                i)
-                if hasattr(node, 'color_ramp'):
-                    ramp_dumper = dump_anything.Dumper()
-                    ramp_dumper.depth = 4
-                    ramp_dumper.include_filter = [
-                        'elements',
-                        'alpha',
-                        'color',
-                        'position'
-                    ]
-                    nodes[node.name]['color_ramp'] = ramp_dumper.dump(node.color_ramp)
-                if hasattr(node, 'mapping'):
-                    curve_dumper = dump_anything.Dumper()
-                    curve_dumper.depth = 5
-                    curve_dumper.include_filter = [
-                        'curves',
-                        'points',
-                        'location'
-                    ]
-                    nodes[node.name]['mapping'] = curve_dumper.dump(node.mapping)
-            
+                nodes[node.name] = dump_node(node)
             data["node_tree"]['nodes'] = nodes
             
-
             data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
         
-        elif pointer.is_grease_pencil:
-            gp_mat_dumper = dump_anything.Dumper()
+        if pointer.is_grease_pencil:
+            gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
             gp_mat_dumper.include_filter = [
@@ -235,7 +254,7 @@ class BlMaterial(BlDatablock):
             data['grease_pencil'] = gp_mat_dumper.dump(pointer.grease_pencil)
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         # TODO: resolve node group deps
         deps = []
 

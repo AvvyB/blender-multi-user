@@ -22,12 +22,30 @@ import mathutils
 import logging
 import numpy as np
 
-from ..libs.dump_anything import Dumper, Loader, load_collection_attr, dump_collection_attr
+from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
 from ..libs.replication.replication.constants import DIFF_BINARY
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
 
+VERTICE = ['co']
+
+EDGE = [
+    'vertices',
+    'crease',
+    'bevel_weight',
+]
+LOOP = [
+    'vertex_index',
+    'normal',
+]
+
+POLYGON = [
+    'loop_total',
+    'loop_start',
+    'use_smooth',
+    'material_index',
+]
 
 class BlMesh(BlDatablock):
     bl_id = "meshes"
@@ -42,7 +60,7 @@ class BlMesh(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         if not target or not target.is_editmode:
             loader = Loader()
             loader.load(target, data)
@@ -63,41 +81,35 @@ class BlMesh(BlDatablock):
             target.polygons.add(data["poly_count"])
 
             # LOADING
-            load_collection_attr(target.vertices, 'co', data["verts_co"])
-            load_collection_attr(target.edges, "vertices", data["egdes_vert"])
-            if data['use_customdata_edge_crease']:
-                load_collection_attr(
-                    target.edges, "crease", data["edges_crease"])
-
-            if data['use_customdata_edge_bevel']:
-                load_collection_attr(
-                    target.edges, "bevel_weight", data["edges_bevel"])
-
-            load_collection_attr(
-                target.loops, 'vertex_index', data["loop_vertex_index"])
-            load_collection_attr(target.loops, 'normal', data["loop_normal"])
-            load_collection_attr(
-                target.polygons, 'loop_total', data["poly_loop_total"])
-            load_collection_attr(
-                target.polygons, 'loop_start', data["poly_loop_start"])
-            load_collection_attr(
-                target.polygons, 'use_smooth', data["poly_smooth"])
-            load_collection_attr(
-                target.polygons, 'material_index', data["poly_mat"])
+            np_load_collection(data['vertices'], target.vertices, VERTICE)
+            np_load_collection(data['edges'], target.edges, EDGE)
+            np_load_collection(data['loops'], target.loops, LOOP)
+            np_load_collection(data["polygons"],target.polygons, POLYGON)
 
             # UV Layers
             for layer in data['uv_layers']:
                 if layer not in target.uv_layers:
                     target.uv_layers.new(name=layer)
 
-                uv_buffer = np.frombuffer(data["uv_layers"][layer]['data'])
+                np_load_collection_primitives(
+                    target.uv_layers[layer].data, 
+                    'uv', 
+                    data["uv_layers"][layer]['data'])
+            
+            # Vertex color
+            for color_layer in data['vertex_colors']:
+                if color_layer not in target.vertex_colors:
+                    target.vertex_colors.new(name=color_layer)
 
-                target.uv_layers[layer].data.foreach_set('uv', uv_buffer)
+                np_load_collection_primitives(
+                    target.vertex_colors[color_layer].data, 
+                    'color', 
+                    data["vertex_colors"][color_layer]['data'])
 
             target.validate()
             target.update()
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
         mesh = pointer
@@ -116,41 +128,31 @@ class BlMesh(BlDatablock):
 
         # VERTICES
         data["vertex_count"] = len(mesh.vertices)
-        data["verts_co"] = dump_collection_attr(mesh.vertices, 'co')
+        data["vertices"] = np_dump_collection(mesh.vertices, VERTICE)
 
         # EDGES
         data["egdes_count"] = len(mesh.edges)
-        data["egdes_vert"] = dump_collection_attr(mesh.edges, 'vertices')
-
-        if mesh.use_customdata_edge_crease:
-            data["edges_crease"] = dump_collection_attr(mesh.edges, 'crease')
-
-        if mesh.use_customdata_edge_bevel:
-            data["edges_bevel"] = dump_collection_attr(
-                mesh.edges, 'edges_bevel')
+        data["edges"] = np_dump_collection(mesh.edges, EDGE)
 
         # POLYGONS
         data["poly_count"] = len(mesh.polygons)
-        data["poly_mat"] = dump_collection_attr(
-            mesh.polygons, 'material_index')
-        data["poly_loop_start"] = dump_collection_attr(
-            mesh.polygons, 'loop_start')
-        data["poly_loop_total"] = dump_collection_attr(
-            mesh.polygons, 'loop_total')
-        data["poly_smooth"] = dump_collection_attr(mesh.polygons, 'use_smooth')
+        data["polygons"] = np_dump_collection(mesh.polygons, POLYGON)
 
         # LOOPS
         data["loop_count"] = len(mesh.loops)
-        data["loop_normal"] = dump_collection_attr(mesh.loops, 'normal')
-        data["loop_vertex_index"] = dump_collection_attr(
-            mesh.loops, 'vertex_index')
+        data["loops"] = np_dump_collection(mesh.loops, LOOP)
 
         # UV Layers
         data['uv_layers'] = {}
         for layer in mesh.uv_layers:
             data['uv_layers'][layer.name] = {}
-            data['uv_layers'][layer.name]['data'] = dump_collection_attr(
-                layer.data, 'uv')
+            data['uv_layers'][layer.name]['data'] = np_dump_collection_primitive(layer.data, 'uv')
+
+        # Vertex color
+        data['vertex_colors'] = {}
+        for color_map in mesh.vertex_colors:
+            data['vertex_colors'][color_map.name] = {}
+            data['vertex_colors'][color_map.name]['data'] = np_dump_collection_primitive(color_map.data, 'color')
 
         # Fix material index
         m_list = []
@@ -162,7 +164,7 @@ class BlMesh(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         for material in self.pointer.materials:

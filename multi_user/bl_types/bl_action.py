@@ -23,54 +23,26 @@ import numpy as np
 from enum import Enum
 
 from .. import utils
-from ..libs.dump_anything import (
-    Dumper, Loader, dump_collection_attr, load_collection_attr)
+from .dump_anything import (
+    Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
 from .bl_datablock import BlDatablock
 
 
-ENUM_EASING_TYPE = [
-    'AUTO',
-    'EAS_IN',
-    'EASE_OUT',
-    'EASE_IN_OUT']
+KEYFRAME = [
+    'amplitude',
+    'co',
+    'back',
+    'handle_left',
+    'handle_right',
+    'easing',
+    'handle_left_type',
+    'handle_right_type',
+    'type',
+    'interpolation',
+]
 
 
-ENUM_HANDLE_TYPE = [
-    'FREE',
-    'ALIGNED',
-    'VECTOR',
-    'AUTO',
-    'AUTO_CLAMPED']
-
-
-ENUM_INTERPOLATION_TYPE = [
-    'CONSTANT',
-    'LINEAR',
-    'BEZIER',
-    'SINE',
-    'QUAD',
-    'CUBIC',
-    'QUART',
-    'QUINT',
-    'EXPO',
-    'CIRC',
-    'BACK',
-    'BOUNCE',
-    'ELASTIC']
-
-
-ENUM_KEY_TYPE = [
-    'KEYFRAME',
-    'BREAKDOWN',
-    'MOVING_HOLD',
-    'EXTREME',
-    'JITTER']
-
-
-# TODO: Automatic enum and numpy dump and loading
-
-
-def dump_fcurve(fcurve, use_numpy=True):
+def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy:bool =True) -> dict:
     """ Dump a sigle curve to a dict
 
         :arg fcurve: fcurve to dump
@@ -88,26 +60,10 @@ def dump_fcurve(fcurve, use_numpy=True):
     if use_numpy:
         points = fcurve.keyframe_points
         fcurve_data['keyframes_count']  = len(fcurve.keyframe_points)
-
-        fcurve_data['amplitude'] = dump_collection_attr(points, 'amplitude')
-        fcurve_data['co'] = dump_collection_attr(points, 'co')
-        fcurve_data['back'] = dump_collection_attr(points, 'back')
-        fcurve_data['handle_left'] = dump_collection_attr(points, 'handle_left')
-        fcurve_data['handle_right'] = dump_collection_attr(points, 'handle_right')
-
-        fcurve_data['easing'] = [ENUM_EASING_TYPE.index(
-            p.easing) for p in fcurve.keyframe_points]
-        fcurve_data['handle_left_type'] = [ENUM_HANDLE_TYPE.index(
-            p.handle_left_type) for p in fcurve.keyframe_points]
-        fcurve_data['handle_right_type'] = [ENUM_HANDLE_TYPE.index(
-            p.handle_right_type) for p in fcurve.keyframe_points]
-        fcurve_data['type'] = [ENUM_KEY_TYPE.index(
-            p.type) for p in fcurve.keyframe_points]
-        fcurve_data['interpolation'] = [ENUM_INTERPOLATION_TYPE.index(
-            p.interpolation) for p in fcurve.keyframe_points]
+        fcurve_data['keyframe_points'] = np_dump_collection(points, KEYFRAME)
 
     else:  # Legacy method
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         fcurve_data["keyframe_points"] = []
 
         for k in fcurve.keyframe_points:
@@ -136,19 +92,7 @@ def load_fcurve(fcurve_data, fcurve):
 
     if use_numpy:
         keyframe_points.add(fcurve_data['keyframes_count'])
-
-        load_collection_attr(keyframe_points, 'co', fcurve_data['co'])
-        load_collection_attr(keyframe_points, 'back', fcurve_data['back'])
-        load_collection_attr(keyframe_points, 'amplitude', fcurve_data['amplitude'])
-        load_collection_attr(keyframe_points, 'handle_left', fcurve_data['handle_left'])
-        load_collection_attr(keyframe_points, 'handle_right', fcurve_data['handle_right'])
-
-        for index, point in enumerate(keyframe_points):
-            point.type = ENUM_KEY_TYPE[fcurve_data['type'][index]]
-            point.easing = ENUM_EASING_TYPE[fcurve_data['easing'][index]]
-            point.handle_left_type = ENUM_HANDLE_TYPE[fcurve_data['handle_left_type'][index]]
-            point.handle_right_type = ENUM_HANDLE_TYPE[fcurve_data['handle_right_type'][index]]
-            point.interpolation = ENUM_INTERPOLATION_TYPE[fcurve_data['interpolation'][index]]
+        np_load_collection(fcurve_data["keyframe_points"], keyframe_points, KEYFRAME)
 
     else:
         # paste dumped keyframes
@@ -163,12 +107,13 @@ def load_fcurve(fcurve_data, fcurve):
             )
 
             keycache = copy.copy(dumped_keyframe_point)
-            keycache = utils.dump_anything.remove_items_from_dict(
+            keycache = remove_items_from_dict(
                 keycache,
                 ["co", "handle_left", "handle_right", 'type']
             )
 
-            utils.dump_anything.load(new_kf, keycache)
+            loader = Loader()
+            loader.load(new_kf, keycache)
 
             new_kf.type = dumped_keyframe_point['type']
             new_kf.handle_left = [
@@ -211,7 +156,7 @@ class BlAction(BlDatablock):
 
     def _dump(self, pointer=None):
         assert(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.exclude_filter = [
             'name_full',
             'original',

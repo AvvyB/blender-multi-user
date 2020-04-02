@@ -20,9 +20,9 @@ import bpy
 import mathutils
 
 from .. import utils
+from .dump_anything import Loader, Dumper
 from ..libs.replication.replication.data import ReplicatedDatablock
 from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
-from ..libs import dump_anything
 
 
 def has_action(target):
@@ -42,7 +42,7 @@ def has_driver(target):
 
 
 def dump_driver(driver):
-    dumper = dump_anything.Dumper()
+    dumper = Dumper()
     dumper.depth = 6
     data = dumper.dump(driver)
 
@@ -50,6 +50,7 @@ def dump_driver(driver):
 
 
 def load_driver(target_datablock, src_driver):
+    loader = Loader()
     drivers = target_datablock.animation_data.drivers
     src_driver_data = src_driver['driver']
     new_driver = drivers.new(src_driver['data_path'])
@@ -57,7 +58,7 @@ def load_driver(target_datablock, src_driver):
     # Settings
     new_driver.driver.type = src_driver_data['type']
     new_driver.driver.expression = src_driver_data['expression']
-    dump_anything.load(new_driver,  src_driver)
+    loader.load(new_driver,  src_driver)
 
     # Variables
     for src_variable in src_driver_data['variables']:
@@ -70,7 +71,7 @@ def load_driver(target_datablock, src_driver):
             src_target_data = src_var_data['targets'][src_target]
             new_var.targets[src_target].id = utils.resolve_from_id(
                 src_target_data['id'], src_target_data['id_type'])
-            dump_anything.load(
+            loader.load(
                 new_var.targets[src_target],  src_target_data)
 
     # Fcurve
@@ -82,8 +83,7 @@ def load_driver(target_datablock, src_driver):
 
     for index, src_point in enumerate(src_driver['keyframe_points']):
         new_point = new_fcurve[index]
-        dump_anything.load(
-            new_point, src_driver['keyframe_points'][src_point])
+        loader.load(new_point, src_driver['keyframe_points'][src_point])
 
 
 class BlDatablock(ReplicatedDatablock):
@@ -127,10 +127,11 @@ class BlDatablock(ReplicatedDatablock):
         self.pointer = datablock_ref
 
     def _dump(self, pointer=None):
+        dumper = Dumper()
         data = {}
         # Dump animation data
         if has_action(pointer):
-            dumper = utils.dump_anything.Dumper()
+            dumper = Dumper()
             dumper.include_filter = ['action']
             data['animation_data'] = dumper.dump(pointer.animation_data)
 
@@ -143,13 +144,13 @@ class BlDatablock(ReplicatedDatablock):
             data.update(dumped_drivers)
         
         if self.is_library:
-            data.update(dump_anything.dump(pointer))
+            data.update(dumper.dump(pointer))
         else:
-            data.update(self.dump_implementation(data, pointer=pointer))
+            data.update(self._dump_implementation(data, pointer=pointer))
 
         return data
 
-    def dump_implementation(self, data, target):
+    def _dump_implementation(self, data, target):
         raise NotImplementedError
 
     def _load(self, data, target):
@@ -171,9 +172,9 @@ class BlDatablock(ReplicatedDatablock):
         if self.is_library:
             return
         else:
-            self.load_implementation(data, target)
+            self._load_implementation(data, target)
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         raise NotImplementedError
 
     def resolve_deps(self):
@@ -183,11 +184,11 @@ class BlDatablock(ReplicatedDatablock):
             dependencies.append(self.pointer.animation_data.action)
 
         if not self.is_library:
-            dependencies.extend(self.resolve_deps_implementation())
+            dependencies.extend(self._resolve_deps_implementation())
 
         return dependencies
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         return []
 
     def is_valid(self):

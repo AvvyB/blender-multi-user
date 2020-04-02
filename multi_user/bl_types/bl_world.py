@@ -19,23 +19,23 @@
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from .bl_material import load_links, load_node, dump_links
+from .bl_material import load_links, load_node, dump_node, dump_links
 
 
 class BlWorld(BlDatablock):
     bl_id = "worlds"
     bl_class = bpy.types.World
-    bl_delay_refresh = 4
-    bl_delay_apply = 4
+    bl_delay_refresh = 1
+    bl_delay_apply = 1
     bl_automatic_push = True
     bl_icon = 'WORLD_DATA'
 
     def _construct(self, data):
         return bpy.data.worlds.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -51,10 +51,10 @@ class BlWorld(BlDatablock):
             
             load_links(data["node_tree"]["links"], target.node_tree)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        world_dumper = utils.dump_anything.Dumper()
+        world_dumper = Dumper()
         world_dumper.depth = 2
         world_dumper.exclude_filter = [
             "preview",
@@ -69,47 +69,17 @@ class BlWorld(BlDatablock):
         data = world_dumper.dump(pointer)
         if pointer.use_nodes:
             nodes = {}
-            dumper = utils.dump_anything.Dumper()
-            dumper.depth = 2
-            dumper.exclude_filter = [
-                "dimensions",
-                "select",
-                "bl_height_min",
-                "bl_height_max",
-                "bl_width_min",
-                "bl_width_max",
-                "bl_width_default",
-                "hide",
-                "show_options",
-                "show_tetxures",
-                "show_preview",
-                "outputs",
-                "preview",
-                "original",
-                "width_hidden",
-                
-            ]
 
             for node in pointer.node_tree.nodes:
-                nodes[node.name] = dumper.dump(node)
+                nodes[node.name] = dump_node(node)
 
-                if hasattr(node, 'inputs'):
-                    nodes[node.name]['inputs'] = {}
-
-                    for i in node.inputs:
-                        input_dumper = utils.dump_anything.Dumper()
-                        input_dumper.depth = 2
-                        input_dumper.include_filter = ["default_value"]
-                        if hasattr(i, 'default_value'):
-                            nodes[node.name]['inputs'][i.name] = input_dumper.dump(
-                                i)
             data["node_tree"]['nodes'] = nodes
 
             data["node_tree"]['links'] = dump_links(pointer.node_tree.links)
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         if self.pointer.use_nodes:

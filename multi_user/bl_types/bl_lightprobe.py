@@ -20,7 +20,7 @@ import bpy
 import mathutils
 import logging
 
-from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 logger = logging.getLogger(__name__)
@@ -41,15 +41,16 @@ class BlLightprobe(BlDatablock):
         else:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
-    def load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+    def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         if bpy.app.version[1] < 83:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             "name",

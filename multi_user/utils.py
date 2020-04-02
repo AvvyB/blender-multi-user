@@ -28,7 +28,6 @@ import bpy
 import mathutils
 
 from . import environment, presence
-from .libs import dump_anything
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

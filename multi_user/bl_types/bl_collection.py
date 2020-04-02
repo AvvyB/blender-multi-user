@@ -46,9 +46,8 @@ class BlCollection(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         # Load other meshes metadata
-        # dump_anything.load(target, data)
         target.name = data["name"]
         
         # link objects
@@ -72,7 +71,7 @@ class BlCollection(BlDatablock):
             if collection.uuid not in data["children"]:
                 target.children.unlink(collection)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['name'] = pointer.name
@@ -95,7 +94,7 @@ class BlCollection(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         for child in self.pointer.children:

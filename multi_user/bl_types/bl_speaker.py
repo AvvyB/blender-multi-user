@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
@@ -31,16 +31,17 @@ class BlSpeaker(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'SPEAKER'
 
-    def load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+    def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
 
     def _construct(self, data):
         return bpy.data.speakers.new(data["name"])
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             "muted",

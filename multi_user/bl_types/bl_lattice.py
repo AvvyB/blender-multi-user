@@ -19,8 +19,10 @@
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from .bl_datablock import BlDatablock
+
+POINT = ['co', 'weight_softbody', 'co_deform']
 
 
 class BlLattice(BlDatablock):
@@ -31,19 +33,20 @@ class BlLattice(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LATTICE_DATA'
 
-    def load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+    def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
 
-        for point in data['points']:
-            utils.dump_anything.load(target.points[point], data["points"][point])
+        np_load_collection(data['points'], target.points, POINT)
+
     def _construct(self, data):
         return bpy.data.lattices.new(data["name"])
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        dumper = utils.dump_anything.Dumper()
-        dumper.depth = 3
+        dumper = Dumper()
+        dumper.depth = 1
         dumper.include_filter = [
             "name",
             'type',
@@ -53,17 +56,10 @@ class BlLattice(BlDatablock):
             'interpolation_type_u',
             'interpolation_type_v',
             'interpolation_type_w',
-            'use_outside',
-            'points',
-            'co',
-            'weight_softbody',
-            'co_deform'
+            'use_outside'
         ]
         data = dumper.dump(pointer)
 
+        data['points'] = np_dump_collection(pointer.points, POINT)
         return data
-
-
-
-
 

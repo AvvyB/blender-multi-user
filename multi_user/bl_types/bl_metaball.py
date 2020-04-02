@@ -19,8 +19,47 @@
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import (
+    Dumper, Loader, np_dump_collection_primitive, np_load_collection_primitives,
+    np_dump_collection, np_load_collection)
+
 from .bl_datablock import BlDatablock
+
+
+ELEMENT = [
+    'co',
+    'hide',
+    'radius',
+    'rotation',
+    'size_x',
+    'size_y',
+    'size_z',
+    'stiffness',
+    'type'
+]
+
+
+def dump_metaball_elements(elements):
+    """ Dump a metaball element
+
+        :arg element: metaball element
+        :type bpy.types.MetaElement
+        :return: dict
+    """
+
+    dumped_elements = np_dump_collection(elements, ELEMENT)
+
+    return dumped_elements
+
+
+def load_metaball_elements(elements_data, elements):
+    """ Dump a metaball element
+
+        :arg element: metaball element
+        :type bpy.types.MetaElement
+        :return: dict
+    """
+    np_load_collection(elements_data, elements, ELEMENT)
 
 
 class BlMetaball(BlDatablock):
@@ -34,22 +73,30 @@ class BlMetaball(BlDatablock):
     def _construct(self, data):
         return bpy.data.metaballs.new(data["name"])
 
-    def load(self, data, target):
-        utils.dump_anything.load(target, data)
-        
-        target.elements.clear()
-        for element in data["elements"]:
-            new_element = target.elements.new(type=data["elements"][element]['type'])
-            utils.dump_anything.load(new_element, data["elements"][element])
+    def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
 
-    def dump_implementation(self, data, pointer=None):
+        target.elements.clear()
+
+        for mtype in data["elements"]['type']:
+            new_element = target.elements.new()
+
+        load_metaball_elements(data['elements'], target.elements)
+
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
-        dumper = utils.dump_anything.Dumper()
-        dumper.depth = 3
-        dumper.exclude_filter = ["is_editmode"]
+        dumper = Dumper()
+        dumper.depth = 1
+        dumper.exclude_filter = [
+            "is_editmode",
+            "is_evaluated",
+            "is_embedded_data",
+            "is_library_indirect",
+            "name_full"
+        ]
 
         data = dumper.dump(pointer)
+        data['elements'] = dump_metaball_elements(pointer.elements)
+
         return data
-
-
-

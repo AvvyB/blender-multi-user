@@ -135,10 +135,8 @@ def get_bb_coords_from_obj(object, parent=None):
 def get_view_matrix():
     area, region, rv3d = view3d_find()
 
-    if area and region and rv3d:
-        matrix_dumper = utils.dump_anything.Dumper()
-
-        return matrix_dumper.dump(rv3d.view_matrix)
+    if area and region and rv3d:       
+        return [list(v) for v in rv3d.view_matrix]
 
 def update_presence(self, context):
     global renderer

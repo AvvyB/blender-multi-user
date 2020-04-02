@@ -21,6 +21,7 @@ import mathutils
 import os
 
 from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 def dump_image(image):
@@ -83,7 +84,7 @@ class BlImage(BlDatablock):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [   
                 "name",
