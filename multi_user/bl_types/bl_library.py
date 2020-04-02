@@ -41,6 +41,6 @@ class BlLibrary(BlDatablock):
     def dump(self, pointer=None):
         assert(pointer)
         dumper = Dumper()
-        return dumper.dump(pointer, 1)
+        return dumper.dump(pointer)
 
 

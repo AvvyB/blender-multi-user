@@ -178,7 +178,7 @@ class BlMaterial(BlDatablock):
                 target.grease_pencil, data['grease_pencil'])
 
 
-        elif data["use_nodes"]:
+        if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
 
@@ -224,7 +224,8 @@ class BlMaterial(BlDatablock):
             data["node_tree"]['nodes'] = nodes
             
             data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
-        elif pointer.is_grease_pencil:
+        
+        if pointer.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 

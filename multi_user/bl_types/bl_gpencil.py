@@ -228,6 +228,9 @@ class BlGpencil(BlDatablock):
             for mat in data['materials']:
                 target.materials.append(bpy.data.materials[mat])
 
+        loader = Loader()
+        loader.load(target, data)
+        
         # TODO: reuse existing layer
         for layer in target.layers:
             target.layers.remove(layer)
@@ -244,8 +247,7 @@ class BlGpencil(BlDatablock):
 
                 load_layer(layer_data, target_layer)
         
-        loader = Loader()
-        loader.load(target, data)
+        
 
 
 
@@ -253,6 +255,14 @@ class BlGpencil(BlDatablock):
         assert(pointer)
         dumper = Dumper()
         dumper.depth = 2
+        dumper.include_filter = [
+            'materials',
+            'name',
+            'zdepth_offset',
+            'stroke_thickness_space',
+            'pixel_factor',
+            'stroke_depth_order'
+        ]
         data = dumper.dump(pointer)
 
         data['layers'] = {}
