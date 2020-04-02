@@ -78,6 +78,10 @@ class BlScene(BlDatablock):
 
         if 'view_settings' in data.keys():
             loader.load(target.view_settings, data['view_settings'])
+            if target.view_settings.use_curve_mapping:
+                #TODO: change this ugly fix
+                target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
+                target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
             target.view_settings.curve_mapping.update()
 
     def _dump_implementation(self, data, pointer=None):
@@ -106,6 +110,9 @@ class BlScene(BlDatablock):
         pref = get_preferences()
 
         if pref.sync_flags.sync_render_settings:
+            scene_dumper.exclude_filter = [
+                'gi_cache_info',
+            ]
             data['eevee'] = scene_dumper.dump(pointer.eevee)
             data['cycles'] = scene_dumper.dump(pointer.cycles)        
             data['view_settings'] = scene_dumper.dump(pointer.view_settings)
