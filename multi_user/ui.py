@@ -241,6 +241,9 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         # Right managment
         if runtime_settings.session_mode == 'HOST':
+            row = layout.row()
+            row.prop(settings.sync_flags,"sync_render_settings")
+            
             row = layout.row(align=True)
             row.label(text="Right strategy:")
             row.prop(settings,"right_strategy",text="")

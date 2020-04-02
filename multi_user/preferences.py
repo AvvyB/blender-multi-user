@@ -36,7 +36,7 @@ def random_string_digits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choices(lettersAndDigits, k=stringLength))
-
+    
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -46,6 +46,13 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     use_as_filter: bpy.props.BoolProperty(default=True)
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
+
+
+class ReplicationFlags(bpy.types.PropertyGroup):
+    sync_render_settings: bpy.props.BoolProperty(
+        name="Synchronize render settings",
+        description="Synchronize render settings (eevee and cycles only)",
+        default=True)
 
 
 class SessionPrefs(bpy.types.AddonPreferences):
@@ -67,6 +74,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="port",
         description='Distant host port',
         default=5555
+    )
+    sync_flags: bpy.props.PointerProperty(
+        type=ReplicationFlags
     )
     supported_datablocks: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
@@ -340,6 +350,7 @@ class SessionProps(bpy.types.PropertyGroup):
 classes = (
     SessionUser,
     SessionProps,
+    ReplicationFlags,
     ReplicatedDatablock,
     SessionPrefs,
 )

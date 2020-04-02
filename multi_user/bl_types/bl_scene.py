@@ -22,6 +22,8 @@ import mathutils
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
+from ..utils import get_preferences
+
 class BlScene(BlDatablock):
     bl_id = "scenes"
     bl_class = bpy.types.Scene
@@ -101,19 +103,22 @@ class BlScene(BlDatablock):
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
         
-        data['eevee'] = scene_dumper.dump(pointer.eevee)
-        data['cycles'] = scene_dumper.dump(pointer.cycles)        
-        data['view_settings'] = scene_dumper.dump(pointer.view_settings)
-        data['view_settings']['curve_mapping'] = scene_dumper.dump(pointer.view_settings.curve_mapping)
-        
-        if pointer.view_settings.use_curve_mapping:
-            scene_dumper.depth = 5
-            scene_dumper.include_filter = [
-                'curves',
-                'points',
-                'location'
-            ]
-            data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(pointer.view_settings.curve_mapping.curves)
+        pref = get_preferences()
+
+        if pref.sync_flags.sync_render_settings:
+            data['eevee'] = scene_dumper.dump(pointer.eevee)
+            data['cycles'] = scene_dumper.dump(pointer.cycles)        
+            data['view_settings'] = scene_dumper.dump(pointer.view_settings)
+            data['view_settings']['curve_mapping'] = scene_dumper.dump(pointer.view_settings.curve_mapping)
+            
+            if pointer.view_settings.use_curve_mapping:
+                scene_dumper.depth = 5
+                scene_dumper.include_filter = [
+                    'curves',
+                    'points',
+                    'location'
+                ]
+                data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(pointer.view_settings.curve_mapping.curves)
         
         
         return data
