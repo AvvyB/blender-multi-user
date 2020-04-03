@@ -21,6 +21,7 @@ import bpy
 import string
 
 from . import utils, bl_types, environment, addon_updater_ops, presence
+from .libs.replication.replication.constants import  RP_COMMON
 
 logger = logging.getLogger(__name__)
 
