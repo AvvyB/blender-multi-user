@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 
 from . import operators, utils
@@ -6,7 +24,8 @@ from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_ACTIVE, STATE_AUTH,
                                                      STATE_CONFIG, STATE_SYNCING,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
-                                                     STATE_WAITING, STATE_QUITTING)
+                                                     STATE_WAITING, STATE_QUITTING,
+                                                     STATE_LAUNCHING_SERVICES)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -35,7 +54,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     return '{} |{}| {}/{}{}'.format(prefix, bar, iteration,total, suffix)
 
 def get_state_str(state):
-    state_str = 'None'
+    state_str = 'UNKNOWN'
     if state == STATE_WAITING:
         state_str = 'WARMING UP DATA'
     elif state == STATE_SYNCING:
@@ -52,6 +71,9 @@ def get_state_str(state):
         state_str = 'INIT'
     elif state == STATE_QUITTING:
         state_str = 'QUITTING SESSION'
+    elif state == STATE_LAUNCHING_SERVICES:
+        state_str = 'LAUNCHING SERVICES'
+
     return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -219,6 +241,9 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         # Right managment
         if runtime_settings.session_mode == 'HOST':
+            row = layout.row()
+            row.prop(settings.sync_flags,"sync_render_settings")
+            
             row = layout.row(align=True)
             row.label(text="Right strategy:")
             row.prop(settings,"right_strategy",text="")
@@ -261,7 +286,7 @@ class SESSION_PT_user(bpy.types.Panel):
         selected_user = context.window_manager.user_index
         settings = utils.get_preferences()
         active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
-        
+        runtime_settings = context.window_manager.session
 
         # Create a simple row.
         row = layout.row()
@@ -290,6 +315,12 @@ class SESSION_PT_user(bpy.types.Panel):
                 "session.snaptime",
                 text="",
                 icon='TIME').target_client = active_user.username
+
+            if runtime_settings.session_mode == 'HOST':
+                user_operations.operator(
+                    "session.kick",
+                    text="",
+                    icon='CANCEL').user = active_user.username
 
 
 class SESSION_UL_users(bpy.types.UIList):

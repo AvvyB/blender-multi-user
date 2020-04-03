@@ -46,6 +46,8 @@ If 5555 is given in host settings, it will use 5555, 5556 (5555+1), 5557 (5555+2
 
 .. image:: img/quickstart_advanced.png
 
+**Synchronise render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
+ 
 **Right strategy** (only host) enable you to choose between a strict and a relaxed pattern:
 
 - **Strict**: Host is the king, by default the host own each properties, only him can grant modification rights.
@@ -76,6 +78,19 @@ By selecting a user in the list you'll have access to different **actions**:
 
 - The **camera button** allow you to snap on the user viewpoint.
 - The **time button** allow you to snap on the user time.
+- The **cross button** [**host only**] allow the admin to kick users
+
+-------------------
+Presence show flags 
+-------------------
+
+.. image:: img/quickstart_presence.png
+
+This pannel allow you to tweak users overlay in the viewport:
+
+- **Show selected objects**: display other users current selection
+- **Show users**: display users current viewpoint 
+- **Show different scenes**: display users on other scenes
 
 ---------------------
 Replicated properties

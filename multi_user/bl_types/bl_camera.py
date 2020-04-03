@@ -1,7 +1,25 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
@@ -13,22 +31,26 @@ class BlCamera(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'CAMERA_DATA'
 
-    def load_implementation(self, data, target):
-        utils.dump_anything.load(target, data)
+    def _construct(self, data):
+        return bpy.data.cameras.new(data["name"])
+
+
+    def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
 
         dof_settings = data.get('dof')
         
         # DOF settings
         if dof_settings:
-            utils.dump_anything.load(target.dof, dof_settings)
+            loader.load(target.dof, dof_settings)
 
-    def construct(self, data):
-        return bpy.data.cameras.new(data["name"])
-
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
 
-        dumper = utils.dump_anything.Dumper()
+        # TODO: background image support
+        
+        dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
             "name",
@@ -49,6 +71,14 @@ class BlCamera(BlDatablock):
             'aperture_blades',
             'aperture_rotation',
             'aperture_ratio',
+            'display_size',
+            'show_limits',
+            'show_mist',
+            'show_sensor',
+            'show_name',
+            'sensor_fit',
+            'sensor_height',
+            'sensor_width',
         ]
         return dumper.dump(pointer)
     

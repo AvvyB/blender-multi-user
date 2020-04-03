@@ -1,8 +1,27 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 import os
 
 from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 def dump_image(image):
@@ -10,8 +29,10 @@ def dump_image(image):
     if image.source == "GENERATED":
         prefs = utils.get_preferences()
         img_name = "{}.png".format(image.name)
-
+        
+        # Cache the image on the disk
         image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
+        os.makedirs(prefs.cache_directory, exist_ok=True)
         image.file_format = "PNG"
         image.save()
 
@@ -35,14 +56,14 @@ class BlImage(BlDatablock):
     bl_automatic_push = False
     bl_icon = 'IMAGE_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.images.new(
                 name=data['name'],
                 width=data['size'][0],
                 height=data['size'][1]
             )
 
-    def load(self, data, target):
+    def _load(self, data, target):
         image = target
         prefs = utils.get_preferences()
 
@@ -59,11 +80,11 @@ class BlImage(BlDatablock):
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def dump(self, data, pointer=None):
+    def _dump(self, pointer=None):
         assert(pointer)
         data = {}
         data['pixels'] = dump_image(pointer)
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [   
                 "name",

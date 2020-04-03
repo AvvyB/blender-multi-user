@@ -7,6 +7,7 @@ __pycache__/
 cache
 config
 *.code-workspace
+multi_user_updater/
 
 # sphinx build folder
 _build

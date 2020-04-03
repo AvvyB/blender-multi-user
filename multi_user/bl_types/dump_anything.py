@@ -1,6 +1,198 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+import logging
+
 import bpy
 import bpy.types as T
 import mathutils
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
+BPY_TO_NUMPY_TYPES = {
+    'FLOAT': np.float,
+    'INT': np.int,
+    'BOOL': np.bool}
+
+PRIMITIVE_TYPES = ['FLOAT', 'INT', 'BOOLEAN']
+
+NP_COMPATIBLE_TYPES = ['FLOAT', 'INT', 'BOOLEAN', 'ENUM']
+
+
+def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, attributes: list = None):
+    """ Dump a list of attributes from the sane collection
+        to the target dikt. 
+
+        Without attribute given, it try to load all entry from dikt.
+
+        :arg dikt: target dict
+        :type dikt: dict
+        :arg collection: source collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attributes: list of attributes name
+        :type attributes: list
+    """
+    if attributes is None:
+        attributes = dikt.keys()
+
+    for attr in attributes:
+        attr_type = collection[0].bl_rna.properties.get(attr).type
+
+        if attr_type in PRIMITIVE_TYPES:
+            np_load_collection_primitives(collection, attr, dikt[attr])
+        elif attr_type == 'ENUM':
+            np_load_collection_enum(collection, attr, dikt[attr])
+        else:
+            logger.error(f"{attr} of type {attr_type} not supported.")
+
+
+def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: list = None) -> dict:
+    """ Dump a list of attributes from the sane collection
+        to the target dikt
+
+        Without attributes given, it try to dump all properties 
+        that matches NP_COMPATIBLE_TYPES.
+
+        :arg collection: source collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attributes: list of attributes name
+        :type attributes: list
+        :retrun: dict
+    """
+    dumped_collection = {}
+
+    if len(collection) == 0:
+        return dumped_collection
+
+    # TODO: find a way without getting the first item
+    properties = collection[0].bl_rna.properties
+
+    if attributes is None:
+        attributes = [p.identifier for p in properties if p.type in NP_COMPATIBLE_TYPES and not p.is_readonly]
+
+    for attr in attributes:
+        attr_type = properties[attr].type
+
+        if attr_type in PRIMITIVE_TYPES:
+            dumped_collection[attr] = np_dump_collection_primitive(
+                collection, attr)
+        elif attr_type == 'ENUM':
+            dumped_collection[attr] = np_dump_collection_enum(collection, attr)
+        else:
+            logger.error(f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
+
+    return dumped_collection
+
+
+def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attribute: str) -> str:
+    """ Dump a collection attribute as a sequence
+
+        !!! warning
+            Only work with int, float and bool attributes
+
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: str
+        :return: numpy byte buffer
+    """
+
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
+
+    size = sum(attr_infos.array_dimensions) if attr_infos.is_array else 1
+
+    dumped_sequence = np.zeros(
+        len(collection)*size,
+        dtype=BPY_TO_NUMPY_TYPES.get(attr_infos.type))
+
+    collection.foreach_get(attribute, dumped_sequence)
+
+    return dumped_sequence.tobytes()
+
+
+def np_dump_collection_enum(collection: bpy.types.CollectionProperty, attribute: str) -> list:
+    """ Dump a collection enum attribute to an index list
+
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: bpy.types.EnumProperty
+        :return: list of int
+    """
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type == 'ENUM')
+
+    enum_items = attr_infos.enum_items
+    return [enum_items[getattr(i, attribute)].value for i in collection]
+
+
+def np_load_collection_enum(collection: bpy.types.CollectionProperty, attribute: str, sequence: list):
+    """ Load a collection enum attribute from a list sequence
+
+        !!! warning
+            Only work with Enum
+
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: str
+        :arg sequence: enum data buffer
+        :type sequence: list
+        :return: numpy byte buffer
+    """
+
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type == 'ENUM')
+
+    enum_items = attr_infos.enum_items
+    enum_idx = [i.value for i in enum_items]
+
+    for index, item in enumerate(sequence):
+        setattr(collection[index], attribute,
+                enum_items[enum_idx.index(item)].identifier)
+
+
+def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attribute: str, sequence: str):
+    """ Load a collection attribute from a str bytes sequence
+
+        !!! warning
+            Only work with int, float and bool attributes
+
+        :arg collection: target collection
+        :type collection: bpy.types.CollectionProperty
+        :arg attribute: target attribute
+        :type attribute: str
+        :arg sequence: data buffer
+        :type sequence: str
+        :return: numpy byte buffer
+    """
+
+    attr_infos = collection[0].bl_rna.properties.get(attribute)
+
+    assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
+
+    collection.foreach_set(
+        attribute,
+        np.frombuffer(sequence, dtype=BPY_TO_NUMPY_TYPES.get(attr_infos.type)))
 
 
 def remove_items_from_dict(d, keys, recursive=False):
@@ -47,7 +239,7 @@ def _load_filter_type(t, use_bl_rna=True):
         if use_bl_rna and x.bl_rna_property:
             return isinstance(x.bl_rna_property, t)
         else:
-            isinstance(x.read(), t)
+            return isinstance(x.read(), t)
     return filter_function
 
 
@@ -73,8 +265,10 @@ def _load_filter_default(default):
 
 
 class Dumper:
+    # TODO: support occlude readonly
+    # TODO: use foreach_set/get on collection compatible properties
     def __init__(self):
-        self.verbose = False
+        self.verbose = True
         self.depth = 1
         self.keep_compounds_as_leaves = False
         self.accept_read_only = True
@@ -83,7 +277,6 @@ class Dumper:
         self.type_subset = self.match_subset_all
         self.include_filter = []
         self.exclude_filter = []
-        # self._atomic_types = [] # TODO future option?
 
     def dump(self, any):
         return self._dump_any(any, 0)
@@ -175,7 +368,8 @@ class Dumper:
                 if (self.include_filter and p not in self.include_filter):
                     return False
                 getattr(default, p)
-            except AttributeError:
+            except AttributeError as err:
+                logger.debug(err)
                 return False
             if p.startswith("__"):
                 return False
@@ -238,14 +432,12 @@ class BlenderAPIElement:
 
     def write(self, value):
         # take precaution if property is read-only
-        try:
-            if self.sub_element_name:
-                setattr(self.api_element, self.sub_element_name, value)
-            else:
-                self.api_element = value
-        except AttributeError as err:
-            if not self.occlude_read_only:
-                raise err
+        if self.sub_element_name and \
+                not self.api_element.is_property_readonly(self.sub_element_name):
+
+            setattr(self.api_element, self.sub_element_name, value)
+        else:
+            self.api_element = value
 
     def extend(self, element_name):
         return BlenderAPIElement(self.read(), element_name)
@@ -262,7 +454,7 @@ class BlenderAPIElement:
 class Loader:
     def __init__(self):
         self.type_subset = self.match_subset_all
-        self.occlude_read_only = True
+        self.occlude_read_only = False
         self.order = ['*']
 
     def load(self, dst_data, src_dumped_data):
@@ -287,6 +479,7 @@ class Loader:
             for i in range(len(dump)):
                 element.read()[i] = dump[i]
         except AttributeError as err:
+            logger.debug(err)
             if not self.occlude_read_only:
                 raise err
 
@@ -297,28 +490,81 @@ class Loader:
         CONSTRUCTOR_NEW = "new"
         CONSTRUCTOR_ADD = "add"
 
+        DESTRUCTOR_REMOVE = "remove"
+        DESTRUCTOR_CLEAR = "clear"
+
         constructors = {
             T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
-            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, [])
+            T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
+            T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"]),
+            T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
+        }
+
+        destructors = {
+            T.ColorRampElement: DESTRUCTOR_REMOVE,
+            T.Modifier: DESTRUCTOR_CLEAR,
+            T.Constraint: CONSTRUCTOR_NEW,
         }
         element_type = element.bl_rna_property.fixed_type
+
         constructor = constructors.get(type(element_type))
+
         if constructor is None:  # collection type not supported
             return
-        for dumped_element in dump.values():
-            try:
-                constructor_parameters = [dumped_element[name]
-                                          for name in constructor[1]]
-            except KeyError:
-                print("Collection load error, missing parameters.")
-                continue  # TODO handle error
-            new_element = getattr(element.read(), constructor[0])(
-                *constructor_parameters)
+
+        destructor = destructors.get(type(element_type))
+
+        # Try to clear existing
+        if destructor:
+            if destructor == DESTRUCTOR_REMOVE:
+                collection = element.read()
+                for i in range(len(collection)-1):
+                    collection.remove(collection[0])
+            else:
+                getattr(element.read(), DESTRUCTOR_CLEAR)()
+
+        for dump_idx, dumped_element in enumerate(dump.values()):
+            if dump_idx == 0 and len(element.read()) > 0:
+                new_element = element.read()[0]
+            else:
+                try:
+                    constructor_parameters = [dumped_element[name]
+                                              for name in constructor[1]]
+                except KeyError:
+                    logger.debug("Collection load error, missing parameters.")
+                    continue  # TODO handle error
+
+                new_element = getattr(element.read(), constructor[0])(
+                    *constructor_parameters)
             self._load_any(
                 BlenderAPIElement(
                     new_element, occlude_read_only=self.occlude_read_only),
                 dumped_element
             )
+
+    def _load_curve_mapping(self, element, dump):
+        mapping = element.read()
+        curves = mapping.curves
+
+        for curve_index, curve in dump['curves'].items():
+            dst_curve = curves[curve_index]
+
+            # cleanup existing curve
+            for idx in range(len(dst_curve.points), 0, -1):
+                try:
+                    dst_curve.points.remove(dst_curve.points[0])
+                except Exception:
+                    break
+
+            default_point_count = len(dst_curve.points)
+            
+            for point_idx, point in curve['points'].items():
+                pos = point['location']
+                
+                if point_idx < default_point_count:
+                    dst_curve.points[int(point_idx)].location = pos
+                else:
+                    dst_curve.points.new(pos[0], pos[1])
 
     def _load_pointer(self, pointer, dump):
         rna_property_type = pointer.bl_rna_property.fixed_type
@@ -336,6 +582,10 @@ class Loader:
             pointer.write(bpy.data.meshes.get(dump))
         elif isinstance(rna_property_type, T.Material):
             pointer.write(bpy.data.materials.get(dump))
+        elif isinstance(rna_property_type, T.Collection):
+            pointer.write(bpy.data.collections.get(dump))
+        elif isinstance(rna_property_type, T.ParticleSettings):
+            pointer.write(bpy.data.particles.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))
@@ -365,11 +615,11 @@ class Loader:
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                continue  # TODO error handling
+                logger.debug(f"Load default, skipping {default} : {k}")
             try:
                 self._load_any(default.extend(k), v)
-            except:
-                pass
+            except Exception as err:
+                logger.debug(f"Cannot load {k}: {err}")
 
     @property
     def match_subset_all(self):
@@ -380,8 +630,11 @@ class Loader:
             (_load_filter_type(mathutils.Matrix, use_bl_rna=False), self._load_matrix),
             # before float because bl_rna type of vector if FloatProperty
             (_load_filter_type(mathutils.Vector, use_bl_rna=False), self._load_vector),
-            (_load_filter_type(mathutils.Quaternion, use_bl_rna=False), self._load_quaternion),
+            (_load_filter_type(mathutils.Quaternion,
+                               use_bl_rna=False), self._load_quaternion),
             (_load_filter_type(mathutils.Euler, use_bl_rna=False), self._load_euler),
+            (_load_filter_type(T.CurveMapping,  use_bl_rna=False),
+             self._load_curve_mapping),
             (_load_filter_type(T.FloatProperty), self._load_identity),
             (_load_filter_type(T.StringProperty), self._load_identity),
             (_load_filter_type(T.EnumProperty), self._load_identity),

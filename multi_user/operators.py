@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import asyncio
 import logging
 import os
@@ -181,6 +199,36 @@ class SessionStopOperator(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class SessionKickOperator(bpy.types.Operator):
+    bl_idname = "session.kick"
+    bl_label = "Kick"
+    bl_description = "Kick the user"
+    bl_options = {"REGISTER"}
+
+    user: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client, delayables, stop_modal_executor
+        assert(client)     
+
+        try:
+            client.kick(self.user)
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+        
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to kick {self.user} ? " )
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
@@ -446,6 +494,7 @@ classes = (
     SessionApply,
     SessionCommit,
     ApplyArmatureOperator,
+    SessionKickOperator,
 
 )
 
@@ -470,7 +519,7 @@ def sanitize_deps_graph(dummy):
 
     if client and client.state['STATE'] in [STATE_ACTIVE]:
         for node_key in client.list():
-            client.get(node_key).resolve()
+            client.get(node_key)._resolve()
 
 
 @persistent

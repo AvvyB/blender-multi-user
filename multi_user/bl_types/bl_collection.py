@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
@@ -13,7 +31,7 @@ class BlCollection(BlDatablock):
     bl_delay_apply = 1
     bl_automatic_push = True
 
-    def construct(self, data):
+    def _construct(self, data):
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.collections = [
@@ -28,9 +46,8 @@ class BlCollection(BlDatablock):
         instance.uuid = self.uuid
         return instance
 
-    def load(self, data, target):
+    def _load_implementation(self, data, target):
         # Load other meshes metadata
-        # dump_anything.load(target, data)
         target.name = data["name"]
         
         # link objects
@@ -54,7 +71,7 @@ class BlCollection(BlDatablock):
             if collection.uuid not in data["children"]:
                 target.children.unlink(collection)
 
-    def dump_implementation(self, data, pointer=None):
+    def _dump_implementation(self, data, pointer=None):
         assert(pointer)
         data = {}
         data['name'] = pointer.name
@@ -77,7 +94,7 @@ class BlCollection(BlDatablock):
 
         return data
 
-    def resolve_deps_implementation(self):
+    def _resolve_deps_implementation(self):
         deps = []
 
         for child in self.pointer.children:

@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import copy
 import logging
 import math
@@ -117,10 +135,8 @@ def get_bb_coords_from_obj(object, parent=None):
 def get_view_matrix():
     area, region, rv3d = view3d_find()
 
-    if area and region and rv3d:
-        matrix_dumper = utils.dump_anything.Dumper()
-
-        return matrix_dumper.dump(rv3d.view_matrix)
+    if area and region and rv3d:       
+        return [list(v) for v in rv3d.view_matrix]
 
 def update_presence(self, context):
     global renderer
