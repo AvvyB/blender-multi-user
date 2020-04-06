@@ -47,6 +47,10 @@ def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, att
         :arg attributes: list of attributes name
         :type attributes: list
     """
+    if not dikt or len(collection) == 0:
+        logger.warning(f'Skipping collection')
+        return
+
     if attributes is None:
         attributes = dikt.keys()
 
@@ -111,11 +115,15 @@ def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attri
         :type attribute: str
         :return: numpy byte buffer
     """
+    if len(collection) == 0:
+        logger.warning(f'Skipping empty {attribute} attribute')
+        return {}
 
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
     assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
 
+    
     size = sum(attr_infos.array_dimensions) if attr_infos.is_array else 1
 
     dumped_sequence = np.zeros(
@@ -182,10 +190,12 @@ def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attr
         :arg attribute: target attribute
         :type attribute: str
         :arg sequence: data buffer
-        :type sequence: str
-        :return: numpy byte buffer
+        :type sequence: strr
     """
-
+    if len(collection) == 0:
+        logger.warning(f"Skipping loadin {attribute}")
+        return
+    
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
     assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])

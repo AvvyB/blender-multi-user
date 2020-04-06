@@ -82,7 +82,7 @@ class BlScene(BlDatablock):
                 #TODO: change this ugly fix
                 target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
                 target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
-            target.view_settings.curve_mapping.update()
+                target.view_settings.curve_mapping.update()
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
