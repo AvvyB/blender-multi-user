@@ -286,7 +286,7 @@ class SESSION_PT_user(bpy.types.Panel):
         selected_user = context.window_manager.user_index
         settings = utils.get_preferences()
         active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
-        
+        runtime_settings = context.window_manager.session
 
         # Create a simple row.
         row = layout.row()
@@ -315,6 +315,12 @@ class SESSION_PT_user(bpy.types.Panel):
                 "session.snaptime",
                 text="",
                 icon='TIME').target_client = active_user.username
+
+            if runtime_settings.session_mode == 'HOST':
+                user_operations.operator(
+                    "session.kick",
+                    text="",
+                    icon='CANCEL').user = active_user.username
 
 
 class SESSION_UL_users(bpy.types.UIList):

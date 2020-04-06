@@ -199,6 +199,36 @@ class SessionStopOperator(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class SessionKickOperator(bpy.types.Operator):
+    bl_idname = "session.kick"
+    bl_label = "Kick"
+    bl_description = "Kick the user"
+    bl_options = {"REGISTER"}
+
+    user: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client, delayables, stop_modal_executor
+        assert(client)     
+
+        try:
+            client.kick(self.user)
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+        
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to kick {self.user} ? " )
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
@@ -464,6 +494,7 @@ classes = (
     SessionApply,
     SessionCommit,
     ApplyArmatureOperator,
+    SessionKickOperator,
 
 )
 

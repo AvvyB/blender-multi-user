@@ -41,7 +41,6 @@ import bpy
 from bpy.app.handlers import persistent
 
 from . import environment, utils
-from .libs.replication.replication.constants import  RP_COMMON
 
 
 # TODO: remove dependency as soon as replication will be installed as a module
