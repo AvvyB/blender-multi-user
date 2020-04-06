@@ -61,7 +61,10 @@ class BlLight(BlDatablock):
             "contact_shadow_soft_size",
             "contact_shadow_bias",
             "contact_shadow_thickness",
-            "shape"
+            "shape",
+            "size_y",
+            "size",
+            "angle"
         ]
         data = dumper.dump(pointer)
         return data
