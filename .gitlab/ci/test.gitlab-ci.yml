@@ -6,6 +6,5 @@ test:
     - git submodule init
     - git submodule update
     - python3 -m pip install blender-addon-tester
-    - cd multi-user
     - python3 scripts/test_addon.py multi_user 2.82
 
