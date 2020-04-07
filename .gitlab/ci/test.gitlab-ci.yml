@@ -1,6 +1,5 @@
 test:
   image: ubuntu:latest
-
   before-script:
     - apt install python git
   script:
