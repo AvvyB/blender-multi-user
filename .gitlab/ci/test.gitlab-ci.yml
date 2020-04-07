@@ -1,6 +1,5 @@
-image: ubuntu:latest
-
 test:
+  image: ubuntu:latest
   script:
     - git submodule init
     - git submodule update
