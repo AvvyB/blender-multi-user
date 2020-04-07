@@ -5,6 +5,6 @@ test:
     - apt install -y python3 python3-pip git
     - git submodule init
     - git submodule update
-    - python3 -m pip pip install blender-addon-tester
+    - python3 -m pip install blender-addon-tester
     - python3 scripts/test_addon.py multi_user $BLENDER_VERSIONS
 
