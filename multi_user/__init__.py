@@ -46,7 +46,8 @@ from . import environment, utils
 # TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
     ("zmq","zmq"),
-    ("jsondiff","jsondiff")
+    ("jsondiff","jsondiff"),
+    ("deepdiff", "deepdiff")
 }
 
 

@@ -139,7 +139,7 @@ class BlAction(BlDatablock):
     def _construct(self, data):
         return bpy.data.actions.new(data["name"])
 
-    def _load(self, data, target):
+    def _load_implementation(self, data, target):
         for dumped_fcurve in data["fcurves"]:
             dumped_data_path = dumped_fcurve["data_path"]
             dumped_array_index = dumped_fcurve["dumped_array_index"]
@@ -154,8 +154,7 @@ class BlAction(BlDatablock):
             load_fcurve(dumped_fcurve, fcurve)
         target.id_root = data['id_root']
 
-    def _dump(self, instance=None):
-        assert(instance)
+    def _dump_implementation(self, data, instance=None):
         dumper = Dumper()
         dumper.exclude_filter = [
             'name_full',
@@ -174,7 +173,7 @@ class BlAction(BlDatablock):
 
         data["fcurves"] = []
 
-        for fcurve in self.instance.fcurves:
+        for fcurve in instance.fcurves:
             data["fcurves"].append(dump_fcurve(fcurve, use_numpy=True))
 
         return data

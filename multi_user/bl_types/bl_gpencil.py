@@ -153,7 +153,7 @@ def dump_layer(layer):
         'opacity',
         'channel_color',
         'color',
-        'thickness',
+        # 'thickness', #TODO: enabling only for annotation
         'tint_color',
         'tint_factor',
         'vertex_paint_opacity',

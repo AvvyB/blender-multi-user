@@ -1,24 +1,23 @@
-import pytest
 import os
-# from deepdiff import DeepDiff
 
-from multi_user.bl_types.bl_light import BlLight
+import pytest
+from deepdiff import DeepDiff
+
 import bpy
-
-@pytest.fixture
-def load_test_file():
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    bpy.ops.wm.open_mainfile(filepath=os.path.join(dir_path,"light.blend"))
+from multi_user.bl_types.bl_light import BlLight
 
 
-def test_light(load_test_file):
-    from jsondiff import diff
-    blender_light = bpy.data.lights['point']
-    light_dumper = BlLight(owner='None')
-    sample_data = light_dumper._dump(blender_light)
+@pytest.mark.parametrize('light_type', ['SPOT','SUN','POINT','AREA'])
+def test_light(clear_blend, light_type):
+    bpy.ops.object.light_add(type=light_type)
+
+    blender_light = bpy.data.lights[0]
+    light_dumper = BlLight()
+    expected = light_dumper._dump(blender_light)
     bpy.data.lights.remove(blender_light)
 
-    test = light_dumper._construct(sample_data)
-    light_dumper._load(sample_data, test)
-    sample_2 = light_dumper._dump(test)
-    assert diff(sample_data,test), False
+    test = light_dumper._construct(expected)
+    light_dumper._load(expected, test)
+    result = light_dumper._dump(test)
+
+    assert not DeepDiff(expected, result)
