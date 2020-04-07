@@ -4,6 +4,6 @@ test:
   script:
     - git submodule init
     - git submodule update
-    - pip install pytest, blender-addon-tester
+    - pip install blender-addon-tester
     - python scripts\test_addon.py multi_user $BLENDER_VERSIONS
 
