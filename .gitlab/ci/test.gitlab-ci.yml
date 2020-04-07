@@ -2,7 +2,7 @@ test:
   image: ubuntu:latest
   script:
     - apt update
-    - apt install python git
+    - apt install -y python git
     - git submodule init
     - git submodule update
     - pip install blender-addon-tester
