@@ -1,4 +1,4 @@
-image: python:latest
+image: ubuntu:latest
 
 test:
   script:
