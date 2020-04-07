@@ -45,8 +45,8 @@ class BlLightprobe(BlDatablock):
         loader = Loader()
         loader.load(target, data)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         if bpy.app.version[1] < 83:
             logger.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
@@ -73,7 +73,7 @@ class BlLightprobe(BlDatablock):
             'visibility_blur'
         ]
 
-        return dumper.dump(pointer)
+        return dumper.dump(instance)
 
 
 

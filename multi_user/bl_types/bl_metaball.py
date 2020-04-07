@@ -84,8 +84,8 @@ class BlMetaball(BlDatablock):
 
         load_metaball_elements(data['elements'], target.elements)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
         dumper.depth = 1
         dumper.exclude_filter = [
@@ -96,7 +96,7 @@ class BlMetaball(BlDatablock):
             "name_full"
         ]
 
-        data = dumper.dump(pointer)
-        data['elements'] = dump_metaball_elements(pointer.elements)
+        data = dumper.dump(instance)
+        data['elements'] = dump_metaball_elements(instance.elements)
 
         return data

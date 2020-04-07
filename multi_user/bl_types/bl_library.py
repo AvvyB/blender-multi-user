@@ -38,9 +38,9 @@ class BlLibrary(BlDatablock):
     def _load(self, data, target):
         pass
 
-    def dump(self, pointer=None):
-        assert(pointer)
+    def _dump(self, instance=None):
+        assert(instance)
         dumper = Dumper()
-        return dumper.dump(pointer)
+        return dumper.dump(instance)
 
 

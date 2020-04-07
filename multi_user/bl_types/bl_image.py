@@ -80,10 +80,10 @@ class BlImage(BlDatablock):
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def _dump(self, pointer=None):
-        assert(pointer)
+    def _dump(self, instance=None):
+        assert(instance)
         data = {}
-        data['pixels'] = dump_image(pointer)
+        data['pixels'] = dump_image(instance)
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [   
@@ -95,7 +95,7 @@ class BlImage(BlDatablock):
                 'filepath',
                 'source',
                 'colorspace_settings']
-        data.update(dumper.dump(pointer))
+        data.update(dumper.dump(instance))
 
         return data
 

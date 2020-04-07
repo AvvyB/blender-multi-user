@@ -46,7 +46,7 @@ class BlArmature(BlDatablock):
         
         if parent_object is None:
             parent_object = bpy.data.objects.new(
-                data['user_name'], self.pointer)
+                data['user_name'], self.instance)
             parent_object.uuid = data['user']
 
         is_object_in_master = (
@@ -81,10 +81,10 @@ class BlArmature(BlDatablock):
         bpy.ops.object.mode_set(mode='EDIT')
 
         for bone in data['bones']:
-            if bone not in self.pointer.edit_bones:
-                new_bone = self.pointer.edit_bones.new(bone)
+            if bone not in self.instance.edit_bones:
+                new_bone = self.instance.edit_bones.new(bone)
             else:
-                new_bone = self.pointer.edit_bones[bone]
+                new_bone = self.instance.edit_bones[bone]
 
             bone_data = data['bones'].get(bone)
 
@@ -94,7 +94,7 @@ class BlArmature(BlDatablock):
             new_bone.head_radius = bone_data['head_radius']
 
             if 'parent' in bone_data:
-                new_bone.parent = self.pointer.edit_bones[data['bones']
+                new_bone.parent = self.instance.edit_bones[data['bones']
                                                           [bone]['parent']]
                 new_bone.use_connect = bone_data['use_connect']
 
@@ -109,8 +109,8 @@ class BlArmature(BlDatablock):
         if 'EDIT' in current_mode:
             bpy.ops.object.mode_set(mode='EDIT')
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
         dumper = Dumper()
         dumper.depth = 4
@@ -126,13 +126,13 @@ class BlArmature(BlDatablock):
             'layers'
 
         ]
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
 
-        for bone in pointer.bones:
+        for bone in instance.bones:
             if bone.parent:
                 data['bones'][bone.name]['parent'] = bone.parent.name
         # get the parent Object
-        object_users = utils.get_datablock_users(pointer)[0]
+        object_users = utils.get_datablock_users(instance)[0]
         data['user'] = object_users.uuid
         data['user_name'] = object_users.name
 

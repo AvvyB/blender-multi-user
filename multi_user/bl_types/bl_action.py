@@ -154,8 +154,8 @@ class BlAction(BlDatablock):
             load_fcurve(dumped_fcurve, fcurve)
         target.id_root = data['id_root']
 
-    def _dump(self, pointer=None):
-        assert(pointer)
+    def _dump(self, instance=None):
+        assert(instance)
         dumper = Dumper()
         dumper.exclude_filter = [
             'name_full',
@@ -170,11 +170,11 @@ class BlAction(BlDatablock):
             'users'
         ]
         dumper.depth = 1
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
 
         data["fcurves"] = []
 
-        for fcurve in self.pointer.fcurves:
+        for fcurve in self.instance.fcurves:
             data["fcurves"].append(dump_fcurve(fcurve, use_numpy=True))
 
         return data

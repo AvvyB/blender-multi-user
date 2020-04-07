@@ -42,8 +42,8 @@ class BlLattice(BlDatablock):
 
         np_load_collection(data['points'], target.points, POINT)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
         dumper = Dumper()
         dumper.depth = 1
@@ -58,8 +58,8 @@ class BlLattice(BlDatablock):
             'interpolation_type_w',
             'use_outside'
         ]
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
 
-        data['points'] = np_dump_collection(pointer.points, POINT)
+        data['points'] = np_dump_collection(instance.points, POINT)
         return data
 

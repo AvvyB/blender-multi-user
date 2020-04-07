@@ -507,19 +507,7 @@ def load_pre_handler(dummy):
         bpy.ops.session.stop()
 
 
-@persistent
-def sanitize_deps_graph(dummy):
-    """sanitize deps graph
 
-    Temporary solution to resolve each node pointers after a Undo.
-    A future solution should be to avoid storing dataclock reference...
-
-    """
-    global client
-
-    if client and client.state['STATE'] in [STATE_ACTIVE]:
-        for node_key in client.list():
-            client.get(node_key)._resolve()
 
 
 @persistent
@@ -571,8 +559,6 @@ def register():
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
 
-    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
@@ -592,8 +578,6 @@ def unregister():
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
 
-    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
 

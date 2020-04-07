@@ -11,3 +11,6 @@ multi_user_updater/
 
 # sphinx build folder
 _build
+
+# ignore generated zip generated from blender_addon_tester
+*.zip

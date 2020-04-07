@@ -41,7 +41,7 @@ class BlObject(BlDatablock):
     bl_icon = 'OBJECT_DATA'
 
     def _construct(self, data):
-        pointer = None
+        instance = None
 
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
@@ -56,33 +56,33 @@ class BlObject(BlDatablock):
         if "data" not in data:
             pass
         elif data["data"] in bpy.data.meshes.keys():
-            pointer = bpy.data.meshes[data["data"]]
+            instance = bpy.data.meshes[data["data"]]
         elif data["data"] in bpy.data.lights.keys():
-            pointer = bpy.data.lights[data["data"]]
+            instance = bpy.data.lights[data["data"]]
         elif data["data"] in bpy.data.cameras.keys():
-            pointer = bpy.data.cameras[data["data"]]
+            instance = bpy.data.cameras[data["data"]]
         elif data["data"] in bpy.data.curves.keys():
-            pointer = bpy.data.curves[data["data"]]
+            instance = bpy.data.curves[data["data"]]
         elif data["data"] in bpy.data.metaballs.keys():
-            pointer = bpy.data.metaballs[data["data"]]
+            instance = bpy.data.metaballs[data["data"]]
         elif data["data"] in bpy.data.armatures.keys():
-            pointer = bpy.data.armatures[data["data"]]
+            instance = bpy.data.armatures[data["data"]]
         elif data["data"] in bpy.data.grease_pencils.keys():
-            pointer = bpy.data.grease_pencils[data["data"]]
+            instance = bpy.data.grease_pencils[data["data"]]
         elif data["data"] in bpy.data.curves.keys():
-            pointer = bpy.data.curves[data["data"]]
+            instance = bpy.data.curves[data["data"]]
         elif data["data"] in bpy.data.lattices.keys():
-            pointer = bpy.data.lattices[data["data"]]
+            instance = bpy.data.lattices[data["data"]]
         elif data["data"] in bpy.data.speakers.keys():
-            pointer = bpy.data.speakers[data["data"]]
+            instance = bpy.data.speakers[data["data"]]
         elif data["data"] in bpy.data.lightprobes.keys():
             # Only supported since 2.83
             if bpy.app.version[1] >= 83:
-                pointer = bpy.data.lightprobes[data["data"]]
+                instance = bpy.data.lightprobes[data["data"]]
             else:
                 logger.warning(
                     "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
-        instance = bpy.data.objects.new(data["name"], pointer)
+        instance = bpy.data.objects.new(data["name"], instance)
         instance.uuid = self.uuid
 
         return instance
@@ -152,8 +152,8 @@ class BlObject(BlDatablock):
 
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
@@ -169,33 +169,33 @@ class BlObject(BlDatablock):
             "instance_type",
             "location",
             "scale",
-            'rotation_quaternion' if pointer.rotation_mode == 'QUATERNION' else 'rotation_euler',
+            'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
 
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
 
         if self.is_library:
             return data
 
         # MODIFIERS
-        if hasattr(pointer, 'modifiers'):
+        if hasattr(instance, 'modifiers'):
             dumper.include_filter = None
             dumper.depth = 2
             data["modifiers"] = {}
-            for index, modifier in enumerate(pointer.modifiers):
+            for index, modifier in enumerate(instance.modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
 
         # CONSTRAINTS
         # OBJECT
-        if hasattr(pointer, 'constraints'):
+        if hasattr(instance, 'constraints'):
             dumper.depth = 3
-            data["constraints"] = dumper.dump(pointer.constraints)
+            data["constraints"] = dumper.dump(instance.constraints)
 
         # POSE
-        if hasattr(pointer, 'pose') and pointer.pose:
+        if hasattr(instance, 'pose') and instance.pose:
             # BONES
             bones = {}
-            for bone in pointer.pose.bones:
+            for bone in instance.pose.bones:
                 bones[bone.name] = {}
                 dumper.depth = 1
                 rotation = 'rotation_quaternion' if bone.rotation_mode == 'QUATERNION' else 'rotation_euler'
@@ -220,7 +220,7 @@ class BlObject(BlDatablock):
 
             # GROUPS
             bone_groups = {}
-            for group in pointer.pose.bone_groups:
+            for group in instance.pose.bone_groups:
                 dumper.depth = 3
                 dumper.include_filter = [
                     'name',
@@ -230,24 +230,24 @@ class BlObject(BlDatablock):
             data['pose']['bone_groups'] = bone_groups
 
         # CHILDS
-        if len(pointer.children) > 0:
+        if len(instance.children) > 0:
             childs = []
-            for child in pointer.children:
+            for child in instance.children:
                 childs.append(child.name)
 
             data["children"] = childs
 
         # VERTEx GROUP
-        if len(pointer.vertex_groups) > 0:
+        if len(instance.vertex_groups) > 0:
             vg_data = []
-            for vg in pointer.vertex_groups:
+            for vg in instance.vertex_groups:
                 vg_idx = vg.index
                 dumped_vg = {}
                 dumped_vg['name'] = vg.name
 
                 vertices = []
 
-                for v in pointer.data.vertices:
+                for v in instance.data.vertices:
                     for vg in v.groups:
                         if vg.group == vg_idx:
                             vertices.append({
@@ -262,7 +262,7 @@ class BlObject(BlDatablock):
             data['vertex_groups'] = vg_data
 
         #  SHAPE KEYS
-        object_data = pointer.data
+        object_data = instance.data
         if hasattr(object_data, 'shape_keys') and object_data.shape_keys:
             dumper = Dumper()
             dumper.depth = 2
@@ -295,17 +295,17 @@ class BlObject(BlDatablock):
         deps = []
     
         # Avoid Empty case
-        if self.pointer.data:
-            deps.append(self.pointer.data)
-        if len(self.pointer.children) > 0:
-            deps.extend(list(self.pointer.children))
+        if self.instance.data:
+            deps.append(self.instance.data)
+        if len(self.instance.children) > 0:
+            deps.extend(list(self.instance.children))
 
         if self.is_library:
-            deps.append(self.pointer.library)
+            deps.append(self.instance.library)
 
-        if self.pointer.instance_type == 'COLLECTION':
+        if self.instance.instance_type == 'COLLECTION':
             # TODO: uuid based
-            deps.append(self.pointer.instance_collection)
+            deps.append(self.instance.instance_collection)
 
         return deps
 

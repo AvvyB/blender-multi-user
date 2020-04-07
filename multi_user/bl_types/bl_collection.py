@@ -48,35 +48,41 @@ class BlCollection(BlDatablock):
         # Load other meshes metadata
         target.name = data["name"]
         
-        # link objects
+        # Objects
         for object in data["objects"]:
-            object_ref = utils.find_from_attr('uuid', object, bpy.data.objects)
-            if object_ref and object_ref.name not in target.objects.keys():
+            object_ref = bpy.data.objects.get(object)
+
+            if object_ref is None:
+                continue
+
+            if object not in target.objects.keys(): 
                 target.objects.link(object_ref)
 
         for object in target.objects:
-            if object.uuid not in data["objects"]:
+            if object.name not in data["objects"]:
                 target.objects.unlink(object)
 
         # Link childrens
         for collection in data["children"]:
-            collection_ref = utils.find_from_attr(
-                'uuid', collection, bpy.data.collections)
-            if collection_ref and collection_ref.name not in target.children.keys():
+            collection_ref = bpy.data.collections.get(collection)
+
+            if collection_ref is None:
+                continue
+            if collection_ref.name not in target.children.keys():
                 target.children.link(collection_ref)
 
         for collection in target.children:
-            if collection.uuid not in data["children"]:
+            if collection.name not in data["children"]:
                 target.children.unlink(collection)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         data = {}
-        data['name'] = pointer.name
+        data['name'] = instance.name
 
         # dump objects
         collection_objects = []
-        for object in pointer.objects:
+        for object in instance.objects:
             if object not in collection_objects:
                 collection_objects.append(object.name)
 
@@ -84,7 +90,7 @@ class BlCollection(BlDatablock):
 
         # dump children collections
         collection_children = []
-        for child in pointer.children:
+        for child in instance.children:
             if child not in collection_children:
                 collection_children.append(child.name)
 
@@ -95,10 +101,9 @@ class BlCollection(BlDatablock):
     def _resolve_deps_implementation(self):
         deps = []
 
-        for child in self.pointer.children:
+        for child in self.instance.children:
             deps.append(child)
-        for object in self.pointer.objects:
+        for object in self.instance.objects:
             deps.append(object)
 
         return deps
-

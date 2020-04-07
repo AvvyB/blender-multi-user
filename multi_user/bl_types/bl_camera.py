@@ -45,8 +45,8 @@ class BlCamera(BlDatablock):
         if dof_settings:
             loader.load(target.dof, dof_settings)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
         # TODO: background image support
         
@@ -80,6 +80,6 @@ class BlCamera(BlDatablock):
             'sensor_height',
             'sensor_width',
         ]
-        return dumper.dump(pointer)
+        return dumper.dump(instance)
     
 

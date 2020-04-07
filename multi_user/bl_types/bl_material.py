@@ -195,8 +195,8 @@ class BlMaterial(BlDatablock):
 
             load_links(data["node_tree"]["links"], target.node_tree)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         mat_dumper = Dumper()
         mat_dumper.depth = 2
         mat_dumper.exclude_filter = [
@@ -215,17 +215,17 @@ class BlMaterial(BlDatablock):
             "line_color",
             "view_center",
         ]
-        data = mat_dumper.dump(pointer)
+        data = mat_dumper.dump(instance)
 
-        if pointer.use_nodes:
+        if instance.use_nodes:
             nodes = {}
-            for node in pointer.node_tree.nodes:
+            for node in instance.node_tree.nodes:
                 nodes[node.name] = dump_node(node)
             data["node_tree"]['nodes'] = nodes
             
-            data["node_tree"]["links"] = dump_links(pointer.node_tree.links)
+            data["node_tree"]["links"] = dump_links(instance.node_tree.links)
         
-        if pointer.is_grease_pencil:
+        if instance.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
@@ -251,19 +251,19 @@ class BlMaterial(BlDatablock):
                 'mix_color',
                 'flip'                
             ]
-            data['grease_pencil'] = gp_mat_dumper.dump(pointer.grease_pencil)
+            data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         return data
 
     def _resolve_deps_implementation(self):
         # TODO: resolve node group deps
         deps = []
 
-        if self.pointer.use_nodes:
-            for node in self.pointer.node_tree.nodes:
+        if self.instance.use_nodes:
+            for node in self.instance.node_tree.nodes:
                 if node.type == 'TEX_IMAGE':
                     deps.append(node.image)
         if self.is_library:
-            deps.append(self.pointer.library)
+            deps.append(self.instance.library)
 
         return deps
 

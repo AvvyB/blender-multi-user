@@ -37,7 +37,7 @@ class BlScene(BlDatablock):
         return instance
 
     def _load_implementation(self, data, target):
-        target = self.pointer
+        target = self.instance
         # Load other meshes metadata
         loader = Loader()
         loader.load(target, data)
@@ -83,8 +83,8 @@ class BlScene(BlDatablock):
                 target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
                 target.view_settings.curve_mapping.update()
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         data = {}
 
         scene_dumper = Dumper()
@@ -96,12 +96,12 @@ class BlScene(BlDatablock):
             'camera',
             'grease_pencil',
         ]
-        data = scene_dumper.dump(pointer)
+        data = scene_dumper.dump(instance)
 
         scene_dumper.depth = 3
 
         scene_dumper.include_filter = ['children','objects','name']
-        data['collection'] = scene_dumper.dump(pointer.collection)
+        data['collection'] = scene_dumper.dump(instance.collection)
         
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
@@ -124,19 +124,19 @@ class BlScene(BlDatablock):
                 'samples',
                 'volume_bounces'
             ]
-            data['eevee'] = scene_dumper.dump(pointer.eevee)
-            data['cycles'] = scene_dumper.dump(pointer.cycles)        
-            data['view_settings'] = scene_dumper.dump(pointer.view_settings)
-            data['view_settings']['curve_mapping'] = scene_dumper.dump(pointer.view_settings.curve_mapping)
+            data['eevee'] = scene_dumper.dump(instance.eevee)
+            data['cycles'] = scene_dumper.dump(instance.cycles)        
+            data['view_settings'] = scene_dumper.dump(instance.view_settings)
+            data['view_settings']['curve_mapping'] = scene_dumper.dump(instance.view_settings.curve_mapping)
             
-            if pointer.view_settings.use_curve_mapping:
+            if instance.view_settings.use_curve_mapping:
                 scene_dumper.depth = 5
                 scene_dumper.include_filter = [
                     'curves',
                     'points',
                     'location'
                 ]
-                data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(pointer.view_settings.curve_mapping.curves)
+                data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(instance.view_settings.curve_mapping.curves)
         
         
         return data
@@ -145,19 +145,19 @@ class BlScene(BlDatablock):
         deps = []
 
         # child collections
-        for child in self.pointer.collection.children:
+        for child in self.instance.collection.children:
             deps.append(child)
         
         # childs objects
-        for object in self.pointer.objects:
+        for object in self.instance.objects:
             deps.append(object)
         
         # world
-        if self.pointer.world:
-            deps.append(self.pointer.world)
+        if self.instance.world:
+            deps.append(self.instance.world)
         
         # annotations
-        if self.pointer.grease_pencil:
-            deps.append(self.pointer.grease_pencil)
+        if self.instance.grease_pencil:
+            deps.append(self.instance.grease_pencil)
 
         return deps

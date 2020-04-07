@@ -84,14 +84,14 @@ class BlCurve(BlDatablock):
             #             new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
             loader.load(new_spline, spline)
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
 
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
         data['splines'] = {}
 
-        for index, spline in enumerate(pointer.splines):
+        for index, spline in enumerate(instance.splines):
             dumper.depth = 2
             spline_data = dumper.dump(spline)
             # spline_data['points'] = np_dump_collection(spline.points, SPLINE_POINT)
@@ -99,10 +99,10 @@ class BlCurve(BlDatablock):
             spline_data['bezier_points'] = np_dump_collection(spline.bezier_points, SPLINE_BEZIER_POINT)
             data['splines'][index] = spline_data
 
-        if isinstance(pointer, T.SurfaceCurve):
+        if isinstance(instance, T.SurfaceCurve):
             data['type'] = 'SURFACE'
-        elif isinstance(pointer, T.TextCurve):
+        elif isinstance(instance, T.TextCurve):
             data['type'] = 'FONT'
-        elif isinstance(pointer, T.Curve):
+        elif isinstance(instance, T.Curve):
             data['type'] = 'CURVE'
         return data

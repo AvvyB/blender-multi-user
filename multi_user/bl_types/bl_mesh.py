@@ -109,10 +109,10 @@ class BlMesh(BlDatablock):
             target.validate()
             target.update()
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
-        mesh = pointer
+        mesh = instance
 
         dumper = Dumper()
         dumper.depth = 1
@@ -156,7 +156,7 @@ class BlMesh(BlDatablock):
 
         # Fix material index
         m_list = []
-        for material in pointer.materials:
+        for material in instance.materials:
             if material:
                 m_list.append(material.name)
 
@@ -167,7 +167,7 @@ class BlMesh(BlDatablock):
     def _resolve_deps_implementation(self):
         deps = []
 
-        for material in self.pointer.materials:
+        for material in self.instance.materials:
             if material:
                 deps.append(material)
 
