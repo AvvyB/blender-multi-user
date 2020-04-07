@@ -38,12 +38,10 @@ class BlCollection(BlDatablock):
                     name for name in sourceData.collections if name == self.data['name']]
             
             instance = bpy.data.collections[self.data['name']]
-            instance.uuid = self.uuid
             
             return instance
 
         instance = bpy.data.collections.new(data["name"])
-        instance.uuid = self.uuid
         return instance
 
     def _load_implementation(self, data, target):
@@ -80,7 +78,7 @@ class BlCollection(BlDatablock):
         collection_objects = []
         for object in pointer.objects:
             if object not in collection_objects:
-                collection_objects.append(object.uuid)
+                collection_objects.append(object.name)
 
         data['objects'] = collection_objects
 
@@ -88,7 +86,7 @@ class BlCollection(BlDatablock):
         collection_children = []
         for child in pointer.children:
             if child not in collection_children:
-                collection_children.append(child.uuid)
+                collection_children.append(child.name)
 
         data['children'] = collection_children
 

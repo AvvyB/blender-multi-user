@@ -34,7 +34,6 @@ class BlScene(BlDatablock):
 
     def _construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
-        instance.uuid = self.uuid
         return instance
 
     def _load_implementation(self, data, target):

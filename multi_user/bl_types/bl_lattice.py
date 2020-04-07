@@ -33,14 +33,14 @@ class BlLattice(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'LATTICE_DATA'
 
+    def _construct(self, data):
+        return bpy.data.lattices.new(data["name"])
+
     def _load_implementation(self, data, target):
         loader = Loader()
         loader.load(target, data)
 
         np_load_collection(data['points'], target.points, POINT)
-
-    def _construct(self, data):
-        return bpy.data.lattices.new(data["name"])
 
     def _dump_implementation(self, data, pointer=None):
         assert(pointer)
