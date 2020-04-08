@@ -88,12 +88,15 @@ class BlMetaball(BlDatablock):
         assert(instance)
         dumper = Dumper()
         dumper.depth = 1
-        dumper.exclude_filter = [
-            "is_editmode",
-            "is_evaluated",
-            "is_embedded_data",
-            "is_library_indirect",
-            "name_full"
+        dumper.include_filter = [
+            'name',
+            'resolution',
+            'render_resolution',
+            'threshold',
+            'update_method',
+            'use_auto_texspace',
+            'texspace_location',
+            'texspace_size'
         ]
 
         data = dumper.dump(instance)

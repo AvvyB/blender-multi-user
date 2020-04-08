@@ -37,7 +37,6 @@ class BlScene(BlDatablock):
         return instance
 
     def _load_implementation(self, data, target):
-        target = self.instance
         # Load other meshes metadata
         loader = Loader()
         loader.load(target, data)

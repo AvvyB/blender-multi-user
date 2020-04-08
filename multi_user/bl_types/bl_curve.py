@@ -87,7 +87,20 @@ class BlCurve(BlDatablock):
     def _dump_implementation(self, data, instance=None):
         assert(instance)
         dumper = Dumper()
-
+        # Conflicting attributes
+        # TODO: remove them with the NURBS support
+        dumper.exclude_filter = [
+            'users',
+            'order_u',
+            'order_v',
+            'point_count_v',
+            'point_count_u',
+            'active_textbox'
+        ]
+        if instance.use_auto_texspace:
+            dumper.exclude_filter.extend([
+                'texspace_location',
+                'texspace_size'])
         data = dumper.dump(instance)
         data['splines'] = {}
 
