@@ -3,10 +3,8 @@ test:
   script:
     - git submodule init
     - git submodule update
-    - python --version
-    - python -m pip install --upgrade pip
-    - apt update
-    - apt install -f -y blender
+    # - apt update
+    # - apt install -f -y blender
     - pip install blender-addon-tester
     - python test_addon.py multi_user 2.82
 
