@@ -179,6 +179,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = box.row()
         row.label(text="IPC Port:")
         row.prop(settings, "ipc_port", text="")
+        row = box.row()
+        row.label(text="Timeout (ms):")
+        row.prop(settings, "connection_timeout", text="")
 
         if runtime_settings.session_mode == 'HOST':
             row = box.row()

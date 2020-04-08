@@ -102,6 +102,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="cache directory",
         subtype="DIR_PATH",
         default=environment.DEFAULT_CACHE_DIR)
+    connection_timeout: bpy.props.IntProperty(
+        name='connection timeout',
+        description='connection timeout before disconnection',
+        default=1000
+    )
     # for UI
     category: bpy.props.EnumProperty(
         name="Category",
