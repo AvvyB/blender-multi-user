@@ -8,5 +8,5 @@ test:
     # TODO: indtall only dependencies
     - apt install -f -y blender 
     - pip install blender-addon-tester
-    - python scripts/test_addon.py ../multi_user 2.82
+    - python scripts/test_addon.py
 
