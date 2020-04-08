@@ -46,7 +46,7 @@ class BlArmature(BlDatablock):
         
         if parent_object is None:
             parent_object = bpy.data.objects.new(
-                data['user_name'], self.instance)
+                data['user_name'], target)
             parent_object.uuid = data['user']
 
         is_object_in_master = (
@@ -81,10 +81,10 @@ class BlArmature(BlDatablock):
         bpy.ops.object.mode_set(mode='EDIT')
 
         for bone in data['bones']:
-            if bone not in self.instance.edit_bones:
-                new_bone = self.instance.edit_bones.new(bone)
+            if bone not in target.edit_bones:
+                new_bone = target.edit_bones.new(bone)
             else:
-                new_bone = self.instance.edit_bones[bone]
+                new_bone = target.edit_bones[bone]
 
             bone_data = data['bones'].get(bone)
 
@@ -94,7 +94,7 @@ class BlArmature(BlDatablock):
             new_bone.head_radius = bone_data['head_radius']
 
             if 'parent' in bone_data:
-                new_bone.parent = self.instance.edit_bones[data['bones']
+                new_bone.parent = target.edit_bones[data['bones']
                                                           [bone]['parent']]
                 new_bone.use_connect = bone_data['use_connect']
 
