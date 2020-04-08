@@ -3,8 +3,10 @@ test:
   script:
     - git submodule init
     - git submodule update
-    # - apt update
-    # - apt install -f -y blender
+    - apt update
+    # install blender to get all required dependencies
+    # TODO: indtall only dependencies
+    - apt install -f -y blender 
     - pip install blender-addon-tester
     - python test_addon.py multi_user 2.82
 
