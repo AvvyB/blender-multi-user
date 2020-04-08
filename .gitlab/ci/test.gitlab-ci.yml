@@ -8,6 +8,5 @@ test:
     - apt update
     - apt install -f -y blender
     - pip install blender-addon-tester
-    - cd scripts
     - python test_addon.py multi_user 2.82
 
