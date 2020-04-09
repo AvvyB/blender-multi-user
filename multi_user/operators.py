@@ -130,7 +130,9 @@ class SessionStartOperator(bpy.types.Operator):
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    ipc_port=settings.ipc_port)
+                    ipc_port=settings.ipc_port,
+                    timeout=settings.connection_timeout
+                )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
@@ -146,7 +148,8 @@ class SessionStartOperator(bpy.types.Operator):
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    ipc_port=settings.ipc_port
+                    ipc_port=settings.ipc_port,
+                    timeout=settings.connection_timeout
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))

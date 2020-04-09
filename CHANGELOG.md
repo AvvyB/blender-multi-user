@@ -36,3 +36,17 @@ All notable changes to this project will be documented in this file.
 - Use a basic BFS approach for replication graph pre-load.
 - Serialization is now based on marshal (2x performance improvements).
 - Let pip chose python dependencies install path.
+
+## [0.0.3] - Upcoming
+
+### Added
+
+- Auto updater support
+- Performances improvements on Meshes, Gpencils, Actions
+- Multi-scene workflow support
+- Render setting synchronisation
+- Kick command
+
+### Changed
+
+- Config is now stored in blender user preference
