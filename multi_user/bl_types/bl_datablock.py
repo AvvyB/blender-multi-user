@@ -1,13 +1,48 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
 from .. import utils
+from .dump_anything import Loader, Dumper
 from ..libs.replication.replication.data import ReplicatedDatablock
-from ..libs.replication.replication.constants import UP
-from ..libs.replication.replication.constants import DIFF_BINARY
+from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
+
+
+def has_action(target):
+    """ Check if the target datablock has actions
+    """
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.action)
+
+
+def has_driver(target):
+    """ Check if the target datablock is driven
+    """
+    return (hasattr(target, 'animation_data')
+            and target.animation_data
+            and target.animation_data.drivers)
+
 
 def dump_driver(driver):
-    dumper = utils.dump_anything.Dumper()
+    dumper = Dumper()
     dumper.depth = 6
     data = dumper.dump(driver)
 
@@ -15,6 +50,7 @@ def dump_driver(driver):
 
 
 def load_driver(target_datablock, src_driver):
+    loader = Loader()
     drivers = target_datablock.animation_data.drivers
     src_driver_data = src_driver['driver']
     new_driver = drivers.new(src_driver['data_path'])
@@ -22,7 +58,7 @@ def load_driver(target_datablock, src_driver):
     # Settings
     new_driver.driver.type = src_driver_data['type']
     new_driver.driver.expression = src_driver_data['expression']
-    utils.dump_anything.load(new_driver,  src_driver)
+    loader.load(new_driver,  src_driver)
 
     # Variables
     for src_variable in src_driver_data['variables']:
@@ -35,7 +71,7 @@ def load_driver(target_datablock, src_driver):
             src_target_data = src_var_data['targets'][src_target]
             new_var.targets[src_target].id = utils.resolve_from_id(
                 src_target_data['id'], src_target_data['id_type'])
-            utils.dump_anything.load(
+            loader.load(
                 new_var.targets[src_target],  src_target_data)
 
     # Fcurve
@@ -47,8 +83,7 @@ def load_driver(target_datablock, src_driver):
 
     for index, src_point in enumerate(src_driver['keyframe_points']):
         new_point = new_fcurve[index]
-        utils.dump_anything.load(
-            new_point, src_driver['keyframe_points'][src_point])
+        loader.load(new_point, src_driver['keyframe_points'][src_point])
 
 
 class BlDatablock(ReplicatedDatablock):
@@ -61,91 +96,64 @@ class BlDatablock(ReplicatedDatablock):
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
     """
-    bl_id = "scenes"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        pointer = kwargs.get('pointer', None)
+        instance = kwargs.get('instance', None)
 
         # TODO: use is_library_indirect
-        self.is_library = (pointer and hasattr(pointer, 'library') and
-                           pointer.library) or \
+        self.is_library = (instance and hasattr(instance, 'library') and
+                           instance.library) or \
             (self.data and 'library' in self.data)
 
-        if self.is_library:
-            self.load = self.load_library
-            self.dump = self.dump_library
-            self.diff = self.diff_library
-            self.resolve_dependencies = self.resolve_dependencies_library
-
-        if self.pointer and hasattr(self.pointer, 'uuid'):
-            self.pointer.uuid = self.uuid
+        if instance and hasattr(instance, 'uuid'):
+           instance.uuid = self.uuid
         
         # self.diff_method = DIFF_BINARY
 
-    def library_apply(self):
-        """Apply stored data
-        """
-        # UP in case we want to reset our pointer data
-        self.state = UP
-
-    def bl_diff(self):
-        """Generic datablock diff"""
-        return self.pointer.name != self.data['name']
-
-    def construct_library(self, data):
-        return None
-
-    def load_library(self, data, target):
-        pass
-
-    def dump_library(self, pointer=None):
-        return utils.dump_datablock(pointer, 1)
-
-    def diff_library(self):
-        return False
-
-    def resolve_dependencies_library(self):
-        return [self.pointer.library]
-
-    def resolve(self):
+    @property
+    def instance(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
         # In case of lost uuid (ex: undo), resolve by name and reassign it
-        # TODO: avoid reference storing
         if not datablock_ref:
-            datablock_ref = getattr(
-                bpy.data, self.bl_id).get(self.data['name'])
+            datablock_ref = datablock_root.get(self.data['name'])
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
 
-        self.pointer = datablock_ref
+        return datablock_ref
 
-    def dump(self, pointer=None):
+    def _dump(self, instance=None):
+        dumper = Dumper()
         data = {}
-        if utils.has_action(pointer):
-            dumper = utils.dump_anything.Dumper()
+        # Dump animation data
+        if has_action(instance):
+            dumper = Dumper()
             dumper.include_filter = ['action']
-            data['animation_data'] = dumper.dump(pointer.animation_data)
+            data['animation_data'] = dumper.dump(instance.animation_data)
 
-        if utils.has_driver(pointer):
+        if has_driver(instance):
             dumped_drivers = {'animation_data': {'drivers': []}}
-            for driver in pointer.animation_data.drivers:
+            for driver in instance.animation_data.drivers:
                 dumped_drivers['animation_data']['drivers'].append(
                     dump_driver(driver))
 
             data.update(dumped_drivers)
-        data.update(self.dump_implementation(data, pointer=pointer))
+        
+        if self.is_library:
+            data.update(dumper.dump(instance))
+        else:
+            data.update(self._dump_implementation(data, instance=instance))
 
         return data
 
-    def dump_implementation(self, data, target):
+    def _dump_implementation(self, data, target):
         raise NotImplementedError
 
-    def load(self, data, target):
+    def _load(self, data, target):
         # Load animation data
         if 'animation_data' in data.keys():
             if target.animation_data is None:
@@ -161,18 +169,27 @@ class BlDatablock(ReplicatedDatablock):
             if 'action' in data['animation_data']:
                 target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
 
-        self.load_implementation(data, target)
+        if self.is_library:
+            return
+        else:
+            self._load_implementation(data, target)
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         raise NotImplementedError
 
-    def resolve_dependencies(self):
+    def resolve_deps(self):
         dependencies = []
 
-        if utils.has_action(self.pointer):
-            dependencies.append(self.pointer.animation_data.action)
+        if has_action(self.instance):
+            dependencies.append(self.instance.animation_data.action)
+
+        if not self.is_library:
+            dependencies.extend(self._resolve_deps_implementation())
 
         return dependencies
 
+    def _resolve_deps_implementation(self):
+        return []
+
     def is_valid(self):
-        raise NotImplementedError
+        return getattr(bpy.data, self.bl_id).get(self.data['name'])

@@ -1,3 +1,20 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
 import logging
 
 import bpy
@@ -196,27 +213,37 @@ class DrawClient(Draw):
     def execute(self):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
+        prefs = utils.get_preferences()
         
         if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             settings = bpy.context.window_manager.session
             users = session.online_users
 
+            # Update users 
             for user in users.values():
                 metadata = user.get('metadata')
-
-                if 'color' in metadata:
+                color = metadata.get('color')
+                scene_current = metadata.get('scene_current')
+                user_showable = scene_current == bpy.context.scene.name or settings.presence_show_far_user
+                if color and scene_current and user_showable:
                     if settings.presence_show_selected and 'selected_objects' in metadata.keys():
                         renderer.draw_client_selection(
-                            user['id'], metadata['color'], metadata['selected_objects'])
+                            user['id'], color, metadata['selected_objects'])
                     if settings.presence_show_user and 'view_corners' in metadata:
                         renderer.draw_client_camera(
-                            user['id'], metadata['view_corners'], metadata['color'])
+                            user['id'], metadata['view_corners'], color)
+                if not user_showable:
+                    # TODO: remove this when user event drivent update will be 
+                    # ready
+                    renderer.flush_selection()
+                    renderer.flush_users()
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=.5):
+    def __init__(self, timout=.016):
         super().__init__(timout)
         self.handle_quit = False
+        self.users_metadata = {}
 
     def execute(self):
         settings = utils.get_preferences()
@@ -228,43 +255,62 @@ class ClientUpdate(Timer):
             if session.state['STATE'] == 0:
                 bpy.ops.session.stop()
 
-            local_user = operators.client.online_users.get(
-                settings.username)
+            local_user =  operators.client.online_users.get(settings.username)
+            
             if not local_user:
                 return
+            else:
+                for username, user_data in operators.client.online_users.items():
+                    if username != settings.username:
+                        cached_user_data = self.users_metadata.get(username)
+                        new_user_data = operators.client.online_users[username]['metadata']
+                        
+                        if cached_user_data is None:
+                            self.users_metadata[username] = user_data['metadata']
+                        elif 'view_matrix' in cached_user_data and 'view_matrix' in new_user_data and cached_user_data['view_matrix'] != new_user_data['view_matrix']:
+                            presence.refresh_3d_view()
+                            self.users_metadata[username] = user_data['metadata']
+                            break
+                        else:
+                            self.users_metadata[username] = user_data['metadata']
 
             local_user_metadata = local_user.get('metadata')
+            scene_current = bpy.context.scene.name
+            local_user =  session.online_users.get(settings.username)
             current_view_corners = presence.get_view_corners()
-
+                
+            # Init client metadata
             if not local_user_metadata or 'color' not in local_user_metadata.keys():
                 metadata = {
-                    'view_corners': current_view_corners,
+                    'view_corners': presence.get_view_matrix(),
                     'view_matrix': presence.get_view_matrix(),
                     'color': (settings.client_color.r,
                               settings.client_color.g,
                               settings.client_color.b,
                               1),
-                    'frame_current':bpy.context.scene.frame_current
+                    'frame_current':bpy.context.scene.frame_current,
+                    'scene_current': scene_current
                 }
                 session.update_user_metadata(metadata)
-            elif current_view_corners != local_user_metadata['view_corners']:
-                logger.info('update user metadata')
+
+            # Update client representation
+            # Update client current scene
+            elif scene_current != local_user_metadata['scene_current']:
+                local_user_metadata['scene_current'] = scene_current
+                session.update_user_metadata(local_user_metadata)            
+            elif 'view_corners' in local_user_metadata  and current_view_corners != local_user_metadata['view_corners']:
                 local_user_metadata['view_corners'] = current_view_corners
                 local_user_metadata['view_matrix'] = presence.get_view_matrix()
                 session.update_user_metadata(local_user_metadata)
-
             # sync online users
             session_users = operators.client.online_users
             ui_users = bpy.context.window_manager.online_users
 
             for index, user in enumerate(ui_users):
                 if user.username not in session_users.keys():
-                    ui_users.remove(index)
-                    
+                    ui_users.remove(index)    
                     renderer.flush_selection()
                     renderer.flush_users()
-                    
-                    
                     break
 
             for user in session_users:
@@ -274,7 +320,9 @@ class ClientUpdate(Timer):
                     new_key.username = user
 
             # TODO: event drivent 3d view refresh
-            presence.refresh_3d_view()
+            
+            
+            
         elif session.state['STATE'] == STATE_QUITTING:
             presence.refresh_3d_view()
             self.handle_quit = True
@@ -286,5 +334,5 @@ class ClientUpdate(Timer):
             
             presence.renderer.stop()
         # # ui update
-        elif session:
+        elif  session.state['STATE'] != STATE_INITIAL:
             presence.refresh_3d_view()

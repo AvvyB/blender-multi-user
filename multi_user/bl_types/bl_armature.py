@@ -1,12 +1,28 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
-from ..libs.overrider import Overrider
-from .. import utils
-from .. import presence, operators
-from .bl_datablock import BlDatablock
 
-# WIP
+from .dump_anything import Loader, Dumper
+from .. import presence, operators, utils
+from .bl_datablock import BlDatablock
 
 
 class BlArmature(BlDatablock):
@@ -17,10 +33,10 @@ class BlArmature(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'ARMATURE_DATA'
     
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.armatures.new(data["name"])
 
-    def load_implementation(self, data, target):
+    def _load_implementation(self, data, target):
         # Load parent object
         parent_object = utils.find_from_attr(
             'uuid',
@@ -30,7 +46,7 @@ class BlArmature(BlDatablock):
         
         if parent_object is None:
             parent_object = bpy.data.objects.new(
-                data['user_name'], self.pointer)
+                data['user_name'], target)
             parent_object.uuid = data['user']
 
         is_object_in_master = (
@@ -65,10 +81,10 @@ class BlArmature(BlDatablock):
         bpy.ops.object.mode_set(mode='EDIT')
 
         for bone in data['bones']:
-            if bone not in self.pointer.edit_bones:
-                new_bone = self.pointer.edit_bones.new(bone)
+            if bone not in target.edit_bones:
+                new_bone = target.edit_bones.new(bone)
             else:
-                new_bone = self.pointer.edit_bones[bone]
+                new_bone = target.edit_bones[bone]
 
             bone_data = data['bones'].get(bone)
 
@@ -78,11 +94,12 @@ class BlArmature(BlDatablock):
             new_bone.head_radius = bone_data['head_radius']
 
             if 'parent' in bone_data:
-                new_bone.parent = self.pointer.edit_bones[data['bones']
+                new_bone.parent = target.edit_bones[data['bones']
                                                           [bone]['parent']]
                 new_bone.use_connect = bone_data['use_connect']
 
-            utils.dump_anything.load(new_bone, bone_data)
+            loader = Loader()
+            loader.load(new_bone, bone_data)
             
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -92,10 +109,10 @@ class BlArmature(BlDatablock):
         if 'EDIT' in current_mode:
             bpy.ops.object.mode_set(mode='EDIT')
 
-    def dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
-        dumper = utils.dump_anything.Dumper()
+        dumper = Dumper()
         dumper.depth = 4
         dumper.include_filter = [
             'bones',
@@ -109,13 +126,13 @@ class BlArmature(BlDatablock):
             'layers'
 
         ]
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
 
-        for bone in pointer.bones:
+        for bone in instance.bones:
             if bone.parent:
                 data['bones'][bone.name]['parent'] = bone.parent.name
         # get the parent Object
-        object_users = utils.get_datablock_users(pointer)[0]
+        object_users = utils.get_datablock_users(instance)[0]
         data['user'] = object_users.uuid
         data['user_name'] = object_users.name
 
@@ -127,5 +144,4 @@ class BlArmature(BlDatablock):
             item.name for item in container_users if isinstance(item, bpy.types.Scene)]
         return data
 
-    def is_valid(self):
-        return bpy.data.armatures.get(self.data['name'])
+

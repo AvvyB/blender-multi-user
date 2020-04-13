@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 
 from . import operators, utils
@@ -6,7 +24,8 @@ from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_ACTIVE, STATE_AUTH,
                                                      STATE_CONFIG, STATE_SYNCING,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
-                                                     STATE_WAITING, STATE_QUITTING)
+                                                     STATE_WAITING, STATE_QUITTING,
+                                                     STATE_LAUNCHING_SERVICES)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -35,7 +54,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     return '{} |{}| {}/{}{}'.format(prefix, bar, iteration,total, suffix)
 
 def get_state_str(state):
-    state_str = 'None'
+    state_str = 'UNKNOWN'
     if state == STATE_WAITING:
         state_str = 'WARMING UP DATA'
     elif state == STATE_SYNCING:
@@ -52,6 +71,9 @@ def get_state_str(state):
         state_str = 'INIT'
     elif state == STATE_QUITTING:
         state_str = 'QUITTING SESSION'
+    elif state == STATE_LAUNCHING_SERVICES:
+        state_str = 'LAUNCHING SERVICES'
+
     return state_str
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -157,6 +179,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = box.row()
         row.label(text="IPC Port:")
         row.prop(settings, "ipc_port", text="")
+        row = box.row()
+        row.label(text="Timeout (ms):")
+        row.prop(settings, "connection_timeout", text="")
 
         if runtime_settings.session_mode == 'HOST':
             row = box.row()
@@ -219,6 +244,9 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         # Right managment
         if runtime_settings.session_mode == 'HOST':
+            row = layout.row()
+            row.prop(settings.sync_flags,"sync_render_settings")
+            
             row = layout.row(align=True)
             row.label(text="Right strategy:")
             row.prop(settings,"right_strategy",text="")
@@ -261,13 +289,15 @@ class SESSION_PT_user(bpy.types.Panel):
         selected_user = context.window_manager.user_index
         settings = utils.get_preferences()
         active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
-        
+        runtime_settings = context.window_manager.session
 
         # Create a simple row.
         row = layout.row()
         box = row.box()
-        split = box.split(factor=0.5)
+        split = box.split(factor=0.3)
         split.label(text="user")
+        split = split.split(factor=0.5)
+        split.label(text="localisation")
         split.label(text="frame")
         split.label(text="ping")
 
@@ -289,6 +319,12 @@ class SESSION_PT_user(bpy.types.Panel):
                 text="",
                 icon='TIME').target_client = active_user.username
 
+            if runtime_settings.session_mode == 'HOST':
+                user_operations.operator(
+                    "session.kick",
+                    text="",
+                    icon='CANCEL').user = active_user.username
+
 
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
@@ -297,6 +333,7 @@ class SESSION_UL_users(bpy.types.UIList):
         is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
+        scene_current = '-'
         if session:
             user = session.online_users.get(item.username)
             if user:
@@ -304,12 +341,14 @@ class SESSION_UL_users(bpy.types.UIList):
                 metadata = user.get('metadata')
                 if metadata and 'frame_current' in metadata:
                     frame_current = str(metadata['frame_current'])
-        
-        split = layout.split(factor=0.5)
+                    scene_current = metadata['scene_current']
+        split = layout.split(factor=0.3)
         split.label(text=item.username)
+        split = split.split(factor=0.5)
+        split.label(text=scene_current)
         split.label(text=frame_current)
         split.label(text=ping)
-    
+
 
 class SESSION_PT_presence(bpy.types.Panel):
     bl_idname = "MULTIUSER_MODULE_PT_panel"
@@ -336,7 +375,10 @@ class SESSION_PT_presence(bpy.types.Panel):
         col = layout.column()
         col.prop(settings,"presence_show_selected")
         col.prop(settings,"presence_show_user")
-        row = layout.row()
+        row = layout.column()
+        row.active =  settings.presence_show_user
+        row.prop(settings,"presence_show_far_user") 
+        
 
 class SESSION_PT_services(bpy.types.Panel):
     bl_idname = "MULTIUSER_SERVICE_PT_panel"

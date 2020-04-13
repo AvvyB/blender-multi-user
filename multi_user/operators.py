@@ -1,3 +1,21 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import asyncio
 import logging
 import os
@@ -16,7 +34,7 @@ from bpy.app.handlers import persistent
 from . import bl_types, delayable, environment, presence, ui, utils
 from .libs.replication.replication.constants import (FETCHED, STATE_ACTIVE,
                                                      STATE_INITIAL,
-                                                     STATE_SYNCING)
+                                                     STATE_SYNCING,UP)
 from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
@@ -109,7 +127,9 @@ class SessionStartOperator(bpy.types.Operator):
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    ipc_port=settings.ipc_port)
+                    ipc_port=settings.ipc_port,
+                    timeout=settings.connection_timeout
+                )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logger.error(f"Error: {e}")
@@ -125,7 +145,8 @@ class SessionStartOperator(bpy.types.Operator):
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    ipc_port=settings.ipc_port
+                    ipc_port=settings.ipc_port,
+                    timeout=settings.connection_timeout
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
@@ -178,6 +199,36 @@ class SessionStopOperator(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class SessionKickOperator(bpy.types.Operator):
+    bl_idname = "session.kick"
+    bl_label = "Kick"
+    bl_description = "Kick the user"
+    bl_options = {"REGISTER"}
+
+    user: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        global client, delayables, stop_modal_executor
+        assert(client)     
+
+        try:
+            client.kick(self.user)
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+        
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to kick {self.user} ? " )
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
@@ -284,6 +335,10 @@ class SessionSnapUserOperator(bpy.types.Operator):
                 target_ref = client.online_users.get(self.target_client)
 
                 if target_ref:
+                    target_scene = target_ref['metadata']['scene_current']
+                    if  target_scene != context.scene.name:
+                        bpy.context.window.scene = bpy.data.scenes[target_scene]
+
                     rv3d.view_matrix = mathutils.Matrix(
                         target_ref['metadata']['view_matrix'])
             else:
@@ -439,6 +494,7 @@ classes = (
     SessionApply,
     SessionCommit,
     ApplyArmatureOperator,
+    SessionKickOperator,
 
 )
 
@@ -451,19 +507,7 @@ def load_pre_handler(dummy):
         bpy.ops.session.stop()
 
 
-@persistent
-def sanitize_deps_graph(dummy):
-    """sanitize deps graph
 
-    Temporary solution to resolve each node pointers after a Undo.
-    A future solution should be to avoid storing dataclock reference...
-
-    """
-    global client
-
-    if client and client.state['STATE'] in [STATE_ACTIVE]:
-        for node_key in client.list():
-            client.get(node_key).resolve()
 
 
 @persistent
@@ -493,12 +537,11 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update (go deeper ?)
-                if node.owner in [client.id, 'COMMON']:
+                if node.owner in [client.id, 'COMMON'] and node.state == UP:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode:
                         break
 
-                    logger.error(node.data['name'])
                     client.stash(node.uuid)
                 else:
                     # Distant update
@@ -515,8 +558,6 @@ def register():
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
 
-    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
@@ -536,8 +577,6 @@ def unregister():
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
 
-    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
 
