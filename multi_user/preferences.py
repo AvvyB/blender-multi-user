@@ -20,10 +20,11 @@ import logging
 import bpy
 import string
 
-from . import utils, bl_types, environment, addon_updater_ops, presence
-from .libs.replication.replication.constants import  RP_COMMON
+from . import utils, bl_types, environment, addon_updater_ops, presence, ui
+from .libs.replication.replication.constants import RP_COMMON
 
 logger = logging.getLogger(__name__)
+
 
 def randomColor():
     """Generate a random color """
@@ -37,7 +38,13 @@ def random_string_digits(stringLength=6):
     """Generate a random string of letters and digits """
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choices(lettersAndDigits, k=stringLength))
-    
+
+
+def update_panel_category(self, context):
+    ui.unregister()
+    ui.SESSION_PT_settings.bl_category = self.panel_category
+    ui.register()
+
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -142,6 +149,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="cache",
         default=False
     )
+    conf_session_ui_expanded: bpy.props.BoolProperty(
+        name="Interface",
+        description="Interface",
+        default=False
+    )
 
     auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
@@ -176,14 +188,20 @@ class SessionPrefs(bpy.types.AddonPreferences):
         max=59
     )
 
+    # Custom panel
+    panel_category: bpy.props.StringProperty(
+        description="Choose a name for the category of the panel",
+        default="Multiuser",
+        update=update_panel_category)
+
     def draw(self, context):
         layout = self.layout
 
         layout.row().prop(self, "category", expand=True)
-        
+
         if self.category == 'CONFIG':
             grid = layout.column()
-            
+
             # USER INFORMATIONS
             box = grid.box()
             box.prop(
@@ -215,7 +233,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                     self, "conf_session_timing_expanded", text="Refresh rates",
                     icon='DISCLOSURE_TRI_DOWN' if self.conf_session_timing_expanded
                     else 'DISCLOSURE_TRI_RIGHT', emboss=False)
-                
+
                 if self.conf_session_timing_expanded:
                     line = table.row()
                     line.label(text=" ")
@@ -224,7 +242,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                     line.label(text="apply (sec)")
 
                     for item in self.supported_datablocks:
-                        line =  table.row(align=True)
+                        line = table.row(align=True)
                         line.label(text="", icon=item.icon)
                         line.prop(item, "bl_delay_refresh", text="")
                         line.prop(item, "bl_delay_apply", text="")
@@ -239,7 +257,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.label(text="Start with an empty scene:")
                 row.prop(self, "start_empty", text="")
-            
+
             # CACHE SETTINGS
             box = grid.box()
             box.prop(
@@ -248,6 +266,15 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
+
+            # INTERFACE SETTINGS
+            box = grid.box()
+            box.prop(
+                self, "conf_session_ui_expanded", text="Interface",
+                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_ui_expanded else 'DISCLOSURE_TRI_RIGHT',
+                emboss=False)
+            if self.conf_session_ui_expanded:
+                box.row().prop(self, "panel_category", text="Panel category", expand=True)
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
@@ -275,7 +302,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
 
 def client_list_callback(scene, context):
     from . import operators
-    
+
     items = [(RP_COMMON, RP_COMMON, "")]
 
     username = utils.get_preferences().username
@@ -283,11 +310,11 @@ def client_list_callback(scene, context):
     if cli:
         client_ids = cli.online_users.keys()
         for id in client_ids:
-                name_desc = id
-                if id == username:
-                    name_desc += " (self)"
+            name_desc = id
+            if id == username:
+                name_desc += " (self)"
 
-                items.append((id, name_desc, ""))
+            items.append((id, name_desc, ""))
 
     return items
 
@@ -305,7 +332,7 @@ class SessionProps(bpy.types.PropertyGroup):
     is_admin: bpy.props.BoolProperty(
         name="is_admin",
         default=False
-        )
+    )
     session_mode: bpy.props.EnumProperty(
         name='session_mode',
         description='session mode',
@@ -322,7 +349,7 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Enable overlay drawing module',
         default=True,
         update=presence.update_presence
-        )
+    )
     presence_show_selected: bpy.props.BoolProperty(
         name="Show selected objects",
         description='Enable selection overlay ',
@@ -334,13 +361,13 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Enable user overlay ',
         default=True,
         update=presence.update_overlay_settings
-        )
+    )
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show different scenes",
         description="Show user on different scenes",
         default=False,
         update=presence.update_overlay_settings
-        )
+    )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',
@@ -352,6 +379,7 @@ class SessionProps(bpy.types.PropertyGroup):
     time_snap_running: bpy.props.BoolProperty(
         default=False
     )
+
 
 classes = (
     SessionUser,
