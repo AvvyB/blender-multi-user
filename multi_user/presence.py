@@ -36,6 +36,10 @@ logger = logging.getLogger(__name__)
 
 
 def view3d_find():
+    """ Find the first 'VIEW_3D' windows found in areas
+
+        :return: tuple(Area, Region, RegionView3D)
+    """
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
             v3d = area.spaces[0]
@@ -43,15 +47,22 @@ def view3d_find():
             for region in area.regions:
                 if region.type == 'WINDOW':
                     return area, region, rv3d
-
     return None, None, None
 
 
 def refresh_3d_view():
+    """ Refresh the viewport
+    """
     area, region, rv3d = view3d_find()
     if area and region and rv3d:
         area.tag_redraw()
 
+def refresh_sidebar_view():
+    """ Refresh the blender sidebar
+    """
+    area, region, rv3d = view3d_find()
+
+    area.regions[3].tag_redraw()
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]

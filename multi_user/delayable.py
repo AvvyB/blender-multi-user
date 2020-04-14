@@ -251,89 +251,84 @@ class ClientUpdate(Timer):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
        
-        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
-            # Check if session has been closes prematurely
-            if session.state['STATE'] == 0:
-                bpy.ops.session.stop()
+        if session and renderer:
+            if session.state['STATE'] == STATE_ACTIVE:
+                # Check if session has been closes prematurely
+                if session.state['STATE'] == 0:
+                    bpy.ops.session.stop()
 
-            local_user =  operators.client.online_users.get(settings.username)
-            
-            if not local_user:
-                return
-            else:
-                for username, user_data in operators.client.online_users.items():
-                    if username != settings.username:
-                        cached_user_data = self.users_metadata.get(username)
-                        new_user_data = operators.client.online_users[username]['metadata']
-                        
-                        if cached_user_data is None:
-                            self.users_metadata[username] = user_data['metadata']
-                        elif 'view_matrix' in cached_user_data and 'view_matrix' in new_user_data and cached_user_data['view_matrix'] != new_user_data['view_matrix']:
-                            presence.refresh_3d_view()
-                            self.users_metadata[username] = user_data['metadata']
-                            break
-                        else:
-                            self.users_metadata[username] = user_data['metadata']
-
-            local_user_metadata = local_user.get('metadata')
-            scene_current = bpy.context.scene.name
-            local_user =  session.online_users.get(settings.username)
-            current_view_corners = presence.get_view_corners()
+                local_user =  operators.client.online_users.get(settings.username)
                 
-            # Init client metadata
-            if not local_user_metadata or 'color' not in local_user_metadata.keys():
-                metadata = {
-                    'view_corners': presence.get_view_matrix(),
-                    'view_matrix': presence.get_view_matrix(),
-                    'color': (settings.client_color.r,
-                              settings.client_color.g,
-                              settings.client_color.b,
-                              1),
-                    'frame_current':bpy.context.scene.frame_current,
-                    'scene_current': scene_current
-                }
-                session.update_user_metadata(metadata)
+                if not local_user:
+                    return
+                else:
+                    for username, user_data in operators.client.online_users.items():
+                        if username != settings.username:
+                            cached_user_data = self.users_metadata.get(username)
+                            new_user_data = operators.client.online_users[username]['metadata']
+                            
+                            if cached_user_data is None:
+                                self.users_metadata[username] = user_data['metadata']
+                            elif 'view_matrix' in cached_user_data and 'view_matrix' in new_user_data and cached_user_data['view_matrix'] != new_user_data['view_matrix']:
+                                presence.refresh_3d_view()
+                                self.users_metadata[username] = user_data['metadata']
+                                break
+                            else:
+                                self.users_metadata[username] = user_data['metadata']
 
-            # Update client representation
-            # Update client current scene
-            elif scene_current != local_user_metadata['scene_current']:
-                local_user_metadata['scene_current'] = scene_current
-                session.update_user_metadata(local_user_metadata)            
-            elif 'view_corners' in local_user_metadata  and current_view_corners != local_user_metadata['view_corners']:
-                local_user_metadata['view_corners'] = current_view_corners
-                local_user_metadata['view_matrix'] = presence.get_view_matrix()
-                session.update_user_metadata(local_user_metadata)
-            # sync online users
-            session_users = operators.client.online_users
-            ui_users = bpy.context.window_manager.online_users
+                local_user_metadata = local_user.get('metadata')
+                scene_current = bpy.context.scene.name
+                local_user =  session.online_users.get(settings.username)
+                current_view_corners = presence.get_view_corners()
+                    
+                # Init client metadata
+                if not local_user_metadata or 'color' not in local_user_metadata.keys():
+                    metadata = {
+                        'view_corners': presence.get_view_matrix(),
+                        'view_matrix': presence.get_view_matrix(),
+                        'color': (settings.client_color.r,
+                                settings.client_color.g,
+                                settings.client_color.b,
+                                1),
+                        'frame_current':bpy.context.scene.frame_current,
+                        'scene_current': scene_current
+                    }
+                    session.update_user_metadata(metadata)
 
-            for index, user in enumerate(ui_users):
-                if user.username not in session_users.keys():
-                    ui_users.remove(index)    
-                    renderer.flush_selection()
-                    renderer.flush_users()
-                    break
+                # Update client representation
+                # Update client current scene
+                elif scene_current != local_user_metadata['scene_current']:
+                    local_user_metadata['scene_current'] = scene_current
+                    session.update_user_metadata(local_user_metadata)            
+                elif 'view_corners' in local_user_metadata  and current_view_corners != local_user_metadata['view_corners']:
+                    local_user_metadata['view_corners'] = current_view_corners
+                    local_user_metadata['view_matrix'] = presence.get_view_matrix()
+                    session.update_user_metadata(local_user_metadata)
+                # sync online users
+                session_users = operators.client.online_users
+                ui_users = bpy.context.window_manager.online_users
 
-            for user in session_users:
-                if user not in ui_users:
-                    new_key = ui_users.add()
-                    new_key.name = user
-                    new_key.username = user
+                for index, user in enumerate(ui_users):
+                    if user.username not in session_users.keys():
+                        ui_users.remove(index)    
+                        renderer.flush_selection()
+                        renderer.flush_users()
+                        break
 
-            # TODO: event drivent 3d view refresh
+                for user in session_users:
+                    if user not in ui_users:
+                        new_key = ui_users.add()
+                        new_key.name = user
+                        new_key.username = user
+            elif session.state['STATE'] == STATE_QUITTING:
+                presence.refresh_sidebar_view()
+                self.handle_quit = True
+            elif session.state['STATE'] == STATE_INITIAL and self.handle_quit:
+                self.handle_quit = False
+                presence.refresh_sidebar_view()
+                
+                operators.unregister_delayables()
+                
+                presence.renderer.stop()
             
-            
-            
-        elif session.state['STATE'] == STATE_QUITTING:
-            presence.refresh_3d_view()
-            self.handle_quit = True
-        elif session.state['STATE'] == STATE_INITIAL and self.handle_quit:
-            self.handle_quit = False
-            presence.refresh_3d_view()
-            
-            operators.unregister_delayables()
-            
-            presence.renderer.stop()
-        # # ui update
-        elif  session.state['STATE'] != STATE_INITIAL:
-            presence.refresh_3d_view()
+            presence.refresh_sidebar_view()
