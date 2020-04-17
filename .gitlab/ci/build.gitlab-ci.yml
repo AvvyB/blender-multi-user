@@ -11,6 +11,3 @@ build:
     paths: 
      - multi_user
 
-  only:
-    - master
-    - develop
