@@ -1,4 +1,5 @@
 build:
+  stage: build
   image: python:latest
   script:
     - git submodule init
