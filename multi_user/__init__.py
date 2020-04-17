@@ -63,11 +63,14 @@ def register():
     
     environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
 
-    from . import presence
-    from . import operators
-    from . import ui
-    from . import preferences
-    from . import addon_updater_ops
+    try:
+        from . import presence
+        from . import operators
+        from . import ui
+        from . import preferences
+        from . import addon_updater_ops
+    except ModuleNotFoundError:
+        logger.error("Libraries not installed, try to relaunch blender with admin rights")
 
     preferences.register()
     addon_updater_ops.register(bl_info)

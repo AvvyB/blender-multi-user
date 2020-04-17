@@ -9,7 +9,7 @@ from multi_user.bl_types.bl_scene import BlScene
 
 def test_scene(clear_blend):
     datablock = bpy.data.scenes.new("toto")
-    
+    datablock.view_settings.use_curve_mapping = True
     # Test
     implementation = BlScene()
     expected = implementation._dump(datablock)
