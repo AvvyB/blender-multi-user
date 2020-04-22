@@ -23,8 +23,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
@@ -49,8 +47,9 @@ def install_pip():
 
 
 def install_package(name):
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install",
-                    name], cwd=SUBPROCESS_DIR)
+    logging.debug(f"Using {PYTHON_PATH} for installation")
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name])
+
 
 def check_dir(dir):
     if not os.path.exists(dir):
@@ -68,3 +67,4 @@ def setup(dependencies, python_path):
     for module_name, package_name in dependencies:
         if not module_can_be_imported(module_name):
             install_package(package_name)
+            module_can_be_imported(package_name)

@@ -24,7 +24,6 @@ from .. import utils
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
-logger = logging.getLogger(__name__)
 
 def load_node(node_data, node_tree):
     """ Load a node into a node_tree from a dict
@@ -46,7 +45,7 @@ def load_node(node_data, node_tree):
             try:
                 target_node.inputs[input].default_value = node_data["inputs"][input]["default_value"]
             except:
-                logger.error("{} not supported, skipping".format(input))
+                logging.error(f"Material {input} parameter not supported, skipping")
 
 
 def load_links(links_data, node_tree):

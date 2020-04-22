@@ -28,7 +28,7 @@ def dump_image(image):
     pixels = None
     if image.source == "GENERATED":
         prefs = utils.get_preferences()
-        img_name = "{}.png".format(image.name)
+        img_name = f"{image.name}.png"
         
         # Cache the image on the disk
         image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
@@ -67,7 +67,7 @@ class BlImage(BlDatablock):
         image = target
         prefs = utils.get_preferences()
 
-        img_name = "{}.png".format(image.name)
+        img_name = f"{image.name}.png"
 
         img_path = os.path.join(prefs.cache_directory, img_name)
 

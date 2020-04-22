@@ -22,9 +22,6 @@ import bpy
 from . import operators, presence, utils
 from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_INITIAL,STATE_QUITTING, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-
 
 class Delayable():
     """Delayable task interface
@@ -92,8 +89,7 @@ class ApplyTimer(Timer):
                     try:
                         client.apply(node)
                     except Exception as e:
-                        logger.error(
-                            "fail to apply {}: {}".format(node_ref.uuid, e))
+                        logging.error(f"Fail to apply {node_ref.uuid}: {e}")
 
 
 class DynamicRightSelectTimer(Timer):
@@ -164,7 +160,7 @@ class DynamicRightSelectTimer(Timer):
                         }
 
                         session.update_user_metadata(user_metadata)
-                        logger.info("Update selection")
+                        logging.debug("Update selection")
 
                         # Fix deselection until right managment refactoring (with Roles concepts)
                         if len(current_selection) == 0 and self._right_strategy == RP_COMMON:

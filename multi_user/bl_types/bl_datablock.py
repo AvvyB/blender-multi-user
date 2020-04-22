@@ -109,7 +109,7 @@ class BlDatablock(ReplicatedDatablock):
         if instance and hasattr(instance, 'uuid'):
            instance.uuid = self.uuid
         
-        self.diff_method = DIFF_BINARY
+        # self.diff_method = DIFF_BINARY
 
     @property
     def instance(self):

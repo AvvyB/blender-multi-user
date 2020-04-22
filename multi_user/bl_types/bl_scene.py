@@ -126,9 +126,9 @@ class BlScene(BlDatablock):
             data['eevee'] = scene_dumper.dump(instance.eevee)
             data['cycles'] = scene_dumper.dump(instance.cycles)        
             data['view_settings'] = scene_dumper.dump(instance.view_settings)
-            data['view_settings']['curve_mapping'] = scene_dumper.dump(instance.view_settings.curve_mapping)
-            
+           
             if instance.view_settings.use_curve_mapping:
+                data['view_settings']['curve_mapping'] = scene_dumper.dump(instance.view_settings.curve_mapping)
                 scene_dumper.depth = 5
                 scene_dumper.include_filter = [
                     'curves',
