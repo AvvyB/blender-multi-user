@@ -28,7 +28,7 @@ def dump_image(image):
     pixels = None
     if image.source == "GENERATED":
         prefs = utils.get_preferences()
-        img_name = "{}.png".format(image.name)
+        img_name = f"{image.name}.png"
         
         # Cache the image on the disk
         image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
@@ -67,7 +67,7 @@ class BlImage(BlDatablock):
         image = target
         prefs = utils.get_preferences()
 
-        img_name = "{}.png".format(image.name)
+        img_name = f"{image.name}.png"
 
         img_path = os.path.join(prefs.cache_directory, img_name)
 
@@ -80,10 +80,10 @@ class BlImage(BlDatablock):
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def _dump(self, pointer=None):
-        assert(pointer)
+    def _dump(self, instance=None):
+        assert(instance)
         data = {}
-        data['pixels'] = dump_image(pointer)
+        data['pixels'] = dump_image(instance)
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [   
@@ -95,7 +95,7 @@ class BlImage(BlDatablock):
                 'filepath',
                 'source',
                 'colorspace_settings']
-        data.update(dumper.dump(pointer))
+        data.update(dumper.dump(instance))
 
         return data
 

@@ -84,19 +84,22 @@ class BlMetaball(BlDatablock):
 
         load_metaball_elements(data['elements'], target.elements)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
         dumper.depth = 1
-        dumper.exclude_filter = [
-            "is_editmode",
-            "is_evaluated",
-            "is_embedded_data",
-            "is_library_indirect",
-            "name_full"
+        dumper.include_filter = [
+            'name',
+            'resolution',
+            'render_resolution',
+            'threshold',
+            'update_method',
+            'use_auto_texspace',
+            'texspace_location',
+            'texspace_size'
         ]
 
-        data = dumper.dump(pointer)
-        data['elements'] = dump_metaball_elements(pointer.elements)
+        data = dumper.dump(instance)
+        data['elements'] = dump_metaball_elements(instance.elements)
 
         return data

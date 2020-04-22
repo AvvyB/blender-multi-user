@@ -39,8 +39,6 @@ from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
 
 client = None
 delayables = []
@@ -91,7 +89,7 @@ class SessionStartOperator(bpy.types.Operator):
         # init the factory with supported types
         for type in bl_types.types_to_register():
             type_module = getattr(bl_types, type)
-            type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
+            type_impl_name = f"Bl{type.split('_')[1].capitalize()}"
             type_module_class = getattr(type_module, type_impl_name)
 
             supported_bl_types.append(type_module_class.bl_id)
@@ -135,7 +133,7 @@ class SessionStartOperator(bpy.types.Operator):
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
-                logger.error(f"Error: {e}")
+                logging.error(f"Error: {e}")
             finally:
                 runtime_settings.is_admin = True
 
@@ -153,7 +151,7 @@ class SessionStartOperator(bpy.types.Operator):
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
-                logger.error(f"Error: {e}")
+                logging.error(f"Error: {e}")
             finally:
                 runtime_settings.is_admin = False
 
@@ -177,7 +175,7 @@ class SessionStartOperator(bpy.types.Operator):
 
         self.report(
             {'INFO'},
-            "connexion on tcp://{}:{}".format(settings.ip, settings.port))
+            f"connecting to tcp://{settings.ip}:{settings.port}")
         return {"FINISHED"}
 
 
@@ -467,8 +465,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
                         try:
                             client.apply(node)
                         except Exception as e:
-                            logger.error(
-                                "fail to apply {}: {}".format(node_ref.uuid, e))
+                            logging.error("Dail to apply armature: {e}")
 
         return {'PASS_THROUGH'}
 
@@ -510,19 +507,7 @@ def load_pre_handler(dummy):
         bpy.ops.session.stop()
 
 
-@persistent
-def sanitize_deps_graph(dummy):
-    """sanitize deps graph
 
-    Temporary solution to resolve each node pointers after a Undo.
-    A future solution should be to avoid storing dataclock reference...
-
-    """
-    global client
-
-    if client and client.state['STATE'] in [STATE_ACTIVE]:
-        for node_key in client.list():
-            client.get(node_key)._resolve()
 
 
 @persistent
@@ -532,40 +517,6 @@ def update_client_frame(scene):
             'frame_current': scene.frame_current
         })
 
-@persistent
-def depsgraph_evaluation(scene):
-    if client and client.state['STATE'] == STATE_ACTIVE:
-        context = bpy.context
-        blender_depsgraph = bpy.context.view_layer.depsgraph
-        dependency_updates = [u for u in blender_depsgraph.updates]
-        session_infos = utils.get_preferences()
-
-        # NOTE: maybe we don't need to check each update but only the first
-
-        for update in reversed(dependency_updates):
-            # Is the object tracked ?
-            if update.id.uuid:
-                # Retrieve local version
-                node = client.get(update.id.uuid)
-                
-                # Check our right on this update:
-                #   - if its ours or ( under common and diff), launch the
-                # update process
-                #   - if its to someone else, ignore the update (go deeper ?)
-                if node.owner == session_infos.username:
-                    # Avoid slow geometry update
-                    if 'EDIT' in context.mode:
-                        break
-                    logger.error("UPDATE: MODIFIFY {}".format(type(update.id)))
-                    # client.commit(node.uuid)
-                    # client.push(node.uuid)
-                else:
-                    # Distant update
-                    continue
-            # else:
-            #     # New items !
-            #     logger.error("UPDATE: ADD")C.obj  
-
 
 def register():
     from bpy.utils import register_class
@@ -574,12 +525,8 @@ def register():
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
 
-    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
-
-    # bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
 
 def unregister():
@@ -595,12 +542,8 @@ def unregister():
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
 
-    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
-
-    # bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
 
 if __name__ == "__main__":

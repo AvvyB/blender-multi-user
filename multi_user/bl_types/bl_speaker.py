@@ -38,8 +38,8 @@ class BlSpeaker(BlDatablock):
     def _construct(self, data):
         return bpy.data.speakers.new(data["name"])
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
         dumper = Dumper()
         dumper.depth = 1
@@ -58,7 +58,7 @@ class BlSpeaker(BlDatablock):
             'cone_volume_outer'
         ]
 
-        return dumper.dump(pointer)
+        return dumper.dump(instance)
 
     
 

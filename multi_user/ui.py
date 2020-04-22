@@ -48,10 +48,9 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     From here:    
     https://gist.github.com/greenstick/b23e475d2bfdc3a82e34eaa1f6781ee4
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + fill_empty * (length - filledLength)
-    return '{} |{}| {}/{}{}'.format(prefix, bar, iteration,total, suffix)
+    return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
 
 def get_state_str(state):
     state_str = 'UNKNOWN'
@@ -422,7 +421,7 @@ def draw_property(context, parent, property_uuid, level=0):
 
     detail_item_box.label(text="",
                           icon=settings.supported_datablocks[item.str_type].icon)
-    detail_item_box.label(text="{} ".format(name))
+    detail_item_box.label(text=f"{name}")
 
     # Operations
 

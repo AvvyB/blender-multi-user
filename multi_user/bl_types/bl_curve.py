@@ -27,7 +27,6 @@ from .dump_anything import (Dumper, Loader,
                                   np_load_collection,
                                   np_dump_collection)
 
-logger = logging.getLogger(__name__)
 
 SPLINE_BEZIER_POINT = [
     # "handle_left_type",
@@ -77,21 +76,34 @@ class BlCurve(BlDatablock):
             # Not really working for now...
             # See https://blender.stackexchange.com/questions/7020/create-nurbs-surface-with-python
             if new_spline.type == 'NURBS':
-                logger.error("NURBS not supported.")
+                logging.error("NURBS not supported.")
             #     new_spline.points.add(len(data['splines'][spline]["points"])-1)
             #     for point_index in data['splines'][spline]["points"]:
             #         loader.load(
             #             new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
             loader.load(new_spline, spline)
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
-
-        data = dumper.dump(pointer)
+        # Conflicting attributes
+        # TODO: remove them with the NURBS support
+        dumper.exclude_filter = [
+            'users',
+            'order_u',
+            'order_v',
+            'point_count_v',
+            'point_count_u',
+            'active_textbox'
+        ]
+        if instance.use_auto_texspace:
+            dumper.exclude_filter.extend([
+                'texspace_location',
+                'texspace_size'])
+        data = dumper.dump(instance)
         data['splines'] = {}
 
-        for index, spline in enumerate(pointer.splines):
+        for index, spline in enumerate(instance.splines):
             dumper.depth = 2
             spline_data = dumper.dump(spline)
             # spline_data['points'] = np_dump_collection(spline.points, SPLINE_POINT)
@@ -99,10 +111,10 @@ class BlCurve(BlDatablock):
             spline_data['bezier_points'] = np_dump_collection(spline.bezier_points, SPLINE_BEZIER_POINT)
             data['splines'][index] = spline_data
 
-        if isinstance(pointer, T.SurfaceCurve):
+        if isinstance(instance, T.SurfaceCurve):
             data['type'] = 'SURFACE'
-        elif isinstance(pointer, T.TextCurve):
+        elif isinstance(instance, T.TextCurve):
             data['type'] = 'FONT'
-        elif isinstance(pointer, T.Curve):
+        elif isinstance(instance, T.Curve):
             data['type'] = 'CURVE'
         return data

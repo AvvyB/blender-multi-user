@@ -1,0 +1,13 @@
+test:
+  stage: test
+  image: python:latest
+  script:
+    - git submodule init
+    - git submodule update
+    - apt update
+    # install blender to get all required dependencies
+    # TODO: indtall only dependencies
+    - apt install -f -y blender 
+    - pip install blender-addon-tester
+    - python scripts/test_addon.py
+

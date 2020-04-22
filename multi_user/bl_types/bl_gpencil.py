@@ -95,6 +95,7 @@ def load_stroke(stroke_data, stroke):
 
     np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
 
+
 def dump_frame(frame):
     """ Dump a grease pencil frame to a dict
 
@@ -152,7 +153,7 @@ def dump_layer(layer):
         'opacity',
         'channel_color',
         'color',
-        'thickness',
+        # 'thickness', #TODO: enabling only for annotation
         'tint_color',
         'tint_factor',
         'vertex_paint_opacity',
@@ -251,8 +252,8 @@ class BlGpencil(BlDatablock):
 
 
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
@@ -263,11 +264,11 @@ class BlGpencil(BlDatablock):
             'pixel_factor',
             'stroke_depth_order'
         ]
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
 
         data['layers'] = {}
         
-        for layer in pointer.layers:
+        for layer in instance.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
         return data
@@ -275,7 +276,7 @@ class BlGpencil(BlDatablock):
     def _resolve_deps_implementation(self):
         deps = []
 
-        for material in self.pointer.materials:
+        for material in self.instance.materials:
             deps.append(material)
 
         return deps

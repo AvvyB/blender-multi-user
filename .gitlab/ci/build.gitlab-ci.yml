@@ -1,17 +1,14 @@
-image: python:latest
-
 build:
+  stage: build
+  image: python:latest
   script:
     - git submodule init
     - git submodule update
     - cd multi_user/libs/replication
-    - rm -rf tests .git .gitignore
+    - rm -rf tests .git .gitignore script
 
   artifacts:
     name: multi_user
     paths: 
      - multi_user
 
-  only:
-    - master
-    - develop

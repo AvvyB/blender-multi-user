@@ -38,8 +38,8 @@ class BlLight(BlDatablock):
         loader = Loader()
         loader.load(target, data)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
         dumper = Dumper()
         dumper.depth = 3
         dumper.include_filter = [
@@ -61,9 +61,12 @@ class BlLight(BlDatablock):
             "contact_shadow_soft_size",
             "contact_shadow_bias",
             "contact_shadow_thickness",
-            "shape"
+            "shape",
+            "size_y",
+            "size",
+            "angle"
         ]
-        data = dumper.dump(pointer)
+        data = dumper.dump(instance)
         return data
 
 

@@ -99,54 +99,54 @@ class BlDatablock(ReplicatedDatablock):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        pointer = kwargs.get('pointer', None)
+        instance = kwargs.get('instance', None)
 
         # TODO: use is_library_indirect
-        self.is_library = (pointer and hasattr(pointer, 'library') and
-                           pointer.library) or \
+        self.is_library = (instance and hasattr(instance, 'library') and
+                           instance.library) or \
             (self.data and 'library' in self.data)
 
-        if self.pointer and hasattr(self.pointer, 'uuid'):
-            self.pointer.uuid = self.uuid
+        if instance and hasattr(instance, 'uuid'):
+           instance.uuid = self.uuid
         
-        self.diff_method = DIFF_BINARY
+        # self.diff_method = DIFF_BINARY
 
-    def _resolve(self):
+    @property
+    def instance(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
         # In case of lost uuid (ex: undo), resolve by name and reassign it
-        # TODO: avoid reference storing
         if not datablock_ref:
-            datablock_ref = getattr(bpy.data, self.bl_id).get(self.data['name'])
+            datablock_ref = datablock_root.get(self.data['name'])
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
 
-        self.pointer = datablock_ref
+        return datablock_ref
 
-    def _dump(self, pointer=None):
+    def _dump(self, instance=None):
         dumper = Dumper()
         data = {}
         # Dump animation data
-        if has_action(pointer):
+        if has_action(instance):
             dumper = Dumper()
             dumper.include_filter = ['action']
-            data['animation_data'] = dumper.dump(pointer.animation_data)
+            data['animation_data'] = dumper.dump(instance.animation_data)
 
-        if has_driver(pointer):
+        if has_driver(instance):
             dumped_drivers = {'animation_data': {'drivers': []}}
-            for driver in pointer.animation_data.drivers:
+            for driver in instance.animation_data.drivers:
                 dumped_drivers['animation_data']['drivers'].append(
                     dump_driver(driver))
 
             data.update(dumped_drivers)
         
         if self.is_library:
-            data.update(dumper.dump(pointer))
+            data.update(dumper.dump(instance))
         else:
-            data.update(self._dump_implementation(data, pointer=pointer))
+            data.update(self._dump_implementation(data, instance=instance))
 
         return data
 
@@ -180,8 +180,8 @@ class BlDatablock(ReplicatedDatablock):
     def resolve_deps(self):
         dependencies = []
 
-        if has_action(self.pointer):
-            dependencies.append(self.pointer.animation_data.action)
+        if has_action(self.instance):
+            dependencies.append(self.instance.animation_data.action)
 
         if not self.is_library:
             dependencies.extend(self._resolve_deps_implementation())

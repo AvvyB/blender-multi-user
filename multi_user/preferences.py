@@ -23,7 +23,6 @@ import string
 from . import utils, bl_types, environment, addon_updater_ops, presence, ui
 from .libs.replication.replication.constants import RP_COMMON
 
-logger = logging.getLogger(__name__)
 
 
 def randomColor():
@@ -123,6 +122,18 @@ class SessionPrefs(bpy.types.AddonPreferences):
             ('UPDATE', "Update", "Update this add-on"),
         ],
         default='CONFIG'
+    )
+    # WIP
+    logging_level: bpy.props.EnumProperty(
+        name="Log level",
+        description="Log verbosity level",
+        items=[
+            ('ERROR', "error", "show only errors"),
+            ('WARNING', "warning", "only show warnings and errors"),
+            ('INFO', "info", "default level"),
+            ('DEBUG', "debug", "show all logs"),
+        ],
+        default='INFO'
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
@@ -287,7 +298,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db = self.supported_datablocks.add()
 
             type_module = getattr(bl_types, type)
-            type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
+            type_impl_name = f"Bl{type.split('_')[1].capitalize()}"
             type_module_class = getattr(type_module, type_impl_name)
 
             new_db.name = type_impl_name
@@ -398,7 +409,7 @@ def register():
 
     prefs = bpy.context.preferences.addons[__package__].preferences
     if len(prefs.supported_datablocks) == 0:
-        logger.info('Generating bl_types preferences')
+        logging.debug('Generating bl_types preferences')
         prefs.generate_supported_types()
 
 

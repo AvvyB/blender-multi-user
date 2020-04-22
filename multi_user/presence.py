@@ -32,10 +32,12 @@ from . import utils
 
 renderer = None
 
-logger = logging.getLogger(__name__)
-
 
 def view3d_find():
+    """ Find the first 'VIEW_3D' windows found in areas
+
+        :return: tuple(Area, Region, RegionView3D)
+    """
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
             v3d = area.spaces[0]
@@ -43,15 +45,22 @@ def view3d_find():
             for region in area.regions:
                 if region.type == 'WINDOW':
                     return area, region, rv3d
-
     return None, None, None
 
 
 def refresh_3d_view():
+    """ Refresh the viewport
+    """
     area, region, rv3d = view3d_find()
     if area and region and rv3d:
         area.tag_redraw()
 
+def refresh_sidebar_view():
+    """ Refresh the blender sidebar
+    """
+    area, region, rv3d = view3d_find()
+
+    area.regions[3].tag_redraw()
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]
@@ -199,7 +208,7 @@ class DrawFactory(object):
 
     def flush_selection(self, user=None):
         key_to_remove = []
-        select_key = "{}_select".format(user) if user else "select"
+        select_key = f"{user}_select" if user else "select"
         for k in self.d3d_items.keys():
 
             if select_key in k:
@@ -226,7 +235,7 @@ class DrawFactory(object):
             self.flush_selection(client_id)
 
             for select_ob in client_selection:
-                drawable_key = "{}_select_{}".format(client_id, select_ob)
+                drawable_key = f"{client_id}_select_{select_ob}"
                
                 ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
                 if not ob:
@@ -302,7 +311,7 @@ class DrawFactory(object):
                     self.d2d_items[client_id] = (position[1], client_id, color)
 
                 except Exception as e:
-                    logger.error("Draw client exception {}".format(e))
+                    logging.error(f"Draw client exception: {e}")
 
     def draw3d_callback(self):
         bgl.glLineWidth(1.5)
@@ -316,7 +325,7 @@ class DrawFactory(object):
                 shader.uniform_float("color", color)
                 batch.draw(shader)
         except Exception:
-            logger.error("3D Exception")
+            logging.error("3D Exception")
 
     def draw2d_callback(self):
         for position, font, color in self.d2d_items.values():
@@ -330,7 +339,7 @@ class DrawFactory(object):
                     blf.draw(0,  font)
 
             except Exception:
-                logger.error("2D EXCEPTION")
+                logging.error("2D EXCEPTION")
 
 
 def register():

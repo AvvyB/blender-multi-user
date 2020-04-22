@@ -51,8 +51,8 @@ class BlWorld(BlDatablock):
             
             load_links(data["node_tree"]["links"], target.node_tree)
 
-    def _dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
 
         world_dumper = Dumper()
         world_dumper.depth = 2
@@ -66,27 +66,27 @@ class BlWorld(BlDatablock):
             "users",
             "view_center"
         ]
-        data = world_dumper.dump(pointer)
-        if pointer.use_nodes:
+        data = world_dumper.dump(instance)
+        if instance.use_nodes:
             nodes = {}
 
-            for node in pointer.node_tree.nodes:
+            for node in instance.node_tree.nodes:
                 nodes[node.name] = dump_node(node)
 
             data["node_tree"]['nodes'] = nodes
 
-            data["node_tree"]['links'] = dump_links(pointer.node_tree.links)
+            data["node_tree"]['links'] = dump_links(instance.node_tree.links)
 
         return data
 
     def _resolve_deps_implementation(self):
         deps = []
 
-        if self.pointer.use_nodes:
-            for node in self.pointer.node_tree.nodes:
+        if self.instance.use_nodes:
+            for node in self.instance.node_tree.nodes:
                 if node.type == 'TEX_IMAGE':
                     deps.append(node.image)
         if self.is_library:
-            deps.append(self.pointer.library)
+            deps.append(self.instance.library)
         return deps
 
