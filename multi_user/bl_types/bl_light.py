@@ -64,7 +64,9 @@ class BlLight(BlDatablock):
             "shape",
             "size_y",
             "size",
-            "angle"
+            "angle",
+            'spot_size',
+            'spot_blend'
         ]
         data = dumper.dump(instance)
         return data
