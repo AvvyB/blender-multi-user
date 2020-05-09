@@ -19,14 +19,14 @@
 import bpy
 import mathutils
 import os
-
+import logging
 from .. import utils
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 def dump_image(image):
     pixels = None
-    if image.source == "GENERATED":
+    if image.source == "GENERATED" or image.packed_file is not None:
         prefs = utils.get_preferences()
         img_name = f"{image.name}.png"
         
@@ -35,9 +35,10 @@ def dump_image(image):
         os.makedirs(prefs.cache_directory, exist_ok=True)
         image.file_format = "PNG"
         image.save()
+        logging.info( image.filepath_raw )
 
     if image.source == "FILE":
-        image_path = bpy.path.abspath(image.filepath_raw)
+        image_path = bpy.path.abspath(image.filepath_raw)        
         image_directory = os.path.dirname(image_path)
         os.makedirs(image_directory, exist_ok=True)
         image.save()
@@ -69,8 +70,8 @@ class BlImage(BlDatablock):
 
         img_name = f"{image.name}.png"
 
-        img_path = os.path.join(prefs.cache_directory, img_name)
-
+        img_path = os.path.join(prefs.cache_directory,img_name)
+        os.makedirs(prefs.cache_directory, exist_ok=True)
         file = open(img_path, 'wb')
         file.write(data["pixels"])
         file.close()

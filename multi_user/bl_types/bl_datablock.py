@@ -109,10 +109,10 @@ class BlDatablock(ReplicatedDatablock):
         if instance and hasattr(instance, 'uuid'):
            instance.uuid = self.uuid
         
-        # self.diff_method = DIFF_BINARY
+        self.diff_method = DIFF_BINARY
 
-    @property
-    def instance(self):
+
+    def _resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
