@@ -51,18 +51,21 @@ DEPENDENCIES = {
 }
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-
-
 libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication\\replication"
 
 def register():
+    # Setup logging policy
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+    
     if libs not in sys.path:
         sys.path.append(libs)
     
-    environment.setup(DEPENDENCIES,bpy.app.binary_path_python)
-
+    try:
+        environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
+    except ModuleNotFoundError:
+        logging.fatal("Fail to install multi-user dependencies, try to execute blender with admin rights.")
+        return
+        
     from . import presence
     from . import operators
     from . import ui

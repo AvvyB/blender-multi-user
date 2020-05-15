@@ -29,9 +29,6 @@ import mathutils
 
 from . import environment, presence
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-
 
 def find_from_attr(attr_name, attr_value, list):
     for item in list:

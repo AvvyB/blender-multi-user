@@ -1,4 +1,5 @@
 build:
+  stage: build
   image: python:latest
   script:
     - git submodule init
@@ -11,6 +12,3 @@ build:
     paths: 
      - multi_user
 
-  only:
-    - master
-    - develop

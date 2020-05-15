@@ -48,10 +48,9 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     From here:    
     https://gist.github.com/greenstick/b23e475d2bfdc3a82e34eaa1f6781ee4
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + fill_empty * (length - filledLength)
-    return '{} |{}| {}/{}{}'.format(prefix, bar, iteration,total, suffix)
+    return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
 
 def get_state_str(state):
     state_str = 'UNKNOWN'
@@ -150,7 +149,6 @@ class SESSION_PT_settings_network(bpy.types.Panel):
     bl_label = "Network"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
 
     @classmethod
@@ -199,7 +197,6 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     bl_label = "User"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
 
     @classmethod
@@ -227,7 +224,6 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
     bl_label = "Advanced"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -276,7 +272,6 @@ class SESSION_PT_user(bpy.types.Panel):
     bl_label = "Online users"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
 
     @classmethod
@@ -355,7 +350,6 @@ class SESSION_PT_presence(bpy.types.Panel):
     bl_label = "Presence overlay"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -385,7 +379,6 @@ class SESSION_PT_services(bpy.types.Panel):
     bl_label = "Services"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -404,8 +397,7 @@ class SESSION_PT_services(bpy.types.Panel):
         for name, state in operators.client.services_state.items():
             row = layout.row()
             row.label(text=name)
-            row.label(text=get_state_str(state))
-            
+            row.label(text=get_state_str(state))     
 
 
 
@@ -429,7 +421,7 @@ def draw_property(context, parent, property_uuid, level=0):
 
     detail_item_box.label(text="",
                           icon=settings.supported_datablocks[item.str_type].icon)
-    detail_item_box.label(text="{} ".format(name))
+    detail_item_box.label(text=f"{name}")
 
     # Operations
 
@@ -477,7 +469,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
     bl_label = "Properties"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Multiuser"
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
 
     @classmethod
     def poll(cls, context):
@@ -537,8 +529,9 @@ classes = (
     SESSION_PT_presence,
     SESSION_PT_settings_replication,
     SESSION_PT_user,
+    SESSION_PT_services,
     SESSION_PT_outliner,
-    SESSION_PT_services
+    
 )
 
 

@@ -39,8 +39,6 @@ from .libs.replication.replication.data import ReplicatedDataFactory
 from .libs.replication.replication.exception import NonAuthorizedOperationError
 from .libs.replication.replication.interface import Session
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
 
 client = None
 delayables = []
@@ -91,7 +89,7 @@ class SessionStartOperator(bpy.types.Operator):
         # init the factory with supported types
         for type in bl_types.types_to_register():
             type_module = getattr(bl_types, type)
-            type_impl_name = "Bl{}".format(type.split('_')[1].capitalize())
+            type_impl_name = f"Bl{type.split('_')[1].capitalize()}"
             type_module_class = getattr(type_module, type_impl_name)
 
             supported_bl_types.append(type_module_class.bl_id)
@@ -132,7 +130,7 @@ class SessionStartOperator(bpy.types.Operator):
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
-                logger.error(f"Error: {e}")
+                logging.error(f"Error: {e}")
             finally:
                 runtime_settings.is_admin = True
 
@@ -150,7 +148,7 @@ class SessionStartOperator(bpy.types.Operator):
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
-                logger.error(f"Error: {e}")
+                logging.error(f"Error: {e}")
             finally:
                 runtime_settings.is_admin = False
 
@@ -174,7 +172,7 @@ class SessionStartOperator(bpy.types.Operator):
 
         self.report(
             {'INFO'},
-            "connexion on tcp://{}:{}".format(settings.ip, settings.port))
+            f"connecting to tcp://{settings.ip}:{settings.port}")
         return {"FINISHED"}
 
 
@@ -464,8 +462,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
                         try:
                             client.apply(node)
                         except Exception as e:
-                            logger.error(
-                                "fail to apply {}: {}".format(node_ref.uuid, e))
+                            logging.error("Dail to apply armature: {e}")
 
         return {'PASS_THROUGH'}
 
@@ -579,9 +576,4 @@ def unregister():
 
 
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
-
     bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
-
-
-if __name__ == "__main__":
-    register()

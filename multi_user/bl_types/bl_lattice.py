@@ -21,6 +21,7 @@ import mathutils
 
 from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from .bl_datablock import BlDatablock
+from ..libs.replication.replication.exception import ContextError
 
 POINT = ['co', 'weight_softbody', 'co_deform']
 
@@ -37,13 +38,17 @@ class BlLattice(BlDatablock):
         return bpy.data.lattices.new(data["name"])
 
     def _load_implementation(self, data, target):
+        if target.is_editmode:
+            raise ContextError("lattice is in edit mode")
+
         loader = Loader()
         loader.load(target, data)
 
         np_load_collection(data['points'], target.points, POINT)
 
     def _dump_implementation(self, data, instance=None):
-        assert(instance)
+        if instance.is_editmode:
+            raise ContextError("lattice is in edit mode")
 
         dumper = Dumper()
         dumper.depth = 1
@@ -61,5 +66,6 @@ class BlLattice(BlDatablock):
         data = dumper.dump(instance)
 
         data['points'] = np_dump_collection(instance.points, POINT)
+
         return data
 

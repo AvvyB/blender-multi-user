@@ -27,7 +27,6 @@ from .dump_anything import (Dumper, Loader,
                                   np_load_collection,
                                   np_dump_collection)
 
-logger = logging.getLogger(__name__)
 
 SPLINE_BEZIER_POINT = [
     # "handle_left_type",
@@ -77,7 +76,7 @@ class BlCurve(BlDatablock):
             # Not really working for now...
             # See https://blender.stackexchange.com/questions/7020/create-nurbs-surface-with-python
             if new_spline.type == 'NURBS':
-                logger.error("NURBS not supported.")
+                logging.error("NURBS not supported.")
             #     new_spline.points.add(len(data['splines'][spline]["points"])-1)
             #     for point_index in data['splines'][spline]["points"]:
             #         loader.load(

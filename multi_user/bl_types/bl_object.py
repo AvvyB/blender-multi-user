@@ -22,8 +22,7 @@ import logging
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-
-logger = logging.getLogger(__name__)
+from ..libs.replication.replication.exception import ContextError
 
 
 def load_pose(target_bone, data):
@@ -80,7 +79,7 @@ class BlObject(BlDatablock):
             if bpy.app.version[1] >= 83:
                 instance = bpy.data.lightprobes[data["data"]]
             else:
-                logger.warning(
+                logging.warning(
                     "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
         instance = bpy.data.objects.new(data["name"], instance)
         instance.uuid = self.uuid
@@ -126,7 +125,8 @@ class BlObject(BlDatablock):
             target.vertex_groups.clear()
             for vg in data['vertex_groups']:
                 vertex_group = target.vertex_groups.new(name=vg['name'])
-                for vert in vg['vertices']:
+                point_attr =  'vertices' if 'vertices' in vg else 'points'
+                for vert in vg[point_attr]:
                     vertex_group.add(
                         [vert['index']], vert['weight'], 'REPLACE')
 
@@ -154,6 +154,12 @@ class BlObject(BlDatablock):
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
+        
+        child_data = getattr(instance, 'data', None)
+        
+        if child_data and hasattr(child_data, 'is_editmode') and child_data.is_editmode:
+            raise ContextError("Object is in edit-mode.")
+
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
@@ -239,6 +245,7 @@ class BlObject(BlDatablock):
 
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
+            points_attr = 'vertices' if isinstance(instance.data, bpy.types.Mesh) else 'points'
             vg_data = []
             for vg in instance.vertex_groups:
                 vg_idx = vg.index
@@ -247,11 +254,11 @@ class BlObject(BlDatablock):
 
                 vertices = []
 
-                for v in instance.data.vertices:
+                for i, v in enumerate(getattr(instance.data, points_attr)):
                     for vg in v.groups:
                         if vg.group == vg_idx:
                             vertices.append({
-                                'index': v.index,
+                                'index': i,
                                 'weight': vg.weight
                             })
 

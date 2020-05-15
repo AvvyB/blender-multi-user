@@ -22,7 +22,6 @@ import bpy.types as T
 import mathutils
 import numpy as np
 
-logger = logging.getLogger(__name__)
 
 BPY_TO_NUMPY_TYPES = {
     'FLOAT': np.float,
@@ -48,7 +47,7 @@ def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, att
         :type attributes: list
     """
     if not dikt or len(collection) == 0:
-        logger.warning(f'Skipping collection')
+        logging.warning(f'Skipping collection')
         return
 
     if attributes is None:
@@ -62,7 +61,7 @@ def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, att
         elif attr_type == 'ENUM':
             np_load_collection_enum(collection, attr, dikt[attr])
         else:
-            logger.error(f"{attr} of type {attr_type} not supported.")
+            logging.error(f"{attr} of type {attr_type} not supported.")
 
 
 def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: list = None) -> dict:
@@ -98,7 +97,7 @@ def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: lis
         elif attr_type == 'ENUM':
             dumped_collection[attr] = np_dump_collection_enum(collection, attr)
         else:
-            logger.error(f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
+            logging.error(f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
 
     return dumped_collection
 
@@ -116,7 +115,7 @@ def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attri
         :return: numpy byte buffer
     """
     if len(collection) == 0:
-        logger.warning(f'Skipping empty {attribute} attribute')
+        logging.warning(f'Skipping empty {attribute} attribute')
         return {}
 
     attr_infos = collection[0].bl_rna.properties.get(attribute)
@@ -193,7 +192,7 @@ def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attr
         :type sequence: strr
     """
     if len(collection) == 0 or not sequence:
-        logger.warning(f"Skipping loadin {attribute}")
+        logging.warning(f"Skipping loadin {attribute}")
         return
     
     attr_infos = collection[0].bl_rna.properties.get(attribute)
@@ -379,7 +378,7 @@ class Dumper:
                     return False
                 getattr(default, p)
             except AttributeError as err:
-                logger.debug(err)
+                logging.debug(err)
                 return False
             if p.startswith("__"):
                 return False
@@ -489,7 +488,7 @@ class Loader:
             for i in range(len(dump)):
                 element.read()[i] = dump[i]
         except AttributeError as err:
-            logger.debug(err)
+            logging.debug(err)
             if not self.occlude_read_only:
                 raise err
 
@@ -541,7 +540,7 @@ class Loader:
                     _constructor_parameters = [dumped_element[name]
                                               for name in _constructor[1]]
                 except KeyError:
-                    logger.debug("Collection load error, missing parameters.")
+                    logging.debug("Collection load error, missing parameters.")
                     continue  # TODO handle error
 
                 new_element = getattr(element.read(), _constructor[0])(
@@ -623,11 +622,11 @@ class Loader:
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                logger.debug(f"Load default, skipping {default} : {k}")
+                logging.debug(f"Load default, skipping {default} : {k}")
             try:
                 self._load_any(default.extend(k), v)
             except Exception as err:
-                logger.debug(f"Cannot load {k}: {err}")
+                logging.debug(f"Cannot load {k}: {err}")
 
     @property
     def match_subset_all(self):
