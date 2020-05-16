@@ -112,7 +112,7 @@ class BlDatablock(ReplicatedDatablock):
         self.diff_method = DIFF_BINARY
 
 
-    def _resolve(self):
+    def resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
@@ -123,8 +123,11 @@ class BlDatablock(ReplicatedDatablock):
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
+            else:
+                self._construct(data=self.data)
 
-        return datablock_ref
+
+        self.instance = datablock_ref
 
     def _dump(self, instance=None):
         dumper = Dumper()
