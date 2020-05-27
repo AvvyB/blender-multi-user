@@ -42,8 +42,7 @@ def module_can_be_imported(name):
 
 def install_pip():
     # pip can not necessarily be imported into Blender after this
-    get_pip_path = Path(__file__).parent / "libs" / "get-pip.py"
-    subprocess.run([str(PYTHON_PATH), str(get_pip_path)], cwd=SUBPROCESS_DIR)
+    subprocess.run([str(PYTHON_PATH), "-m", "ensurepip"])
 
 
 def install_package(name):
