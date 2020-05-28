@@ -47,17 +47,18 @@ stop_modal_executor = False
 modal_executor_queue = None
 server_process = None
 
+
 def unregister_delayables():
     global delayables, stop_modal_executor
 
     for d in delayables:
-            try:
-                d.unregister()
-            except:
-                continue
-    
+        try:
+            d.unregister()
+        except:
+            continue
+
     stop_modal_executor = True
-    
+
 # OPERATORS
 
 
@@ -191,7 +192,7 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables, stop_modal_executor
-        assert(client)     
+        assert(client)
 
         try:
             client.disconnect()
@@ -199,6 +200,7 @@ class SessionStopOperator(bpy.types.Operator):
             self.report({'ERROR'}, repr(e))
 
         return {"FINISHED"}
+
 
 class SessionKickOperator(bpy.types.Operator):
     bl_idname = "session.kick"
@@ -214,7 +216,7 @@ class SessionKickOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables, stop_modal_executor
-        assert(client)     
+        assert(client)
 
         try:
             client.kick(self.user)
@@ -225,11 +227,11 @@ class SessionKickOperator(bpy.types.Operator):
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
-        
 
     def draw(self, context):
         row = self.layout
-        row.label(text=f" Do you really want to kick {self.user} ? " )
+        row.label(text=f" Do you really want to kick {self.user} ? ")
+
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
@@ -337,7 +339,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
                 if target_ref:
                     target_scene = target_ref['metadata']['scene_current']
-                    if  target_scene != context.scene.name:
+                    if target_scene != context.scene.name:
                         bpy.context.window.scene = bpy.data.scenes[target_scene]
 
                     rv3d.view_matrix = mathutils.Matrix(
@@ -498,6 +500,20 @@ classes = (
 
 )
 
+@persistent
+def sanitize_deps_graph(dummy):
+    """sanitize deps graph
+
+    Temporary solution to resolve each node pointers after a Undo.
+    A future solution should be to avoid storing dataclock reference...
+
+    """
+    global client
+
+    if client and client.state['STATE'] == STATE_ACTIVE:
+        for node_key in client.list():
+            client.get(node_key).resolve()
+
 
 @persistent
 def load_pre_handler(dummy):
@@ -505,9 +521,6 @@ def load_pre_handler(dummy):
 
     if client and client.state['STATE'] in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
-
-
-
 
 
 @persistent
@@ -523,10 +536,13 @@ def register():
     for cls in classes:
         register_class(cls)
 
+
+    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
+    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
+
     bpy.app.handlers.load_pre.append(load_pre_handler)
-
-
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
+
 
 
 def unregister():
@@ -540,9 +556,11 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
+    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
+    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
+
+
     bpy.app.handlers.load_pre.remove(load_pre_handler)
-
-
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
 
 
