@@ -115,32 +115,34 @@ class SessionStartOperator(bpy.types.Operator):
             default_strategy=settings.right_strategy)
 
         # Host a session
-        if self.host:
+        if self.host or runtime_settings.admin:
             # Scene setup
             if settings.start_empty:
                 utils.clean_scene()
+            
+            for scene in bpy.data.scenes:
+                scene_uuid = client.add(scene)
+                client.commit(scene_uuid)
 
+        pwd =  runtime_settings.password if runtime_settings.password else None
+        if self.host:
             try:
-                for scene in bpy.data.scenes:
-                    scene_uuid = client.add(scene)
-                    client.commit(scene_uuid)
-
                 client.host(
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
                     ipc_port=settings.ipc_port,
-                    timeout=settings.connection_timeout
+                    timeout=settings.connection_timeout,
+                    password=pwd 
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logging.error(f"Error: {e}")
-            finally:
-                runtime_settings.is_admin = True
 
         # Join a session
         else:
-            utils.clean_scene()
+            if pwd is None:
+                utils.clean_scene()
 
             try:
                 client.connect(
@@ -148,13 +150,12 @@ class SessionStartOperator(bpy.types.Operator):
                     address=settings.ip,
                     port=settings.port,
                     ipc_port=settings.ipc_port,
-                    timeout=settings.connection_timeout
+                    timeout=settings.connection_timeout,
+                    password=pwd
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logging.error(f"Error: {e}")
-            finally:
-                runtime_settings.is_admin = False
 
         # Background client updates service
         #TODO: Refactoring

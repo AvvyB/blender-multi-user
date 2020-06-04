@@ -180,14 +180,22 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = box.row()
         row.label(text="Timeout (ms):")
         row.prop(settings, "connection_timeout", text="")
-
+        row = box.row()
         if runtime_settings.session_mode == 'HOST':
+            row.label(text="Password:")
+            row.prop(runtime_settings, "password", text="")
             row = box.row()
             row.label(text="Start empty:")
             row.prop(settings, "start_empty", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
+            row.prop(runtime_settings, "admin", text='Connect as admin' ,icon='DISCLOSURE_TRI_DOWN' if runtime_settings.admin
+                else 'DISCLOSURE_TRI_RIGHT')
+            if runtime_settings.admin:
+                row = box.row()
+                row.label(text="Password:")
+                row.prop(runtime_settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 
@@ -425,9 +433,8 @@ def draw_property(context, parent, property_uuid, level=0):
 
     # Operations
 
-    have_right_to_modify = runtime_settings.is_admin or \
-        item.owner == settings.username or \
-        item.owner == RP_COMMON
+    have_right_to_modify = item.owner == settings.username or \
+                           item.owner == RP_COMMON
         
     if have_right_to_modify:
         detail_item_box.operator(

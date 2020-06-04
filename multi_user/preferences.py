@@ -340,10 +340,6 @@ class SessionUser(bpy.types.PropertyGroup):
 
 
 class SessionProps(bpy.types.PropertyGroup):
-    is_admin: bpy.props.BoolProperty(
-        name="is_admin",
-        default=False
-    )
     session_mode: bpy.props.EnumProperty(
         name='session_mode',
         description='session mode',
@@ -383,6 +379,16 @@ class SessionProps(bpy.types.PropertyGroup):
         name="filter_owned",
         description='Show only owned datablocks',
         default=True
+    )
+    admin: bpy.props.BoolProperty(
+        name="admin",
+        description='Connect as admin',
+        default=False
+    )
+    password: bpy.props.StringProperty(
+        name="password",
+        description='Session password',
+        subtype='PASSWORD'
     )
     user_snap_running: bpy.props.BoolProperty(
         default=False
