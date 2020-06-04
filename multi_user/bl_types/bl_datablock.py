@@ -107,25 +107,24 @@ class BlDatablock(ReplicatedDatablock):
             (self.data and 'library' in self.data)
 
         if instance and hasattr(instance, 'uuid'):
-           instance.uuid = self.uuid
-        
-        self.diff_method = DIFF_BINARY
+            instance.uuid = self.uuid
 
+        self.diff_method = DIFF_BINARY
 
     def resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
-        # In case of lost uuid (ex: undo), resolve by name and reassign it
         if not datablock_ref:
-            datablock_ref = datablock_root.get(self.data['name'])
+            import logging
+            logging.info(self.bl_id)
+            datablock_ref = datablock_root.get(
+                self.data['name'], # Resolve by name
+                self._construct(data=self.data)) # If it doesn't exist create it
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
-            else:
-                self._construct(data=self.data)
-
 
         self.instance = datablock_ref
 
@@ -145,7 +144,7 @@ class BlDatablock(ReplicatedDatablock):
                     dump_driver(driver))
 
             data.update(dumped_drivers)
-        
+
         if self.is_library:
             data.update(dumper.dump(instance))
         else:

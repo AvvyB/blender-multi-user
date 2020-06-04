@@ -56,12 +56,15 @@ class BlMesh(BlDatablock):
     bl_icon = 'MESH_DATA'
 
     def _construct(self, data):
+        logging.error(f"Loading {data['name']}")
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
         return instance
 
     def _load_implementation(self, data, target):
-        if not target or not target.is_editmode:
+        if not target or target.is_editmode:
+            raise ContextError
+        else:
             loader = Loader()
             loader.load(target, data)
 
