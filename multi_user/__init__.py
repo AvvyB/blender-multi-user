@@ -80,7 +80,9 @@ def register():
 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps)
-    bpy.types.ID.uuid = bpy.props.StringProperty(default="")
+    bpy.types.ID.uuid = bpy.props.StringProperty(
+        default="",
+        options={'HIDDEN', 'SKIP_SAVE'})
     bpy.types.WindowManager.online_users = bpy.props.CollectionProperty(
         type=preferences.SessionUser
     )
