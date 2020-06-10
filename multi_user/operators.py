@@ -78,6 +78,7 @@ class SessionStartOperator(bpy.types.Operator):
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
+        admin_pass = runtime_settings.password
 
         # TODO: Sync server clients
         users.clear()
@@ -124,7 +125,6 @@ class SessionStartOperator(bpy.types.Operator):
                 scene_uuid = client.add(scene)
                 client.commit(scene_uuid)
 
-        pwd =  runtime_settings.password if runtime_settings.password else None
         if self.host:
             try:
                 client.host(
@@ -133,7 +133,7 @@ class SessionStartOperator(bpy.types.Operator):
                     port=settings.port,
                     ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,
-                    password=pwd 
+                    password=admin_pass
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
@@ -141,9 +141,10 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Join a session
         else:
-            if pwd is None:
+            if not runtime_settings.admin:
                 utils.clean_scene()
-
+                # regular client, no password needed
+                admin_pass = None
             try:
                 client.connect(
                     id=settings.username,
@@ -151,7 +152,7 @@ class SessionStartOperator(bpy.types.Operator):
                     port=settings.port,
                     ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,
-                    password=pwd
+                    password=admin_pass
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
