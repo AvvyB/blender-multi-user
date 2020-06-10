@@ -90,6 +90,8 @@ class SESSION_PT_settings(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
         row = layout.row()
+        
+       
 
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
@@ -144,6 +146,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                             length=16
                         ))
 
+
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
     bl_label = "Network"
@@ -175,18 +178,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row.label(text="Port:")
         row.prop(settings, "port", text="")
         row = box.row()
-        row.label(text="IPC Port:")
-        row.prop(settings, "ipc_port", text="")
-        row = box.row()
-        row.label(text="Timeout (ms):")
-        row.prop(settings, "connection_timeout", text="")
-        row = box.row()
         if runtime_settings.session_mode == 'HOST':
             row.label(text="Password:")
             row.prop(runtime_settings, "password", text="")
-            row = box.row()
-            row.label(text="Start empty:")
-            row.prop(settings, "start_empty", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
@@ -196,9 +190,6 @@ class SESSION_PT_settings_network(bpy.types.Panel):
                 row = box.row()
                 row.label(text="Password:")
                 row.prop(runtime_settings, "password", text="")
-                row = box.row()
-                row.label(text="Start empty:")
-                row.prop(settings, "start_empty", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 
@@ -248,6 +239,13 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
 
         runtime_settings = context.window_manager.session
         settings = utils.get_preferences()
+
+        row = layout.row()
+        row.label(text="IPC Port:")
+        row.prop(settings, "ipc_port", text="")
+        row = layout.row()
+        row.label(text="Timeout (ms):")
+        row.prop(settings, "connection_timeout", text="")
 
         # Right managment
         if runtime_settings.session_mode == 'HOST':
@@ -325,7 +323,7 @@ class SESSION_PT_user(bpy.types.Panel):
                 text="",
                 icon='TIME').target_client = active_user.username
 
-            if runtime_settings.admin:
+            if operators.client.online_users[settings.username]['admin']:
                 user_operations.operator(
                     "session.kick",
                     text="",
@@ -479,14 +477,16 @@ def draw_property(context, parent, property_uuid, level=0):
 
 class SESSION_PT_outliner(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
-    bl_label = "Properties"
+    bl_label = "Repository"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
 
     @classmethod
     def poll(cls, context):
-        return operators.client and operators.client.state['STATE'] == 2
+        return hasattr(context.window_manager, 'session') and \
+                operators.client and \
+                operators.client.state['STATE'] == 2
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -494,10 +494,14 @@ class SESSION_PT_outliner(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if hasattr(context.window_manager, 'session'):
-            # Filters
-            settings = utils.get_preferences()
-            runtime_settings = context.window_manager.session
+        # Filters
+        settings = utils.get_preferences()
+        runtime_settings = context.window_manager.session
+        usr = operators.client.online_users.get(settings.username)
+        is_repository_init = operators.client.list()
+        row = layout.row()        
+        
+        if is_repository_init:
             flow = layout.grid_flow(
                 row_major=True,
                 columns=0,
@@ -522,10 +526,10 @@ class SESSION_PT_outliner(bpy.types.Panel):
                 filter_owner=settings.username) if runtime_settings.filter_owned else operators.client.list()
 
             client_keys = [key for key in key_to_filter
-                           if operators.client.get(uuid=key).str_type
-                           in types_filter]
+                            if operators.client.get(uuid=key).str_type
+                            in types_filter]
 
-            if client_keys and len(client_keys) > 0:
+            if client_keys:
                 col = layout.column(align=True)
                 for key in client_keys:
                     draw_property(context, col, key)
@@ -533,6 +537,10 @@ class SESSION_PT_outliner(bpy.types.Panel):
             else:
                 row.label(text="Empty")
 
+        elif usr and usr['admin']:
+            row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
+        else:
+            row.label(text="Waiting for init")
 
 classes = (
     SESSION_UL_users,

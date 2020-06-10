@@ -116,16 +116,6 @@ class SessionStartOperator(bpy.types.Operator):
             default_strategy=settings.right_strategy)
 
         # Host a session
-        if self.host or runtime_settings.admin:
-            # Scene setup
-            if settings.start_empty:
-                utils.clean_scene()
-            
-            for scene in bpy.data.scenes:
-                scene_uuid = client.add(scene)
-                client.commit(scene_uuid)
-                client.push(scene_uuid)
-
         if self.host:
             try:
                 client.host(
@@ -182,6 +172,46 @@ class SessionStartOperator(bpy.types.Operator):
             f"connecting to tcp://{settings.ip}:{settings.port}")
         return {"FINISHED"}
 
+
+class SessionInitOperator(bpy.types.Operator):
+    bl_idname = "session.init"
+    bl_label = "Init session repostitory from"
+    bl_description = "Init the current session"
+    bl_options = {"REGISTER"}
+
+    init_method: bpy.props.EnumProperty(
+        name='init_method',
+        description='Init repo',
+        items={
+            ('EMPTY', 'an empty scene', 'start empty'),
+            ('BLEND', 'current scenes', 'use current scenes')},
+        default='BLEND')
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.prop(self, 'init_method', text="")
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        global client
+        
+        if self.init_method == 'EMPTY':
+            utils.clean_scene()
+
+        for scene in bpy.data.scenes:
+            scene_uuid = client.add(scene)
+            client.commit(scene_uuid)
+            client.push(scene_uuid)
+
+        return {"FINISHED"}
 
 class SessionStopOperator(bpy.types.Operator):
     bl_idname = "session.stop"
@@ -500,6 +530,7 @@ classes = (
     SessionCommit,
     ApplyArmatureOperator,
     SessionKickOperator,
+    SessionInitOperator,
 
 )
 
