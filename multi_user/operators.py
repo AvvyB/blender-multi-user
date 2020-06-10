@@ -124,6 +124,7 @@ class SessionStartOperator(bpy.types.Operator):
             for scene in bpy.data.scenes:
                 scene_uuid = client.add(scene)
                 client.commit(scene_uuid)
+                client.push(scene_uuid)
 
         if self.host:
             try:

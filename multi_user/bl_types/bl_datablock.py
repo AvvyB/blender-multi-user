@@ -117,8 +117,6 @@ class BlDatablock(ReplicatedDatablock):
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
         if not datablock_ref:
-            import logging
-            logging.info(self.bl_id)
             datablock_ref = datablock_root.get(
                 self.data['name'], # Resolve by name
                 self._construct(data=self.data)) # If it doesn't exist create it

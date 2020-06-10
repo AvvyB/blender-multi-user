@@ -196,6 +196,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
                 row = box.row()
                 row.label(text="Password:")
                 row.prop(runtime_settings, "password", text="")
+                row = box.row()
+                row.label(text="Start empty:")
+                row.prop(settings, "start_empty", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 
@@ -305,7 +308,7 @@ class SESSION_PT_user(bpy.types.Panel):
         split.label(text="ping")
 
         row = layout.row()
-        layout.template_list("SESSION_UL_users", "",  context.window_manager, "online_users", context.window_manager,  "user_index")
+        layout.template_list("SESSION_UL_users",  "",  context.window_manager, "online_users", context.window_manager,  "user_index")
 
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
@@ -322,7 +325,7 @@ class SESSION_PT_user(bpy.types.Panel):
                 text="",
                 icon='TIME').target_client = active_user.username
 
-            if runtime_settings.session_mode == 'HOST':
+            if runtime_settings.admin:
                 user_operations.operator(
                     "session.kick",
                     text="",
