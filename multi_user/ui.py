@@ -179,7 +179,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row.prop(settings, "port", text="")
         row = box.row()
         if runtime_settings.session_mode == 'HOST':
-            row.label(text="Password:")
+            row.label(text="Admin password:")
             row.prop(runtime_settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
