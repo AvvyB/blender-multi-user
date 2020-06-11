@@ -344,9 +344,9 @@ class SessionProps(bpy.types.PropertyGroup):
         name='session_mode',
         description='session mode',
         items={
-            ('HOST', 'hosting', 'host a session'),
-            ('CONNECT', 'connexion', 'connect to a session')},
-        default='HOST')
+            ('HOST', 'HOST', 'host a session'),
+            ('CONNECT', 'JOIN', 'connect to a session')},
+        default='CONNECT')
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
