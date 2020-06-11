@@ -298,7 +298,7 @@ class SESSION_PT_user(bpy.types.Panel):
         # Create a simple row.
         row = layout.row()
         box = row.box()
-        split = box.split(factor=0.3)
+        split = box.split(factor=0.35)
         split.label(text="user")
         split = split.split(factor=0.5)
         split.label(text="localisation")
@@ -338,7 +338,7 @@ class SESSION_UL_users(bpy.types.UIList):
         ping = '-'
         frame_current = '-'
         scene_current = '-'
-        status_icon = 'NONE'
+        status_icon = 'DOT'
         if session:
             user = session.online_users.get(item.username)
             if user:
@@ -349,7 +349,7 @@ class SESSION_UL_users(bpy.types.UIList):
                     scene_current = metadata['scene_current']
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
-        split = layout.split(factor=0.3)
+        split = layout.split(factor=0.35)
         split.label(text=item.username, icon=status_icon)
         split = split.split(factor=0.5)
         split.label(text=scene_current)
