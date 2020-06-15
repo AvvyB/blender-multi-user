@@ -117,6 +117,9 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Host a session
         if self.host:
+            for scene in bpy.data.scenes:
+                client.add(scene)
+
             try:
                 client.host(
                     id=settings.username,
@@ -136,6 +139,9 @@ class SessionStartOperator(bpy.types.Operator):
                 utils.clean_scene()
                 # regular client, no password needed
                 admin_pass = None
+            else:
+                for scene in bpy.data.scenes:
+                    client.add(scene)
             try:
                 client.connect(
                     id=settings.username,

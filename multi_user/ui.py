@@ -25,6 +25,7 @@ from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_CONFIG, STATE_SYNCING,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
                                                      STATE_WAITING, STATE_QUITTING,
+                                                     STATE_LOBBY,
                                                      STATE_LAUNCHING_SERVICES)
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
@@ -72,6 +73,8 @@ def get_state_str(state):
         state_str = 'QUITTING SESSION'
     elif state == STATE_LAUNCHING_SERVICES:
         state_str = 'LAUNCHING SERVICES'
+    elif state == STATE_LOBBY:
+        state_str = 'LOBBY'
 
     return state_str
 
