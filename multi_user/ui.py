@@ -35,7 +35,8 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'FILE_REFRESH',   # UP
                      'TRIA_UP']  # CHANGED
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', fill_empty='  '):
+
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', fill_empty='  '):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -52,6 +53,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + fill_empty * (length - filledLength)
     return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
+
 
 def get_state_str(state):
     state_str = 'UNKNOWN'
@@ -78,23 +80,19 @@ def get_state_str(state):
 
     return state_str
 
+
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
-    bl_label = "Session"
+    bl_label = "Online session"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
-
-    def draw_header(self, context):
-        self.layout.label(text="", icon='TOOL_SETTINGS')
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         row = layout.row()
-        
-       
 
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
@@ -103,26 +101,25 @@ class SESSION_PT_settings(bpy.types.Panel):
                 pass
             else:
                 cli_state = operators.client.state
-                
+
                 row.label(text=f"Status : {get_state_str(cli_state['STATE'])}")
                 row = layout.row()
-                
+
                 current_state = cli_state['STATE']
 
                 # STATE ACTIVE
-                if current_state == STATE_ACTIVE:
+                if current_state in [STATE_ACTIVE, STATE_LOBBY]:
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
 
                 # CONNECTION STATE
-                elif current_state in [
-                                        STATE_SRV_SYNC,
-                                        STATE_SYNCING,
-                                        STATE_AUTH,
-                                        STATE_CONFIG,
-                                        STATE_WAITING]:
-                    
-                    if cli_state['STATE'] in [STATE_SYNCING,STATE_SRV_SYNC,STATE_WAITING]:
+                elif current_state in [STATE_SRV_SYNC,
+                                       STATE_SYNCING,
+                                       STATE_AUTH,
+                                       STATE_CONFIG,
+                                       STATE_WAITING]:
+
+                    if cli_state['STATE'] in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
                         box = row.box()
                         box.label(text=printProgressBar(
                             cli_state['CURRENT'],
@@ -141,13 +138,14 @@ class SESSION_PT_settings(bpy.types.Panel):
                         if state == STATE_ACTIVE:
                             num_online_services += 1
 
-                    total_online_services = len(operators.client.services_state)
+                    total_online_services = len(
+                        operators.client.services_state)
 
                     box.label(text=printProgressBar(
-                            total_online_services-num_online_services,
-                            total_online_services,
-                            length=16
-                        ))
+                        total_online_services-num_online_services,
+                        total_online_services,
+                        length=16
+                    ))
 
 
 class SESSION_PT_settings_network(bpy.types.Panel):
@@ -162,9 +160,12 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         return not operators.client \
             or (operators.client and operators.client.state['STATE'] == 0)
 
+    def draw_header(self, context):
+        self.layout.label(text="", icon='URL')
+
     def draw(self, context):
         layout = self.layout
-        
+
         runtime_settings = context.window_manager.session
         settings = utils.get_preferences()
 
@@ -174,7 +175,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = layout.row()
 
         box = row.box()
-        
+
         row = box.row()
         row.prop(settings, "ip", text="IP")
         row = box.row()
@@ -187,8 +188,8 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
-            row.prop(runtime_settings, "admin", text='Connect as admin' ,icon='DISCLOSURE_TRI_DOWN' if runtime_settings.admin
-                else 'DISCLOSURE_TRI_RIGHT')
+            row.prop(runtime_settings, "admin", text='Connect as admin', icon='DISCLOSURE_TRI_DOWN' if runtime_settings.admin
+                     else 'DISCLOSURE_TRI_RIGHT')
             if runtime_settings.admin:
                 row = box.row()
                 row.label(text="Password:")
@@ -199,7 +200,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
 class SESSION_PT_settings_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
-    bl_label = "User"
+    bl_label = "User info"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
@@ -208,13 +209,16 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     def poll(cls, context):
         return not operators.client \
             or (operators.client and operators.client.state['STATE'] == 0)
+    
+    def draw_header(self, context):
+        self.layout.label(text="", icon='USER')
 
     def draw(self, context):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
         settings = utils.get_preferences()
-        
+
         row = layout.row()
         # USER SETTINGS
         row.prop(settings, "username", text="name")
@@ -237,6 +241,9 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         return not operators.client \
             or (operators.client and operators.client.state['STATE'] == 0)
 
+    def draw_header(self, context):
+        self.layout.label(text="", icon='TOOL_SETTINGS')
+        
     def draw(self, context):
         layout = self.layout
 
@@ -253,11 +260,11 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         # Right managment
         if runtime_settings.session_mode == 'HOST':
             row = layout.row()
-            row.prop(settings.sync_flags,"sync_render_settings")
-            
+            row.prop(settings.sync_flags, "sync_render_settings")
+
             row = layout.row(align=True)
             row.label(text="Right strategy:")
-            row.prop(settings,"right_strategy",text="")
+            row.prop(settings, "right_strategy", text="")
 
         row = layout.row()
 
@@ -290,12 +297,16 @@ class SESSION_PT_user(bpy.types.Panel):
     def poll(cls, context):
         return operators.client and operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
 
+    def draw_header(self, context):
+        self.layout.label(text="", icon='USER')
+
     def draw(self, context):
         layout = self.layout
         online_users = context.window_manager.online_users
         selected_user = context.window_manager.user_index
         settings = utils.get_preferences()
-        active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
+        active_user = online_users[selected_user] if len(
+            online_users)-1 >= selected_user else 0
         runtime_settings = context.window_manager.session
 
         # Create a simple row.
@@ -309,7 +320,8 @@ class SESSION_PT_user(bpy.types.Panel):
         split.label(text="ping")
 
         row = layout.row()
-        layout.template_list("SESSION_UL_users",  "",  context.window_manager, "online_users", context.window_manager,  "user_index")
+        layout.template_list("SESSION_UL_users",  "",  context.window_manager,
+                             "online_users", context.window_manager,  "user_index")
 
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
@@ -319,7 +331,7 @@ class SESSION_PT_user(bpy.types.Panel):
                 "session.snapview",
                 text="",
                 icon='VIEW_CAMERA').target_client = active_user.username
-            
+
             user_operations.alert = context.window_manager.session.user_snap_running
             user_operations.operator(
                 "session.snaptime",
@@ -374,7 +386,8 @@ class SESSION_PT_presence(bpy.types.Panel):
             or (operators.client and operators.client.state['STATE'] in [STATE_INITIAL, STATE_ACTIVE])
 
     def draw_header(self, context):
-        self.layout.prop(context.window_manager.session, "enable_presence", text="")
+        self.layout.prop(context.window_manager.session,
+                         "enable_presence", text="",icon='OVERLAY')
 
     def draw(self, context):
         layout = self.layout
@@ -382,12 +395,12 @@ class SESSION_PT_presence(bpy.types.Panel):
         settings = context.window_manager.session
         layout.active = settings.enable_presence
         col = layout.column()
-        col.prop(settings,"presence_show_selected")
-        col.prop(settings,"presence_show_user")
+        col.prop(settings, "presence_show_selected")
+        col.prop(settings, "presence_show_user")
         row = layout.column()
-        row.active =  settings.presence_show_user
-        row.prop(settings,"presence_show_far_user") 
-        
+        row.active = settings.presence_show_user
+        row.prop(settings, "presence_show_far_user")
+
 
 class SESSION_PT_services(bpy.types.Panel):
     bl_idname = "MULTIUSER_SERVICE_PT_panel"
@@ -406,14 +419,13 @@ class SESSION_PT_services(bpy.types.Panel):
         online_users = context.window_manager.online_users
         selected_user = context.window_manager.user_index
         settings = context.window_manager.session
-        active_user =  online_users[selected_user] if len(online_users)-1>=selected_user else 0
+        active_user = online_users[selected_user] if len(online_users)-1 >= selected_user else 0
         
         # Create a simple row.
         for name, state in operators.client.services_state.items():
             row = layout.row()
             row.label(text=name)
-            row.label(text=get_state_str(state))     
-
+            row.label(text=get_state_str(state))
 
 
 def draw_property(context, parent, property_uuid, level=0):
@@ -441,15 +453,15 @@ def draw_property(context, parent, property_uuid, level=0):
     # Operations
 
     have_right_to_modify = item.owner == settings.username or \
-                           item.owner == RP_COMMON
-        
+        item.owner == RP_COMMON
+
     if have_right_to_modify:
         detail_item_box.operator(
             "session.commit",
             text="",
             icon='TRIA_UP').target = item.uuid
         detail_item_box.separator()
-    
+
     if item.state in [FETCHED, UP]:
         detail_item_box.operator(
             "session.apply",
@@ -488,8 +500,8 @@ class SESSION_PT_repository(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return hasattr(context.window_manager, 'session') and \
-                operators.client and \
-                operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
+            operators.client and \
+            operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -503,9 +515,9 @@ class SESSION_PT_repository(bpy.types.Panel):
 
         session = operators.client
         usr = session.online_users.get(settings.username)
-        
-        row = layout.row()        
-        
+
+        row = layout.row()
+
         if session.state['STATE'] == STATE_ACTIVE:
             flow = layout.grid_flow(
                 row_major=True,
@@ -531,8 +543,8 @@ class SESSION_PT_repository(bpy.types.Panel):
                 filter_owner=settings.username) if runtime_settings.filter_owned else operators.client.list()
 
             client_keys = [key for key in key_to_filter
-                            if operators.client.get(uuid=key).str_type
-                            in types_filter]
+                           if operators.client.get(uuid=key).str_type
+                           in types_filter]
 
             if client_keys:
                 col = layout.column(align=True)
@@ -547,6 +559,7 @@ class SESSION_PT_repository(bpy.types.Panel):
         else:
             row.label(text="Waiting for init")
 
+
 classes = (
     SESSION_UL_users,
     SESSION_PT_settings,
@@ -557,7 +570,7 @@ classes = (
     SESSION_PT_user,
     SESSION_PT_services,
     SESSION_PT_repository,
-    
+
 )
 
 
