@@ -315,7 +315,7 @@ class SESSION_PT_user(bpy.types.Panel):
         split = box.split(factor=0.35)
         split.label(text="user")
         split = split.split(factor=0.5)
-        split.label(text="localisation")
+        split.label(text="location")
         split.label(text="frame")
         split.label(text="ping")
 
