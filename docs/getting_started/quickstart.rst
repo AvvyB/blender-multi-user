@@ -1,5 +1,5 @@
 ===========
-Quick start
+Quick start guide
 ===========
 
 *All settings are located under: `View3D -> Sidebar -> Multiuser panel`*
@@ -40,9 +40,11 @@ Hosting and connection are done from this panel.
 For now, a session use 4 ports to run.
 If 5555 is given in host settings, it will use 5555, 5556 (5555+1), 5557 (5555+2), 5558 (5555+3). 
 
-------------
-2.1 Advanced
-------------
+---------------------
+2.1 Advanced settings
+---------------------
+
+This section contains optionnal settings to configure the session behavior.
 
 .. image:: img/quickstart_advanced.png
 
