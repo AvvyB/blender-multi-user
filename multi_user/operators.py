@@ -122,7 +122,6 @@ class SessionStartOperator(bpy.types.Operator):
             try:
                 client.host(
                     id=settings.username,
-                    address=settings.ip,
                     port=settings.port,
                     ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,

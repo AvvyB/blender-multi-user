@@ -176,18 +176,22 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
         box = row.box()
 
-        row = box.row()
-        row.prop(settings, "ip", text="IP")
-        row = box.row()
-        row.label(text="Port:")
-        row.prop(settings, "port", text="")
-        row = box.row()
         if runtime_settings.session_mode == 'HOST':
+            row = box.row()
+            row.label(text="Port:")
+            row.prop(settings, "port", text="")
+            row = box.row()
             row.label(text="Admin password:")
             row.prop(runtime_settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
+            row = box.row()
+            row.prop(settings, "ip", text="IP")
+            row = box.row()
+            row.label(text="Port:")
+            row.prop(settings, "port", text="")
+            row = box.row()
             row.prop(runtime_settings, "admin", text='Connect as admin', icon='DISCLOSURE_TRI_DOWN' if runtime_settings.admin
                      else 'DISCLOSURE_TRI_RIGHT')
             if runtime_settings.admin:

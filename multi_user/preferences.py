@@ -362,7 +362,7 @@ class SessionProps(bpy.types.PropertyGroup):
         update=presence.update_overlay_settings
     )
     presence_show_far_user: bpy.props.BoolProperty(
-        name="Show different scenes",
+        name="Show users on different scenes",
         description="Show user on different scenes",
         default=False,
         update=presence.update_overlay_settings
@@ -379,6 +379,7 @@ class SessionProps(bpy.types.PropertyGroup):
     )
     password: bpy.props.StringProperty(
         name="password",
+        default=random_string_digits(),
         description='Session password',
         subtype='PASSWORD'
     )
