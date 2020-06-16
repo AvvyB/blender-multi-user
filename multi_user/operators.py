@@ -112,8 +112,7 @@ class SessionStartOperator(bpy.types.Operator):
 
         client = Session(
             factory=bpy_factory,
-            python_path=bpy.app.binary_path_python,
-            default_strategy=settings.right_strategy)
+            python_path=bpy.app.binary_path_python)
 
         # Host a session
         if self.host:

@@ -115,71 +115,66 @@ class DynamicRightSelectTimer(Timer):
             if self._user is None:
                 self._user = session.online_users.get(settings.username)
 
-            if self._right_strategy is None:
-                self._right_strategy = session.config[
-                    'right_strategy']
-
             if self._user:
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
                     bpy.data.window_managers['WinMan'].windows[0].view_layer
                 )
                 if current_selection != self._last_selection:
-                    if self._right_strategy == RP_COMMON:
-                        obj_common = [
-                            o for o in self._last_selection if o not in current_selection]
-                        obj_ours = [
-                            o for o in current_selection if o not in self._last_selection]
+                    obj_common = [
+                        o for o in self._last_selection if o not in current_selection]
+                    obj_ours = [
+                        o for o in current_selection if o not in self._last_selection]
 
-                        # change old selection right to common
-                        for obj in obj_common:
-                            node = session.get(uuid=obj)
+                    # change old selection right to common
+                    for obj in obj_common:
+                        node = session.get(uuid=obj)
 
-                            if node and (node.owner == settings.username or node.owner == RP_COMMON):
-                                recursive = True
-                                if node.data and 'instance_type' in node.data.keys():
-                                    recursive = node.data['instance_type'] != 'COLLECTION'
-                                session.change_owner(
-                                    node.uuid,
-                                    RP_COMMON,
-                                    recursive=recursive)
+                        if node and (node.owner == settings.username or node.owner == RP_COMMON):
+                            recursive = True
+                            if node.data and 'instance_type' in node.data.keys():
+                                recursive = node.data['instance_type'] != 'COLLECTION'
+                            session.change_owner(
+                                node.uuid,
+                                RP_COMMON,
+                                recursive=recursive)
 
-                        # change new selection to our
-                        for obj in obj_ours:
-                            node = session.get(uuid=obj)
+                    # change new selection to our
+                    for obj in obj_ours:
+                        node = session.get(uuid=obj)
 
-                            if node and node.owner == RP_COMMON:
-                                recursive = True
-                                if node.data and 'instance_type' in node.data.keys():
-                                    recursive = node.data['instance_type'] != 'COLLECTION'
+                        if node and node.owner == RP_COMMON:
+                            recursive = True
+                            if node.data and 'instance_type' in node.data.keys():
+                                recursive = node.data['instance_type'] != 'COLLECTION'
 
-                                session.change_owner(
-                                    node.uuid,
-                                    settings.username,
-                                    recursive=recursive)
-                            else:
-                                return
+                            session.change_owner(
+                                node.uuid,
+                                settings.username,
+                                recursive=recursive)
+                        else:
+                            return
 
-                        self._last_selection = current_selection
+                    self._last_selection = current_selection
 
-                        user_metadata = {
-                            'selected_objects': current_selection
-                        }
+                    user_metadata = {
+                        'selected_objects': current_selection
+                    }
 
-                        session.update_user_metadata(user_metadata)
-                        logging.debug("Update selection")
+                    session.update_user_metadata(user_metadata)
+                    logging.debug("Update selection")
 
-                        # Fix deselection until right managment refactoring (with Roles concepts)
-                        if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
-                            owned_keys = session.list(
-                                filter_owner=settings.username)
-                            for key in owned_keys:
-                                node = session.get(uuid=key)
+                    # Fix deselection until right managment refactoring (with Roles concepts)
+                    if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
+                        owned_keys = session.list(
+                            filter_owner=settings.username)
+                        for key in owned_keys:
+                            node = session.get(uuid=key)
 
-                                session.change_owner(
-                                    key,
-                                    RP_COMMON,
-                                    recursive=recursive)
+                            session.change_owner(
+                                key,
+                                RP_COMMON,
+                                recursive=recursive)
 
             for user, user_info in session.online_users.items():
                 if user != settings.username:

@@ -97,13 +97,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="start_empty",
         default=False
     )
-    right_strategy: bpy.props.EnumProperty(
-        name='right_strategy',
-        description='right strategy',
-        items={
-            ('STRICT', 'strict', 'strict right repartition'),
-            ('COMMON', 'common', 'relaxed right repartition')},
-        default='COMMON')
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
@@ -264,7 +257,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
                 else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             if self.conf_session_hosting_expanded:
-                box.row().prop(self, "right_strategy", text="Right model")
                 row = box.row()
                 row.label(text="Start with an empty scene:")
                 row.prop(self, "start_empty", text="")

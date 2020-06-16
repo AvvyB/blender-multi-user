@@ -262,10 +262,6 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
             row = layout.row()
             row.prop(settings.sync_flags, "sync_render_settings")
 
-            row = layout.row(align=True)
-            row.label(text="Right strategy:")
-            row.prop(settings, "right_strategy", text="")
-
         row = layout.row()
 
         row = layout.row()
@@ -420,7 +416,7 @@ class SESSION_PT_services(bpy.types.Panel):
         selected_user = context.window_manager.user_index
         settings = context.window_manager.session
         active_user = online_users[selected_user] if len(online_users)-1 >= selected_user else 0
-        
+
         # Create a simple row.
         for name, state in operators.client.services_state.items():
             row = layout.row()
