@@ -288,7 +288,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return operators.client and operators.client.state['STATE'] == 2
+        return operators.client and operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw(self, context):
         layout = self.layout
@@ -478,7 +478,7 @@ def draw_property(context, parent, property_uuid, level=0):
         detail_item_box.label(text="", icon="DECORATE_LOCKED")
 
 
-class SESSION_PT_outliner(bpy.types.Panel):
+class SESSION_PT_repository(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
     bl_label = "Repository"
     bl_space_type = 'VIEW_3D'
@@ -489,7 +489,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
     def poll(cls, context):
         return hasattr(context.window_manager, 'session') and \
                 operators.client and \
-                operators.client.state['STATE'] == 2
+                operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -500,11 +500,13 @@ class SESSION_PT_outliner(bpy.types.Panel):
         # Filters
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
-        usr = operators.client.online_users.get(settings.username)
-        is_repository_init = operators.client.list()
+
+        session = operators.client
+        usr = session.online_users.get(settings.username)
+        
         row = layout.row()        
         
-        if is_repository_init:
+        if session.state['STATE'] == STATE_ACTIVE:
             flow = layout.grid_flow(
                 row_major=True,
                 columns=0,
@@ -540,7 +542,7 @@ class SESSION_PT_outliner(bpy.types.Panel):
             else:
                 row.label(text="Empty")
 
-        elif usr and usr['admin']:
+        elif session.state['STATE'] == STATE_LOBBY and usr and usr['admin']:
             row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
         else:
             row.label(text="Waiting for init")
@@ -554,7 +556,7 @@ classes = (
     SESSION_PT_settings_replication,
     SESSION_PT_user,
     SESSION_PT_services,
-    SESSION_PT_outliner,
+    SESSION_PT_repository,
     
 )
 

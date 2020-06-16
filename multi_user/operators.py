@@ -139,9 +139,7 @@ class SessionStartOperator(bpy.types.Operator):
                 utils.clean_scene()
                 # regular client, no password needed
                 admin_pass = None
-            else:
-                for scene in bpy.data.scenes:
-                    client.add(scene)
+
             try:
                 client.connect(
                     id=settings.username,
@@ -213,9 +211,10 @@ class SessionInitOperator(bpy.types.Operator):
             utils.clean_scene()
 
         for scene in bpy.data.scenes:
-            scene_uuid = client.add(scene)
-            client.commit(scene_uuid)
-            client.push(scene_uuid)
+            client.add(scene)
+            
+        client.init()
+
 
         return {"FINISHED"}
 
