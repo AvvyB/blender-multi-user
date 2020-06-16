@@ -20,7 +20,14 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .libs.replication.replication.constants import FETCHED, RP_COMMON, STATE_INITIAL,STATE_QUITTING, STATE_ACTIVE, STATE_SYNCING, STATE_SRV_SYNC
+from .libs.replication.replication.constants import (FETCHED,
+                                                    RP_COMMON,
+                                                    STATE_INITIAL,
+                                                    STATE_QUITTING,
+                                                    STATE_ACTIVE,
+                                                    STATE_SYNCING,
+                                                    STATE_LOBBY,
+                                                    STATE_SRV_SYNC)
 
 
 class Delayable():
@@ -78,8 +85,8 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        client =  operators.client
-        if client and  client.state['STATE'] == STATE_ACTIVE:
+        client = operators.client
+        if client and client.state['STATE'] == STATE_ACTIVE:
             nodes = client.list(filter=self._type)
 
             for node in nodes:
@@ -211,12 +218,12 @@ class DrawClient(Draw):
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         prefs = utils.get_preferences()
-        
+
         if session and renderer and session.state['STATE'] == STATE_ACTIVE:
             settings = bpy.context.window_manager.session
             users = session.online_users
 
-            # Update users 
+            # Update users
             for user in users.values():
                 metadata = user.get('metadata')
                 color = metadata.get('color')
@@ -230,7 +237,7 @@ class DrawClient(Draw):
                         renderer.draw_client_camera(
                             user['id'], metadata['view_corners'], color)
                 if not user_showable:
-                    # TODO: remove this when user event drivent update will be 
+                    # TODO: remove this when user event drivent update will be
                     # ready
                     renderer.flush_selection()
                     renderer.flush_users()
@@ -246,15 +253,11 @@ class ClientUpdate(Timer):
         settings = utils.get_preferences()
         session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
-       
-        if session and renderer:
-            if session.state['STATE'] == STATE_ACTIVE:
-                # Check if session has been closes prematurely
-                if session.state['STATE'] == 0:
-                    bpy.ops.session.stop()
 
+        if session and renderer:
+            if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
                 local_user =  operators.client.online_users.get(settings.username)
-                
+
                 if not local_user:
                     return
                 else:
@@ -262,7 +265,7 @@ class ClientUpdate(Timer):
                         if username != settings.username:
                             cached_user_data = self.users_metadata.get(username)
                             new_user_data = operators.client.online_users[username]['metadata']
-                            
+
                             if cached_user_data is None:
                                 self.users_metadata[username] = user_data['metadata']
                             elif 'view_matrix' in cached_user_data and 'view_matrix' in new_user_data and cached_user_data['view_matrix'] != new_user_data['view_matrix']:
@@ -276,7 +279,7 @@ class ClientUpdate(Timer):
                 scene_current = bpy.context.scene.name
                 local_user =  session.online_users.get(settings.username)
                 current_view_corners = presence.get_view_corners()
-                    
+
                 # Init client metadata
                 if not local_user_metadata or 'color' not in local_user_metadata.keys():
                     metadata = {
@@ -286,7 +289,7 @@ class ClientUpdate(Timer):
                                 settings.client_color.g,
                                 settings.client_color.b,
                                 1),
-                        'frame_current':bpy.context.scene.frame_current,
+                        'frame_current': bpy.context.scene.frame_current,
                         'scene_current': scene_current
                     }
                     session.update_user_metadata(metadata)
@@ -295,8 +298,8 @@ class ClientUpdate(Timer):
                 # Update client current scene
                 elif scene_current != local_user_metadata['scene_current']:
                     local_user_metadata['scene_current'] = scene_current
-                    session.update_user_metadata(local_user_metadata)            
-                elif 'view_corners' in local_user_metadata  and current_view_corners != local_user_metadata['view_corners']:
+                    session.update_user_metadata(local_user_metadata)
+                elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
                     local_user_metadata['view_matrix'] = presence.get_view_matrix()
                     session.update_user_metadata(local_user_metadata)
@@ -306,7 +309,7 @@ class ClientUpdate(Timer):
 
                 for index, user in enumerate(ui_users):
                     if user.username not in session_users.keys():
-                        ui_users.remove(index)    
+                        ui_users.remove(index)
                         renderer.flush_selection()
                         renderer.flush_users()
                         break
@@ -322,9 +325,9 @@ class ClientUpdate(Timer):
             elif session.state['STATE'] == STATE_INITIAL and self.handle_quit:
                 self.handle_quit = False
                 presence.refresh_sidebar_view()
-                
+
                 operators.unregister_delayables()
-                
+
                 presence.renderer.stop()
-            
+
             presence.refresh_sidebar_view()
