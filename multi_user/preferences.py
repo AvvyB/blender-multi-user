@@ -386,10 +386,18 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Session password',
         subtype='PASSWORD'
     )
+    internet_ip: bpy.props.StringProperty(
+        name="internet ip",
+        default="no found",
+        description='Internet interface ip',
+    )
     user_snap_running: bpy.props.BoolProperty(
         default=False
     )
     time_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
+    is_host: bpy.props.BoolProperty(
         default=False
     )
 

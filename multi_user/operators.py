@@ -117,6 +117,9 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Host a session
         if self.host:
+            runtime_settings.is_host = True
+            runtime_settings.internet_ip = environment.get_ip()
+
             for scene in bpy.data.scenes:
                 client.add(scene)
 

@@ -109,6 +109,8 @@ class SESSION_PT_settings(bpy.types.Panel):
         layout = self.layout
         layout.use_property_split = True
         row = layout.row()
+        runtime_settings = context.window_manager.session
+        settings = utils.get_preferences()
 
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
@@ -127,6 +129,10 @@ class SESSION_PT_settings(bpy.types.Panel):
                 if current_state in [STATE_ACTIVE, STATE_LOBBY]:
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
+                    if runtime_settings.is_host:
+                        row = row.box()
+                        row.label(text=f"{runtime_settings.internet_ip}:{settings.port}", icon='INFO')
+                        row = layout.row()
 
                 # CONNECTION STATE
                 elif current_state in [STATE_SRV_SYNC,
@@ -377,7 +383,7 @@ class SESSION_UL_users(bpy.types.UIList):
         ping = '-'
         frame_current = '-'
         scene_current = '-'
-        status_icon = 'DOT'
+        status_icon = 'BLANK1'
         if session:
             user = session.online_users.get(item.username)
             if user:
@@ -437,6 +443,9 @@ class SESSION_PT_services(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return operators.client and operators.client.state['STATE'] == 2
+
+    def draw_header(self, context):
+        self.layout.label(text="", icon='FILE_CACHE')
 
     def draw(self, context):
         layout = self.layout
