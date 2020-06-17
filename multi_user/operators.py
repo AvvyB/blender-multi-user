@@ -26,6 +26,7 @@ import time
 from operator import itemgetter
 from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
+import zmq
 
 import bpy
 import mathutils
@@ -234,7 +235,8 @@ class SessionStopOperator(bpy.types.Operator):
             client.disconnect()
         except Exception as e:
             self.report({'ERROR'}, repr(e))
-
+        except zmq.ZMQError:
+            self.report("A client is already connected (Could be a bug). \n Retry after closing any blender instance from your task manager.")
         return {"FINISHED"}
 
 

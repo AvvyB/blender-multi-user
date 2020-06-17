@@ -60,7 +60,7 @@ def get_state_str(state):
     if state == STATE_WAITING:
         state_str = 'WARMING UP DATA'
     elif state == STATE_SYNCING:
-        state_str = 'FETCHING FROM SERVER'
+        state_str = 'FETCHING'
     elif state == STATE_AUTH:
         state_str = 'AUTHENTIFICATION'
     elif state == STATE_CONFIG:
@@ -68,11 +68,11 @@ def get_state_str(state):
     elif state == STATE_ACTIVE:
         state_str = 'ONLINE'
     elif state == STATE_SRV_SYNC:
-        state_str = 'PUSHING TO SERVER'
+        state_str = 'PUSHING'
     elif state == STATE_INITIAL:
         state_str = 'INIT'
     elif state == STATE_QUITTING:
-        state_str = 'QUITTING SESSION'
+        state_str = 'QUITTING'
     elif state == STATE_LAUNCHING_SERVICES:
         state_str = 'LAUNCHING SERVICES'
     elif state == STATE_LOBBY:
@@ -84,10 +84,26 @@ def get_state_str(state):
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
-    bl_label = "Online session"
+    bl_label = ""
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
+
+    def draw_header(self, context):
+        layout = self.layout
+        if operators.client and operators.client.state['STATE'] != STATE_INITIAL:
+            cli_state = operators.client.state
+            state =  operators.client.state.get('STATE')
+            connection_icon = "KEYTYPE_MOVING_HOLD_VEC"
+
+            if state == STATE_ACTIVE:
+                connection_icon = 'PROP_ON'
+            else:
+                connection_icon = 'PROP_CON'
+
+            layout.label(text=f"Session - {get_state_str(cli_state['STATE'])}", icon=connection_icon)
+        else:
+            layout.label(text="Session",icon="PROP_OFF")
 
     def draw(self, context):
         layout = self.layout
@@ -102,7 +118,7 @@ class SESSION_PT_settings(bpy.types.Panel):
             else:
                 cli_state = operators.client.state
 
-                row.label(text=f"Status : {get_state_str(cli_state['STATE'])}")
+                
                 row = layout.row()
 
                 current_state = cli_state['STATE']
@@ -232,7 +248,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
         row = layout.row()
 
 
-class SESSION_PT_settings_replication(bpy.types.Panel):
+class SESSION_PT_advanced_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
     bl_label = "Advanced"
     bl_space_type = 'VIEW_3D'
@@ -246,7 +262,7 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
             or (operators.client and operators.client.state['STATE'] == 0)
 
     def draw_header(self, context):
-        self.layout.label(text="", icon='TOOL_SETTINGS')
+        self.layout.label(text="", icon='PREFERENCES')
         
     def draw(self, context):
         layout = self.layout
@@ -254,23 +270,27 @@ class SESSION_PT_settings_replication(bpy.types.Panel):
         runtime_settings = context.window_manager.session
         settings = utils.get_preferences()
 
-        row = layout.row()
-        row.label(text="IPC Port:")
-        row.prop(settings, "ipc_port", text="")
-        row = layout.row()
-        row.label(text="Timeout (ms):")
-        row.prop(settings, "connection_timeout", text="")
+        
+        net_section = layout.row().box()
+        net_section.label(text="Network ", icon='TRIA_DOWN')
+        net_section_row = net_section.row()
+        net_section_row.label(text="IPC Port:")
+        net_section_row.prop(settings, "ipc_port", text="")
+        net_section_row = net_section.row()
+        net_section_row.label(text="Timeout (ms):")
+        net_section_row.prop(settings, "connection_timeout", text="")
 
-        # Right managment
+        replication_section = layout.row().box()
+        replication_section.label(text="Replication ", icon='TRIA_DOWN')
+        replication_section_row = replication_section.row()
         if runtime_settings.session_mode == 'HOST':
-            row = layout.row()
-            row.prop(settings.sync_flags, "sync_render_settings")
+            replication_section_row.prop(settings.sync_flags, "sync_render_settings")
 
-        row = layout.row()
-
-        row = layout.row()
+        replication_section_row = replication_section.row()
+        replication_section_row.label(text="Per data type timers:")
+        replication_section_row = replication_section.row()
         # Replication frequencies
-        flow = row .grid_flow(
+        flow = replication_section_row .grid_flow(
             row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
         line = flow.row(align=True)
         line.label(text=" ")
@@ -557,7 +577,7 @@ class SESSION_PT_repository(bpy.types.Panel):
         elif session.state['STATE'] == STATE_LOBBY and usr and usr['admin']:
             row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
         else:
-            row.label(text="Waiting for init")
+            row.label(text="Waiting to start")
 
 
 classes = (
@@ -566,7 +586,7 @@ classes = (
     SESSION_PT_settings_user,
     SESSION_PT_settings_network,
     SESSION_PT_presence,
-    SESSION_PT_settings_replication,
+    SESSION_PT_advanced_settings,
     SESSION_PT_user,
     SESSION_PT_services,
     SESSION_PT_repository,
