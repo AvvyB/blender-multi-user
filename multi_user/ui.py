@@ -197,6 +197,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.label(text="Port:")
             row.prop(settings, "port", text="")
             row = box.row()
+            row.label(text="Start from:")
+            row.prop(settings, "init_method", text="")
+            row = box.row()
             row.label(text="Admin password:")
             row.prop(runtime_settings, "password", text="")
             row = box.row()
@@ -207,6 +210,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.label(text="Port:")
             row.prop(settings, "port", text="")
+
             row = box.row()
             row.prop(runtime_settings, "admin", text='Connect as admin', icon='DISCLOSURE_TRI_DOWN' if runtime_settings.admin
                      else 'DISCLOSURE_TRI_RIGHT')

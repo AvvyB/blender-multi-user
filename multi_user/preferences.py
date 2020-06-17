@@ -93,10 +93,13 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description='internal ttl port(only usefull for multiple local instances)',
         default=5561
     )
-    start_empty: bpy.props.BoolProperty(
-        name="start_empty",
-        default=False
-    )
+    init_method: bpy.props.EnumProperty(
+        name='init_method',
+        description='Init repo',
+        items={
+            ('EMPTY', 'an empty scene', 'start empty'),
+            ('BLEND', 'current scenes', 'use current scenes')},
+        default='BLEND')
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
@@ -229,8 +232,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row.label(text="Port:")
                 row.prop(self, "port", text="Address")
                 row = box.row()
-                row.label(text="Start with an empty scene:")
-                row.prop(self, "start_empty", text="")
+                row.label(text="Init the session from:")
+                row.prop(self, "init_method", text="")
 
                 table = box.box()
                 table.row().prop(
@@ -258,8 +261,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             if self.conf_session_hosting_expanded:
                 row = box.row()
-                row.label(text="Start with an empty scene:")
-                row.prop(self, "start_empty", text="")
+                row.label(text="Init the session from:")
+                row.prop(self, "init_method", text="")
 
             # CACHE SETTINGS
             box = grid.box()
