@@ -24,7 +24,7 @@ In simple terms, *Hosting a session* means *run a local server and connect the l
 When I said **local server** I mean accessible from the LAN (Local Area Network). 
 
 However sometime you will need to host a session over the internet, 
-in this case I strongly recommand you to read the 
+in this case I strongly recommand you to read the :ref:`internet-guide` tutorial.
 
 .. _user-info:
 
@@ -60,7 +60,8 @@ During online sessions, other users will see your selected object and camera hil
 --------------------
 
 When the hosting process will start, the multi-user addon will lauch a local server instance.
-The **Host panel** (see image below) allow you to configure this server according to:
+In the nerwork panel select **HOST**.
+The **Host sub-panel** (see image below) allow you to configure the server according to:
 
 * **Port**: Port on wich the server is listening.
 * **Start from**: The session initialisation method.
@@ -88,14 +89,12 @@ Once everything is setup you can hit the **HOST** button to launch the session !
 It will do two things:
 
 * Start a local server 
-* Connect you to it
-
+* Connect you to it as an :ref:`admin`
 
 .. _how-to-join:
 
 How to join a session
 =====================
-:ref:`internet-guide`
 
 This section describe how join a launched session. 
 Before starting make sure that you have access to the session ip and port.
@@ -110,12 +109,9 @@ Follow the user-info_ section for this step.
 2. Network setup
 ----------------
 
-The **join pannel** (see image below) will configure the client to join a collaborative session.
-Fill those field with your information:
-
-- **IP**: the host ip
-- **Port**: the host port
-- **Connect as admin**: connect you with admin right to the session
+In the nerwork panel select **JOIN**.
+The **join sub-pannel** (see image below) allow you configure the client to join a
+collaborative session.
 
 .. figure:: img/quickstart_join.png
    :align: center
@@ -123,11 +119,22 @@ Fill those field with your information:
 
    Connection pannel
 
-Additionnal configuration setting can be found in the :ref:`advanced` section.
+Fill those field with your information:
+
+- **IP**: the host ip.
+- **Port**: the host port.
+- **Connect as admin**: connect you with **admin rights** (see :ref:`admin` ) to the session.
+
+.. Maybe something more explicit here
 
 .. note::
-   **Session administrator** can manage users (kick) and have a write access on each datablock. He could also init a dedicated server repository(TODO: See dedicated server section).
+   Additionnal configuration setting can be found in the :ref:`advanced` section.
 
+Once you've set every field, hit the button **CONNECT** to join the session !
+When the :ref:`session-status` is **ONLINE** you are online and ready to start to collaborate.
+
+During online session, various actions are available to you, go to :ref:`how-to-manage` section to 
+learn more about them.
 
 .. _how-to-manage:
 
@@ -148,7 +155,7 @@ By selecting a user in the list you'll have access to different **actions**:
 
 - The **camera button** allow you to snap on the user viewpoint.
 - The **time button** allow you to snap on the user time.
-- The **cross button** [**host only**] allow the admin to kick users
+- The **cross button**[ :ref:`admin` only] allow the admin to kick users
 
 -------------------
 Presence show flags 
@@ -203,5 +210,43 @@ This section contains optionnal settings to configure the session behavior.
 .. note:: Per-data type settings will soon be revamped for simplification purposes
 
 
+Glossary
+========
 
+.. _admin:
 
+.. rubric:: administrator
+
+*A session administrator can manage users (kick) and have a write access on
+each datablock. He could also init a dedicated server repository.*
+
+.. _session-status:
+
+.. rubric:: session status
+
+*Located in the title of the multi-user panel, the session status show 
+you the connection state. All possible state are listed here with their meaning:*
+
++--------------------+---------------------------------------------------------------------------------------------+
+| State              | Description                                                                                 |
++--------------------+---------------------------------------------------------------------------------------------+
+| WARMING UP DATA    | Commiting local data                                                                        |
++--------------------+---------------------------------------------------------------------------------------------+
+| FETCHING           | Dowloading snapshot from the server                                                         |
++--------------------+---------------------------------------------------------------------------------------------+
+| AUTHENTIFICATION   | Initial server authentication                                                               |
++--------------------+---------------------------------------------------------------------------------------------+
+| ONLINE             | Connected to the session                                                                    |
++--------------------+---------------------------------------------------------------------------------------------+
+| PUSHING            | Init the server repository by pushing ours                                                  |
++--------------------+---------------------------------------------------------------------------------------------+
+| INIT               | Initial state                                                                               |
++--------------------+---------------------------------------------------------------------------------------------+
+| QUITTING           | Exiting the session                                                                         |
++--------------------+---------------------------------------------------------------------------------------------+
+| LAUNCHING SERVICES | Launching local services. Services are spetialized daemons running in the background. )     |
++--------------------+---------------------------------------------------------------------------------------------+
+| LOBBY              | The lobby is a waiting state triggered when the server repository hasn't been initiated yet |
+|                    |                                                                                             |
+|                    | Once initialized, the server will automatically launch all client in the **LOBBY**.         |
++--------------------+---------------------------------------------------------------------------------------------+
