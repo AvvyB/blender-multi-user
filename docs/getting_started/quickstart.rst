@@ -12,7 +12,6 @@ In this this guide you will learn how to master the collaborative session system
 - :ref:`how-to-join`
 - :ref:`how-to-manage`
 
-
 .. _how-to-host:
 
 How to host a session
@@ -86,7 +85,8 @@ It will start the server and connect to it in few steps.
 How to join a session
 =====================
 
-This section describe how join a session.
+This section describe how join a launched session. 
+Before starting make sure that you have access to the session ip and port.
 
 -----------------------------
 1. Fill your user information
@@ -98,18 +98,25 @@ Follow the user-info_ section for this step.
 2. Network setup
 ----------------
 
-Connection are done from this panel.
+The **join pannel** (see image below) will allow the tool to know **where** to connect with what **status**.
+Let's fill those field with your information:
 
-.. image:: img/quickstart_join.png
+- **IP**: the host ip
+- **Port**: the host port
+- **Connect as admin**: connect you with admin [#f1]_ right to the session
+
+.. figure:: img/quickstart_join.png
    :align: center
-   
-IP: server ip
-Port: server port 
+   :alt: Connect menu
+
+   Connection pannel
+ 
 
 
 **Port configuration:**
 For now, a session use 4 ports to run.
 
+.. [#f1] Text of the first footnote.
 
 
 .. _how-to-manage:
@@ -184,10 +191,6 @@ This section contains optionnal settings to configure the session behavior.
 - **Apply**: pulled data update rate (in second)
 
 .. note:: Per-data type settings will soon be revamped for simplification purposes
-
-
-
-
 
 
 

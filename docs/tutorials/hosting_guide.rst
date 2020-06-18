@@ -1,6 +1,6 @@
-================
-Advanced hosting
-================
+===================
+Hosting on internet
+===================
 
 This tutorial aims to guide you to host a collaborative Session on internet.
 
