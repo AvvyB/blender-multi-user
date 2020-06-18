@@ -7,3 +7,4 @@ Getting started
 
    install
    quickstart
+   glossary

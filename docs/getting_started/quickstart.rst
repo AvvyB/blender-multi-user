@@ -32,7 +32,7 @@ in this case I strongly recommand you to read the :ref:`internet-guide` tutorial
 1. Fill your user information
 -----------------------------
 
-In the **User Info** panel (See image below) allow you to constomize your online identity.
+The **User Info** panel (See image below) allow you to constomize your online identity.
 
 .. figure:: img/quickstart_user_info.png
    :align: center
@@ -141,21 +141,32 @@ learn more about them.
 How to manage a session
 =======================
 
-This section describe tools available during a collaborative session.
+The collaboration quality directly depend on the communication quality. This section describe
+various tools made in an effort to ease the communication between the different session users.
+Feel free to suggest any idea for communication tools `here <https://gitlab.com/slumber/multi-user/-/issues/75>`_ .
 
----------------
-Connected users
----------------
+--------------------
+Monitor online users
+--------------------
 
-.. image:: img/quickstart_users.png
+One of the most vital tool is the **Online user pannel**. It list all connected
+sers information's including yours such as :
+
+* **Role** : if user is an admin or a regular user.
+* **Location**: Where the user is actually working.
+* **Frame**: When (in frame) the user working.
+* **Ping**: user connection delay in milliseconds
+
+.. figure:: img/quickstart_users.png
    :align: center
 
-This panel displays all connected users information's, including yours. 
-By selecting a user in the list you'll have access to different **actions**:
+   Online user panel
+
+By selecting a user in the list you'll have access to different user related **actions** explained here:
 
 - The **camera button** allow you to snap on the user viewpoint.
 - The **time button** allow you to snap on the user time.
-- The **cross button**[ :ref:`admin` only] allow the admin to kick users
+- The **cross button** [ :ref:`admin` only] allow the admin to kick users
 
 -------------------
 Presence show flags 
@@ -208,45 +219,3 @@ This section contains optionnal settings to configure the session behavior.
 - **Apply**: pulled data update rate (in second)
 
 .. note:: Per-data type settings will soon be revamped for simplification purposes
-
-
-Glossary
-========
-
-.. _admin:
-
-.. rubric:: administrator
-
-*A session administrator can manage users (kick) and have a write access on
-each datablock. He could also init a dedicated server repository.*
-
-.. _session-status:
-
-.. rubric:: session status
-
-*Located in the title of the multi-user panel, the session status show 
-you the connection state. All possible state are listed here with their meaning:*
-
-+--------------------+---------------------------------------------------------------------------------------------+
-| State              | Description                                                                                 |
-+--------------------+---------------------------------------------------------------------------------------------+
-| WARMING UP DATA    | Commiting local data                                                                        |
-+--------------------+---------------------------------------------------------------------------------------------+
-| FETCHING           | Dowloading snapshot from the server                                                         |
-+--------------------+---------------------------------------------------------------------------------------------+
-| AUTHENTIFICATION   | Initial server authentication                                                               |
-+--------------------+---------------------------------------------------------------------------------------------+
-| ONLINE             | Connected to the session                                                                    |
-+--------------------+---------------------------------------------------------------------------------------------+
-| PUSHING            | Init the server repository by pushing ours                                                  |
-+--------------------+---------------------------------------------------------------------------------------------+
-| INIT               | Initial state                                                                               |
-+--------------------+---------------------------------------------------------------------------------------------+
-| QUITTING           | Exiting the session                                                                         |
-+--------------------+---------------------------------------------------------------------------------------------+
-| LAUNCHING SERVICES | Launching local services. Services are spetialized daemons running in the background. )     |
-+--------------------+---------------------------------------------------------------------------------------------+
-| LOBBY              | The lobby is a waiting state triggered when the server repository hasn't been initiated yet |
-|                    |                                                                                             |
-|                    | Once initialized, the server will automatically launch all client in the **LOBBY**.         |
-+--------------------+---------------------------------------------------------------------------------------------+
