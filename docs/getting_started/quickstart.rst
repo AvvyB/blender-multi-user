@@ -3,10 +3,10 @@ Quick start
 ===========
 
 .. hint::
-   *All settings are located under: `View3D -> Sidebar -> Multiuser panel`*
+   *All session related settings are located under: `View3D -> Sidebar -> Multiuser panel`*
 
-The multi-user is based on a session management system. Under the 
-In this this guide you will learn how to master the collaborative session system in three part:
+The multi-user is based on a session management system.
+In this this guide you will quickly learn how to use the collaborative session system in three part:
 
 - :ref:`how-to-host`
 - :ref:`how-to-join`
@@ -17,7 +17,14 @@ In this this guide you will learn how to master the collaborative session system
 How to host a session
 =====================
 
-TODO: Speak about local/DEDICATED HERE
+The multi-user add-on rely on a Client-Server architecture. 
+The server is the heart of the collaborative session, 
+it will allow each users to communicate with each others.  
+In simple terms, *Hosting a session* means *run a local server and connect the local client to it*. 
+When I said **local server** I mean accessible from the LAN (Local Area Network). 
+
+However sometime you will need to host a session over the internet, 
+in this case I strongly recommand you to read the 
 
 .. _user-info:
 
@@ -53,18 +60,19 @@ During online sessions, other users will see your selected object and camera hil
 --------------------
 
 When the hosting process will start, the multi-user addon will lauch a local server instance.
-The **Host panel**(see image below) allow you to configure this server according to:
+The **Host panel** (see image below) allow you to configure this server according to:
 
-* **Port**: Port on wich the server is listening
-* **Start from**: The session initialisation method
+* **Port**: Port on wich the server is listening.
+* **Start from**: The session initialisation method.
 
-   * **current scenes**: start with the current blendfile datas
-   * **an empty scene**: clear a data and start over
+   * **current scenes**: Start with the current blendfile datas.
+   * **an empty scene**: Clear a data and start over.
+   
    .. danger::
       By starting from an empty, all of the blend data will be removed !
       Ensure to save your existing work before launching the session.
 
-* **Admin password**: The session administration password
+* **Admin password**: The session administration password.
 
 .. figure:: img/quickstart_host.png 
    :align: center
@@ -77,13 +85,17 @@ The **Host panel**(see image below) allow you to configure this server according
 
 Once everything is setup you can hit the **HOST** button to launch the session !
 
-It will start the server and connect to it in few steps.
+It will do two things:
+
+* Start a local server 
+* Connect you to it
 
 
 .. _how-to-join:
 
 How to join a session
 =====================
+:ref:`internet-guide`
 
 This section describe how join a launched session. 
 Before starting make sure that you have access to the session ip and port.
@@ -98,25 +110,23 @@ Follow the user-info_ section for this step.
 2. Network setup
 ----------------
 
-The **join pannel** (see image below) will allow the tool to know **where** to connect with what **status**.
-Let's fill those field with your information:
+The **join pannel** (see image below) will configure the client to join a collaborative session.
+Fill those field with your information:
 
 - **IP**: the host ip
 - **Port**: the host port
-- **Connect as admin**: connect you with admin [#f1]_ right to the session
+- **Connect as admin**: connect you with admin right to the session
 
 .. figure:: img/quickstart_join.png
    :align: center
    :alt: Connect menu
 
    Connection pannel
- 
 
+Additionnal configuration setting can be found in the :ref:`advanced` section.
 
-**Port configuration:**
-For now, a session use 4 ports to run.
-
-.. [#f1] Text of the first footnote.
+.. note::
+   **Session administrator** can manage users (kick) and have a write access on each datablock. He could also init a dedicated server repository(TODO: See dedicated server section).
 
 
 .. _how-to-manage:

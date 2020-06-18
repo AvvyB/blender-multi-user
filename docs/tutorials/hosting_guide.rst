@@ -1,3 +1,5 @@
+.. _internet-guide:
+
 ===================
 Hosting on internet
 ===================
