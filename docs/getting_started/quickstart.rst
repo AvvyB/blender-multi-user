@@ -189,35 +189,52 @@ the user time (current frame). To disable the snap, click back on the button.
 This action is built to help various actors to work on the same temporality 
 (for instance multiple animators).
 
-.. image:: img/quickstart_snap_time.gif
+.. figure:: img/quickstart_snap_time.gif
+   :align: center
+
+   Snap time in action
 
 
 Kick a user
 -----------
 
-.. warning:: only available for :ref:`admin` !
+.. warning:: Only available for :ref:`admin` !
 
 
 The **CROSS button** (Also called **kick** operator) allow the admin to kick the selected user. On the target user side, the session will properly disconnect.
 
--------------------
-Presence show flags 
--------------------
+--------------------
+Manage users display 
+--------------------
 
-.. image:: img/quickstart_presence.png
+Presence is the multi-user module responsible for users display. During the session,
+it draw users related information in your viewport such as:
 
-This pannel allow you to tweak users overlay in the viewport:
+* Username
+* User point of view
+* User selection
+
+.. figure:: img/quickstart_presence.png
+   :align: center
+
+   Presence show flags
+
+The presence overlay pannel (see image above) allow you to enable/disable 
+various drawed parts via the following flags:
 
 - **Show selected objects**: display other users current selection
 - **Show users**: display users current viewpoint 
-- **Show different scenes**: display users on other scenes
+- **Show different scenes**: display users working on other scenes
 
----------------------
-Replicated properties
----------------------
+----------------------
+Manage replicated data
+----------------------
 
-.. image:: img/quickstart_properties.png
+.. figure:: img/quickstart_properties.png
+   :align: center
 
+   Repository panel
+   
 The **replicated properties** panel shows all replicated properties status and associated actions.
 Since the replication architecture is based on commit/push/pull mechanisms, a replicated properties can be pushed/pull or even committed manually from this panel.
 
@@ -242,7 +259,10 @@ Advanced configuration
 
 This section contains optionnal settings to configure the session behavior.
 
-.. image:: img/quickstart_advanced.png
+.. figure:: img/quickstart_advanced.png
+   :align: center
+
+   Reponsitory panel
 
 **Synchronise render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
 
@@ -251,3 +271,4 @@ This section contains optionnal settings to configure the session behavior.
 - **Apply**: pulled data update rate (in second)
 
 .. note:: Per-data type settings will soon be revamped for simplification purposes
+
