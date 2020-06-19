@@ -162,11 +162,43 @@ sers information's including yours such as :
 
    Online user panel
 
-By selecting a user in the list you'll have access to different user related **actions** explained here:
+By selecting a user in the list you'll have access to different user related **actions**.
+Those operators allow you reach the selected user state in tow different dimensions: **SPACE** and **TIME**.
 
-- The **camera button** allow you to snap on the user viewpoint.
-- The **time button** allow you to snap on the user time.
-- The **cross button** [ :ref:`admin` only] allow the admin to kick users
+Snaping in space
+----------------
+
+The **CAMERA button** (Also called **snap view** operator) allow you to snap on 
+the user viewpoint. To disable the snap, click back on the button. This action 
+served diferent purposes such as easing the review process, working together on
+wide world.
+
+.. hint::
+   If the target user is localized on another scene, the **snap view** operator will send you to his scene. 
+
+.. figure:: img/quickstart_snap_view.gif
+   :align: center
+
+   Snap view in action
+
+Snaping in time
+---------------
+
+The **CLOCK button** (Also called **snap time** operator) allow you to snap on 
+the user time (current frame). To disable the snap, click back on the button. 
+This action is built to help various actors to work on the same temporality 
+(for instance multiple animators).
+
+.. image:: img/quickstart_snap_time.gif
+
+
+Kick a user
+-----------
+
+.. warning:: only available for :ref:`admin` !
+
+
+The **CROSS button** (Also called **kick** operator) allow the admin to kick the selected user. On the target user side, the session will properly disconnect.
 
 -------------------
 Presence show flags 
