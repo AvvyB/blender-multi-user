@@ -112,14 +112,14 @@ Follow the user-info_ section for this step.
 ----------------
 
 In the nerwork panel select **JOIN**.
-The **join sub-pannel** (see image below) allow you configure the client to join a
+The **join sub-panel** (see image below) allow you configure the client to join a
 collaborative session.
 
 .. figure:: img/quickstart_join.png
    :align: center
    :alt: Connect menu
 
-   Connection pannel
+   Connection panel
 
 Fill those field with your information:
 
@@ -143,7 +143,7 @@ learn more about them.
 How to manage a session
 =======================
 
-The collaboration quality directly depend on the communication quality. This section describe
+The collaboration quality directly depend on the communication quality. This section describes
 various tools made in an effort to ease the communication between the different session users.
 Feel free to suggest any idea for communication tools `here <https://gitlab.com/slumber/multi-user/-/issues/75>`_ .
 
@@ -151,8 +151,8 @@ Feel free to suggest any idea for communication tools `here <https://gitlab.com/
 Monitor online users
 --------------------
 
-One of the most vital tool is the **Online user pannel**. It list all connected
-sers information's including yours such as :
+One of the most vital tool is the **Online user panel**. It list all connected
+users information's including yours such as :
 
 * **Role** : if user is an admin or a regular user.
 * **Location**: Where the user is actually working.
@@ -167,12 +167,12 @@ sers information's including yours such as :
 By selecting a user in the list you'll have access to different user related **actions**.
 Those operators allow you reach the selected user state in tow different dimensions: **SPACE** and **TIME**.
 
-Snaping in space
+Snapping in space
 ----------------
 
 The **CAMERA button** (Also called **snap view** operator) allow you to snap on 
 the user viewpoint. To disable the snap, click back on the button. This action 
-served diferent purposes such as easing the review process, working together on
+served different purposes such as easing the review process, working together on
 wide world.
 
 .. hint::
@@ -183,7 +183,7 @@ wide world.
 
    Snap view in action
 
-Snaping in time
+Snapping in time
 ---------------
 
 The **CLOCK button** (Also called **snap time** operator) allow you to snap on 
@@ -221,8 +221,8 @@ it draw users related information in your viewport such as:
 
    Presence show flags
 
-The presence overlay pannel (see image above) allow you to enable/disable 
-various drawed parts via the following flags:
+The presence overlay panel (see image above) allow you to enable/disable 
+various drawn parts via the following flags:
 
 - **Show selected objects**: display other users current selection
 - **Show users**: display users current viewpoint 
@@ -238,7 +238,7 @@ Manage replicated data
    Repository panel
    
 The **replicated properties** panel shows all replicated properties status and associated actions.
-Since the replication architecture is based on commit/push/pull mechanisms, a replicated properties can be pushed/pull or even committed manually from this panel.
+Since the replication architecture is based on commit/push/pull mechanisms, a replicated property can be pushed/pull or even committed manually from this panel.
 
 +---------------------------------------+-------------------+------------------------------------------------------------------------------------+
 | icon                                  | Action            | Description                                                                        |
@@ -259,14 +259,14 @@ Since the replication architecture is based on commit/push/pull mechanisms, a re
 Advanced configuration
 ======================
 
-This section contains optionnal settings to configure the session behavior.
+This section contains optional settings to configure the session behavior.
 
 .. figure:: img/quickstart_advanced.png
    :align: center
 
-   Reponsitory panel
+   Repository panel
 
-**Synchronise render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
+**Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
 
 **Properties frequency gird** allow to set a custom replication frequency for each type of data-block:
 - **Refresh**: pushed data update rate (in second)
