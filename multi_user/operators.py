@@ -83,7 +83,7 @@ class SessionStartOperator(bpy.types.Operator):
         unregister_delayables()
         users.clear()
         delayables.clear()
-        client = None
+
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
 
