@@ -10,8 +10,8 @@ Hosting on internet
 This tutorial aims to guide you to host a collaborative Session on internet.
 Hosting a session can be done is several ways:
 
-- :ref:`host-blender`: hosting a session directly from the blender addon pannel
-- :ref:`host-dedicated`: using a the dedicated server from a command line interface
+- :ref:`host-blender`: hosting a session directly from the blender addon pannel.
+- :ref:`host-dedicated`: hosting a session directly from the command line interface on a computer without blender.
 
 .. _host-blender:
 
@@ -30,8 +30,41 @@ Using a connection sharing solution
 -----------------------------------
 
 Many different third party software like `ZEROTIER <https://www.zerotier.com/download/>`_ (Free) or `HAMACHI <https://vpn.net/>`_ (Free until 5 users) allow you to share your private network with other peole.
-For the example I'm gonna use ZeroTier because it (free and open soure).
+For the example I'm gonna use ZeroTier because its free and open soure.
 
+1. Installation
+^^^^^^^^^^^^^^^
+
+Let's start by downloading and installing ZeroTier:
+https://www.zerotier.com/download/
+
+Once installed, launch it.
+
+2. Network creation
+^^^^^^^^^^^^^^^^^^^
+
+Before trying to connect to any network we need to create one.
+Only the host need to do this step.
+
+To create a ZeroTier private network you need to create a ZeroTier account `on my.zerotier.com <https://my.zerotier.com/login>`_
+(click on **login** then register on the bottom)
+
+Once you account it activated, connect you to `my.zerotier.com <https://my.zerotier.com/login>`_.
+Head up to the **Network** section(highlighted in red in the image below).
+
+.. figure:: img/hosting_guide_head_network.png
+    :align: center
+
+    ZeroTier user homepage
+
+Hit 'Create a network' and go to the network settings.
+
+.. figure:: img/hosting_guide_create_network.png
+    :align: center
+
+    Network page
+
+Now that the network is created, let's quickly configure it.
 .. _port-forwarding:
 
 Using port-forwarding
