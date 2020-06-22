@@ -93,6 +93,9 @@ It will do two things:
 * Start a local server 
 * Connect you to it as an :ref:`admin`
 
+During online session, various actions are available to you, go to :ref:`how-to-manage` section to 
+learn more about them.
+
 .. _how-to-join:
 
 How to join a session
@@ -205,8 +208,8 @@ Kick a user
 
 The **CROSS button** (Also called **kick** operator) allow the admin to kick the selected user. On the target user side, the session will properly disconnect.
 
---------------------
-Manage users display 
+
+Change users display 
 --------------------
 
 Presence is the multi-user module responsible for users display. During the session,
@@ -228,9 +231,31 @@ various drawn parts via the following flags:
 - **Show users**: display users current viewpoint 
 - **Show different scenes**: display users working on other scenes
 
-----------------------
-Manage replicated data
-----------------------
+-----------
+Manage data
+-----------
+
+In order to understand replication data managment, a quick introduction to the multi-user data workflow is required.
+First thing to know: until now, the addon rely on a data-based replication. In simple words, it means that it replicate
+user's action results. 
+To replicate datablocks between clients the multi-user rely on what tends to be a distributed architecture:
+
+- The server store the "master" version of the work.
+- Each client have a local version of the work.
+
+When an artist modified something in the scene, here is what is happening in the background:
+
+1. Modified data are **COMMITTED** to the local repository.
+2. Once committed locally, they are **PUSHED** to the server
+3. As soon as the server is getting updates, they are stored locally and pushed to every other clients
+
+At the top of this data management system, a right management system prevent 
+multiple users from modifying same data at same time. A datablock may belong to
+a connected user or be under :ref:`common-right<**COMMON**>` rights. 
+
+.. note::
+   In a near future, the right management system will support roles to allow multiple users to 
+   work on different aspect of the same datablock.
 
 .. figure:: img/quickstart_properties.png
    :align: center

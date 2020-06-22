@@ -44,7 +44,7 @@ All notable changes to this project will be documented in this file.
 - Auto updater support
 - Performances improvements on Meshes, Gpencils, Actions
 - Multi-scene workflow support
-- Render setting synchronisation
+- Render setting synchronization
 - Kick command
 
 ### Changed

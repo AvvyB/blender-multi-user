@@ -51,3 +51,9 @@ Glossary
       +--------------------+---------------------------------------------------------------------------------------------+
 
 
+   .. _common-right:
+   
+   common right
+
+      When a data block is under common right, it is available for everyone to modification.
+      The rights will be given to the user that select it first. 
