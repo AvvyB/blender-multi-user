@@ -43,10 +43,8 @@ from .libs.replication.replication.interface import Session
 
 client = None
 delayables = []
-ui_context = None
 stop_modal_executor = False
 modal_executor_queue = None
-server_process = None
 
 
 def unregister_delayables():
@@ -75,19 +73,19 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, ui_context, server_process
+        global client, delayables
+
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = runtime_settings.password
 
-        # TODO: Sync server clients
+        unregister_delayables()
         users.clear()
         delayables.clear()
-
+        client = None
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
-        ui_context = context.copy()
 
         # init the factory with supported types
         for type in bl_types.types_to_register():
@@ -107,9 +105,10 @@ class SessionStartOperator(bpy.types.Operator):
                 automatic=type_local_config.auto_push)
 
             if type_local_config.bl_delay_apply > 0:
-                delayables.append(delayable.ApplyTimer(
-                    timout=type_local_config.bl_delay_apply,
-                    target_type=type_module_class))
+                delayables.append(
+                    delayable.ApplyTimer(
+                        timout=type_local_config.bl_delay_apply,
+                        target_type=type_module_class))
 
         client = Session(
             factory=bpy_factory,
@@ -152,8 +151,8 @@ class SessionStartOperator(bpy.types.Operator):
                     password=admin_pass
                 )
             except Exception as e:
-                self.report({'ERROR'}, repr(e))
-                logging.error(f"Error: {e}")
+                self.report({'ERROR'}, str(e))
+                logging.error(str(e))
 
         # Background client updates service
         #TODO: Refactoring
@@ -238,8 +237,6 @@ class SessionStopOperator(bpy.types.Operator):
             client.disconnect()
         except Exception as e:
             self.report({'ERROR'}, repr(e))
-        except zmq.ZMQError:
-            self.report("A client is already connected (Could be a bug). \n Retry after closing any blender instance from your task manager.")
         return {"FINISHED"}
 
 

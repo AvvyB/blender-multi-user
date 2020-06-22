@@ -29,7 +29,8 @@ In order grant server access to people from internet you have tow main option:
 Using a connection sharing solution
 -----------------------------------
 
-1. Simple: use a third party software like `HAMACHI <https://vpn.net/>`_ (Free until 5 users) or `ZEROTIER <https://www.zerotier.com/download/>`_ to handle network sharing.
+Many different third party software like `ZEROTIER <https://www.zerotier.com/download/>`_ (Free) or `HAMACHI <https://vpn.net/>`_ (Free until 5 users) allow you to share your private network with other peole.
+For the example I'm gonna use ZeroTier because it (free and open soure).
 
 .. _port-forwarding:
 
