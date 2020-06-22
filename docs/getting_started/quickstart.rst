@@ -257,13 +257,20 @@ a connected user or be under :ref:`common-right<**COMMON**>` rights.
    In a near future, the right management system will support roles to allow multiple users to 
    work on different aspect of the same datablock.
 
+The Repository panel (see image below) allow you to monitor, change datablock states and right manually.
+
 .. figure:: img/quickstart_properties.png
    :align: center
 
    Repository panel
-   
-The **replicated properties** panel shows all replicated properties status and associated actions.
-Since the replication architecture is based on commit/push/pull mechanisms, a replicated property can be pushed/pull or even committed manually from this panel.
+
+The **show only owned** flag allow you to see which datablocks you are currently modifying.
+
+.. warning::
+   If you are editing a datablock not listed with this fag enabled, it means that you do
+   not have right granted to modify it. So it won't be updated to other client ! 
+
+Here is a quick list of available actions: 
 
 +---------------------------------------+-------------------+------------------------------------------------------------------------------------+
 | icon                                  | Action            | Description                                                                        |
@@ -291,9 +298,25 @@ This section contains optional settings to configure the session behavior.
 
    Repository panel
 
+.. rubric:: Network
+
+**IPC Port** is the port used for Inter Process Communication. This port is used 
+by the multi-users subprocesses to communicate with each others. If different instances
+of the multi-user are using the same IPC port it will create conflict !
+
+You only need to modify it if you need to launch multiple clients from the same
+computer(or if you try to host and join on the same computer). You should just enter a different
+**IPC port** for each blender instance.
+
+**Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
+You should only increase it if you have a bad connection.
+
+.. rubric:: Replication
+
 **Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
 
 **Properties frequency gird** allow to set a custom replication frequency for each type of data-block:
+
 - **Refresh**: pushed data update rate (in second)
 - **Apply**: pulled data update rate (in second)
 
