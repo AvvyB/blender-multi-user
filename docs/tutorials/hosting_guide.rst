@@ -30,7 +30,9 @@ Using a connection sharing solution
 -----------------------------------
 
 Many different third party software like `ZEROTIER <https://www.zerotier.com/download/>`_ (Free) or `HAMACHI <https://vpn.net/>`_ (Free until 5 users) allow you to share your private network with other peole.
-For the example I'm gonna use ZeroTier because its free and open soure.
+For the example 
+
+I'm gonna use ZeroTier because its free and open soure.
 
 1. Installation
 ^^^^^^^^^^^^^^^
@@ -54,7 +56,7 @@ Head up to the **Network** section(highlighted in red in the image below).
 
 .. figure:: img/hosting_guide_head_network.png
     :align: center
-    :width: 400px
+    :width: 450px
 
     ZeroTier user homepage
 
@@ -62,7 +64,7 @@ Hit 'Create a network'(see image below) and go to the network settings.
 
 .. figure:: img/hosting_guide_create_network.png
     :align: center
-    :width: 400px
+    :width: 450px
 
     Network page
 
@@ -77,12 +79,14 @@ Make sure that the field **Access Control** is set to **PRIVATE**.
 
 .. figure:: img/hosting_guide_network_settings.png
     :align: center
-    :width: 400px
+    :width: 450px
 
     Network settings
 
 That's all for the network setup !
 Now let's connect everyone.
+
+.. _network-authorization:
 
 3. Network authorization
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -95,7 +99,7 @@ For each user you want to add, do the following step:
 
 .. figure:: img/hosting_guide_get_node.png
     :align: center
-    :width: 400px
+    :width: 450px
 
     Get the zerotier client id
 
@@ -103,30 +107,61 @@ For each user you want to add, do the following step:
 
 .. figure:: img/hosting_guide_add_node.png
     :align: center
-    :width: 400px
+    :width: 450px
 
     Add the client to network authorized users
 
 4. Network connection
 ^^^^^^^^^^^^^^^^^^^^^
 
-To connect to the ZeroTier network, start to copy the network id.
+To connect to the ZeroTier network, get the network id from the network settings (see image).
 
 .. figure:: img/hosting_guide_get_id.png
     :align: center
-    :width: 400px
+    :width: 450px
 
+Now we are ready to join the network !
+Right click on the ZeroTier tray icon and select **Join Network** ! 
 
+.. figure:: img/hosting_guide_join_network.png
+    :align: center
+    :width: 450px
+
+.. figure:: img/hosting_guide_join.png
+    :align: center
+
+    Joining the network
+ 
+Past the network id and check ``Allow Managed`` then click on join !
+You should be connected to the network.
+
+Let's check the connection status. Right click on the tray icon and click on **Show Networks...**.
+
+.. figure:: img/hosting_guide_show_network.png
+    :align: center
+    :width: 450px
+
+    Show network status
+
+.. figure:: img/hosting_guide_network_status.png
+    :align: center
+
+    Network status.
+
+The network status must be **OK** (like in the picture above) otherwise it means that you are not connected to the network.
+If you see something like **ACCESS_DENIED**, it means that you were not authorized to join the network. Please check the :ref:`network-authorization` section.
+
+This is it for the ZeroTier network setup. Now everything should be setup to use the multi-user addon over internet ! You can now follow the :ref:`quickstart` guide to start using the multi-user addon !
 
 .. _port-forwarding:
 
 Using port-forwarding
 ---------------------
 
-2. **Not secure** but simple: Setup port forwarding for each ports (for example 5555,5556,5557 and 5558 in our case). You can follow this `guide <https://www.wikihow.com/Set-Up-Port-Forwarding-on-a-Router>`_ for example.
-To know which port are used by the 
+To setup port forwarding for each ports you can follow this `guide <https://www.wikihow.com/Set-Up-Port-Forwarding-on-a-Router>`_ for example.
+To know which port are used by the addon, check the :ref:`port-setup` section.
 
-Once you have setup the network, you can run **HOST** in order to start the server. Then other users could join your session in the regular way.
+Once you have setup the network you can follow the :ref:`quickstart` guide to start using the multi-user addon !
 
 .. _host-dedicated:
 
