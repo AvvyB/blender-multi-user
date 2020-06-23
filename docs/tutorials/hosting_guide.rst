@@ -153,8 +153,10 @@ This is it for the ZeroTier network setup. Now everything should be setup to use
 Using port-forwarding
 ---------------------
 
+The port forwarding method consist to configure you Network route to allow internet trafic throught specific ports.
+
+In order to know which port are used by the add-on, check the :ref:`port-setup` section.
 To set up port forwarding for each port you can follow this `guide <https://www.wikihow.com/Set-Up-Port-Forwarding-on-a-Router>`_ for example.
-To know which port are used by the add-on, check the :ref:`port-setup` section.
 
 Once you have set up the network you can follow the :ref:`quickstart` guide to start using the multi-user add-on !
 
@@ -164,20 +166,72 @@ Once you have set up the network you can follow the :ref:`quickstart` guide to s
 From the dedicated server
 --------------------------
 
+.. warning::
+    The dedicated server is developed to run directly on internet server (like VPS). You can also
+    run it at home for LAN but for internet hosting you need to follow the :ref:`port-forwarding` setup first.  
+
+The dedicated server allow you to host a session with simplicity from any location.
+It was developed to improve intaernet hosting performance.
+
+The dedicated server can be run in tow ways:
+
+- :ref:`cmd-line`
+- :ref:`docker`
+
+.. _cmd-line:
+
+Using a regular command line
+----------------------------
+
+You can run the dedicated server on any platform by following those steps:
+
+1. Firstly, download and intall python 3 (3.6 or above).
+2. Download and extract the dedicated server from `here <https://gitlab.com/slumber/replication/-/archive/master/replication-master.zip>`_
+3. Open a terminal in the extracted folder and install python dependencies by running:
+
+    .. code-block:: bash
+
+        python -m pip install -r requirements.txt
+
+4. Launch the server from the same terminal with:
+
+    .. code-block:: bash
+
+        python scripts/server.py
+
+.. hint::
+    You can also specify a custom **port** (-p), **timeout** (-t) and **admin password** (-pwd) with the following optionnal argument
+
+    .. code-block:: bash
+
+        python scripts/server.py -p 5555 -pwd toto -t 1000
+
+As soon as the dedicated server is running, you can connect to it from blender.
+
+
+.. _docker:
+
+Using a pre-configured image on docker engine
+---------------------------------------------
+
+Launching the dedicated server from a docker server is simple as:
+
 .. code-block:: bash
 
-    docker run -it --rm \
+    docker run -d \
         -p 5555-5560:5555-5560 \
         -e port=5555 \
         -e password=admin \
         -e timeout=1000 \
         registry.gitlab.com/slumber/multi-user/multi-user-server:0.0.3
 
+As soon as the dedicated server is running, you can connect to it from blender.
+
 .. _port-setup:
 
------------------------
-Port setup (optional) 
------------------------
+----------
+Port setup
+----------
 
 The multi-user network architecture is based on a clients-server model. The communication protocol use four ports to communicate with client:
 
