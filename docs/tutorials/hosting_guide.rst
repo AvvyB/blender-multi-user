@@ -206,7 +206,11 @@ You can run the dedicated server on any platform by following those steps:
 
         python scripts/server.py -p 5555 -pwd toto -t 1000
 
-As soon as the dedicated server is running, you can connect to it from blender.
+As soon as the dedicated server is running, you can connect to it from blender (follow :ref:`how-to-join`).
+
+
+.. hint::
+    Some commands are available to manage the session. Check :ref:`dedicated-management` to learn more.
 
 
 .. _docker:
@@ -226,6 +230,12 @@ Launching the dedicated server from a docker server is simple as:
         registry.gitlab.com/slumber/multi-user/multi-user-server:0.0.3
 
 As soon as the dedicated server is running, you can connect to it from blender.
+You can check the :ref:`how-to-join` section.
+
+.. hint::
+    Some commands are available to manage the session. Check :ref:`dedicated-management` to learn more.
+
+.. _dedicated-management:
 
 Dedicated server management
 ---------------------------
