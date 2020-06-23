@@ -46,25 +46,78 @@ Once installed, launch it.
 Before trying to connect to any network we need to create one.
 Only the host need to do this step.
 
-To create a ZeroTier private network you need to create a ZeroTier account `on my.zerotier.com <https://my.zerotier.com/login>`_
+To create a ZeroTier private network you need to register a ZeroTier account `on my.zerotier.com <https://my.zerotier.com/login>`_
 (click on **login** then register on the bottom)
 
-Once you account it activated, connect you to `my.zerotier.com <https://my.zerotier.com/login>`_.
+Once you account it activated, you can connect to `my.zerotier.com <https://my.zerotier.com/login>`_.
 Head up to the **Network** section(highlighted in red in the image below).
 
 .. figure:: img/hosting_guide_head_network.png
     :align: center
+    :width: 400px
 
     ZeroTier user homepage
 
-Hit 'Create a network' and go to the network settings.
+Hit 'Create a network'(see image below) and go to the network settings.
 
 .. figure:: img/hosting_guide_create_network.png
     :align: center
+    :width: 400px
 
     Network page
 
-Now that the network is created, let's quickly configure it.
+Now that the network is created, let's configure it.
+
+In the Settings section(see image below), you can change the network name to what you want.
+Make sure that the field **Access Control** is set to **PRIVATE**.
+
+.. hint::
+    If you set the Access Control to PUBLIC, anyone will be able to join without
+    your confirmation.  Its easier to setup but less secure. 
+
+.. figure:: img/hosting_guide_network_settings.png
+    :align: center
+    :width: 400px
+
+    Network settings
+
+That's all for the network setup !
+Now let's connect everyone.
+
+3. Network authorization
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since your ZeroTier network is Private, you will need to authorize each new users
+to connect to it.
+For each user you want to add, do the following step:
+
+1. Get the client **ZeroTier id** by right clicking on the ZeroTier tray icon and click on the `Node ID`, it will copy it.
+
+.. figure:: img/hosting_guide_get_node.png
+    :align: center
+    :width: 400px
+
+    Get the zerotier client id
+
+2. Go to the network settings in the Member section and paste the Node ID into the Manualy Add Member field.
+
+.. figure:: img/hosting_guide_add_node.png
+    :align: center
+    :width: 400px
+
+    Add the client to network authorized users
+
+4. Network connection
+^^^^^^^^^^^^^^^^^^^^^
+
+To connect to the ZeroTier network, start to copy the network id.
+
+.. figure:: img/hosting_guide_get_id.png
+    :align: center
+    :width: 400px
+
+
+
 .. _port-forwarding:
 
 Using port-forwarding
@@ -108,6 +161,7 @@ To know which ports will be used, you just have to read the port in your prefere
 .. figure:: img/hosting_guide_port.png
     :align: center
     :alt: Port
+    :width: 200px
 
     Port in host settings
 In the picture below we have setup our port to **5555** so it will be:
