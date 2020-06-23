@@ -143,7 +143,7 @@ Let's check the connection status. Right click on the tray icon and click on **S
 
     Network status.
 
-The network status must be **OK** (like in the picture above) otherwise it means that you are not connected to the network.
+The network status must be **OK** for each user(like in the picture above) otherwise it means that you are not connected to the network.
 If you see something like **ACCESS_DENIED**, it means that you were not authorized to join the network. Please check the :ref:`network-authorization` section.
 
 This is it for the ZeroTier network setup. Now everything should be setup to use the multi-user add-on over internet ! You can now follow the :ref:`quickstart` guide to start using the multi-user add-on !
@@ -226,6 +226,17 @@ Launching the dedicated server from a docker server is simple as:
         registry.gitlab.com/slumber/multi-user/multi-user-server:0.0.3
 
 As soon as the dedicated server is running, you can connect to it from blender.
+
+Dedicated server management
+---------------------------
+
+Here is the list of available commands from the dedicated server:
+
+- ``help``: Show all commands.
+- ``exit`` or ``Ctrl+C`` : Stop the server.
+- ``kick username``: kick the provided user.
+- ``users``: list all online users.
+
 
 .. _port-setup:
 
