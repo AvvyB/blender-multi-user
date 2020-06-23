@@ -26,6 +26,7 @@ import time
 from operator import itemgetter
 from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
+import zmq
 
 import bpy
 import mathutils
@@ -42,10 +43,8 @@ from .libs.replication.replication.interface import Session
 
 client = None
 delayables = []
-ui_context = None
 stop_modal_executor = False
 modal_executor_queue = None
-server_process = None
 
 
 def unregister_delayables():
@@ -74,18 +73,19 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, ui_context, server_process
+        global client, delayables
+
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
+        admin_pass = runtime_settings.password
 
-        # TODO: Sync server clients
+        unregister_delayables()
         users.clear()
         delayables.clear()
 
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
-        ui_context = context.copy()
 
         # init the factory with supported types
         for type in bl_types.types_to_register():
@@ -105,42 +105,41 @@ class SessionStartOperator(bpy.types.Operator):
                 automatic=type_local_config.auto_push)
 
             if type_local_config.bl_delay_apply > 0:
-                delayables.append(delayable.ApplyTimer(
-                    timout=type_local_config.bl_delay_apply,
-                    target_type=type_module_class))
+                delayables.append(
+                    delayable.ApplyTimer(
+                        timout=type_local_config.bl_delay_apply,
+                        target_type=type_module_class))
 
         client = Session(
             factory=bpy_factory,
-            python_path=bpy.app.binary_path_python,
-            default_strategy=settings.right_strategy)
+            python_path=bpy.app.binary_path_python)
 
         # Host a session
         if self.host:
-            # Scene setup
-            if settings.start_empty:
-                utils.clean_scene()
+            runtime_settings.is_host = True
+            runtime_settings.internet_ip = environment.get_ip()
+
+            for scene in bpy.data.scenes:
+                client.add(scene)
 
             try:
-                for scene in bpy.data.scenes:
-                    scene_uuid = client.add(scene)
-                    client.commit(scene_uuid)
-
                 client.host(
                     id=settings.username,
-                    address=settings.ip,
                     port=settings.port,
                     ipc_port=settings.ipc_port,
-                    timeout=settings.connection_timeout
+                    timeout=settings.connection_timeout,
+                    password=admin_pass
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logging.error(f"Error: {e}")
-            finally:
-                runtime_settings.is_admin = True
 
         # Join a session
         else:
-            utils.clean_scene()
+            if not runtime_settings.admin:
+                utils.clean_scene()
+                # regular client, no password needed
+                admin_pass = None
 
             try:
                 client.connect(
@@ -148,13 +147,12 @@ class SessionStartOperator(bpy.types.Operator):
                     address=settings.ip,
                     port=settings.port,
                     ipc_port=settings.ipc_port,
-                    timeout=settings.connection_timeout
+                    timeout=settings.connection_timeout,
+                    password=admin_pass
                 )
             except Exception as e:
-                self.report({'ERROR'}, repr(e))
-                logging.error(f"Error: {e}")
-            finally:
-                runtime_settings.is_admin = False
+                self.report({'ERROR'}, str(e))
+                logging.error(str(e))
 
         # Background client updates service
         #TODO: Refactoring
@@ -180,6 +178,47 @@ class SessionStartOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SessionInitOperator(bpy.types.Operator):
+    bl_idname = "session.init"
+    bl_label = "Init session repostitory from"
+    bl_description = "Init the current session"
+    bl_options = {"REGISTER"}
+
+    init_method: bpy.props.EnumProperty(
+        name='init_method',
+        description='Init repo',
+        items={
+            ('EMPTY', 'an empty scene', 'start empty'),
+            ('BLEND', 'current scenes', 'use current scenes')},
+        default='BLEND')
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.prop(self, 'init_method', text="")
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        global client
+        
+        if self.init_method == 'EMPTY':
+            utils.clean_scene()
+
+        for scene in bpy.data.scenes:
+            client.add(scene)
+            
+        client.init()
+
+
+        return {"FINISHED"}
+
 class SessionStopOperator(bpy.types.Operator):
     bl_idname = "session.stop"
     bl_label = "close"
@@ -198,7 +237,6 @@ class SessionStopOperator(bpy.types.Operator):
             client.disconnect()
         except Exception as e:
             self.report({'ERROR'}, repr(e))
-
         return {"FINISHED"}
 
 
@@ -497,6 +535,7 @@ classes = (
     SessionCommit,
     ApplyArmatureOperator,
     SessionKickOperator,
+    SessionInitOperator,
 
 )
 

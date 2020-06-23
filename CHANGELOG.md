@@ -42,11 +42,26 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Auto updater support
-- Performances improvements on Meshes, Gpencils, Actions
+- Big Performances improvements on Meshes, Gpencils, Actions
 - Multi-scene workflow support
-- Render setting synchronisation
+- Render setting synchronization
 - Kick command
+- Dedicated server with a basic command set
+- Administrator session status
+- Tests
+- Blender 2.83-2.90 support
 
 ### Changed
 
 - Config is now stored in blender user preference
+- Documentation update
+- Connection protocol
+- UI revamp:
+  - user localization
+  - repository init
+
+
+### Removed
+
+- Unused strict right management strategy
+- Legacy config management system

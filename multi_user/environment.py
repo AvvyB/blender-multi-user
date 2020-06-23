@@ -22,15 +22,17 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-
+import socket
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
-DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+DEFAULT_CACHE_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "cache")
 PYTHON_PATH = None
 SUBPROCESS_DIR = None
 
 
 rtypes = []
+
 
 def module_can_be_imported(name):
     try:
@@ -50,9 +52,22 @@ def install_package(name):
     subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name])
 
 
+def get_ip():
+    """
+    Retrieve the main network interface IP.
+
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
+
+
 def check_dir(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
+
 
 def setup(dependencies, python_path):
     global PYTHON_PATH, SUBPROCESS_DIR

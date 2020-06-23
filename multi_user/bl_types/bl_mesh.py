@@ -56,7 +56,6 @@ class BlMesh(BlDatablock):
     bl_icon = 'MESH_DATA'
 
     def _construct(self, data):
-        logging.error(f"Loading {data['name']}")
         instance = bpy.data.meshes.new(data["name"])
         instance.uuid = self.uuid
         return instance
