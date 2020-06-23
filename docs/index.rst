@@ -18,6 +18,11 @@ Main Features
 - Datablocks right managment
 - Tested under Windows 
 
+Community
+=========
+
+A `discord server <https://discord.gg/aBPvGws>`_ have been created to provide help for new users and 
+organize collaborative creation sessions.
 
 Status
 ======
