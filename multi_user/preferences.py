@@ -19,10 +19,12 @@ import random
 import logging
 import bpy
 import string
+import re
 
 from . import utils, bl_types, environment, addon_updater_ops, presence, ui
 from .libs.replication.replication.constants import RP_COMMON
 
+IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
 
 
 def randomColor():
@@ -44,6 +46,14 @@ def update_panel_category(self, context):
     ui.SESSION_PT_settings.bl_category = self.panel_category
     ui.register()
 
+def update_ip(self, context):
+    ip = IP_EXPR.search(self.ip)
+
+    if ip:
+        print(ip.group())
+        self['ip'] = ip.group()
+    else:
+        logging.error("Wrong IP format")
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -68,7 +78,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
-        default="127.0.0.1")
+        default="127.0.0.1",
+        update=update_ip)
     username: bpy.props.StringProperty(
         name="Username",
         default=f"user_{random_string_digits()}"
