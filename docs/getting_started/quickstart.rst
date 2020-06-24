@@ -138,6 +138,17 @@ Fill those field with your information:
 Once you've set every field, hit the button **CONNECT** to join the session !
 When the :ref:`session-status` is **ONLINE** you are online and ready to start to collaborate.
 
+.. note::
+   On the **dedicated server** startup, the session status will get you to the **LOBBY** waiting a admin to start it.
+
+   If the session status is set to **LOBBY** and you are a regular user, you need to wait that an admin launch it.
+   If you are the admin, you just need to init the repository to start the session (see image below).
+
+   .. figure:: img/quickstart_session_init.png
+      :align: center
+
+      Session initialisation for dedicated server
+
 During online session, various actions are available to you, go to :ref:`how-to-manage` section to 
 learn more about them.
 
