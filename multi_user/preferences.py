@@ -50,7 +50,6 @@ def update_ip(self, context):
     ip = IP_EXPR.search(self.ip)
 
     if ip:
-        print(ip.group())
         self['ip'] = ip.group()
     else:
         logging.error("Wrong IP format")
