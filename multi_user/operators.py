@@ -116,6 +116,9 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Host a session
         if self.host:
+            if settings.init_method == 'EMPTY':
+                utils.clean_scene()
+
             runtime_settings.is_host = True
             runtime_settings.internet_ip = environment.get_ip()
 
