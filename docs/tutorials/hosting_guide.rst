@@ -186,7 +186,7 @@ Using a regular command line
 You can run the dedicated server on any platform by following those steps:
 
 1. Firstly, download and intall python 3 (3.6 or above).
-2. Download and extract the dedicated server from `here <https://gitlab.com/slumber/replication/-/archive/master/replication-master.zip>`_
+2. Download and extract the dedicated server from `here <https://gitlab.com/slumber/replication/-/archive/develop/replication-develop.zip>`_
 3. Open a terminal in the extracted folder and install python dependencies by running:
 
     .. code-block:: bash
