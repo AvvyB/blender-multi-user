@@ -53,6 +53,15 @@ def update_ip(self, context):
         self['ip'] = ip.group()
     else:
         logging.error("Wrong IP format")
+        self['ip'] = "127.0.0.1"
+
+def update_port(self, context):
+    max_port = self.port + 3
+
+    if self.ipc_port < max_port and \
+        self['ipc_port'] >= self.port:
+        logging.error("IPC Port in conflic with the port, assigning a random value")
+        self['ipc_port'] = random.randrange(self.port+4, 10000)
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -101,7 +110,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ipc_port: bpy.props.IntProperty(
         name="ipc_port",
         description='internal ttl port(only usefull for multiple local instances)',
-        default=5561
+        default=5561,
+        update=update_port
     )
     init_method: bpy.props.EnumProperty(
         name='init_method',
