@@ -365,7 +365,8 @@ class SessionSnapUserOperator(bpy.types.Operator):
         wm.event_timer_remove(self._timer)
 
     def modal(self, context, event):
-        is_running = context.window_manager.session.time_snap_running
+        session_sessings = context.window_manager.session
+        is_running = session_sessings.time_snap_running
 
         if event.type in {'RIGHTMOUSE', 'ESC'} or not is_running:
             self.cancel(context)
@@ -380,11 +381,26 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
                 if target_ref:
                     target_scene = target_ref['metadata']['scene_current']
-                    if target_scene != context.scene.name:
-                        bpy.context.window.scene = bpy.data.scenes[target_scene]
 
-                    rv3d.view_matrix = mathutils.Matrix(
-                        target_ref['metadata']['view_matrix'])
+                    # Handle client on other scenes
+                    if target_scene != context.scene.name:
+                        blender_scene = bpy.data.scenes.get(target_scene, None)
+                        if blender_scene is None:
+                            self.report({'ERROR'}, f"Scene {target_scene} doesn't exist on the local client.")
+                            session_sessings.time_snap_running = False
+                            return {"CANCELLED"}
+
+                        bpy.context.window.scene = blender_scene
+
+                    # Update client viewmatrix
+                    client_vmatrix = target_ref['metadata'].get('view_matrix', None)
+
+                    if client_vmatrix:
+                        rv3d.view_matrix = mathutils.Matrix(client_vmatrix)
+                    else:
+                        self.report({'ERROR'}, f"Client viewport not ready.")
+                        session_sessings.time_snap_running = False
+                        return {"CANCELLED"}
             else:
                 return {"CANCELLED"}
 
