@@ -7,7 +7,8 @@ test:
     - apt update
     # install blender to get all required dependencies
     # TODO: indtall only dependencies
-    - apt install -f -y python-dev gcc blender 
-    - pip install blender-addon-tester
+    - apt install -f -y gcc python-dev python3.7-dev
+    - apt install -f -y blender  
+    - python3 -m pip install blender-addon-tester
     - python scripts/test_addon.py
 
