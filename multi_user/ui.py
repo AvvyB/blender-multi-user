@@ -50,6 +50,8 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
     From here:    
     https://gist.github.com/greenstick/b23e475d2bfdc3a82e34eaa1f6781ee4
     """
+    if total == 0:
+        return ""
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + fill_empty * (length - filledLength)
     return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
