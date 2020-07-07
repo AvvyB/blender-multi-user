@@ -10,5 +10,5 @@ test:
     - apt install -f -y gcc python-dev python3.7-dev
     - apt install -f -y blender  
     - python3 -m pip install blender-addon-tester
-    - python scripts/test_addon.py
+    - python3 scripts/test_addon.py
 
