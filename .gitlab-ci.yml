@@ -1,8 +1,6 @@
 stages:
-  # - test
   - build
 
 include:
-  - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/build.gitlab-ci.yml
 
