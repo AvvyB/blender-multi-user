@@ -198,7 +198,7 @@ class SessionInitOperator(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return True
-    
+
     def draw(self, context):
         layout = self.layout
         col = layout.column()
@@ -210,17 +210,17 @@ class SessionInitOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client
-        
+
         if self.init_method == 'EMPTY':
             utils.clean_scene()
 
         for scene in bpy.data.scenes:
             client.add(scene)
-            
+
         client.init()
 
-
         return {"FINISHED"}
+
 
 class SessionStopOperator(bpy.types.Operator):
     bl_idname = "session.stop"
@@ -234,12 +234,15 @@ class SessionStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         global client, delayables, stop_modal_executor
-        assert(client)
 
-        try:
-            client.disconnect()
-        except Exception as e:
-            self.report({'ERROR'}, repr(e))
+        if client:
+            try:
+                client.disconnect()
+            except Exception as e:
+                self.report({'ERROR'}, repr(e))
+        else:
+            self.report({'WARNING'}, "No session to quit.")
+            return {"FINISHED"}
         return {"FINISHED"}
 
 
@@ -558,6 +561,7 @@ classes = (
 
 )
 
+
 @persistent
 def sanitize_deps_graph(dummy):
     """sanitize deps graph
@@ -594,13 +598,11 @@ def register():
     for cls in classes:
         register_class(cls)
 
-
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
-
 
 
 def unregister():
@@ -616,7 +618,6 @@ def unregister():
 
     bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
-
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
