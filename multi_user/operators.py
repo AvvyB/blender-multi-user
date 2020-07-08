@@ -80,7 +80,6 @@ class SessionStartOperator(bpy.types.Operator):
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = runtime_settings.password
 
-        unregister_delayables()
         users.clear()
         delayables.clear()
 
