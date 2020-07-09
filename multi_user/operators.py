@@ -523,7 +523,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
                         try:
                             client.apply(node)
                         except Exception as e:
-                            logging.error("Dail to apply armature: {e}")
+                            logging.error("Fail to apply armature: {e}")
 
         return {'PASS_THROUGH'}
 
