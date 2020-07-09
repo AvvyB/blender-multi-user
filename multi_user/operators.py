@@ -44,7 +44,6 @@ from .libs.replication.replication.interface import Session
 client = None
 delayables = []
 stop_modal_executor = False
-modal_executor_queue = None
 
 
 def unregister_delayables():
@@ -170,8 +169,6 @@ class SessionStartOperator(bpy.types.Operator):
         for d in delayables:
             d.register()
 
-        global modal_executor_queue
-        modal_executor_queue = queue.Queue()
         bpy.ops.session.apply_armature_operator()
 
         self.report(
