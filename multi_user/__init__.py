@@ -47,8 +47,7 @@ from . import environment, utils
 DEPENDENCIES = {
     ("zmq","zmq"),
     ("jsondiff","jsondiff"),
-    ("deepdiff", "deepdiff"),
-    ("psutil","psutil")
+    ("deepdiff", "deepdiff")
 }
 
 
