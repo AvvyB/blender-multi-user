@@ -52,6 +52,10 @@ def install_package(name):
     subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name])
 
 
+def upgrade_package(name):
+    logging.debug(f"Using {PYTHON_PATH} for update")
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name, "--upgrade"])
+
 def get_ip():
     """
     Retrieve the main network interface IP.
@@ -82,3 +86,5 @@ def setup(dependencies, python_path):
         if not module_can_be_imported(package_name):
             install_package(package_name)
             module_can_be_imported(package_name)
+        else:
+            upgrade_package(package_name)
