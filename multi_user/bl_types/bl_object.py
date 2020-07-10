@@ -22,7 +22,7 @@ import logging
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from ..libs.replication.replication.exception import ContextError
+from replication.exception import ContextError
 
 
 def load_pose(target_bone, data):

@@ -22,7 +22,7 @@ import string
 import re
 
 from . import utils, bl_types, environment, addon_updater_ops, presence, ui
-from .libs.replication.replication.constants import RP_COMMON
+from replication.constants import RP_COMMON
 
 IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
 

@@ -20,7 +20,7 @@ import logging
 import bpy
 
 from . import operators, presence, utils
-from .libs.replication.replication.constants import (FETCHED,
+from replication.constants import (FETCHED,
                                                     RP_COMMON,
                                                     STATE_INITIAL,
                                                     STATE_QUITTING,

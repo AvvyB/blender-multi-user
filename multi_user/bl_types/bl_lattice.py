@@ -21,7 +21,7 @@ import mathutils
 
 from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from .bl_datablock import BlDatablock
-from ..libs.replication.replication.exception import ContextError
+from replication.exception import ContextError
 
 POINT = ['co', 'weight_softbody', 'co_deform']
 

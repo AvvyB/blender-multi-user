@@ -33,12 +33,12 @@ import mathutils
 from bpy.app.handlers import persistent
 
 from . import bl_types, delayable, environment, presence, ui, utils
-from .libs.replication.replication.constants import (FETCHED, STATE_ACTIVE,
+from replication.constants import (FETCHED, STATE_ACTIVE,
                                                      STATE_INITIAL,
                                                      STATE_SYNCING)
-from .libs.replication.replication.data import ReplicatedDataFactory
-from .libs.replication.replication.exception import NonAuthorizedOperationError
-from .libs.replication.replication.interface import Session
+from replication.data import ReplicatedDataFactory
+from replication.exception import NonAuthorizedOperationError
+from replication.interface import Session
 
 
 client = None

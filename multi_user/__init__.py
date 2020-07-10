@@ -45,21 +45,15 @@ from . import environment, utils
 
 # TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
-    ("zmq","zmq"),
-    ("jsondiff","jsondiff"),
-    ("deepdiff", "deepdiff")
+    "replication",
+    "deepdiff",
 }
 
-
-libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication\\replication"
 
 def register():
     # Setup logging policy
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-    
-    if libs not in sys.path:
-        sys.path.append(libs)
-    
+
     try:
         environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
     except ModuleNotFoundError:

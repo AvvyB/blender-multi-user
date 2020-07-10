@@ -78,7 +78,7 @@ def setup(dependencies, python_path):
     if not module_can_be_imported("pip"):
         install_pip()
 
-    for module_name, package_name in dependencies:
-        if not module_can_be_imported(module_name):
+    for package_name in dependencies:
+        if not module_can_be_imported(package_name):
             install_package(package_name)
             module_can_be_imported(package_name)

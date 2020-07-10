@@ -23,8 +23,8 @@ import logging
 import numpy as np
 
 from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
-from ..libs.replication.replication.constants import DIFF_BINARY
-from ..libs.replication.replication.exception import ContextError
+from replication.constants import DIFF_BINARY
+from replication.exception import ContextError
 from .bl_datablock import BlDatablock
 
 

@@ -21,8 +21,8 @@ import mathutils
 
 from .. import utils
 from .dump_anything import Loader, Dumper
-from ..libs.replication.replication.data import ReplicatedDatablock
-from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
+from replication.data import ReplicatedDatablock
+from replication.constants import (UP, DIFF_BINARY)
 
 
 def has_action(target):

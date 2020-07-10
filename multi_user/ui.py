@@ -19,7 +19,7 @@
 import bpy
 
 from . import operators, utils
-from .libs.replication.replication.constants import (ADDED, ERROR, FETCHED,
+from replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP,
                                                      STATE_ACTIVE, STATE_AUTH,
                                                      STATE_CONFIG, STATE_SYNCING,
