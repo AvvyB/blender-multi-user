@@ -45,8 +45,8 @@ from . import environment, utils
 
 # TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
-    "replication",
-    "deepdiff",
+    ("replication", '0.0.11'),
+    ("deepdiff", '5.0.1'),
 }
 
 

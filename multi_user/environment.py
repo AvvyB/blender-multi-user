@@ -23,6 +23,9 @@ import subprocess
 import sys
 from pathlib import Path
 import socket
+import re
+
+VERSION_EXPR = re.compile('\d+\.\d+\.\d+')
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 DEFAULT_CACHE_DIR = os.path.join(
@@ -47,14 +50,22 @@ def install_pip():
     subprocess.run([str(PYTHON_PATH), "-m", "ensurepip"])
 
 
-def install_package(name):
-    logging.debug(f"Using {PYTHON_PATH} for installation")
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name])
+def install_package(name, version):
+    logging.info(f"installing {name} version...")
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"])
 
+def check_package_version(name, required_version):
+    logging.info(f"Checking {name} version...")
+    out = subprocess.run(f"{str(PYTHON_PATH)} -m pip show {name}", capture_output=True)
 
-def upgrade_package(name):
-    logging.debug(f"Using {PYTHON_PATH} for update")
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name, "--upgrade"])
+    version = VERSION_EXPR.search(out.stdout.decode())
+
+    if version and version.group() == required_version:
+        logging.info(f"{name} is up to date")
+        return True
+    else:
+        logging.info(f"{name} need an update")
+        return False
 
 def get_ip():
     """
@@ -82,9 +93,9 @@ def setup(dependencies, python_path):
     if not module_can_be_imported("pip"):
         install_pip()
 
-    for package_name in dependencies:
+    for package_name, package_version in dependencies:
         if not module_can_be_imported(package_name):
-            install_package(package_name)
+            install_package(package_name, package_version)
             module_can_be_imported(package_name)
-        else:
-            upgrade_package(package_name)
+        elif not check_package_version(package_name, package_version):
+            install_package(package_name, package_version)
