@@ -4,7 +4,6 @@ test:
   script:
     - git submodule init
     - git submodule update
-    - apt-get update && apt-get install -y python3.7-dev 
     # install blender to get all required dependencies
     # TODO: indtall only dependencies
     - apt install -f -y blender  
