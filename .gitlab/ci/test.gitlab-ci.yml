@@ -1,10 +1,10 @@
 test:
   stage: test
-  image: python:latest
+  image: python:3.7
   script:
     - git submodule init
     - git submodule update
-    - apt update
+    - apt-get update && apt-get install -y python-dev 
     # install blender to get all required dependencies
     # TODO: indtall only dependencies
     - apt install -f -y blender  
