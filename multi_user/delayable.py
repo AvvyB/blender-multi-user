@@ -314,15 +314,11 @@ class ClientUpdate(Timer):
                         new_key = ui_users.add()
                         new_key.name = user
                         new_key.username = user
-            elif session.state['STATE'] == STATE_QUITTING:
-                presence.refresh_sidebar_view()
-                self.handle_quit = True
-            elif session.state['STATE'] == STATE_INITIAL and self.handle_quit:
-                self.handle_quit = False
-                presence.refresh_sidebar_view()
 
-                operators.unregister_delayables()
 
-                presence.renderer.stop()
+class SessionStatusUpdate(Timer):
+    def __init__(self, timout=.1):
+        super().__init__(timout)
 
-            presence.refresh_sidebar_view()
+    def execute(self):
+        presence.refresh_sidebar_view()

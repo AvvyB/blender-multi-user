@@ -46,17 +46,6 @@ delayables = []
 stop_modal_executor = False
 
 
-def unregister_delayables():
-    global delayables, stop_modal_executor
-
-    for d in delayables:
-        try:
-            d.unregister()
-        except:
-            continue
-
-    stop_modal_executor = True
-
 # OPERATORS
 
 
@@ -161,13 +150,39 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
-        # Launch drawing module
-        if runtime_settings.enable_presence:
-            presence.renderer.run()
+        session_update = delayable.SessionStatusUpdate()
+        session_update.register()
 
-        # Register blender main thread tools
-        for d in delayables:
-            d.register()
+        delayables.append(session_update)
+
+        @client.register('on_connection')
+        def initialize_session():
+            for node in client._graph.list_ordered():
+                node_ref = client.get(node)
+                if node_ref.state == FETCHED:
+                    node_ref.resolve()
+                    node_ref.apply()
+
+            # Launch drawing module
+            if runtime_settings.enable_presence:
+                presence.renderer.run()
+
+            # Register blender main thread tools
+            for d in delayables:
+                d.register()
+
+        @client.register('on_exit')
+        def desinitialize_session():
+            global delayables, stop_modal_executor
+
+            for d in delayables:
+                try:
+                    d.unregister()
+                except:
+                    continue
+
+            stop_modal_executor = True
+            presence.renderer.stop()
 
         bpy.ops.session.apply_armature_operator()
 
