@@ -117,9 +117,10 @@ class BlDatablock(ReplicatedDatablock):
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
         if not datablock_ref:
-            datablock_ref = datablock_root.get(
-                self.data['name'], # Resolve by name
-                self._construct(data=self.data)) # If it doesn't exist create it
+            try:
+                datablock_ref = datablock_root[self.data['name']]
+            except Exception:
+                datablock_ref = self._construct(data=self.data)
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
