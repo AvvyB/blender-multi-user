@@ -36,21 +36,20 @@ def load_node(node_data, node_tree):
     loader = Loader()
     target_node = node_tree.nodes.new(type=node_data["bl_idname"])
 
-    loader.load(target_node, node_data)    
-
-    
+    loader.load(target_node, node_data)
 
     for input in node_data["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
             try:
                 target_node.inputs[input].default_value = node_data["inputs"][input]["default_value"]
             except:
-                logging.error(f"Material {input} parameter not supported, skipping")
+                logging.error(
+                    f"Material {input} parameter not supported, skipping")
 
 
 def load_links(links_data, node_tree):
     """ Load node_tree links from a list
-        
+
         :arg links_data: dumped node links
         :type links_data: list
         :arg node_tree: node links collection
@@ -58,9 +57,8 @@ def load_links(links_data, node_tree):
     """
 
     for link in links_data:
-        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
-        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
-
+        input_socket = node_tree.nodes[link['to_node']].inputs[link['to_socket']]
+        output_socket = node_tree.nodes[link['from_node']].outputs[link['from_socket']]
         node_tree.links.new(input_socket, output_socket)
 
 
@@ -76,10 +74,10 @@ def dump_links(links):
 
     for link in links:
         links_data.append({
-            'to_node':link.to_node.name,
-            'to_socket':link.to_socket.path_from_id()[-2:-1],
-            'from_node':link.from_node.name,
-            'from_socket':link.from_socket.path_from_id()[-2:-1],
+            'to_node': link.to_node.name,
+            'to_socket': link.to_socket.identifier,
+            'from_node': link.from_node.name,
+            'from_socket': link.from_socket.identifier,
         })
 
     return links_data
@@ -118,7 +116,7 @@ def dump_node(node):
         "outputs",
         "width_hidden"
     ]
-    
+
     dumped_node = node_dumper.dump(node)
 
     if hasattr(node, 'inputs'):
@@ -151,7 +149,7 @@ def dump_node(node):
             'location'
         ]
         dumped_node['mapping'] = curve_dumper.dump(node.mapping)
-    
+
     return dumped_node
 
 
@@ -176,15 +174,14 @@ class BlMaterial(BlDatablock):
             loader.load(
                 target.grease_pencil, data['grease_pencil'])
 
-
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
 
             target.node_tree.nodes.clear()
 
-            loader.load(target,data)
-            
+            loader.load(target, data)
+
             # Load nodes
             for node in data["node_tree"]["nodes"]:
                 load_node(data["node_tree"]["nodes"][node], target.node_tree)
@@ -221,9 +218,9 @@ class BlMaterial(BlDatablock):
             for node in instance.node_tree.nodes:
                 nodes[node.name] = dump_node(node)
             data["node_tree"]['nodes'] = nodes
-            
+
             data["node_tree"]["links"] = dump_links(instance.node_tree.links)
-        
+
         if instance.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
@@ -248,7 +245,7 @@ class BlMaterial(BlDatablock):
                 'texture_clamp',
                 'gradient_type',
                 'mix_color',
-                'flip'                
+                'flip'
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         return data
@@ -265,4 +262,3 @@ class BlMaterial(BlDatablock):
             deps.append(self.instance.library)
 
         return deps
-
