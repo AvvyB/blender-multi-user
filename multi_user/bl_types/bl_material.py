@@ -19,11 +19,13 @@
 import bpy
 import mathutils
 import logging
+import re
 
 from .. import utils
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
+NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 
 def load_node(node_data, node_tree):
     """ Load a node into a node_tree from a dict
@@ -57,8 +59,8 @@ def load_links(links_data, node_tree):
     """
 
     for link in links_data:
-        input_socket = node_tree.nodes[link['to_node']].inputs[link['to_socket']]
-        output_socket = node_tree.nodes[link['from_node']].outputs[link['from_socket']]
+        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
+        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
         node_tree.links.new(input_socket, output_socket)
 
 
@@ -73,11 +75,13 @@ def dump_links(links):
     links_data = []
 
     for link in links:
+        to_socket = NODE_SOCKET_INDEX.search(link.to_socket.path_from_id()).group(1)
+        from_socket = NODE_SOCKET_INDEX.search(link.from_socket.path_from_id()).group(1)
         links_data.append({
             'to_node': link.to_node.name,
-            'to_socket': link.to_socket.identifier,
+            'to_socket': to_socket,
             'from_node': link.from_node.name,
-            'from_socket': link.from_socket.identifier,
+            'from_socket': from_socket,
         })
 
     return links_data
