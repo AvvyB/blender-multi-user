@@ -19,6 +19,7 @@
 import copy
 import logging
 import math
+import traceback
 
 import bgl
 import blf
@@ -311,7 +312,7 @@ class DrawFactory(object):
                     self.d2d_items[client_id] = (position[1], client_id, color)
 
                 except Exception as e:
-                    logging.error(f"Draw client exception: {e}")
+                    logging.error(f"Draw client exception: {e} \n  {traceback.format_exc()}")
 
     def draw3d_callback(self):
         bgl.glLineWidth(1.5)

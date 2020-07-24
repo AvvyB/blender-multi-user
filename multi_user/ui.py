@@ -128,14 +128,18 @@ class SESSION_PT_settings(bpy.types.Panel):
                 current_state = cli_state['STATE']
 
                 # STATE ACTIVE
-                if current_state in [STATE_ACTIVE, STATE_LOBBY]:
+                if current_state in [STATE_ACTIVE]:
                     row.operator("session.stop", icon='QUIT', text="Exit")
                     row = layout.row()
                     if runtime_settings.is_host:
                         row = row.box()
                         row.label(text=f"LAN: {runtime_settings.internet_ip}", icon='INFO')
                         row = layout.row()
-
+                if current_state == STATE_LOBBY:
+                    row = row.box()
+                    row.label(text=f"Waiting the session to start", icon='INFO')
+                    row = layout.row()
+                    row.operator("session.stop", icon='QUIT', text="Exit")
                 # CONNECTION STATE
                 elif current_state in [STATE_SRV_SYNC,
                                        STATE_SYNCING,
@@ -358,17 +362,19 @@ class SESSION_PT_user(bpy.types.Panel):
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
-            user_operations.alert = context.window_manager.session.time_snap_running
-            user_operations.operator(
-                "session.snapview",
-                text="",
-                icon='VIEW_CAMERA').target_client = active_user.username
+            if  operators.client.state['STATE'] == STATE_ACTIVE:
+                
+                user_operations.alert = context.window_manager.session.time_snap_running
+                user_operations.operator(
+                    "session.snapview",
+                    text="",
+                    icon='VIEW_CAMERA').target_client = active_user.username
 
-            user_operations.alert = context.window_manager.session.user_snap_running
-            user_operations.operator(
-                "session.snaptime",
-                text="",
-                icon='TIME').target_client = active_user.username
+                user_operations.alert = context.window_manager.session.user_snap_running
+                user_operations.operator(
+                    "session.snaptime",
+                    text="",
+                    icon='TIME').target_client = active_user.username
 
             if operators.client.online_users[settings.username]['admin']:
                 user_operations.operator(
@@ -534,9 +540,18 @@ class SESSION_PT_repository(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
+        session = operators.client
+        settings = utils.get_preferences()
+        admin = False
+
+        if session and hasattr(session,'online_users'):
+            usr = session.online_users.get(settings.username)
+            if usr:
+                admin = usr['admin']
         return hasattr(context.window_manager, 'session') and \
             operators.client and \
-            operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
+            (operators.client.state['STATE'] == STATE_ACTIVE or \
+            operators.client.state['STATE'] == STATE_LOBBY and admin)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
