@@ -239,7 +239,7 @@ class DrawClient(Draw):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=.016):
+    def __init__(self, timout=.1):
         super().__init__(timout)
         self.handle_quit = False
         self.users_metadata = {}
@@ -298,27 +298,36 @@ class ClientUpdate(Timer):
                     local_user_metadata['view_corners'] = current_view_corners
                     local_user_metadata['view_matrix'] = presence.get_view_matrix()
                     session.update_user_metadata(local_user_metadata)
-                # sync online users
-                session_users = operators.client.online_users
-                ui_users = bpy.context.window_manager.online_users
-
-                for index, user in enumerate(ui_users):
-                    if user.username not in session_users.keys():
-                        ui_users.remove(index)
-                        renderer.flush_selection()
-                        renderer.flush_users()
-                        break
-
-                for user in session_users:
-                    if user not in ui_users:
-                        new_key = ui_users.add()
-                        new_key.name = user
-                        new_key.username = user
-
 
 class SessionStatusUpdate(Timer):
-    def __init__(self, timout=.1):
+    def __init__(self, timout=1):
         super().__init__(timout)
 
     def execute(self):
         presence.refresh_sidebar_view()
+
+class SessionUserSync(Timer):
+    def __init__(self, timout=1):
+        super().__init__(timout)
+
+    def execute(self):
+        session = getattr(operators, 'client', None)
+        renderer = getattr(presence, 'renderer', None)
+
+        if session and renderer:
+            # sync online users
+            session_users = operators.client.online_users
+            ui_users = bpy.context.window_manager.online_users
+
+            for index, user in enumerate(ui_users):
+                if user.username not in session_users.keys():
+                    ui_users.remove(index)
+                    renderer.flush_selection()
+                    renderer.flush_users()
+                    break
+
+            for user in session_users:
+                if user not in ui_users:
+                    new_key = ui_users.add()
+                    new_key.name = user
+                    new_key.username = user

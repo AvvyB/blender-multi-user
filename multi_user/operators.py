@@ -151,9 +151,13 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
+        session_user_sync = delayable.SessionUserSync()
         session_update.register()
+        session_user_sync.register()
 
         delayables.append(session_update)
+        delayables.append(session_user_sync)
+
 
         @client.register('on_connection')
         def initialize_session():
