@@ -239,7 +239,7 @@ class DrawClient(Draw):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=.1):
+    def __init__(self, timout=.016):
         super().__init__(timout)
         self.handle_quit = False
         self.users_metadata = {}
