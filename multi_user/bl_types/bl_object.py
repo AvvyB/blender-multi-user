@@ -152,6 +152,13 @@ class BlObject(BlDatablock):
 
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
+        # TODO: find another way...
+        if target.type == 'EMPTY':
+            img_key = data.get('data')
+
+            if target.data is None and img_key:
+                target.data = bpy.data.images[img_key]
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
         
@@ -171,6 +178,14 @@ class BlObject(BlDatablock):
             "library",
             "empty_display_type",
             "empty_display_size",
+            "empty_image_offset",
+            "empty_image_depth",
+            "empty_image_side",
+            "show_empty_image_orthographic",
+            "show_empty_image_perspective",
+            "show_empty_image_only_axis_aligned",
+            "use_empty_image_alpha",
+            "color"
             "instance_collection",
             "instance_type",
             "location",
