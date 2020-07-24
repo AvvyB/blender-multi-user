@@ -186,25 +186,24 @@ Using a regular command line
 You can run the dedicated server on any platform by following those steps:
 
 1. Firstly, download and intall python 3 (3.6 or above).
-2. Download and extract the dedicated server from `here <https://gitlab.com/slumber/replication/-/archive/develop/replication-develop.zip>`_
-3. Open a terminal in the extracted folder and install python dependencies by running:
+2. Install the replication library:
 
     .. code-block:: bash
 
-        python -m pip install -r requirements.txt
+        python -m pip install replication
 
-4. Launch the server from the same terminal with:
+4. Launch the server with:
 
     .. code-block:: bash
 
-        python scripts/server.py
+        replication.serve
 
 .. hint::
     You can also specify a custom **port** (-p), **timeout** (-t) and **admin password** (-pwd) with the following optionnal argument
 
     .. code-block:: bash
 
-        python scripts/server.py -p 5555 -pwd toto -t 1000
+         replication.serve -p 5555 -pwd toto -t 1000
 
 As soon as the dedicated server is running, you can connect to it from blender (follow :ref:`how-to-join`).
 
