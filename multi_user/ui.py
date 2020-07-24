@@ -86,7 +86,7 @@ def get_state_str(state):
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
-    bl_label = ""
+    bl_label = " "
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Multiuser"
@@ -133,7 +133,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row = layout.row()
                     if runtime_settings.is_host:
                         row = row.box()
-                        row.label(text=f"{runtime_settings.internet_ip}:{settings.port}", icon='INFO')
+                        row.label(text=f"LAN: {runtime_settings.internet_ip}", icon='INFO')
                         row = layout.row()
 
                 # CONNECTION STATE
