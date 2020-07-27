@@ -21,7 +21,7 @@ bl_info = {
     "author": "Swann Martinez",
     "version": (0, 0, 3),
     "description": "Enable real-time collaborative workflow inside blender",
-    "blender": (2, 80, 0),
+    "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
     "warning": "Unstable addon, use it at your own risks",
     "category": "Collaboration",
