@@ -737,7 +737,7 @@ class Singleton_updater(object):
 
 			r.release_conn()
 			if self._verbose: print("Successfully downloaded update zip")
-			return False
+			return True
 		except Exception as e:
 			self._error = "Error retrieving download, bad link?"
 			self._error_msg = "Error: {}".format(e)
