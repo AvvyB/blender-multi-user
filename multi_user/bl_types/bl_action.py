@@ -1,11 +1,132 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 import copy
+import numpy as np
+from enum import Enum
 
 from .. import utils
+from .dump_anything import (
+    Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
 from .bl_datablock import BlDatablock
 
-# WIP
+
+KEYFRAME = [
+    'amplitude',
+    'co',
+    'back',
+    'handle_left',
+    'handle_right',
+    'easing',
+    'handle_left_type',
+    'handle_right_type',
+    'type',
+    'interpolation',
+]
+
+
+def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy:bool =True) -> dict:
+    """ Dump a sigle curve to a dict
+
+        :arg fcurve: fcurve to dump
+        :type fcurve: bpy.types.FCurve
+        :arg use_numpy: use numpy to eccelerate dump
+        :type use_numpy: bool
+        :return: dict
+    """
+    fcurve_data = {
+        "data_path": fcurve.data_path,
+        "dumped_array_index": fcurve.array_index,
+        "use_numpy": use_numpy
+    }
+
+    if use_numpy:
+        points = fcurve.keyframe_points
+        fcurve_data['keyframes_count']  = len(fcurve.keyframe_points)
+        fcurve_data['keyframe_points'] = np_dump_collection(points, KEYFRAME)
+
+    else:  # Legacy method
+        dumper = Dumper()
+        fcurve_data["keyframe_points"] = []
+
+        for k in fcurve.keyframe_points:
+            fcurve_data["keyframe_points"].append(
+                dumper.dump(k)
+            )
+
+    return fcurve_data
+
+
+def load_fcurve(fcurve_data, fcurve):
+    """ Load a dumped fcurve
+
+        :arg fcurve_data: a dumped fcurve
+        :type fcurve_data: dict
+        :arg fcurve: fcurve to dump
+        :type fcurve: bpy.types.FCurve
+    """
+    use_numpy = fcurve_data.get('use_numpy')
+
+    keyframe_points = fcurve.keyframe_points
+
+    # Remove all keyframe points
+    for i in range(len(keyframe_points)):
+        keyframe_points.remove(keyframe_points[0], fast=True)
+
+    if use_numpy:
+        keyframe_points.add(fcurve_data['keyframes_count'])
+        np_load_collection(fcurve_data["keyframe_points"], keyframe_points, KEYFRAME)
+
+    else:
+        # paste dumped keyframes
+        for dumped_keyframe_point in fcurve_data["keyframe_points"]:
+            if dumped_keyframe_point['type'] == '':
+                dumped_keyframe_point['type'] = 'KEYFRAME'
+
+            new_kf = keyframe_points.insert(
+                dumped_keyframe_point["co"][0],
+                dumped_keyframe_point["co"][1],
+                options={'FAST', 'REPLACE'}
+            )
+
+            keycache = copy.copy(dumped_keyframe_point)
+            keycache = remove_items_from_dict(
+                keycache,
+                ["co", "handle_left", "handle_right", 'type']
+            )
+
+            loader = Loader()
+            loader.load(new_kf, keycache)
+
+            new_kf.type = dumped_keyframe_point['type']
+            new_kf.handle_left = [
+                dumped_keyframe_point["handle_left"][0],
+                dumped_keyframe_point["handle_left"][1]
+            ]
+            new_kf.handle_right = [
+                dumped_keyframe_point["handle_right"][0],
+                dumped_keyframe_point["handle_right"][1]
+            ]
+
+            fcurve.update()
+
 
 class BlAction(BlDatablock):
     bl_id = "actions"
@@ -14,86 +135,28 @@ class BlAction(BlDatablock):
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_icon = 'ACTION_TWEAK'
-    
-    def construct(self, data):
+
+    def _construct(self, data):
         return bpy.data.actions.new(data["name"])
 
-    def load(self, data, target):
-        begin_frame = 100000
-        end_frame = -100000
-
-        for dumped_fcurve in data["fcurves"]:
-            begin_frame = min(
-                begin_frame,
-                min(
-                    [begin_frame] + [dkp["co"][0] for dkp in dumped_fcurve["keyframe_points"]]
-                )
-            )
-            end_frame = max(
-                end_frame,
-                max(
-                    [end_frame] + [dkp["co"][0] for dkp in dumped_fcurve["keyframe_points"]]
-                )
-            )
-        begin_frame = 0
-
-        loader = utils.dump_anything.Loader()
+    def _load_implementation(self, data, target):
         for dumped_fcurve in data["fcurves"]:
             dumped_data_path = dumped_fcurve["data_path"]
             dumped_array_index = dumped_fcurve["dumped_array_index"]
 
             # create fcurve if needed
-            fcurve = target.fcurves.find(dumped_data_path, index=dumped_array_index)
+            fcurve = target.fcurves.find(
+                dumped_data_path, index=dumped_array_index)
             if fcurve is None:
-                fcurve = target.fcurves.new(dumped_data_path, index=dumped_array_index)
+                fcurve = target.fcurves.new(
+                    dumped_data_path, index=dumped_array_index)
 
+            load_fcurve(dumped_fcurve, fcurve)
+        target.id_root = data['id_root']
 
-            # remove keyframes within dumped_action range
-            for keyframe in reversed(fcurve.keyframe_points):
-                if end_frame >= (keyframe.co[0] + begin_frame ) >= begin_frame:
-                    fcurve.keyframe_points.remove(keyframe, fast=True)
-
-            # paste dumped keyframes
-            for dumped_keyframe_point in dumped_fcurve["keyframe_points"]:
-                if dumped_keyframe_point['type'] == '':
-                    dumped_keyframe_point['type'] = 'KEYFRAME' 
-
-                new_kf = fcurve.keyframe_points.insert(
-                    dumped_keyframe_point["co"][0] - begin_frame,
-                    dumped_keyframe_point["co"][1],
-                    options={'FAST', 'REPLACE'}
-                )
-
-                keycache  = copy.copy(dumped_keyframe_point)
-                keycache =  utils.dump_anything.remove_items_from_dict(
-                        keycache,
-                        ["co", "handle_left", "handle_right",'type']
-                    )
-                
-                loader.load(
-                    new_kf,
-                    keycache
-                )
-
-                new_kf.type = dumped_keyframe_point['type']
-                new_kf.handle_left = [
-                    dumped_keyframe_point["handle_left"][0] - begin_frame,
-                    dumped_keyframe_point["handle_left"][1]
-                ]
-                new_kf.handle_right = [
-                    dumped_keyframe_point["handle_right"][0] - begin_frame,
-                    dumped_keyframe_point["handle_right"][1]
-                ]
-
-            # clearing (needed for blender to update well)
-            if len(fcurve.keyframe_points) == 0:
-                target.fcurves.remove(fcurve)
-        target.id_root= data['id_root']
-
-    def dump(self, pointer=None):
-        assert(pointer)
-        dumper = utils.dump_anything.Dumper()
-        dumper.exclude_filter =[
+    def _dump_implementation(self, data, instance=None):
+        dumper = Dumper()
+        dumper.exclude_filter = [
             'name_full',
             'original',
             'use_fake_user',
@@ -106,28 +169,11 @@ class BlAction(BlDatablock):
             'users'
         ]
         dumper.depth = 1
-        data =  dumper.dump(pointer)
+        data = dumper.dump(instance)
 
-        
         data["fcurves"] = []
-        dumper.depth = 2
-        for fcurve in self.pointer.fcurves:
-            fc = {
-                "data_path": fcurve.data_path,
-                "dumped_array_index": fcurve.array_index,
-                "keyframe_points": []
-            }
 
-            for k in fcurve.keyframe_points:
-                fc["keyframe_points"].append(
-                    dumper.dump(k)
-                )
-
-            data["fcurves"].append(fc)
+        for fcurve in instance.fcurves:
+            data["fcurves"].append(dump_fcurve(fcurve, use_numpy=True))
 
         return data
-
-    def is_valid(self):
-        return bpy.data.actions.get(self.data['name'])
-
-

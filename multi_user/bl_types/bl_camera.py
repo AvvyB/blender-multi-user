@@ -1,7 +1,25 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 
-from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
@@ -13,23 +31,36 @@ class BlCamera(BlDatablock):
     bl_automatic_push = True
     bl_icon = 'CAMERA_DATA'
 
-    def load(self, data, target):
-        utils.dump_anything.load(target, data)
+    def _construct(self, data):
+        return bpy.data.cameras.new(data["name"])
+
+
+    def _load_implementation(self, data, target):
+        loader = Loader()       
+        loader.load(target, data)
 
         dof_settings = data.get('dof')
         
         # DOF settings
         if dof_settings:
-            utils.dump_anything.load(target.dof, dof_settings)
+            loader.load(target.dof, dof_settings)
 
-    def construct(self, data):
-        return bpy.data.cameras.new(data["name"])
+        background_images = data.get('background_images')
 
-    def dump_implementation(self, data, pointer=None):
-        assert(pointer)
+        if background_images:
+            target.background_images.clear()
+            for img_name, img_data in background_images.items():
+                target_img = target.background_images.new()
+                target_img.image = bpy.data.images[img_name]
+                loader.load(target_img, img_data)
 
-        dumper = utils.dump_anything.Dumper()
-        dumper.depth = 2
+    def _dump_implementation(self, data, instance=None):
+        assert(instance)
+
+        # TODO: background image support
+        
+        dumper = Dumper()
+        dumper.depth = 3
         dumper.include_filter = [
             "name",
             'type',
@@ -49,8 +80,32 @@ class BlCamera(BlDatablock):
             'aperture_blades',
             'aperture_rotation',
             'aperture_ratio',
+            'display_size',
+            'show_limits',
+            'show_mist',
+            'show_sensor',
+            'show_name',
+            'sensor_fit',
+            'sensor_height',
+            'sensor_width',
+            'show_background_images',
+            'background_images',
+            'alpha',
+            'display_depth',
+            'frame_method',
+            'offset',
+            'rotation',
+            'scale',
+            'use_flip_x',
+            'use_flip_y',
+            'image'
         ]
-        return dumper.dump(pointer)
-
-    def is_valid(self):
-        return bpy.data.cameras.get(self.data['name'])
+        return dumper.dump(instance)
+    
+    def _resolve_deps_implementation(self):
+        deps = []
+        for background in self.instance.background_images:
+            if background.image:
+                deps.append(background.image)
+        
+        return deps

@@ -1,3 +1,4 @@
+===============
 Getting started
 ===============
 
@@ -7,3 +8,4 @@ Getting started
 
    install
    quickstart
+   glossary

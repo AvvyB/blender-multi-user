@@ -1,21 +1,43 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import bpy
 import mathutils
 import os
-
-from .. import utils, environment
+import logging
+from .. import utils
+from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 def dump_image(image):
     pixels = None
-    if image.source == "GENERATED":
-        img_name = "{}.png".format(image.name)
-
-        image.filepath_raw = os.path.join(environment.CACHE_DIR, img_name)
+    if image.source == "GENERATED" or image.packed_file is not None:
+        prefs = utils.get_preferences()
+        img_name = f"{image.name}.png"
+        
+        # Cache the image on the disk
+        image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
+        os.makedirs(prefs.cache_directory, exist_ok=True)
         image.file_format = "PNG"
         image.save()
 
     if image.source == "FILE":
-        image_path = bpy.path.abspath(image.filepath_raw)
+        image_path = bpy.path.abspath(image.filepath_raw)        
         image_directory = os.path.dirname(image_path)
         os.makedirs(image_directory, exist_ok=True)
         image.save()
@@ -34,20 +56,21 @@ class BlImage(BlDatablock):
     bl_automatic_push = False
     bl_icon = 'IMAGE_DATA'
 
-    def construct(self, data):
+    def _construct(self, data):
         return bpy.data.images.new(
                 name=data['name'],
                 width=data['size'][0],
                 height=data['size'][1]
             )
 
-    def load(self, data, target):
+    def _load(self, data, target):
         image = target
+        prefs = utils.get_preferences()
 
-        img_name = "{}.png".format(image.name)
+        img_name = f"{image.name}.png"
 
-        img_path = os.path.join(environment.CACHE_DIR, img_name)
-
+        img_path = os.path.join(prefs.cache_directory,img_name)
+        os.makedirs(prefs.cache_directory, exist_ok=True)
         file = open(img_path, 'wb')
         file.write(data["pixels"])
         file.close()
@@ -57,11 +80,11 @@ class BlImage(BlDatablock):
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
 
 
-    def dump_implementation(self, data, pointer=None):
-        assert(pointer)
+    def _dump(self, instance=None):
+        assert(instance)
         data = {}
-        data['pixels'] = dump_image(pointer)
-        dumper = utils.dump_anything.Dumper()
+        data['pixels'] = dump_image(instance)
+        dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [   
                 "name",
@@ -72,12 +95,11 @@ class BlImage(BlDatablock):
                 'filepath',
                 'source',
                 'colorspace_settings']
-        data.update(dumper.dump(pointer))
+        data.update(dumper.dump(instance))
 
         return data
 
     def diff(self):
         return False
     
-    def is_valid(self):
-        return bpy.data.images.get(self.data['name'])
+

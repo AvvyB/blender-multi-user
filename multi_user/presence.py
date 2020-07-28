@@ -1,6 +1,25 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+
 import copy
 import logging
 import math
+import traceback
 
 import bgl
 import blf
@@ -14,10 +33,12 @@ from . import utils
 
 renderer = None
 
-logger = logging.getLogger(__name__)
-
 
 def view3d_find():
+    """ Find the first 'VIEW_3D' windows found in areas
+
+        :return: tuple(Area, Region, RegionView3D)
+    """
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == 'VIEW_3D':
             v3d = area.spaces[0]
@@ -25,15 +46,22 @@ def view3d_find():
             for region in area.regions:
                 if region.type == 'WINDOW':
                     return area, region, rv3d
-
     return None, None, None
 
 
 def refresh_3d_view():
+    """ Refresh the viewport
+    """
     area, region, rv3d = view3d_find()
     if area and region and rv3d:
         area.tag_redraw()
 
+def refresh_sidebar_view():
+    """ Refresh the blender sidebar
+    """
+    area, region, rv3d = view3d_find()
+
+    area.regions[3].tag_redraw()
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]
@@ -117,10 +145,8 @@ def get_bb_coords_from_obj(object, parent=None):
 def get_view_matrix():
     area, region, rv3d = view3d_find()
 
-    if area and region and rv3d:
-        matrix_dumper = utils.dump_anything.Dumper()
-
-        return matrix_dumper.dump(rv3d.view_matrix)
+    if area and region and rv3d:       
+        return [list(v) for v in rv3d.view_matrix]
 
 def update_presence(self, context):
     global renderer
@@ -183,7 +209,7 @@ class DrawFactory(object):
 
     def flush_selection(self, user=None):
         key_to_remove = []
-        select_key = "{}_select".format(user) if user else "select"
+        select_key = f"{user}_select" if user else "select"
         for k in self.d3d_items.keys():
 
             if select_key in k:
@@ -204,13 +230,13 @@ class DrawFactory(object):
         self.d2d_items.clear()
 
     def draw_client_selection(self, client_id, client_color, client_selection):
-        local_user = bpy.context.window_manager.session.username
+        local_user = utils.get_preferences().username
 
         if local_user != client_id:
             self.flush_selection(client_id)
 
             for select_ob in client_selection:
-                drawable_key = "{}_select_{}".format(client_id, select_ob)
+                drawable_key = f"{client_id}_select_{select_ob}"
                
                 ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
                 if not ob:
@@ -219,6 +245,10 @@ class DrawFactory(object):
                 if ob.type == 'EMPTY':
                     # TODO: Child case
                     # Collection instance case
+                    indices = (
+                        (0, 1), (1, 2), (2, 3), (0, 3),
+                        (4, 5), (5, 6), (6, 7), (4, 7),
+                        (0, 4), (1, 5), (2, 6), (3, 7))
                     if ob.instance_collection:
                         for obj in ob.instance_collection.objects:
                             if obj.type == 'MESH':
@@ -261,7 +291,7 @@ class DrawFactory(object):
 
     def draw_client_camera(self, client_id, client_location, client_color):
         if client_location:
-            local_user = bpy.context.window_manager.session.username
+            local_user = utils.get_preferences().username
 
             if local_user != client_id:
                 try:
@@ -282,10 +312,10 @@ class DrawFactory(object):
                     self.d2d_items[client_id] = (position[1], client_id, color)
 
                 except Exception as e:
-                    logger.error("Draw client exception {}".format(e))
+                    logging.debug(f"Draw client exception: {e} \n  {traceback.format_exc()}\n pos:{position},ind:{indices}")
 
     def draw3d_callback(self):
-        bgl.glLineWidth(1.5)
+        bgl.glLineWidth(2.)
         bgl.glEnable(bgl.GL_DEPTH_TEST)
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
@@ -296,7 +326,7 @@ class DrawFactory(object):
                 shader.uniform_float("color", color)
                 batch.draw(shader)
         except Exception:
-            logger.error("3D Exception")
+            logging.error("3D Exception")
 
     def draw2d_callback(self):
         for position, font, color in self.d2d_items.values():
@@ -310,7 +340,7 @@ class DrawFactory(object):
                     blf.draw(0,  font)
 
             except Exception:
-                logger.error("2D EXCEPTION")
+                logging.error("2D EXCEPTION")
 
 
 def register():
