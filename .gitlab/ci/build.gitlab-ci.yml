@@ -1,6 +1,6 @@
 build:
   stage: build
-  image: debian:slim-stable
+  image: debian:stable
   script:
     - apt-get update
     - apt install -f -y zip
