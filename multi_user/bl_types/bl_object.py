@@ -157,7 +157,7 @@ class BlObject(BlDatablock):
             img_key = data.get('data')
 
             if target.data is None and img_key:
-                target.data = bpy.data.images[img_key]
+                target.data = bpy.data.images.get(img_key, None)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
