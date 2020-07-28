@@ -1,15 +1,12 @@
 build:
   stage: build
-  image: debian:stable
+  image: debian:stable-slim
   script:
-    - apt-get update
-    - apt install -f -y zip
     - rm -rf tests .git .gitignore script
-    - zip -r multi_user.zip multi_user/
 
   artifacts:
     name: multi_user
     paths: 
-     - multi_user.zip
+     - multi_user
 
 

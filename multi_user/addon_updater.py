@@ -722,21 +722,22 @@ class Singleton_updater(object):
 
 		self._source_zip = os.path.join(local,"source.zip")
 
-		if self._verbose: print("Starting download update zip")
+		if self._verbose: print(f"Starting download update zip to {self._source_zip}")
 		try:
-			request = urllib.request.Request(url)
-			context = ssl._create_unverified_context()
+			import urllib3
+			http = urllib3.PoolManager()
+			r = http.request('GET', url, preload_content=False)
+			chunk_size = 1024*8
+			with open(self._source_zip, 'wb') as out:
+				while True:
+					data = r.read(chunk_size)
+					if not data:
+						break
+					out.write(data)
 
-			# setup private token if appropriate
-			if self._engine.token != None:
-				if self._engine.name == "gitlab":
-					request.add_header('PRIVATE-TOKEN',self._engine.token)
-				else:
-					if self._verbose: print("Tokens not setup for selected engine yet")
-			self.urlretrieve(urllib.request.urlopen(request,context=context), self._source_zip)
-			# add additional checks on file size being non-zero
+			r.release_conn()
 			if self._verbose: print("Successfully downloaded update zip")
-			return True
+			return False
 		except Exception as e:
 			self._error = "Error retrieving download, bad link?"
 			self._error_msg = "Error: {}".format(e)
