@@ -3,9 +3,11 @@ build:
   image: python:latest
   script:
     - rm -rf tests .git .gitignore script
+    - zip -r multi_user.zip multi_user/
 
   artifacts:
     name: multi_user
     paths: 
-     - multi_user
+     - multi_user.zip
+
 
