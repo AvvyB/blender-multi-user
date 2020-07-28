@@ -92,7 +92,7 @@ class BlArmature(BlDatablock):
             new_bone.head = bone_data['head_local']
             new_bone.tail_radius = bone_data['tail_radius']
             new_bone.head_radius = bone_data['head_radius']
-            new_bone.roll =  bone_data['roll']
+            # new_bone.roll =  bone_data['roll']
 
             if 'parent' in bone_data:
                 new_bone.parent = target.edit_bones[data['bones']
@@ -125,7 +125,7 @@ class BlArmature(BlDatablock):
             'parent',
             'name',
             'layers',
-            'roll',
+            # 'roll',
 
         ]
         data = dumper.dump(instance)
