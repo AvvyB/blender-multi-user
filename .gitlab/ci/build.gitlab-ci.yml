@@ -1,7 +1,8 @@
 build:
   stage: build
-  image: python:latest
+  image: debian:stable
   script:
+    - apt install -f -y zip
     - rm -rf tests .git .gitignore script
     - zip -r multi_user.zip multi_user/
 
