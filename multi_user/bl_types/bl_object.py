@@ -190,6 +190,9 @@ class BlObject(BlDatablock):
             "instance_type",
             "location",
             "scale",
+            'lock_location',
+            'lock_rotation',
+            'lock_scale',
             'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
 

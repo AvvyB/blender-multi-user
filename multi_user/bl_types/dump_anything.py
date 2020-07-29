@@ -301,7 +301,7 @@ class Dumper:
         self._dump_ID = (lambda x, depth: x.name, self._dump_default_as_branch)
         self._dump_collection = (
             self._dump_default_as_leaf, self._dump_collection_as_branch)
-        self._dump_array = (self._dump_default_as_leaf,
+        self._dump_array = (self._dump_array_as_branch,
                             self._dump_array_as_branch)
         self._dump_matrix = (self._dump_matrix_as_leaf,
                              self._dump_matrix_as_leaf)
