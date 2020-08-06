@@ -87,6 +87,38 @@ class BlObject(BlDatablock):
         return instance
 
     def _load_implementation(self, data, target):
+        # vertex groups
+        if 'vertex_groups' in data:
+            target.vertex_groups.clear()
+            for vg in data['vertex_groups']:
+                vertex_group = target.vertex_groups.new(name=vg['name'])
+                point_attr =  'vertices' if 'vertices' in vg else 'points'
+                for vert in vg[point_attr]:
+                    vertex_group.add(
+                        [vert['index']], vert['weight'], 'REPLACE')
+
+        # SHAPE KEYS
+        if 'shape_keys' in data:
+            target.shape_key_clear()
+
+            object_data = target.data
+
+            # Create keys and load vertices coords
+            for key_block in data['shape_keys']['key_blocks']:
+                key_data = data['shape_keys']['key_blocks'][key_block]
+                target.shape_key_add(name=key_block)
+
+                loader.load(
+                    target.data.shape_keys.key_blocks[key_block], key_data)
+                for vert in key_data['data']:
+                    target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
+
+            # Load relative key after all
+            for key_block in data['shape_keys']['key_blocks']:
+                reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
+
+                target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
+
         # Load transformation data
         loader = Loader()
         loader.load(target, data)
@@ -119,38 +151,6 @@ class BlObject(BlDatablock):
 
                 if 'bone_index' in bone_data.keys():
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
-
-        # vertex groups
-        if 'vertex_groups' in data:
-            target.vertex_groups.clear()
-            for vg in data['vertex_groups']:
-                vertex_group = target.vertex_groups.new(name=vg['name'])
-                point_attr =  'vertices' if 'vertices' in vg else 'points'
-                for vert in vg[point_attr]:
-                    vertex_group.add(
-                        [vert['index']], vert['weight'], 'REPLACE')
-
-        # SHAPE KEYS
-        if 'shape_keys' in data:
-            target.shape_key_clear()
-
-            object_data = target.data
-
-            # Create keys and load vertices coords
-            for key_block in data['shape_keys']['key_blocks']:
-                key_data = data['shape_keys']['key_blocks'][key_block]
-                target.shape_key_add(name=key_block)
-
-                loader.load(
-                    target.data.shape_keys.key_blocks[key_block], key_data)
-                for vert in key_data['data']:
-                    target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
-
-            # Load relative key after all
-            for key_block in data['shape_keys']['key_blocks']:
-                reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
-
-                target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
         # TODO: find another way...
         if target.type == 'EMPTY':
@@ -204,7 +204,7 @@ class BlObject(BlDatablock):
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
             dumper.include_filter = None
-            dumper.depth = 2
+            dumper.depth = 1
             data["modifiers"] = {}
             for index, modifier in enumerate(instance.modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
