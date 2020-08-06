@@ -87,6 +87,8 @@ class BlObject(BlDatablock):
         return instance
 
     def _load_implementation(self, data, target):
+        loader = Loader()
+        
         # vertex groups
         if 'vertex_groups' in data:
             target.vertex_groups.clear()
@@ -120,7 +122,6 @@ class BlObject(BlDatablock):
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
         # Load transformation data
-        loader = Loader()
         loader.load(target, data)
 
         # Pose
