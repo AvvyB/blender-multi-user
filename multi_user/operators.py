@@ -35,7 +35,7 @@ from bpy.app.handlers import persistent
 from . import bl_types, delayable, environment, presence, ui, utils
 from replication.constants import (FETCHED, STATE_ACTIVE,
                                                      STATE_INITIAL,
-                                                     STATE_SYNCING)
+                                                     STATE_SYNCING, RP_COMMON, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import Session
@@ -623,7 +623,7 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update (go deeper ?)
-                if node.owner in [client.id, 'COMMON'] and node.state == UP:
+                if node.owner in [client.id, RP_COMMON] and node.state == UP:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode:
                         break
