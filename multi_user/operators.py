@@ -623,7 +623,7 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update (go deeper ?)
-                if node.owner in [client.id, RP_COMMON] and node.state == UP:
+                if node and node.owner in [client.id, RP_COMMON] and node.state == UP:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode:
                         break
