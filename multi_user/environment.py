@@ -22,15 +22,20 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import socket
+import re
 
+VERSION_EXPR = re.compile('\d+\.\d+\.\d+')
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
-DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+DEFAULT_CACHE_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "cache")
 PYTHON_PATH = None
 SUBPROCESS_DIR = None
 
 
 rtypes = []
+
 
 def module_can_be_imported(name):
     try:
@@ -42,18 +47,42 @@ def module_can_be_imported(name):
 
 def install_pip():
     # pip can not necessarily be imported into Blender after this
-    get_pip_path = Path(__file__).parent / "libs" / "get-pip.py"
-    subprocess.run([str(PYTHON_PATH), str(get_pip_path)], cwd=SUBPROCESS_DIR)
+    subprocess.run([str(PYTHON_PATH), "-m", "ensurepip"])
 
 
-def install_package(name):
-    logging.debug(f"Using {PYTHON_PATH} for installation")
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", name])
+def install_package(name, version):
+    logging.info(f"installing {name} version...")
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"])
+
+def check_package_version(name, required_version):
+    logging.info(f"Checking {name} version...")
+    out = subprocess.run(f"{str(PYTHON_PATH)} -m pip show {name}", capture_output=True)
+
+    version = VERSION_EXPR.search(out.stdout.decode())
+
+    if version and version.group() == required_version:
+        logging.info(f"{name} is up to date")
+        return True
+    else:
+        logging.info(f"{name} need an update")
+        return False
+
+def get_ip():
+    """
+    Retrieve the main network interface IP.
+
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
 
 
 def check_dir(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
+
 
 def setup(dependencies, python_path):
     global PYTHON_PATH, SUBPROCESS_DIR
@@ -64,7 +93,9 @@ def setup(dependencies, python_path):
     if not module_can_be_imported("pip"):
         install_pip()
 
-    for module_name, package_name in dependencies:
-        if not module_can_be_imported(module_name):
-            install_package(package_name)
+    for package_name, package_version in dependencies:
+        if not module_can_be_imported(package_name):
+            install_package(package_name, package_version)
             module_can_be_imported(package_name)
+        elif not check_package_version(package_name, package_version):
+            install_package(package_name, package_version)

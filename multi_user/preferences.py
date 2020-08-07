@@ -19,10 +19,12 @@ import random
 import logging
 import bpy
 import string
+import re
 
 from . import utils, bl_types, environment, addon_updater_ops, presence, ui
-from .libs.replication.replication.constants import RP_COMMON
+from replication.constants import RP_COMMON
 
+IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
 
 
 def randomColor():
@@ -44,6 +46,22 @@ def update_panel_category(self, context):
     ui.SESSION_PT_settings.bl_category = self.panel_category
     ui.register()
 
+def update_ip(self, context):
+    ip = IP_EXPR.search(self.ip)
+
+    if ip:
+        self['ip'] = ip.group()
+    else:
+        logging.error("Wrong IP format")
+        self['ip'] = "127.0.0.1"
+
+def update_port(self, context):
+    max_port = self.port + 3
+
+    if self.ipc_port < max_port and \
+        self['ipc_port'] >= self.port:
+        logging.error("IPC Port in conflic with the port, assigning a random value")
+        self['ipc_port'] = random.randrange(self.port+4, 10000)
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -68,7 +86,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
-        default="127.0.0.1")
+        default="127.0.0.1",
+        update=update_ip)
     username: bpy.props.StringProperty(
         name="Username",
         default=f"user_{random_string_digits()}"
@@ -91,19 +110,16 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ipc_port: bpy.props.IntProperty(
         name="ipc_port",
         description='internal ttl port(only usefull for multiple local instances)',
-        default=5561
+        default=5561,
+        update=update_port
     )
-    start_empty: bpy.props.BoolProperty(
-        name="start_empty",
-        default=False
-    )
-    right_strategy: bpy.props.EnumProperty(
-        name='right_strategy',
-        description='right strategy',
+    init_method: bpy.props.EnumProperty(
+        name='init_method',
+        description='Init repo',
         items={
-            ('STRICT', 'strict', 'strict right repartition'),
-            ('COMMON', 'common', 'relaxed right repartition')},
-        default='COMMON')
+            ('EMPTY', 'an empty scene', 'start empty'),
+            ('BLEND', 'current scenes', 'use current scenes')},
+        default='BLEND')
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
@@ -236,8 +252,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row.label(text="Port:")
                 row.prop(self, "port", text="Address")
                 row = box.row()
-                row.label(text="Start with an empty scene:")
-                row.prop(self, "start_empty", text="")
+                row.label(text="Init the session from:")
+                row.prop(self, "init_method", text="")
 
                 table = box.box()
                 table.row().prop(
@@ -264,10 +280,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
                 else 'DISCLOSURE_TRI_RIGHT', emboss=False)
             if self.conf_session_hosting_expanded:
-                box.row().prop(self, "right_strategy", text="Right model")
                 row = box.row()
-                row.label(text="Start with an empty scene:")
-                row.prop(self, "start_empty", text="")
+                row.label(text="Init the session from:")
+                row.prop(self, "init_method", text="")
 
             # CACHE SETTINGS
             box = grid.box()
@@ -340,17 +355,13 @@ class SessionUser(bpy.types.PropertyGroup):
 
 
 class SessionProps(bpy.types.PropertyGroup):
-    is_admin: bpy.props.BoolProperty(
-        name="is_admin",
-        default=False
-    )
     session_mode: bpy.props.EnumProperty(
         name='session_mode',
         description='session mode',
         items={
-            ('HOST', 'hosting', 'host a session'),
-            ('CONNECT', 'connexion', 'connect to a session')},
-        default='HOST')
+            ('HOST', 'HOST', 'host a session'),
+            ('CONNECT', 'JOIN', 'connect to a session')},
+        default='CONNECT')
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
@@ -374,7 +385,7 @@ class SessionProps(bpy.types.PropertyGroup):
         update=presence.update_overlay_settings
     )
     presence_show_far_user: bpy.props.BoolProperty(
-        name="Show different scenes",
+        name="Show users on different scenes",
         description="Show user on different scenes",
         default=False,
         update=presence.update_overlay_settings
@@ -384,10 +395,29 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Show only owned datablocks',
         default=True
     )
+    admin: bpy.props.BoolProperty(
+        name="admin",
+        description='Connect as admin',
+        default=False
+    )
+    password: bpy.props.StringProperty(
+        name="password",
+        default=random_string_digits(),
+        description='Session password',
+        subtype='PASSWORD'
+    )
+    internet_ip: bpy.props.StringProperty(
+        name="internet ip",
+        default="no found",
+        description='Internet interface ip',
+    )
     user_snap_running: bpy.props.BoolProperty(
         default=False
     )
     time_snap_running: bpy.props.BoolProperty(
+        default=False
+    )
+    is_host: bpy.props.BoolProperty(
         default=False
     )
 

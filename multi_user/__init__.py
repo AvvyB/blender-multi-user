@@ -21,7 +21,7 @@ bl_info = {
     "author": "Swann Martinez",
     "version": (0, 0, 3),
     "description": "Enable real-time collaborative workflow inside blender",
-    "blender": (2, 80, 0),
+    "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
     "warning": "Unstable addon, use it at your own risks",
     "category": "Collaboration",
@@ -45,21 +45,15 @@ from . import environment, utils
 
 # TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
-    ("zmq","zmq"),
-    ("jsondiff","jsondiff"),
-    ("deepdiff", "deepdiff")
+    ("replication", '0.0.20'),
+    ("deepdiff", '5.0.1'),
 }
 
-
-libs = os.path.dirname(os.path.abspath(__file__))+"\\libs\\replication\\replication"
 
 def register():
     # Setup logging policy
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-    
-    if libs not in sys.path:
-        sys.path.append(libs)
-    
+
     try:
         environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
     except ModuleNotFoundError:
@@ -80,7 +74,9 @@ def register():
 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps)
-    bpy.types.ID.uuid = bpy.props.StringProperty(default="")
+    bpy.types.ID.uuid = bpy.props.StringProperty(
+        default="",
+        options={'HIDDEN', 'SKIP_SAVE'})
     bpy.types.WindowManager.online_users = bpy.props.CollectionProperty(
         type=preferences.SessionUser
     )

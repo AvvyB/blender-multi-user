@@ -35,7 +35,6 @@ def dump_image(image):
         os.makedirs(prefs.cache_directory, exist_ok=True)
         image.file_format = "PNG"
         image.save()
-        logging.info( image.filepath_raw )
 
     if image.source == "FILE":
         image_path = bpy.path.abspath(image.filepath_raw)        

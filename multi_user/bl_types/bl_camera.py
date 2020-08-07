@@ -36,7 +36,7 @@ class BlCamera(BlDatablock):
 
 
     def _load_implementation(self, data, target):
-        loader = Loader()
+        loader = Loader()       
         loader.load(target, data)
 
         dof_settings = data.get('dof')
@@ -45,13 +45,22 @@ class BlCamera(BlDatablock):
         if dof_settings:
             loader.load(target.dof, dof_settings)
 
+        background_images = data.get('background_images')
+
+        if background_images:
+            target.background_images.clear()
+            for img_name, img_data in background_images.items():
+                target_img = target.background_images.new()
+                target_img.image = bpy.data.images[img_name]
+                loader.load(target_img, img_data)
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
         # TODO: background image support
         
         dumper = Dumper()
-        dumper.depth = 2
+        dumper.depth = 3
         dumper.include_filter = [
             "name",
             'type',
@@ -79,7 +88,24 @@ class BlCamera(BlDatablock):
             'sensor_fit',
             'sensor_height',
             'sensor_width',
+            'show_background_images',
+            'background_images',
+            'alpha',
+            'display_depth',
+            'frame_method',
+            'offset',
+            'rotation',
+            'scale',
+            'use_flip_x',
+            'use_flip_y',
+            'image'
         ]
         return dumper.dump(instance)
     
-
+    def _resolve_deps_implementation(self):
+        deps = []
+        for background in self.instance.background_images:
+            if background.image:
+                deps.append(background.image)
+        
+        return deps

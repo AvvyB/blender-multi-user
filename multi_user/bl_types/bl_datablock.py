@@ -21,8 +21,8 @@ import mathutils
 
 from .. import utils
 from .dump_anything import Loader, Dumper
-from ..libs.replication.replication.data import ReplicatedDatablock
-from ..libs.replication.replication.constants import (UP, DIFF_BINARY)
+from replication.data import ReplicatedDatablock
+from replication.constants import (UP, DIFF_BINARY)
 
 
 def has_action(target):
@@ -107,24 +107,25 @@ class BlDatablock(ReplicatedDatablock):
             (self.data and 'library' in self.data)
 
         if instance and hasattr(instance, 'uuid'):
-           instance.uuid = self.uuid
-        
-        # self.diff_method = DIFF_BINARY
+            instance.uuid = self.uuid
 
+        self.diff_method = DIFF_BINARY
 
-    def _resolve(self):
+    def resolve(self):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
-        # In case of lost uuid (ex: undo), resolve by name and reassign it
         if not datablock_ref:
-            datablock_ref = datablock_root.get(self.data['name'])
+            try:
+                datablock_ref = datablock_root[self.data['name']]
+            except Exception:
+                datablock_ref = self._construct(data=self.data)
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
 
-        return datablock_ref
+        self.instance = datablock_ref
 
     def _dump(self, instance=None):
         dumper = Dumper()
@@ -142,7 +143,7 @@ class BlDatablock(ReplicatedDatablock):
                     dump_driver(driver))
 
             data.update(dumped_drivers)
-        
+
         if self.is_library:
             data.update(dumper.dump(instance))
         else:

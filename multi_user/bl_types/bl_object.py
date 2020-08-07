@@ -22,7 +22,7 @@ import logging
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from ..libs.replication.replication.exception import ContextError
+from replication.exception import ContextError
 
 
 def load_pose(target_bone, data):
@@ -87,39 +87,8 @@ class BlObject(BlDatablock):
         return instance
 
     def _load_implementation(self, data, target):
-        # Load transformation data
         loader = Loader()
-        loader.load(target, data)
-
-        # Pose
-        if 'pose' in data:
-            if not target.pose:
-                raise Exception('No pose data yet (Fixed in a near futur)')
-            # Bone groups
-            for bg_name in data['pose']['bone_groups']:
-                bg_data = data['pose']['bone_groups'].get(bg_name)
-                bg_target = target.pose.bone_groups.get(bg_name)
-
-                if not bg_target:
-                    bg_target = target.pose.bone_groups.new(name=bg_name)
-
-                loader.load(bg_target, bg_data)
-                # target.pose.bone_groups.get
-
-            # Bones
-            for bone in data['pose']['bones']:
-                target_bone = target.pose.bones.get(bone)
-                bone_data = data['pose']['bones'].get(bone)
-
-                if 'constraints' in bone_data.keys():
-                    loader.load(target_bone, bone_data['constraints'])
-
-
-                load_pose(target_bone, bone_data)
-
-                if 'bone_index' in bone_data.keys():
-                    target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
-
+        
         # vertex groups
         if 'vertex_groups' in data:
             target.vertex_groups.clear()
@@ -152,6 +121,45 @@ class BlObject(BlDatablock):
 
                 target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
 
+        # Load transformation data
+        loader.load(target, data)
+
+        # Pose
+        if 'pose' in data:
+            if not target.pose:
+                raise Exception('No pose data yet (Fixed in a near futur)')
+            # Bone groups
+            for bg_name in data['pose']['bone_groups']:
+                bg_data = data['pose']['bone_groups'].get(bg_name)
+                bg_target = target.pose.bone_groups.get(bg_name)
+
+                if not bg_target:
+                    bg_target = target.pose.bone_groups.new(name=bg_name)
+
+                loader.load(bg_target, bg_data)
+                # target.pose.bone_groups.get
+
+            # Bones
+            for bone in data['pose']['bones']:
+                target_bone = target.pose.bones.get(bone)
+                bone_data = data['pose']['bones'].get(bone)
+
+                if 'constraints' in bone_data.keys():
+                    loader.load(target_bone, bone_data['constraints'])
+
+
+                load_pose(target_bone, bone_data)
+
+                if 'bone_index' in bone_data.keys():
+                    target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
+
+        # TODO: find another way...
+        if target.type == 'EMPTY':
+            img_key = data.get('data')
+
+            if target.data is None and img_key:
+                target.data = bpy.data.images.get(img_key, None)
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
         
@@ -171,10 +179,21 @@ class BlObject(BlDatablock):
             "library",
             "empty_display_type",
             "empty_display_size",
+            "empty_image_offset",
+            "empty_image_depth",
+            "empty_image_side",
+            "show_empty_image_orthographic",
+            "show_empty_image_perspective",
+            "show_empty_image_only_axis_aligned",
+            "use_empty_image_alpha",
+            "color"
             "instance_collection",
             "instance_type",
             "location",
             "scale",
+            'lock_location',
+            'lock_rotation',
+            'lock_scale',
             'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
 
@@ -186,7 +205,7 @@ class BlObject(BlDatablock):
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
             dumper.include_filter = None
-            dumper.depth = 2
+            dumper.depth = 1
             data["modifiers"] = {}
             for index, modifier in enumerate(instance.modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
