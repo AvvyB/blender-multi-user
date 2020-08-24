@@ -186,7 +186,7 @@ class BlObject(BlDatablock):
             "show_empty_image_perspective",
             "show_empty_image_only_axis_aligned",
             "use_empty_image_alpha",
-            "color"
+            "color",
             "instance_collection",
             "instance_type",
             "location",
