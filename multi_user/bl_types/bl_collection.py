@@ -21,7 +21,7 @@ import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
-
+from .dump_anything import Loader, Dumper
 
 class BlCollection(BlDatablock):
     bl_id = "collections"
@@ -45,8 +45,11 @@ class BlCollection(BlDatablock):
         return instance
 
     def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target,data)
+
         # Load other meshes metadata
-        target.name = data["name"]
+        # target.name = data["name"]
         
         # Objects
         for object in data["objects"]:
@@ -77,8 +80,14 @@ class BlCollection(BlDatablock):
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        data = {}
-        data['name'] = instance.name
+
+        dumper = Dumper()
+        dumper.depth = 1
+        dumper.include_filter = [
+            "name",
+            "instance_offset"
+        ]
+        data = dumper.dump(instance)
 
         # dump objects
         collection_objects = []

@@ -165,7 +165,12 @@ class SessionStartOperator(bpy.types.Operator):
                 node_ref = client.get(node)
                 if node_ref.state == FETCHED:
                     node_ref.resolve()
+
+            for node in client._graph.list_ordered():
+                node_ref = client.get(node)
+                if node_ref.state == FETCHED:
                     node_ref.apply()
+
 
             # Launch drawing module
             if runtime_settings.enable_presence:
