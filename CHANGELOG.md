@@ -37,7 +37,7 @@ All notable changes to this project will be documented in this file.
 - Serialization is now based on marshal (2x performance improvements).
 - Let pip chose python dependencies install path.
 
-## [0.0.3] - Upcoming
+## [0.0.3] - 2020-07-29
 
 ### Added
 
@@ -59,7 +59,6 @@ All notable changes to this project will be documented in this file.
 - UI revamp:
   - user localization
   - repository init
-
 
 ### Removed
 
