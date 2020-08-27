@@ -57,8 +57,8 @@ I'm working on it.
 
 | Dependencies | Version | Needed |
 | ------------ | :-----: | -----: |
-| ZeroMQ       | latest  |    yes |
-| JsonDiff     | latest  |    yes |
+| Replication       | latest  |    yes |
+
 
 
 ## Contributing
