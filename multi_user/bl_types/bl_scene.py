@@ -21,7 +21,7 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-
+from .bl_collection import dump_collection_children, dump_collection_objects, load_collection_childrens, load_collection_objects
 from ..utils import get_preferences
 
 class BlScene(BlDatablock):
@@ -42,24 +42,8 @@ class BlScene(BlDatablock):
         loader.load(target, data)
 
         # Load master collection
-        for object in data["collection"]["objects"]:
-            if object not in target.collection.objects.keys():
-                target.collection.objects.link(bpy.data.objects[object])
-
-        for object in target.collection.objects.keys():
-            if object not in data["collection"]["objects"]:
-                target.collection.objects.unlink(bpy.data.objects[object])
-
-        # load collections
-        for collection in data["collection"]["children"]:
-            if collection not in target.collection.children.keys():
-                target.collection.children.link(
-                    bpy.data.collections[collection])
-
-        for collection in target.collection.children.keys():
-            if collection not in data["collection"]["children"]:
-                target.collection.children.unlink(
-                    bpy.data.collections[collection])
+        load_collection_objects(data['collection']['objects'], target.collection)
+        load_collection_childrens(data['collection']['children'], target.collection)
 
         if 'world' in data.keys():
             target.world = bpy.data.worlds[data['world']]
@@ -73,6 +57,9 @@ class BlScene(BlDatablock):
         
         if 'cycles' in data.keys():
             loader.load(target.eevee, data['cycles'])
+
+        if 'render' in data.keys():
+            loader.load(target.render, data['render'])
 
         if 'view_settings' in data.keys():
             loader.load(target.view_settings, data['view_settings'])
@@ -94,13 +81,18 @@ class BlScene(BlDatablock):
             'id',
             'camera',
             'grease_pencil',
+            'frame_start',
+            'frame_end',
+            'frame_step',
         ]
         data = scene_dumper.dump(instance)
 
         scene_dumper.depth = 3
 
         scene_dumper.include_filter = ['children','objects','name']
-        data['collection'] = scene_dumper.dump(instance.collection)
+        data['collection'] = {}
+        data['collection']['children'] = dump_collection_children(instance.collection)
+        data['collection']['objects'] = dump_collection_objects(instance.collection)
         
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
@@ -126,7 +118,8 @@ class BlScene(BlDatablock):
             data['eevee'] = scene_dumper.dump(instance.eevee)
             data['cycles'] = scene_dumper.dump(instance.cycles)        
             data['view_settings'] = scene_dumper.dump(instance.view_settings)
-           
+            data['render'] = scene_dumper.dump(instance.render)
+
             if instance.view_settings.use_curve_mapping:
                 data['view_settings']['curve_mapping'] = scene_dumper.dump(instance.view_settings.curve_mapping)
                 scene_dumper.depth = 5
