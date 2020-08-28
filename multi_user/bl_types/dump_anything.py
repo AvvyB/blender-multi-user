@@ -115,7 +115,7 @@ def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attri
         :return: numpy byte buffer
     """
     if len(collection) == 0:
-        logging.warning(f'Skipping empty {attribute} attribute')
+        logging.debug(f'Skipping empty {attribute} attribute')
         return {}
 
     attr_infos = collection[0].bl_rna.properties.get(attribute)
@@ -192,7 +192,7 @@ def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attr
         :type sequence: strr
     """
     if len(collection) == 0 or not sequence:
-        logging.warning(f"Skipping loadin {attribute}")
+        logging.debug(f"Skipping loading {attribute}")
         return
     
     attr_infos = collection[0].bl_rna.properties.get(attribute)
