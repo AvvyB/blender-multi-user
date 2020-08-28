@@ -79,6 +79,7 @@ class BlCamera(BlDatablock):
             'aperture_fstop',
             'aperture_blades',
             'aperture_rotation',
+            'ortho_scale',
             'aperture_ratio',
             'display_size',
             'show_limits',
