@@ -47,27 +47,23 @@ class BlCollection(BlDatablock):
     def _load_implementation(self, data, target):
         loader = Loader()
         loader.load(target,data)
-
-        # Load other meshes metadata
-        # target.name = data["name"]
         
         # Objects
         for object in data["objects"]:
-            object_ref = bpy.data.objects.get(object)
+            object_ref = utils.find_from_attr('uuid', object, bpy.data.object)
 
             if object_ref is None:
                 continue
-
-            if object not in target.objects.keys(): 
+            elif object not in target.objects.keys(): 
                 target.objects.link(object_ref)
 
         for object in target.objects:
-            if object.name not in data["objects"]:
+            if object.uuid not in data["objects"]:
                 target.objects.unlink(object)
 
         # Link childrens
         for collection in data["children"]:
-            collection_ref = bpy.data.collections.get(collection)
+            collection_ref = utils.find_from_attr('uuid', collection, bpy.data.collections)
 
             if collection_ref is None:
                 continue
@@ -75,7 +71,7 @@ class BlCollection(BlDatablock):
                 target.children.link(collection_ref)
 
         for collection in target.children:
-            if collection.name not in data["children"]:
+            if collection.uuid not in data["children"]:
                 target.children.unlink(collection)
 
     def _dump_implementation(self, data, instance=None):
@@ -93,7 +89,7 @@ class BlCollection(BlDatablock):
         collection_objects = []
         for object in instance.objects:
             if object not in collection_objects:
-                collection_objects.append(object.name)
+                collection_objects.append(object.uuid)
 
         data['objects'] = collection_objects
 
@@ -101,7 +97,7 @@ class BlCollection(BlDatablock):
         collection_children = []
         for child in instance.children:
             if child not in collection_children:
-                collection_children.append(child.name)
+                collection_children.append(child.uuid)
 
         data['children'] = collection_children
 
