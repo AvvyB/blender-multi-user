@@ -111,10 +111,10 @@ class BlCollection(BlDatablock):
         data = dumper.dump(instance)
 
         # dump objects
-        data['objects'] = dump_collection_objects(self.instance)
+        data['objects'] = dump_collection_objects(instance)
 
         # dump children collections
-        data['children'] = dump_collection_children(self.instance)
+        data['children'] = dump_collection_children(instance)
 
         return data
 
