@@ -52,7 +52,11 @@ def install_pip():
 
 def install_package(name, version):
     logging.info(f"installing {name} version...")
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"])
+    env = os.environ
+    if "PIP_REQUIRE_VIRTUALENV" in env:
+        env = os.environ.copy()
+        del env["PIP_REQUIRE_VIRTUALENV"]
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"], env=env)
 
 def check_package_version(name, required_version):
     logging.info(f"Checking {name} version...")
