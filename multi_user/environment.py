@@ -52,7 +52,15 @@ def install_pip():
 
 def install_package(name, version):
     logging.info(f"installing {name} version...")
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"])
+    env = os.environ
+    if "PIP_REQUIRE_VIRTUALENV" in env:
+        # PIP_REQUIRE_VIRTUALENV is an env var to ensure pip cannot install packages outside a virtual env
+        # https://docs.python-guide.org/dev/pip-virtualenv/
+        # But since Blender's pip is outside of a virtual env, it can block our packages installation, so we unset the
+        # env var for the subprocess.
+        env = os.environ.copy()
+        del env["PIP_REQUIRE_VIRTUALENV"]
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"], env=env)
 
 def check_package_version(name, required_version):
     logging.info(f"Checking {name} version...")
