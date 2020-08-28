@@ -398,8 +398,8 @@ class SESSION_UL_users(bpy.types.UIList):
                 ping = str(user['latency'])
                 metadata = user.get('metadata')
                 if metadata and 'frame_current' in metadata:
-                    frame_current = str(metadata['frame_current'])
-                    scene_current = metadata['scene_current']
+                    frame_current = str(metadata.get('frame_current','-'))
+                    scene_current = metadata.get('scene_current','-')
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
         split = layout.split(factor=0.35)
