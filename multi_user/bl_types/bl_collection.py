@@ -23,6 +23,7 @@ from .. import utils
 from .bl_datablock import BlDatablock
 from .dump_anything import Loader, Dumper
 
+
 def dump_collection_children(collection):
     collection_children = []
     for child in collection.children:
@@ -30,26 +31,29 @@ def dump_collection_children(collection):
             collection_children.append(child.uuid)
     return collection_children
 
+
 def dump_collection_objects(collection):
     collection_objects = []
     for object in collection.objects:
         if object not in collection_objects:
             collection_objects.append(object.uuid)
-    
+
     return collection_objects
+
 
 def load_collection_objects(dumped_objects, collection):
     for object in dumped_objects:
-            object_ref = utils.find_from_attr('uuid', object, bpy.data.objects)
+        object_ref = utils.find_from_attr('uuid', object, bpy.data.objects)
 
-            if object_ref is None:
-                continue
-            elif object_ref.name not in collection.objects.keys(): 
-                collection.objects.link(object_ref)
+        if object_ref is None:
+            continue
+        elif object_ref.name not in collection.objects.keys():
+            collection.objects.link(object_ref)
 
     for object in collection.objects:
         if object.uuid not in dumped_objects:
             collection.objects.unlink(object)
+
 
 def load_collection_childrens(dumped_childrens, collection):
     for child_collection in dumped_childrens:
@@ -67,6 +71,7 @@ def load_collection_childrens(dumped_childrens, collection):
         if child_collection.uuid not in dumped_childrens:
             collection.children.unlink(child_collection)
 
+
 class BlCollection(BlDatablock):
     bl_id = "collections"
     bl_icon = 'FILE_FOLDER'
@@ -75,15 +80,14 @@ class BlCollection(BlDatablock):
     bl_delay_apply = 1
     bl_automatic_push = True
 
-    
     def _construct(self, data):
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.collections = [
                     name for name in sourceData.collections if name == self.data['name']]
-            
+
             instance = bpy.data.collections[self.data['name']]
-            
+
             return instance
 
         instance = bpy.data.collections.new(data["name"])
@@ -91,8 +95,8 @@ class BlCollection(BlDatablock):
 
     def _load_implementation(self, data, target):
         loader = Loader()
-        loader.load(target,data)
-        
+        loader.load(target, data)
+
         # Objects
         load_collection_objects(data['objects'], target)
 
