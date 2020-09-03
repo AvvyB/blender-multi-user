@@ -129,6 +129,19 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description='connection timeout before disconnection',
         default=1000
     )
+    update_method: bpy.props.EnumProperty(
+        name='update method',
+        description='replication update method',
+        items=[
+            ('DEFAULT', "Default", "Default: Use threads to monitor databloc changes"),
+            ('DEPSGRAPH', "Depsgraph", "Experimental: Use the blender dependency graph to trigger updates"),
+        ],
+    )
+    depsgraph_update_rate: bpy.props.IntProperty(
+        name='depsgraph update rate',
+        description='Dependency graph uppdate rate (milliseconds)',
+        default=100
+    )
     # for UI
     category: bpy.props.EnumProperty(
         name="Category",
@@ -250,10 +263,13 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 box.row().prop(self, "ip", text="Address")
                 row = box.row()
                 row.label(text="Port:")
-                row.prop(self, "port", text="Address")
+                row.prop(self, "port", text="")
                 row = box.row()
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
+                row = box.row()
+                row.label(text="Update method:")
+                row.prop(self, "update_method", text="")
 
                 table = box.box()
                 table.row().prop(

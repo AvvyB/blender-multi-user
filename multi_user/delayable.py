@@ -85,19 +85,21 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        client = operators.client
-        if client and client.state['STATE'] == STATE_ACTIVE:
-            nodes = client.list(filter=self._type)
+        client =  operators.client
+        if client and  client.state['STATE'] == STATE_ACTIVE:
+            if self._type:
+                nodes = client.list(filter=self._type)
+            else:
+                nodes = client.list()
 
             for node in nodes:
                 node_ref = client.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        client.apply(node)
+                        client.apply(node, force=True)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
-
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=.1):
@@ -239,7 +241,7 @@ class DrawClient(Draw):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=.032):
+    def __init__(self, timout=.1):
         super().__init__(timout)
         self.handle_quit = False
         self.users_metadata = {}

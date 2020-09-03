@@ -8,5 +8,8 @@ build:
     name: multi_user
     paths: 
      - multi_user
-
+  only:
+    refs:
+    - master
+    - develop
 

@@ -11,4 +11,7 @@ test:
     - python -m pip install blender-addon-tester
     - python scripts/test_addon.py
 
-
+  only:
+    refs:
+    - master
+    - develop

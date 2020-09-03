@@ -303,24 +303,32 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             replication_section_row.prop(settings.sync_flags, "sync_render_settings")
 
         replication_section_row = replication_section.row()
-        replication_section_row.label(text="Per data type timers:")
+        replication_section_row.label(text="Update method:")
+        replication_section_row.prop(settings, "update_method", text="")
         replication_section_row = replication_section.row()
-        # Replication frequencies
-        flow = replication_section_row .grid_flow(
-            row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-        line = flow.row(align=True)
-        line.label(text=" ")
-        line.separator()
-        line.label(text="refresh (sec)")
-        line.label(text="apply (sec)")
-
-        for item in settings.supported_datablocks:
+        replication_timers = replication_section_row.box()
+        replication_timers.label(text="Per data type timers", icon='TIME')
+        if settings.update_method == "DEFAULT":
+            replication_timers = replication_timers.row()
+            # Replication frequencies
+            flow = replication_timers.grid_flow(
+                row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
             line = flow.row(align=True)
-            line.prop(item, "auto_push", text="", icon=item.icon)
+            line.label(text=" ")
             line.separator()
-            line.prop(item, "bl_delay_refresh", text="")
-            line.prop(item, "bl_delay_apply", text="")
+            line.label(text="refresh (sec)")
+            line.label(text="apply (sec)")
 
+            for item in settings.supported_datablocks:
+                line = flow.row(align=True)
+                line.prop(item, "auto_push", text="", icon=item.icon)
+                line.separator()
+                line.prop(item, "bl_delay_refresh", text="")
+                line.prop(item, "bl_delay_apply", text="")
+        else:
+            replication_timers = replication_timers.row()
+            replication_timers.label(text="Update rate (ms):")
+            replication_timers.prop(settings, "depsgraph_update_rate", text="")
 
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
