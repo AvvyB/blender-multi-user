@@ -65,6 +65,8 @@ I'm working on it.
 
 See [contributing section](https://multi-user.readthedocs.io/en/latest/ways_to_contribute.html) of the documentation.
 
+Feel free to [join the discord server](https://discord.gg/aBPvGws) to chat, seek help and contribute.
+
 ## Licensing
 
 See [license](LICENSE)
