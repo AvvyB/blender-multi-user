@@ -307,24 +307,30 @@ This section contains optional settings to configure the session behavior.
 .. figure:: img/quickstart_advanced.png
    :align: center
 
-   Repository panel
+   Advanced configuration panel
 
-.. rubric:: Network
+.. rubric:: Network panel
 
 **IPC Port** is the port used for Inter Process Communication. This port is used 
 by the multi-users subprocesses to communicate with each others. If different instances
 of the multi-user are using the same IPC port it will create conflict !
 
-You only need to modify it if you need to launch multiple clients from the same
-computer(or if you try to host and join on the same computer). You should just enter a different
-**IPC port** for each blender instance.
+.. note::
+   You only need to modify it if you need to launch multiple clients from the same
+   computer(or if you try to host and join on the same computer). You should just enter a different
+   **IPC port** for each blender instance.
 
 **Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
 You should only increase it if you have a bad connection.
 
-.. rubric:: Replication
+.. rubric:: Replication panel
 
 **Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
+
+**Update method** allow you to change how replication update are triggered. Until now two update methode are implemented:
+
+- **Default**: Use external threads to monitor datablocks changes, slower and less accurate.
+- **Despgraph ⚠️**: Use the blender dependency graph to trigger updates. Faster but experimental and unstable !
 
 **Properties frequency gird** allow to set a custom replication frequency for each type of data-block:
 
