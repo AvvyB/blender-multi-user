@@ -16,19 +16,27 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
-import mathutils
 import logging
 
-from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+import bpy
+import mathutils
 from replication.exception import ContextError
+
+from .bl_datablock import BlDatablock
+from .dump_anything import Dumper, Loader
 
 
 def load_pose(target_bone, data):
     target_bone.rotation_mode = data['rotation_mode']
     loader = Loader()
     loader.load(target_bone, data)
+
+
+def _is_editmode(object: bpy.types.Object) -> bool:
+    child_data = getattr(object, 'data', None)
+    return (child_data and
+            hasattr(child_data, 'is_editmode') and
+            child_data.is_editmode)
 
 
 class BlObject(BlDatablock):
@@ -88,13 +96,13 @@ class BlObject(BlDatablock):
 
     def _load_implementation(self, data, target):
         loader = Loader()
-        
+
         # vertex groups
         if 'vertex_groups' in data:
             target.vertex_groups.clear()
             for vg in data['vertex_groups']:
                 vertex_group = target.vertex_groups.new(name=vg['name'])
-                point_attr =  'vertices' if 'vertices' in vg else 'points'
+                point_attr = 'vertices' if 'vertices' in vg else 'points'
                 for vert in vg[point_attr]:
                     vertex_group.add(
                         [vert['index']], vert['weight'], 'REPLACE')
@@ -147,7 +155,6 @@ class BlObject(BlDatablock):
                 if 'constraints' in bone_data.keys():
                     loader.load(target_bone, bone_data['constraints'])
 
-
                 load_pose(target_bone, bone_data)
 
                 if 'bone_index' in bone_data.keys():
@@ -162,11 +169,12 @@ class BlObject(BlDatablock):
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        
-        child_data = getattr(instance, 'data', None)
-        
-        if child_data and hasattr(child_data, 'is_editmode') and child_data.is_editmode:
-            raise ContextError("Object is in edit-mode.")
+
+        if _is_editmode(instance):
+            if self.preferences.enable_editmode_updates:
+                instance.update_from_editmode()
+            else:
+                raise ContextError("Object is in edit-mode.")
 
         dumper = Dumper()
         dumper.depth = 1
@@ -211,7 +219,6 @@ class BlObject(BlDatablock):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
 
         # CONSTRAINTS
-        # OBJECT
         if hasattr(instance, 'constraints'):
             dumper.depth = 3
             data["constraints"] = dumper.dump(instance.constraints)
@@ -264,7 +271,8 @@ class BlObject(BlDatablock):
 
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
-            points_attr = 'vertices' if isinstance(instance.data, bpy.types.Mesh) else 'points'
+            points_attr = 'vertices' if isinstance(
+                instance.data, bpy.types.Mesh) else 'points'
             vg_data = []
             for vg in instance.vertex_groups:
                 vg_idx = vg.index
@@ -319,7 +327,7 @@ class BlObject(BlDatablock):
 
     def _resolve_deps_implementation(self):
         deps = []
-    
+
         # Avoid Empty case
         if self.instance.data:
             deps.append(self.instance.data)
@@ -334,4 +342,3 @@ class BlObject(BlDatablock):
             deps.append(self.instance.instance_collection)
 
         return deps
-

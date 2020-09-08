@@ -27,7 +27,6 @@ from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
 from .bl_datablock import BlDatablock
 
-
 VERTICE = ['co']
 
 EDGE = [
@@ -113,8 +112,8 @@ class BlMesh(BlDatablock):
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        
-        if instance.is_editmode:
+
+        if instance.is_editmode and not self.preferences.enable_editmode_updates:
             raise ContextError("Mesh is in edit mode")
         mesh = instance
 

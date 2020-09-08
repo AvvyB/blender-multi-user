@@ -327,6 +327,10 @@ You should only increase it if you have a bad connection.
 
 **Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
 
+**Edit Mode Updates** enable objects update while you are in Edit_Mode.
+
+.. warning::  Edit Mode Updates kill performances with complex objects (heavy meshes, gpencil, etc...).
+
 **Update method** allow you to change how replication update are triggered. Until now two update methode are implemented:
 
 - **Default**: Use external threads to monitor datablocks changes, slower and less accurate.
@@ -337,5 +341,4 @@ You should only increase it if you have a bad connection.
 - **Refresh**: pushed data update rate (in second)
 - **Apply**: pulled data update rate (in second)
 
-.. note:: Per-data type settings will soon be revamped for simplification purposes
 

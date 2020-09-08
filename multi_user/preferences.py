@@ -137,10 +137,16 @@ class SessionPrefs(bpy.types.AddonPreferences):
             ('DEPSGRAPH', "Depsgraph", "Experimental: Use the blender dependency graph to trigger updates"),
         ],
     )
+    # Replication update settings
     depsgraph_update_rate: bpy.props.IntProperty(
         name='depsgraph update rate',
         description='Dependency graph uppdate rate (milliseconds)',
         default=100
+    )
+    enable_editmode_updates: bpy.props.BoolProperty(
+        name="Edit mode updates",
+        description="Enable objects update in edit mode (! Impact performances !)",
+        default=False
     )
     # for UI
     category: bpy.props.EnumProperty(

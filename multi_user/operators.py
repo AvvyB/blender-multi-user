@@ -631,7 +631,7 @@ def depsgraph_evaluation(scene):
         context = bpy.context
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
-        session_infos = utils.get_preferences()
+        settings = utils.get_preferences()
 
         # NOTE: maybe we don't need to check each update but only the first
 
@@ -647,7 +647,8 @@ def depsgraph_evaluation(scene):
                 #   - if its to someone else, ignore the update (go deeper ?)
                 if node and node.owner in [client.id, RP_COMMON] and node.state == UP:
                     # Avoid slow geometry update
-                    if 'EDIT' in context.mode:
+                    if 'EDIT' in context.mode and \
+                        not settings.enable_editmode_updates:
                         break
 
                     client.stash(node.uuid)

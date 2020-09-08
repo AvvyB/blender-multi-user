@@ -100,6 +100,8 @@ class BlDatablock(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         instance = kwargs.get('instance', None)
+        
+        self.preferences = utils.get_preferences()
 
         # TODO: use is_library_indirect
         self.is_library = (instance and hasattr(instance, 'library') and
