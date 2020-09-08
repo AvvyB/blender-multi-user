@@ -306,6 +306,10 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         # replication_section_row.label(text=":", icon='EDITMODE_HLT')
         replication_section_row.prop(settings, "enable_editmode_updates")
         replication_section_row = replication_section.row()
+        if settings.enable_editmode_updates:
+            warning = replication_section_row.box()
+            warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
+            replication_section_row = replication_section.row()
         replication_section_row.label(text="Update method", icon='RECOVER_LAST')
         replication_section_row = replication_section.row()
         replication_section_row.prop(settings, "update_method", expand=True)
