@@ -2,7 +2,7 @@ test:
   stage: test
   image: slumber/blender-addon-testing:latest
   script:
-    - python scripts/test_addon.py
+    - python3 scripts/test_addon.py
 
   only:
     refs:
