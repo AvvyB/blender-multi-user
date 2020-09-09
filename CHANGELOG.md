@@ -64,3 +64,17 @@ All notable changes to this project will be documented in this file.
 
 - Unused strict right management strategy
 - Legacy config management system
+
+## [0.0.4] - preview
+
+### Added
+
+- Dependency graph driven updates [experimental]
+- Optional Edit Mode update
+- Late join mechanism 
+
+### Changed
+
+- Auto updater now handle installation from branches
+
+### Removed
