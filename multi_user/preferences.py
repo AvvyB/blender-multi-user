@@ -326,7 +326,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
-            addon_updater_ops.update_settings_ui_condensed(self, context)
+            addon_updater_ops.update_settings_ui(self, context)
 
     def generate_supported_types(self):
         self.supported_datablocks.clear()

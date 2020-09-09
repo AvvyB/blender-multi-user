@@ -23,7 +23,11 @@ https://github.com/CGCookie/blender-addon-updater
 
 """
 
+__version__ = "1.0.8"
+
 import errno
+import traceback
+import platform
 import ssl
 import urllib.request
 import urllib
@@ -98,6 +102,7 @@ class Singleton_updater(object):
 
 		# runtime variables, initial conditions
 		self._verbose = False
+		self._use_print_traces = True
 		self._fake_install = False
 		self._async_checking = False  # only true when async daemon started
 		self._update_ready = None
@@ -133,6 +138,13 @@ class Singleton_updater(object):
 		self._select_link = select_link_function
 
 
+	# called from except blocks, to print the exception details,
+	# according to the use_print_traces option
+	def print_trace():
+		if self._use_print_traces:
+			traceback.print_exc()
+
+
 	# -------------------------------------------------------------------------
 	# Getters and setters
 	# -------------------------------------------------------------------------
@@ -166,7 +178,7 @@ class Singleton_updater(object):
 		try:
 			self._auto_reload_post_update = bool(value)
 		except:
-			raise ValueError("Must be a boolean value")
+			raise ValueError("auto_reload_post_update must be a boolean value")
 
 	@property
 	def backup_current(self):
@@ -351,7 +363,7 @@ class Singleton_updater(object):
 		try:
 			self._repo = str(value)
 		except:
-			raise ValueError("User must be a string")
+			raise ValueError("repo must be a string value")
 
 	@property
 	def select_link(self):
@@ -377,6 +389,7 @@ class Singleton_updater(object):
 				os.makedirs(value)
 			except:
 				if self._verbose: print("Error trying to staging path")
+				self.print_trace()
 				return
 		self._updater_path = value
 
@@ -445,6 +458,16 @@ class Singleton_updater(object):
 				print(self._addon+" updater verbose is enabled")
 		except:
 			raise ValueError("Verbose must be a boolean value")
+
+	@property
+	def use_print_traces(self):
+		return self._use_print_traces
+	@use_print_traces.setter
+	def use_print_traces(self, value):
+		try:
+			self._use_print_traces = bool(value)
+		except:
+			raise ValueError("use_print_traces must be a boolean value")
 
 	@property
 	def version_max_update(self):
@@ -637,6 +660,9 @@ class Singleton_updater(object):
 			else:
 				if self._verbose: print("Tokens not setup for engine yet")
 
+		# Always set user agent
+		request.add_header('User-Agent', "Python/"+str(platform.python_version()))
+
 		# run the request
 		try:
 			if context:
@@ -652,6 +678,7 @@ class Singleton_updater(object):
 				self._error = "HTTP error"
 				self._error_msg = str(e.code)
 				print(self._error, self._error_msg)
+			self.print_trace()
 			self._update_ready = None
 		except urllib.error.URLError as e:
 			reason = str(e.reason)
@@ -663,6 +690,7 @@ class Singleton_updater(object):
 				self._error = "URL error, check internet connection"
 				self._error_msg = reason
 				print(self._error, self._error_msg)
+			self.print_trace()
 			self._update_ready = None
 			return None
 		else:
@@ -684,6 +712,7 @@ class Singleton_updater(object):
 				self._error_msg = str(e.reason)
 				self._update_ready = None
 				print(self._error, self._error_msg)
+				self.print_trace()
 				return None
 		else:
 			return None
@@ -700,15 +729,17 @@ class Singleton_updater(object):
 		if self._verbose: print("Preparing staging folder for download:\n",local)
 		if os.path.isdir(local) == True:
 			try:
-				shutil.rmtree(local)
+				shutil.rmtree(local, ignore_errors=True)
 				os.makedirs(local)
 			except:
 				error = "failed to remove existing staging directory"
+				self.print_trace()
 		else:
 			try:
 				os.makedirs(local)
 			except:
 				error = "failed to create staging directory"
+				self.print_trace()
 
 		if error != None:
 			if self._verbose: print("Error: Aborting update, "+error)
@@ -722,20 +753,23 @@ class Singleton_updater(object):
 
 		self._source_zip = os.path.join(local,"source.zip")
 
-		if self._verbose: print(f"Starting download update zip to {self._source_zip}")
+		if self._verbose: print("Starting download update zip")
 		try:
-			import urllib3
-			http = urllib3.PoolManager()
-			r = http.request('GET', url, preload_content=False)
-			chunk_size = 1024*8
-			with open(self._source_zip, 'wb') as out:
-				while True:
-					data = r.read(chunk_size)
-					if not data:
-						break
-					out.write(data)
+			request = urllib.request.Request(url)
+			context = ssl._create_unverified_context()
 
-			r.release_conn()
+			# setup private token if appropriate
+			if self._engine.token != None:
+				if self._engine.name == "gitlab":
+					request.add_header('PRIVATE-TOKEN',self._engine.token)
+				else:
+					if self._verbose: print("Tokens not setup for selected engine yet")
+
+			# Always set user agent
+			request.add_header('User-Agent', "Python/"+str(platform.python_version()))
+
+			self.urlretrieve(urllib.request.urlopen(request,context=context), self._source_zip)
+			# add additional checks on file size being non-zero
 			if self._verbose: print("Successfully downloaded update zip")
 			return True
 		except Exception as e:
@@ -744,6 +778,7 @@ class Singleton_updater(object):
 			if self._verbose:
 				print("Error retrieving download, bad link?")
 				print("Error: {}".format(e))
+			self.print_trace()
 			return False
 
 
@@ -758,16 +793,18 @@ class Singleton_updater(object):
 
 		if os.path.isdir(local):
 			try:
-				shutil.rmtree(local)
+				shutil.rmtree(local, ignore_errors=True)
 			except:
 				if self._verbose:print("Failed to removed previous backup folder, contininuing")
+				self.print_trace()
 
 		# remove the temp folder; shouldn't exist but could if previously interrupted
 		if os.path.isdir(tempdest):
 			try:
-				shutil.rmtree(tempdest)
+				shutil.rmtree(tempdest, ignore_errors=True)
 			except:
 				if self._verbose:print("Failed to remove existing temp folder, contininuing")
+				self.print_trace()
 		# make the full addon copy, which temporarily places outside the addon folder
 		if self._backup_ignore_patterns != None:
 			shutil.copytree(
@@ -795,7 +832,7 @@ class Singleton_updater(object):
 
 		# make the copy
 		shutil.move(backuploc,tempdest)
-		shutil.rmtree(self._addon_root)
+		shutil.rmtree(self._addon_root, ignore_errors=True)
 		os.rename(tempdest,self._addon_root)
 
 		self._json["backup_date"] = ""
@@ -816,7 +853,7 @@ class Singleton_updater(object):
 		# clear the existing source folder in case previous files remain
 		outdir = os.path.join(self._updater_path, "source")
 		try:
-			shutil.rmtree(outdir)
+			shutil.rmtree(outdir, ignore_errors=True)
 			if self._verbose:
 				print("Source folder cleared")
 		except:
@@ -829,6 +866,7 @@ class Singleton_updater(object):
 		except Exception as err:
 			print("Error occurred while making extract dir:")
 			print(str(err))
+			self.print_trace()
 			self._error = "Install failed"
 			self._error_msg = "Failed to make extract directory"
 			return -1
@@ -870,6 +908,7 @@ class Singleton_updater(object):
 					if exc.errno != errno.EEXIST:
 						self._error = "Install failed"
 						self._error_msg = "Could not create folder from zip"
+						self.print_trace()
 						return -1
 			else:
 				with open(os.path.join(outdir, subpath), "wb") as outfile:
@@ -963,12 +1002,13 @@ class Singleton_updater(object):
 					print("Clean removing file {}".format(os.path.join(base,f)))
 				for f in folders:
 					if os.path.join(base,f)==self._updater_path: continue
-					shutil.rmtree(os.path.join(base,f))
+					shutil.rmtree(os.path.join(base,f), ignore_errors=True)
 					print("Clean removing folder and contents {}".format(os.path.join(base,f)))
 
 			except Exception as err:
 				error = "failed to create clean existing addon folder"
 				print(error, str(err))
+				self.print_trace()
 
 		# Walk through the base addon folder for rules on pre-removing
 		# but avoid removing/altering backup and updater file
@@ -984,6 +1024,7 @@ class Singleton_updater(object):
 							if self._verbose: print("Pre-removed file "+file)
 						except OSError:
 							print("Failed to pre-remove "+file)
+							self.print_trace()
 
 		# Walk through the temp addon sub folder for replacements
 		# this implements the overwrite rules, which apply after
@@ -1007,7 +1048,7 @@ class Singleton_updater(object):
 					# otherwise, check each file to see if matches an overwrite pattern
 					replaced=False
 					for ptrn in self._overwrite_patterns:
-						if fnmatch.filter([destFile],ptrn):
+						if fnmatch.filter([file],ptrn):
 							replaced=True
 							break
 					if replaced:
@@ -1023,10 +1064,11 @@ class Singleton_updater(object):
 
 		# now remove the temp staging folder and downloaded zip
 		try:
-			shutil.rmtree(staging_path)
+			shutil.rmtree(staging_path, ignore_errors=True)
 		except:
 			error = "Error: Failed to remove existing staging directory, consider manually removing "+staging_path
 			if self._verbose: print(error)
+			self.print_trace()
 
 
 	def reload_addon(self):
@@ -1042,9 +1084,16 @@ class Singleton_updater(object):
 
 		# not allowed in restricted context, such as register module
 		# toggle to refresh
-		bpy.ops.wm.addon_disable(module=self._addon_package)
-		bpy.ops.wm.addon_refresh()
-		bpy.ops.wm.addon_enable(module=self._addon_package)
+		if "addon_disable" in dir(bpy.ops.wm): # 2.7
+			bpy.ops.wm.addon_disable(module=self._addon_package)
+			bpy.ops.wm.addon_refresh()
+			bpy.ops.wm.addon_enable(module=self._addon_package)
+			print("2.7 reload complete")
+		else: # 2.8
+			bpy.ops.preferences.addon_disable(module=self._addon_package)
+			bpy.ops.preferences.addon_refresh()
+			bpy.ops.preferences.addon_enable(module=self._addon_package)
+			print("2.8 reload complete")
 
 
 	# -------------------------------------------------------------------------
@@ -1376,26 +1425,26 @@ class Singleton_updater(object):
 
 		if "last_check" not in self._json or self._json["last_check"] == "":
 			return True
-		else:
-			now = datetime.now()
-			last_check = datetime.strptime(self._json["last_check"],
-										"%Y-%m-%d %H:%M:%S.%f")
-			next_check = last_check
-			offset = timedelta(
-				days=self._check_interval_days + 30*self._check_interval_months,
-				hours=self._check_interval_hours,
-				minutes=self._check_interval_minutes
-				)
 
-			delta = (now - offset) - last_check
-			if delta.total_seconds() > 0:
-				if self._verbose:
-					print("{} Updater: Time to check for updates!".format(self._addon))
-				return True
-			else:
-				if self._verbose:
-					print("{} Updater: Determined it's not yet time to check for updates".format(self._addon))
-				return False
+		now = datetime.now()
+		last_check = datetime.strptime(self._json["last_check"],
+									"%Y-%m-%d %H:%M:%S.%f")
+		next_check = last_check
+		offset = timedelta(
+			days=self._check_interval_days + 30*self._check_interval_months,
+			hours=self._check_interval_hours,
+			minutes=self._check_interval_minutes
+			)
+
+		delta = (now - offset) - last_check
+		if delta.total_seconds() > 0:
+			if self._verbose:
+				print("{} Updater: Time to check for updates!".format(self._addon))
+			return True
+
+		if self._verbose:
+			print("{} Updater: Determined it's not yet time to check for updates".format(self._addon))
+		return False
 
 	def get_json_path(self):
 		"""Returns the full path to the JSON state file used by this updater.
@@ -1414,6 +1463,7 @@ class Singleton_updater(object):
 		except Exception as err:
 			print("Other OS error occurred while trying to rename old JSON")
 			print(err)
+			self.print_trace()
 		return json_path
 
 	def set_updater_json(self):
@@ -1514,6 +1564,7 @@ class Singleton_updater(object):
 		except Exception as exception:
 			print("Checking for update error:")
 			print(exception)
+			self.print_trace()
 			if not self._error:
 				self._update_ready = False
 				self._update_version = None
@@ -1625,10 +1676,7 @@ class GitlabEngine(object):
 		return "{}{}{}".format(self.api_url,"/api/v4/projects/",updater.repo)
 
 	def form_tags_url(self, updater):
-		if updater.use_releases:
-			return "{}{}".format(self.form_repo_url(updater),"/releases")
-		else:
-			return "{}{}".format(self.form_repo_url(updater),"/repository/tags")
+		return "{}{}".format(self.form_repo_url(updater),"/repository/tags")
 
 	def form_branch_list_url(self, updater):
 		# does not validate branch name.
@@ -1656,12 +1704,7 @@ class GitlabEngine(object):
 	def parse_tags(self, response, updater):
 		if response == None:
 			return []
-		# Return asset links from release
-		if updater.use_releases:
-			return [{"name": release["name"], "zipball_url": release["assets"]["links"][0]["url"]} for release in response]
-		else:
-			return [{"name": tag["name"], "zipball_url": self.get_zip_url(tag["commit"]["id"], updater)} for tag in response]
-
+		return [{"name": tag["name"], "zipball_url": self.get_zip_url(tag["commit"]["id"], updater)} for tag in response]
 
 
 # -----------------------------------------------------------------------------
