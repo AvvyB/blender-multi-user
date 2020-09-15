@@ -299,8 +299,8 @@ Here is a quick list of available actions:
 
 .. _advanced:
 
-Advanced configuration
-======================
+Advanced settings
+=================
 
 This section contains optional settings to configure the session behavior.
 
@@ -309,7 +309,14 @@ This section contains optional settings to configure the session behavior.
 
    Advanced configuration panel
 
-.. rubric:: Network panel
+-------
+Network
+-------
+
+.. figure:: img/quickstart_advanced_network.png
+   :align: center
+
+   Advanced network settings
 
 **IPC Port** is the port used for Inter Process Communication. This port is used 
 by the multi-users subprocesses to communicate with each others. If different instances
@@ -323,7 +330,14 @@ of the multi-user are using the same IPC port it will create conflict !
 **Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
 You should only increase it if you have a bad connection.
 
-.. rubric:: Replication panel
+-----------
+Replication
+-----------
+
+.. figure:: img/quickstart_advanced_replication.png
+   :align: center
+
+   Advanced replication settings
 
 **Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
 
@@ -341,4 +355,25 @@ You should only increase it if you have a bad connection.
 - **Refresh**: pushed data update rate (in second)
 - **Apply**: pulled data update rate (in second)
 
+---
+Log
+---
 
+.. figure:: img/quickstart_advanced_logging.png
+   :align: center
+
+   Advanced log settings
+
+**log level** allow to set the logging level of detail. Here is the detail for each values:
+
++-----------+-----------------------------------------------+
+| Log level |                  Description                  |
++===========+===============================================+
+| ERROR     | Shows only critical error                     |
++-----------+-----------------------------------------------+
+| WARNING   | Shows only errors (all kind)                  |
++-----------+-----------------------------------------------+
+| INFO      | Shows only status related messages and errors |
++-----------+-----------------------------------------------+
+| DEBUG     | Shows every possible information.             |
++-----------+-----------------------------------------------+

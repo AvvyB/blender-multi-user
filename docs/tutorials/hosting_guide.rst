@@ -199,11 +199,11 @@ You can run the dedicated server on any platform by following those steps:
         replication.serve
 
 .. hint::
-    You can also specify a custom **port** (-p), **timeout** (-t) and **admin password** (-pwd) with the following optionnal argument
+    You can also specify a custom **port** (-p), **timeout** (-t), **admin password** (-pwd), **log level(ERROR, WARNING, INFO or DEBUG)** (-l) and **log file** (-lf) with the following optionnal argument
 
     .. code-block:: bash
 
-         replication.serve -p 5555 -pwd toto -t 1000
+        replication.serve -p 5555 -pwd toto -t 1000 -l INFO -lf server.log
 
 As soon as the dedicated server is running, you can connect to it from blender (follow :ref:`how-to-join`).
 
