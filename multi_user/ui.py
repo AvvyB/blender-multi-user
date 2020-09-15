@@ -355,8 +355,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
                 replication_timers.label(text="Update rate (ms):")
                 replication_timers.prop(settings, "depsgraph_update_rate", text="")
         
-        log_section_row = layout.row().box()
-        log_section_row.prop(
+        log_section = layout.row().box()
+        log_section.prop(
             settings,
             "sidebar_advanced_log_expanded",
             text="Logging",
@@ -364,7 +364,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             emboss=False)
 
         if settings.sidebar_advanced_log_expanded:
-            log_section_row.label(text="Logging level:")
+            log_section_row = log_section.row()
+            log_section_row.label(text="Log level:")
             log_section_row.prop(settings, 'logging_level', text="")
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
