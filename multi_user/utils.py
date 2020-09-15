@@ -39,7 +39,7 @@ def find_from_attr(attr_name, attr_value, list):
 
 def get_datablock_users(datablock):
     users = []
-    supported_types =  get_preferences().supported_datablocks
+    supported_types = get_preferences().supported_datablocks
     if hasattr(datablock, 'users_collection') and datablock.users_collection:
         users.extend(list(datablock.users_collection))
     if hasattr(datablock, 'users_scene') and datablock.users_scene:
@@ -77,10 +77,18 @@ def resolve_from_id(id, optionnal_type=None):
             if id in root and ((optionnal_type is None) or (optionnal_type.lower() in root[id].__class__.__name__.lower())):
                 return root[id]
     return None
-            
+
 
 def get_preferences():
     return bpy.context.preferences.addons[__package__].preferences
 
+
 def current_milli_time():
     return int(round(time.time() * 1000))
+
+
+def get_expanded_icon(prop: bpy.types.BoolProperty) -> str:
+    if prop:
+        return 'DISCLOSURE_TRI_DOWN'
+    else:
+        return 'DISCLOSURE_TRI_RIGHT'

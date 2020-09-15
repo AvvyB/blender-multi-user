@@ -44,13 +44,16 @@ from . import environment, utils
 
 
 DEPENDENCIES = {
-    ("replication", '0.0.21a5'),
+    ("replication", '0.0.21a6'),
 }
 
 
 def register():
     # Setup logging policy
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s CLIENT %(levelname)-8s %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.INFO)
 
     try:
         environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
