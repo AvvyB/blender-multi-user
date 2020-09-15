@@ -25,7 +25,7 @@ from pathlib import Path
 import socket
 import re
 
-VERSION_EXPR = re.compile('\d+\.\d+\.\d+')
+VERSION_EXPR = re.compile('\d+\.\d+\.\d+\w\d+')
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 DEFAULT_CACHE_DIR = os.path.join(
@@ -67,7 +67,6 @@ def check_package_version(name, required_version):
     out = subprocess.run(f"{str(PYTHON_PATH)} -m pip show {name}", capture_output=True)
 
     version = VERSION_EXPR.search(out.stdout.decode())
-
     if version and version.group() == required_version:
         logging.info(f"{name} is up to date")
         return True
