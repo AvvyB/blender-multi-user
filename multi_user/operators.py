@@ -70,29 +70,28 @@ class SessionStartOperator(bpy.types.Operator):
         use_extern_update = settings.update_method == 'DEPSGRAPH'
         users.clear()
         delayables.clear()
-
-        logging.getLogger().handlers.clear()
-        # logging.basicConfig(level=settings.logging_level)
-
-        formatter = logging.Formatter(
-            fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
-            datefmt='%H:%M:%S'
-        )
         
-        log_directory = os.path.join(
-            settings.cache_directory,
-            "multiuser_client.log")
-        
-        os.makedirs(settings.cache_directory, exist_ok=True)
         logger = logging.getLogger()
-        handler = logging.FileHandler(log_directory, mode='w')
-        logger.addHandler(handler)
+        if len(logger.handlers)==1: 
+            formatter = logging.Formatter(
+                fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
+                datefmt='%H:%M:%S'
+            )
+            
+            log_directory = os.path.join(
+                settings.cache_directory,
+                "multiuser_client.log")
 
-        for handler in logger.handlers:
-            if isinstance(handler, logging.NullHandler):
-                continue
+            os.makedirs(settings.cache_directory, exist_ok=True)
+            
+            handler = logging.FileHandler(log_directory, mode='w')
+            logger.addHandler(handler)
 
-            handler.setFormatter(formatter)
+            for handler in logger.handlers:
+                if isinstance(handler, logging.NullHandler):
+                    continue
+
+                handler.setFormatter(formatter)
 
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
