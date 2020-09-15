@@ -34,8 +34,8 @@ from bpy.app.handlers import persistent
 
 from . import bl_types, delayable, environment, presence, ui, utils
 from replication.constants import (FETCHED, STATE_ACTIVE,
-                                                     STATE_INITIAL,
-                                                     STATE_SYNCING, RP_COMMON, UP)
+                                   STATE_INITIAL,
+                                   STATE_SYNCING, RP_COMMON, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import Session
@@ -71,6 +71,29 @@ class SessionStartOperator(bpy.types.Operator):
         users.clear()
         delayables.clear()
 
+        logging.getLogger().handlers.clear()
+        # logging.basicConfig(level=settings.logging_level)
+
+        formatter = logging.Formatter(
+            fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
+            datefmt='%H:%M:%S'
+        )
+        
+        log_directory = os.path.join(
+            settings.cache_directory,
+            "multiuser_client.log")
+        
+        os.makedirs(settings.cache_directory, exist_ok=True)
+        logger = logging.getLogger()
+        handler = logging.FileHandler(log_directory, mode='w')
+        logger.addHandler(handler)
+
+        for handler in logger.handlers:
+            if isinstance(handler, logging.NullHandler):
+                continue
+
+            handler.setFormatter(formatter)
+
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
 
@@ -104,7 +127,8 @@ class SessionStartOperator(bpy.types.Operator):
             external_update_handling=use_extern_update)
 
         if settings.update_method == 'DEPSGRAPH':
-            delayables.append(delayable.ApplyTimer(settings.depsgraph_update_rate/1000))
+            delayables.append(delayable.ApplyTimer(
+                settings.depsgraph_update_rate/1000))
 
         # Host a session
         if self.host:
@@ -123,7 +147,10 @@ class SessionStartOperator(bpy.types.Operator):
                     port=settings.port,
                     ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,
-                    password=admin_pass
+                    password=admin_pass,
+                    cache_directory=settings.cache_directory,
+                    server_log_level=logging.getLevelName(
+                        logging.getLogger().level),
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
@@ -162,7 +189,6 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(session_update)
         delayables.append(session_user_sync)
 
-
         @client.register('on_connection')
         def initialize_session():
             settings = utils.get_preferences()
@@ -177,7 +203,6 @@ class SessionStartOperator(bpy.types.Operator):
                 if node_ref.state == FETCHED:
                     node_ref.apply()
 
-
             # Launch drawing module
             if runtime_settings.enable_presence:
                 presence.renderer.run()
@@ -185,9 +210,10 @@ class SessionStartOperator(bpy.types.Operator):
             # Register blender main thread tools
             for d in delayables:
                 d.register()
-            
+
             if settings.update_method == 'DEPSGRAPH':
-                bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+                bpy.app.handlers.depsgraph_update_post.append(
+                    depsgraph_evaluation)
 
         @client.register('on_exit')
         def desinitialize_session():
@@ -204,7 +230,8 @@ class SessionStartOperator(bpy.types.Operator):
             presence.renderer.stop()
 
             if settings.update_method == 'DEPSGRAPH':
-                bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
+                bpy.app.handlers.depsgraph_update_post.remove(
+                    depsgraph_evaluation)
 
         bpy.ops.session.apply_armature_operator()
 
@@ -422,14 +449,16 @@ class SessionSnapUserOperator(bpy.types.Operator):
                     if target_scene != context.scene.name:
                         blender_scene = bpy.data.scenes.get(target_scene, None)
                         if blender_scene is None:
-                            self.report({'ERROR'}, f"Scene {target_scene} doesn't exist on the local client.")
+                            self.report(
+                                {'ERROR'}, f"Scene {target_scene} doesn't exist on the local client.")
                             session_sessings.time_snap_running = False
                             return {"CANCELLED"}
 
                         bpy.context.window.scene = blender_scene
 
                     # Update client viewmatrix
-                    client_vmatrix = target_ref['metadata'].get('view_matrix', None)
+                    client_vmatrix = target_ref['metadata'].get(
+                        'view_matrix', None)
 
                     if client_vmatrix:
                         rv3d.view_matrix = mathutils.Matrix(client_vmatrix)
@@ -625,6 +654,7 @@ def update_client_frame(scene):
             'frame_current': scene.frame_current
         })
 
+
 @persistent
 def depsgraph_evaluation(scene):
     if client and client.state['STATE'] == STATE_ACTIVE:
@@ -640,7 +670,7 @@ def depsgraph_evaluation(scene):
             if update.id.uuid:
                 # Retrieve local version
                 node = client.get(update.id.uuid)
-                
+
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
@@ -648,7 +678,7 @@ def depsgraph_evaluation(scene):
                 if node and node.owner in [client.id, RP_COMMON] and node.state == UP:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode and \
-                        not settings.enable_editmode_updates:
+                            not settings.enable_editmode_updates:
                         break
 
                     client.stash(node.uuid)
@@ -671,8 +701,6 @@ def register():
     bpy.app.handlers.load_pre.append(load_pre_handler)
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
-    
-
 
 def unregister():
     global client
@@ -690,4 +718,3 @@ def unregister():
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
-    

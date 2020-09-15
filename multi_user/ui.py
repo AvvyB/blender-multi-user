@@ -18,7 +18,8 @@
 
 import bpy
 
-from . import operators, utils
+from . import operators
+from .utils import get_preferences, get_expanded_icon
 from replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP,
                                                      STATE_ACTIVE, STATE_AUTH,
@@ -112,7 +113,7 @@ class SESSION_PT_settings(bpy.types.Panel):
         layout.use_property_split = True
         row = layout.row()
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
@@ -195,7 +196,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         # USER SETTINGS
         row = layout.row()
@@ -253,7 +254,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         row = layout.row()
         # USER SETTINGS
@@ -284,60 +285,87 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         
         net_section = layout.row().box()
-        net_section.label(text="Network ", icon='TRIA_DOWN')
-        net_section_row = net_section.row()
-        net_section_row.label(text="IPC Port:")
-        net_section_row.prop(settings, "ipc_port", text="")
-        net_section_row = net_section.row()
-        net_section_row.label(text="Timeout (ms):")
-        net_section_row.prop(settings, "connection_timeout", text="")
+        net_section.prop(
+            settings,
+            "sidebar_advanced_net_expanded",
+            text="Network",
+            icon=get_expanded_icon(settings.sidebar_advanced_net_expanded), 
+            emboss=False)
+        
+        if settings.sidebar_advanced_net_expanded:
+            net_section_row = net_section.row()
+            net_section_row.label(text="IPC Port:")
+            net_section_row.prop(settings, "ipc_port", text="")
+            net_section_row = net_section.row()
+            net_section_row.label(text="Timeout (ms):")
+            net_section_row.prop(settings, "connection_timeout", text="")
 
         replication_section = layout.row().box()
-        replication_section.label(text="Replication ", icon='TRIA_DOWN')
-        replication_section_row = replication_section.row()
-        replication_section_row.label(text="Sync flags", icon='COLLECTION_NEW')
-        replication_section_row = replication_section.row()
-        replication_section_row.prop(settings.sync_flags, "sync_render_settings")
-        replication_section_row = replication_section.row()
-        # replication_section_row.label(text=":", icon='EDITMODE_HLT')
-        replication_section_row.prop(settings, "enable_editmode_updates")
-        replication_section_row = replication_section.row()
-        if settings.enable_editmode_updates:
-            warning = replication_section_row.box()
-            warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
+        replication_section.prop(
+            settings,
+            "sidebar_advanced_rep_expanded",
+            text="Replication",
+            icon=get_expanded_icon(settings.sidebar_advanced_rep_expanded), 
+            emboss=False)
+
+        if settings.sidebar_advanced_rep_expanded:
             replication_section_row = replication_section.row()
-        replication_section_row.label(text="Update method", icon='RECOVER_LAST')
-        replication_section_row = replication_section.row()
-        replication_section_row.prop(settings, "update_method", expand=True)
-        replication_section_row = replication_section.row()
-        replication_timers = replication_section_row.box()
-        replication_timers.label(text="Replication timers", icon='TIME')
-        if settings.update_method == "DEFAULT":
-            replication_timers = replication_timers.row()
-            # Replication frequencies
-            flow = replication_timers.grid_flow(
-                row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-            line = flow.row(align=True)
-            line.label(text=" ")
-            line.separator()
-            line.label(text="refresh (sec)")
-            line.label(text="apply (sec)")
 
-            for item in settings.supported_datablocks:
+            replication_section_row.label(text="Sync flags", icon='COLLECTION_NEW')
+            replication_section_row = replication_section.row()
+            replication_section_row.prop(settings.sync_flags, "sync_render_settings")
+            replication_section_row = replication_section.row()
+
+            replication_section_row.prop(settings, "enable_editmode_updates")
+            replication_section_row = replication_section.row()
+            if settings.enable_editmode_updates:
+                warning = replication_section_row.box()
+                warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
+                replication_section_row = replication_section.row()
+
+            replication_section_row.label(text="Update method", icon='RECOVER_LAST')
+            replication_section_row = replication_section.row()
+            replication_section_row.prop(settings, "update_method", expand=True)
+            replication_section_row = replication_section.row()
+            replication_timers = replication_section_row.box()
+            replication_timers.label(text="Replication timers", icon='TIME')
+            if settings.update_method == "DEFAULT":
+                replication_timers = replication_timers.row()
+                # Replication frequencies
+                flow = replication_timers.grid_flow(
+                    row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
                 line = flow.row(align=True)
-                line.prop(item, "auto_push", text="", icon=item.icon)
+                line.label(text=" ")
                 line.separator()
-                line.prop(item, "bl_delay_refresh", text="")
-                line.prop(item, "bl_delay_apply", text="")
-        else:
-            replication_timers = replication_timers.row()
-            replication_timers.label(text="Update rate (ms):")
-            replication_timers.prop(settings, "depsgraph_update_rate", text="")
+                line.label(text="refresh (sec)")
+                line.label(text="apply (sec)")
 
+                for item in settings.supported_datablocks:
+                    line = flow.row(align=True)
+                    line.prop(item, "auto_push", text="", icon=item.icon)
+                    line.separator()
+                    line.prop(item, "bl_delay_refresh", text="")
+                    line.prop(item, "bl_delay_apply", text="")
+            else:
+                replication_timers = replication_timers.row()
+                replication_timers.label(text="Update rate (ms):")
+                replication_timers.prop(settings, "depsgraph_update_rate", text="")
+        
+        log_section_row = layout.row().box()
+        log_section_row.prop(
+            settings,
+            "sidebar_advanced_log_expanded",
+            text="Logging",
+            icon=get_expanded_icon(settings.sidebar_advanced_log_expanded), 
+            emboss=False)
+
+        if settings.sidebar_advanced_log_expanded:
+            log_section_row.label(text="Logging level:")
+            log_section_row.prop(settings, 'logging_level', text="")
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
     bl_label = "Online users"
@@ -356,7 +384,7 @@ class SESSION_PT_user(bpy.types.Panel):
         layout = self.layout
         online_users = context.window_manager.online_users
         selected_user = context.window_manager.user_index
-        settings = utils.get_preferences()
+        settings = get_preferences()
         active_user = online_users[selected_user] if len(
             online_users)-1 >= selected_user else 0
         runtime_settings = context.window_manager.session
@@ -402,7 +430,7 @@ class SESSION_PT_user(bpy.types.Panel):
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         session = operators.client
-        settings = utils.get_preferences()
+        settings = get_preferences()
         is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
@@ -486,7 +514,7 @@ class SESSION_PT_services(bpy.types.Panel):
 
 
 def draw_property(context, parent, property_uuid, level=0):
-    settings = utils.get_preferences()
+    settings = get_preferences()
     runtime_settings = context.window_manager.session
     item = operators.client.get(uuid=property_uuid)
 
@@ -557,7 +585,7 @@ class SESSION_PT_repository(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         session = operators.client
-        settings = utils.get_preferences()
+        settings = get_preferences()
         admin = False
 
         if session and hasattr(session,'online_users'):
@@ -576,7 +604,7 @@ class SESSION_PT_repository(bpy.types.Panel):
         layout = self.layout
 
         # Filters
-        settings = utils.get_preferences()
+        settings = get_preferences()
         runtime_settings = context.window_manager.session
 
         session = operators.client

@@ -21,7 +21,8 @@ import bpy
 import string
 import re
 
-from . import utils, bl_types, environment, addon_updater_ops, presence, ui
+from . import bl_types, environment, addon_updater_ops, presence, ui
+from .utils import get_preferences, get_expanded_icon
 from replication.constants import RP_COMMON
 
 IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
@@ -46,6 +47,7 @@ def update_panel_category(self, context):
     ui.SESSION_PT_settings.bl_category = self.panel_category
     ui.register()
 
+
 def update_ip(self, context):
     ip = IP_EXPR.search(self.ip)
 
@@ -55,13 +57,24 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
+
 def update_port(self, context):
     max_port = self.port + 3
 
     if self.ipc_port < max_port and \
-        self['ipc_port'] >= self.port:
-        logging.error("IPC Port in conflic with the port, assigning a random value")
+            self['ipc_port'] >= self.port:
+        logging.error(
+            "IPC Port in conflic with the port, assigning a random value")
         self['ipc_port'] = random.randrange(self.port+4, 10000)
+
+
+def set_log_level(self, value):
+    logging.getLogger().setLevel(value)
+
+
+def get_log_level(self):
+    return logging.getLogger().level
+
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -134,7 +147,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description='replication update method',
         items=[
             ('DEFAULT', "Default", "Default: Use threads to monitor databloc changes"),
-            ('DEPSGRAPH', "Depsgraph", "Experimental: Use the blender dependency graph to trigger updates"),
+            ('DEPSGRAPH', "Depsgraph",
+             "Experimental: Use the blender dependency graph to trigger updates"),
         ],
     )
     # Replication update settings
@@ -158,17 +172,18 @@ class SessionPrefs(bpy.types.AddonPreferences):
         ],
         default='CONFIG'
     )
-    # WIP
     logging_level: bpy.props.EnumProperty(
         name="Log level",
         description="Log verbosity level",
         items=[
-            ('ERROR', "error", "show only errors"),
-            ('WARNING', "warning", "only show warnings and errors"),
-            ('INFO', "info", "default level"),
-            ('DEBUG', "debug", "show all logs"),
+            ('ERROR', "error", "show only errors",  logging.ERROR),
+            ('WARNING', "warning", "only show warnings and errors", logging.WARNING),
+            ('INFO', "info", "default level", logging.INFO),
+            ('DEBUG', "debug", "show all logs", logging.DEBUG),
         ],
-        default='INFO'
+        default='INFO',
+        set=set_log_level,
+        get=get_log_level
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
@@ -200,7 +215,21 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Interface",
         default=False
     )
-
+    sidebar_advanced_rep_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_rep_expanded",
+        description="sidebar_advanced_rep_expanded",
+        default=False
+    )
+    sidebar_advanced_log_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_log_expanded",
+        description="sidebar_advanced_log_expanded",
+        default=False
+    )
+    sidebar_advanced_net_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_net_expanded",
+        description="sidebar_advanced_net_expanded",
+        default=False
+    )
     auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
         description="If enabled, auto-check for updates using an interval",
@@ -252,8 +281,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_identity_expanded", text="User informations",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_identity_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_identity_expanded),
+                emboss=False)
             if self.conf_session_identity_expanded:
                 box.row().prop(self, "username", text="name")
                 box.row().prop(self, "client_color", text="color")
@@ -262,8 +291,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_net_expanded", text="Netorking",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_net_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_net_expanded),
+                emboss=False)
 
             if self.conf_session_net_expanded:
                 box.row().prop(self, "ip", text="Address")
@@ -280,8 +309,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 table = box.box()
                 table.row().prop(
                     self, "conf_session_timing_expanded", text="Refresh rates",
-                    icon='DISCLOSURE_TRI_DOWN' if self.conf_session_timing_expanded
-                    else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                    icon=get_expanded_icon(self.conf_session_timing_expanded),
+                    emboss=False)
 
                 if self.conf_session_timing_expanded:
                     line = table.row()
@@ -299,8 +328,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_hosting_expanded", text="Hosting",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_hosting_expanded),
+                emboss=False)
             if self.conf_session_hosting_expanded:
                 row = box.row()
                 row.label(text="Init the session from:")
@@ -310,8 +339,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_cache_expanded", text="Cache",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_cache_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_cache_expanded),
+                emboss=False)
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
 
@@ -319,7 +348,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_ui_expanded", text="Interface",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_ui_expanded else 'DISCLOSURE_TRI_RIGHT',
+                icon=get_expanded_icon(self.conf_session_ui_expanded),
                 emboss=False)
             if self.conf_session_ui_expanded:
                 box.row().prop(self, "panel_category", text="Panel category", expand=True)
@@ -353,7 +382,7 @@ def client_list_callback(scene, context):
 
     items = [(RP_COMMON, RP_COMMON, "")]
 
-    username = utils.get_preferences().username
+    username = get_preferences().username
     cli = operators.client
     if cli:
         client_ids = cli.online_users.keys()
