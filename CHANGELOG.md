@@ -72,9 +72,17 @@ All notable changes to this project will be documented in this file.
 - Dependency graph driven updates [experimental]
 - Optional Edit Mode update
 - Late join mechanism 
+- Sync Axis lock replication
+- Sync collection offset
+- Sync camera  orthographic scale
+- Logging basic configuration (file output and level)
 
 ### Changed
 
 - Auto updater now handle installation from branches
+- use uuid for collection loading
 
-### Removed
+### Fixed
+
+- Prevent unsuported datatypes to crash the session
+- Modifier vertex group assignation
