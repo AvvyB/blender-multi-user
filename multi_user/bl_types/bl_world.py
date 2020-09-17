@@ -30,6 +30,7 @@ class BlWorld(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = True
     bl_icon = 'WORLD_DATA'
 
     def _construct(self, data):

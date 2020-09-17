@@ -79,7 +79,8 @@ class BlCollection(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
-
+    bl_check_common = True
+    
     def _construct(self, data):
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):

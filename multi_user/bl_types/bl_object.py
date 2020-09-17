@@ -24,6 +24,7 @@ from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock
 from .dump_anything import Dumper, Loader
+from replication.exception import ReparentException
 
 
 def load_pose(target_bone, data):
@@ -45,6 +46,7 @@ class BlObject(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'OBJECT_DATA'
 
     def _construct(self, data):
@@ -96,6 +98,9 @@ class BlObject(BlDatablock):
 
     def _load_implementation(self, data, target):
         loader = Loader()
+        
+        if target.type != data['type']:
+            raise ReparentException()
 
         # vertex groups
         if 'vertex_groups' in data:
@@ -202,6 +207,7 @@ class BlObject(BlDatablock):
             'lock_location',
             'lock_rotation',
             'lock_scale',
+            'type',
             'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
 

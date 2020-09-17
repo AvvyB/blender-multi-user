@@ -18,6 +18,7 @@
 
 import bpy
 import mathutils
+import logging
 
 from .. import utils
 from .dump_anything import Loader, Dumper
@@ -95,6 +96,7 @@ class BlDatablock(ReplicatedDatablock):
         bl_delay_apply :    refresh rate in sec for apply
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
+        bl_check_common:    enable check even in common rights
     """
 
     def __init__(self, *args, **kwargs):
@@ -122,12 +124,23 @@ class BlDatablock(ReplicatedDatablock):
             try:
                 datablock_ref = datablock_root[self.data['name']]
             except Exception:
+                name = self.data.get('name')
+                logging.debug(f"Constructing {name}")
                 datablock_ref = self._construct(data=self.data)
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
 
         self.instance = datablock_ref
+
+    def remove_instance(self):
+        """
+        Remove instance from blender data
+        """
+        assert(self.instance)
+
+        datablock_root = getattr(bpy.data, self.bl_id)
+        datablock_root.remove(self.instance)
 
     def _dump(self, instance=None):
         dumper = Dumper()
@@ -189,6 +202,7 @@ class BlDatablock(ReplicatedDatablock):
         if not self.is_library:
             dependencies.extend(self._resolve_deps_implementation())
 
+        logging.debug(f"{self.instance.name} dependencies: {dependencies}")
         return dependencies
 
     def _resolve_deps_implementation(self):

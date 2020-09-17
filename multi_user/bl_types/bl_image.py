@@ -54,6 +54,7 @@ class BlImage(BlDatablock):
     bl_delay_refresh = 0
     bl_delay_apply = 1
     bl_automatic_push = False
+    bl_check_common = False
     bl_icon = 'IMAGE_DATA'
 
     def _construct(self, data):
