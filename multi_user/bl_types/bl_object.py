@@ -32,6 +32,42 @@ def load_pose(target_bone, data):
     loader = Loader()
     loader.load(target_bone, data)
 
+def find_data_from_name(name=None):
+    instance = None
+    if not name:
+            pass
+    elif name in bpy.data.meshes.keys():
+        instance = bpy.data.meshes[name]
+    elif name in bpy.data.lights.keys():
+        instance = bpy.data.lights[name]
+    elif name in bpy.data.cameras.keys():
+        instance = bpy.data.cameras[name]
+    elif name in bpy.data.curves.keys():
+        instance = bpy.data.curves[name]
+    elif name in bpy.data.metaballs.keys():
+        instance = bpy.data.metaballs[name]
+    elif name in bpy.data.armatures.keys():
+        instance = bpy.data.armatures[name]
+    elif name in bpy.data.grease_pencils.keys():
+        instance = bpy.data.grease_pencils[name]
+    elif name in bpy.data.curves.keys():
+        instance = bpy.data.curves[name]
+    elif name in bpy.data.lattices.keys():
+        instance = bpy.data.lattices[name]
+    elif name in bpy.data.speakers.keys():
+        instance = bpy.data.speakers[name]
+    elif name in bpy.data.lightprobes.keys():
+        # Only supported since 2.83
+        if bpy.app.version[1] >= 83:
+            instance = bpy.data.lightprobes[name]
+        else:
+            logging.warning(
+                "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+    return instance
+
+def load_data(object, name):
+    logging.info("loading data")
+    pass
 
 def _is_editmode(object: bpy.types.Object) -> bool:
     child_data = getattr(object, 'data', None)
@@ -62,36 +98,9 @@ class BlObject(BlDatablock):
             return instance
 
         # TODO: refactoring
-        if "data" not in data:
-            pass
-        elif data["data"] in bpy.data.meshes.keys():
-            instance = bpy.data.meshes[data["data"]]
-        elif data["data"] in bpy.data.lights.keys():
-            instance = bpy.data.lights[data["data"]]
-        elif data["data"] in bpy.data.cameras.keys():
-            instance = bpy.data.cameras[data["data"]]
-        elif data["data"] in bpy.data.curves.keys():
-            instance = bpy.data.curves[data["data"]]
-        elif data["data"] in bpy.data.metaballs.keys():
-            instance = bpy.data.metaballs[data["data"]]
-        elif data["data"] in bpy.data.armatures.keys():
-            instance = bpy.data.armatures[data["data"]]
-        elif data["data"] in bpy.data.grease_pencils.keys():
-            instance = bpy.data.grease_pencils[data["data"]]
-        elif data["data"] in bpy.data.curves.keys():
-            instance = bpy.data.curves[data["data"]]
-        elif data["data"] in bpy.data.lattices.keys():
-            instance = bpy.data.lattices[data["data"]]
-        elif data["data"] in bpy.data.speakers.keys():
-            instance = bpy.data.speakers[data["data"]]
-        elif data["data"] in bpy.data.lightprobes.keys():
-            # Only supported since 2.83
-            if bpy.app.version[1] >= 83:
-                instance = bpy.data.lightprobes[data["data"]]
-            else:
-                logging.warning(
-                    "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
-        instance = bpy.data.objects.new(data["name"], instance)
+        object_name = data.get("name")
+        object_data = find_data_from_name(data.get("data"))
+        instance = bpy.data.objects.new(object_name, object_data)
         instance.uuid = self.uuid
 
         return instance
@@ -101,6 +110,8 @@ class BlObject(BlDatablock):
         
         if target.type != data['type']:
             raise ReparentException()
+        elif target.data.name != data['data']:
+            target.data = find_data_from_name(data['data'])
 
         # vertex groups
         if 'vertex_groups' in data:
