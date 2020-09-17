@@ -78,6 +78,14 @@ def resolve_from_id(id, optionnal_type=None):
                 return root[id]
     return None
 
+def get_datablock_from_uuid(uuid, default):
+    for category in dir(bpy.data):
+        root = getattr(bpy.data, category)
+        if isinstance(root, Iterable):
+            for item in root:
+                if getattr(item, 'uuid', None) == uuid:
+                    return item 
+    return default
 
 def get_preferences():
     return bpy.context.preferences.addons[__package__].preferences
