@@ -78,10 +78,13 @@ def resolve_from_id(id, optionnal_type=None):
                 return root[id]
     return None
 
-def get_datablock_from_uuid(uuid, default):
+def get_datablock_from_uuid(uuid, default, ignore=[]):
+    if not uuid:
+        return default
+
     for category in dir(bpy.data):
         root = getattr(bpy.data, category)
-        if isinstance(root, Iterable):
+        if isinstance(root, Iterable) and category not in ignore:
             for item in root:
                 if getattr(item, 'uuid', None) == uuid:
                     return item 

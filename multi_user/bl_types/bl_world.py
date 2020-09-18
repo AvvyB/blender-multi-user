@@ -85,7 +85,7 @@ class BlWorld(BlDatablock):
 
         if self.instance.use_nodes:
             for node in self.instance.node_tree.nodes:
-                if node.type == 'TEX_IMAGE':
+                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT']:
                     deps.append(node.image)
         if self.is_library:
             deps.append(self.instance.library)

@@ -108,7 +108,8 @@ class BlObject(BlDatablock):
 
         object_data = get_datablock_from_uuid(
             data_uuid, 
-            find_data_from_name(data_id)) #TODO: use resolve_from_id
+            find_data_from_name(data_id),
+            ignore=['images']) #TODO: use resolve_from_id
         instance = bpy.data.objects.new(object_name, object_data)
         instance.uuid = self.uuid
 
@@ -122,8 +123,8 @@ class BlObject(BlDatablock):
 
         if target.type != data['type']:
             raise ReparentException()
-        elif target.data.name != data_id:
-            target.data = get_datablock_from_uuid(data_uuid, find_data_from_name(data_id))
+        elif target.data and (target.data.name != data_id):
+            target.data = get_datablock_from_uuid(data_uuid, find_data_from_name(data_id), ignore=['images'])
 
         # vertex groups
         if 'vertex_groups' in data:
@@ -190,10 +191,9 @@ class BlObject(BlDatablock):
 
         # TODO: find another way...
         if target.type == 'EMPTY':
-            img_key = data.get('data')
-
-            if target.data is None and img_key:
-                target.data = bpy.data.images.get(img_key, None)
+            img_uuid = data.get('data_uuid')
+            if target.data is None and img_uuid:
+                target.data = get_datablock_from_uuid(img_uuid, None)#bpy.data.images.get(img_key, None)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -235,7 +235,7 @@ class BlObject(BlDatablock):
         ]
 
         data = dumper.dump(instance)
-        data['data_uuid'] = instance.data.uuid
+        data['data_uuid'] = getattr(instance.data, 'uuid', None)
         if self.is_library:
             return data
 
