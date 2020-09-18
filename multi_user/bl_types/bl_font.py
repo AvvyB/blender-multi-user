@@ -20,6 +20,7 @@ import bpy
 import mathutils
 import os
 import logging
+import pathlib
 from .. import utils
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
@@ -38,7 +39,8 @@ class BlFont(BlDatablock):
             return bpy.data.fonts.load(data['filepath'])
         elif 'font_file' in data.keys():
             prefs = utils.get_preferences()
-            font_name = f"{self.uuid}.ttf"
+            ext = pathlib.Path(data['filepath']).suffix
+            font_name = f"{self.uuid}{ext}"
             font_path = os.path.join(prefs.cache_directory, font_name)
             
             os.makedirs(prefs.cache_directory, exist_ok=True)
