@@ -98,8 +98,6 @@ class BlImage(BlDatablock):
         image.source = 'FILE'
         image.filepath = img_path
         image.colorspace_settings.name = data["colorspace_settings"]["name"]
-        # Unload image from memory
-        del data['pixels']
 
         loader = Loader()
         loader.load(data, target)
