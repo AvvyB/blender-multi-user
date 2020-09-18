@@ -35,7 +35,7 @@ class BlFont(BlDatablock):
 
     def _construct(self, data):
         if data['filepath'] == '<builtin>':
-            return bpy.data.fonts[data['name']]
+            return bpy.data.fonts.load(data['filepath'])
         elif 'font_file' in data.keys():
             prefs = utils.get_preferences()
             font_name = f"{self.uuid}.ttf"
