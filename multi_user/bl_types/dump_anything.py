@@ -593,6 +593,8 @@ class Loader:
             instance.write(bpy.data.materials.get(dump))
         elif isinstance(rna_property_type, T.Collection):
             instance.write(bpy.data.collections.get(dump))
+        elif isinstance(rna_property_type, T.VectorFont):
+            instance.write(bpy.data.fonts.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))
