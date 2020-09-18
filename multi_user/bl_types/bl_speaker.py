@@ -49,6 +49,7 @@ class BlSpeaker(BlDatablock):
             'volume',
             'name',
             'pitch',
+            'sound',
             'volume_min',
             'volume_max',
             'attenuation',
@@ -61,6 +62,15 @@ class BlSpeaker(BlDatablock):
 
         return dumper.dump(instance)
 
-    
+    def _resolve_deps_implementation(self):
+        # TODO: resolve material
+        deps = []
+
+        sound = self.instance.sound
+
+        if sound:
+            deps.append(sound)
+
+        return deps
 
 
