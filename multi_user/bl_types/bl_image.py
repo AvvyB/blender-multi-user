@@ -44,30 +44,6 @@ format_to_ext = {
 }
 
 
-def dump_image(image):
-    pixels = None
-    if image.source == "GENERATED" or image.packed_file is not None:
-        prefs = utils.get_preferences()
-        img_name = f"{image.uuid}.{format_to_ext[image.file_format]}"
-
-        # Cache the image on the disk
-        image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
-        os.makedirs(prefs.cache_directory, exist_ok=True)
-        image.save()
-
-    if image.source == "FILE":
-        image_path = bpy.path.abspath(image.filepath_raw)
-        image_directory = os.path.dirname(image_path)
-        os.makedirs(image_directory, exist_ok=True)
-        image.save()
-        file = open(image_path, "rb")
-        pixels = file.read()
-        file.close()
-    else:
-        raise ValueError()
-    return pixels
-
-
 class BlImage(BlDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
@@ -76,6 +52,29 @@ class BlImage(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'IMAGE_DATA'
+
+    def dump_image(self, image):
+        pixels = None
+        if image.source == "GENERATED" or image.packed_file is not None:
+            prefs = utils.get_preferences()
+            img_name = f"{self.uuid}.{format_to_ext[image.file_format]}"
+
+            # Cache the image on the disk
+            image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
+            os.makedirs(prefs.cache_directory, exist_ok=True)
+            image.save()
+
+        if image.source == "FILE":
+            image_path = bpy.path.abspath(image.filepath_raw)
+            image_directory = os.path.dirname(image_path)
+            os.makedirs(image_directory, exist_ok=True)
+            image.save()
+            file = open(image_path, "rb")
+            pixels = file.read()
+            file.close()
+        else:
+            raise ValueError()
+        return pixels
 
     def _construct(self, data):
         return bpy.data.images.new(
@@ -108,7 +107,7 @@ class BlImage(BlDatablock):
     def _dump(self, instance=None):
         assert(instance)
         data = {}
-        data['pixels'] = dump_image(instance)
+        data['pixels'] = self.dump_image(instance)
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
