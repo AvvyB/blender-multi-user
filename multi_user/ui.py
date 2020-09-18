@@ -28,6 +28,7 @@ from replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_WAITING, STATE_QUITTING,
                                                      STATE_LOBBY,
                                                      STATE_LAUNCHING_SERVICES)
+from replication import __version__
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -106,7 +107,7 @@ class SESSION_PT_settings(bpy.types.Panel):
 
             layout.label(text=f"Session - {get_state_str(cli_state['STATE'])}", icon=connection_icon)
         else:
-            layout.label(text="Session",icon="PROP_OFF")
+            layout.label(text=f"Session - v{__version__}",icon="PROP_OFF")
 
     def draw(self, context):
         layout = self.layout
