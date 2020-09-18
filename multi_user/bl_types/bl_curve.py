@@ -62,6 +62,11 @@ class BlCurve(BlDatablock):
         loader = Loader()
         loader.load(target, data)
 
+        # if isinstance(curve, T.TextCurve):
+        #     curve.font = data['font']
+        #     curve.font_bold = data['font']
+        #     curve.font_bold_italic = data['font']
+        #     curve.font_italic = data['font']
         target.splines.clear()
         # load splines
         for spline in data['splines'].values():
@@ -84,6 +89,7 @@ class BlCurve(BlDatablock):
             #             new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
             loader.load(new_spline, spline)
+    
     def _dump_implementation(self, data, instance=None):
         assert(instance)
         dumper = Dumper()
@@ -119,3 +125,17 @@ class BlCurve(BlDatablock):
         elif isinstance(instance, T.Curve):
             data['type'] = 'CURVE'
         return data
+
+    def _resolve_deps_implementation(self):
+        # TODO: resolve material
+        deps = []
+        curve = self.instance
+
+        if isinstance(curve, T.TextCurve):
+            deps.extend([
+                curve.font,
+                curve.font_bold,
+                curve.font_bold_italic,
+                curve.font_italic])
+    
+        return deps

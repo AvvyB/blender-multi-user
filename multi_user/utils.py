@@ -57,11 +57,13 @@ def get_datablock_users(datablock):
 
 
 def clean_scene():
+    builtin = ['Bfont']
     for type_name in dir(bpy.data):
         try:
             type_collection = getattr(bpy.data, type_name)
             for item in type_collection:
-                type_collection.remove(item)
+                if item.name not in builtin:
+                    type_collection.remove(item)
         except:
             continue
 
