@@ -29,6 +29,7 @@ class BlSpeaker(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'SPEAKER'
 
     def _load_implementation(self, data, target):

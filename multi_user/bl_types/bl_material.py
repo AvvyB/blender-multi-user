@@ -21,7 +21,7 @@ import mathutils
 import logging
 import re
 
-from .. import utils
+from ..utils import get_datablock_from_uuid
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
@@ -39,6 +39,10 @@ def load_node(node_data, node_tree):
     target_node = node_tree.nodes.new(type=node_data["bl_idname"])
 
     loader.load(target_node, node_data)
+    image_uuid = node_data.get('image_uuid', None)
+
+    if image_uuid and not target_node.image:
+        target_node.image = get_datablock_from_uuid(image_uuid,None)
 
     for input in node_data["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
@@ -118,7 +122,8 @@ def dump_node(node):
         "show_preview",
         "show_texture",
         "outputs",
-        "width_hidden"
+        "width_hidden",
+        "image"
     ]
 
     dumped_node = node_dumper.dump(node)
@@ -153,7 +158,8 @@ def dump_node(node):
             'location'
         ]
         dumped_node['mapping'] = curve_dumper.dump(node.mapping)
-
+    if hasattr(node, 'image') and getattr(node, 'image'):
+        dumped_node['image_uuid'] = node.image.uuid
     return dumped_node
 
 
@@ -163,6 +169,7 @@ class BlMaterial(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'MATERIAL_DATA'
 
     def _construct(self, data):
@@ -260,7 +267,7 @@ class BlMaterial(BlDatablock):
 
         if self.instance.use_nodes:
             for node in self.instance.node_tree.nodes:
-                if node.type == 'TEX_IMAGE':
+                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT']:
                     deps.append(node.image)
         if self.is_library:
             deps.append(self.instance.library)

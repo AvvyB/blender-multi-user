@@ -111,7 +111,8 @@ class SessionStartOperator(bpy.types.Operator):
                 type_module_class.bl_class,
                 type_module_class,
                 timer=type_local_config.bl_delay_refresh*1000,
-                automatic=type_local_config.auto_push)
+                automatic=type_local_config.auto_push,
+                check_common=type_module_class.bl_check_common)
 
             if settings.update_method == 'DEFAULT':
                 if type_local_config.bl_delay_apply > 0:

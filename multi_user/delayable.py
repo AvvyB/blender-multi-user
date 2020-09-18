@@ -21,13 +21,15 @@ import bpy
 
 from . import operators, presence, utils
 from replication.constants import (FETCHED,
-                                                    RP_COMMON,
-                                                    STATE_INITIAL,
-                                                    STATE_QUITTING,
-                                                    STATE_ACTIVE,
-                                                    STATE_SYNCING,
-                                                    STATE_LOBBY,
-                                                    STATE_SRV_SYNC)
+                                   UP,
+                                   RP_COMMON,
+                                   STATE_INITIAL,
+                                   STATE_QUITTING,
+                                   STATE_ACTIVE,
+                                   STATE_SYNCING,
+                                   STATE_LOBBY,
+                                   STATE_SRV_SYNC,
+                                   REPARENT)
 
 
 class Delayable():
@@ -85,8 +87,8 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        client =  operators.client
-        if client and  client.state['STATE'] == STATE_ACTIVE:
+        client = operators.client
+        if client and client.state['STATE'] == STATE_ACTIVE:
             if self._type:
                 nodes = client.list(filter=self._type)
             else:
@@ -100,6 +102,16 @@ class ApplyTimer(Timer):
                         client.apply(node, force=True)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
+                elif node_ref.state == REPARENT:
+                    # Reload the node
+                    node_ref.remove_instance()
+                    node_ref.resolve()
+                    client.apply(node, force=True)
+                    for parent in client._graph.find_parents(node):
+                        logging.info(f"Applying parent {parent}")
+                        client.apply(parent, force=True)
+                    node_ref.state = UP
+
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=.1):
@@ -253,14 +265,16 @@ class ClientUpdate(Timer):
 
         if session and renderer:
             if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
-                local_user =  operators.client.online_users.get(settings.username)
+                local_user = operators.client.online_users.get(
+                    settings.username)
 
                 if not local_user:
                     return
                 else:
                     for username, user_data in operators.client.online_users.items():
                         if username != settings.username:
-                            cached_user_data = self.users_metadata.get(username)
+                            cached_user_data = self.users_metadata.get(
+                                username)
                             new_user_data = operators.client.online_users[username]['metadata']
 
                             if cached_user_data is None:
@@ -274,7 +288,7 @@ class ClientUpdate(Timer):
 
                 local_user_metadata = local_user.get('metadata')
                 scene_current = bpy.context.scene.name
-                local_user =  session.online_users.get(settings.username)
+                local_user = session.online_users.get(settings.username)
                 current_view_corners = presence.get_view_corners()
 
                 # Init client metadata
@@ -283,9 +297,9 @@ class ClientUpdate(Timer):
                         'view_corners': presence.get_view_matrix(),
                         'view_matrix': presence.get_view_matrix(),
                         'color': (settings.client_color.r,
-                                settings.client_color.g,
-                                settings.client_color.b,
-                                1),
+                                  settings.client_color.g,
+                                  settings.client_color.b,
+                                  1),
                         'frame_current': bpy.context.scene.frame_current,
                         'scene_current': scene_current
                     }
@@ -298,8 +312,10 @@ class ClientUpdate(Timer):
                     session.update_user_metadata(local_user_metadata)
                 elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
-                    local_user_metadata['view_matrix'] = presence.get_view_matrix()
+                    local_user_metadata['view_matrix'] = presence.get_view_matrix(
+                    )
                     session.update_user_metadata(local_user_metadata)
+
 
 class SessionStatusUpdate(Timer):
     def __init__(self, timout=1):
@@ -307,6 +323,7 @@ class SessionStatusUpdate(Timer):
 
     def execute(self):
         presence.refresh_sidebar_view()
+
 
 class SessionUserSync(Timer):
     def __init__(self, timout=1):

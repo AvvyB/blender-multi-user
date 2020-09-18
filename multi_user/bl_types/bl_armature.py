@@ -31,6 +31,7 @@ class BlArmature(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 0
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'ARMATURE_DATA'
     
     def _construct(self, data):
