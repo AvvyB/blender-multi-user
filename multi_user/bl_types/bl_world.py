@@ -56,19 +56,14 @@ class BlWorld(BlDatablock):
         assert(instance)
 
         world_dumper = Dumper()
-        world_dumper.depth = 2
-        world_dumper.exclude_filter = [
-            "preview",
-            "original",
-            "uuid",
-            "color",
-            "cycles",
-            "light_settings",
-            "users",
-            "view_center"
+        world_dumper.depth = 1
+        world_dumper.include_filter = [
+            "use_nodes",
+            "name",
         ]
         data = world_dumper.dump(instance)
         if instance.use_nodes:
+            data['node_tree'] = {}
             nodes = {}
 
             for node in instance.node_tree.nodes:
