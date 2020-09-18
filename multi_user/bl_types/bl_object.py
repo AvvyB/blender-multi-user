@@ -210,7 +210,7 @@ class BlObject(BlDatablock):
             "name",
             "rotation_mode",
             "parent",
-            "data"
+            "data",
             "children",
             "library",
             "empty_display_type",
