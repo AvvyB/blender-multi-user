@@ -61,6 +61,7 @@ class BlSound(BlDatablock):
             # sound_path = os.path.join(prefs.cache_directory, sound_name)
             # instance.filepath = sound_path
             instance.pack()
+            #TODO:use file locally with unpack(method='USE_ORIGINAL') ?
 
         return {
             'filepath':instance.filepath,
