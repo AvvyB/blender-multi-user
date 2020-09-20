@@ -21,9 +21,7 @@ import os
 from pathlib import Path
 
 import bpy
-import mathutils
 
-from .. import utils
 from .bl_datablock import BlDatablock
 from .bl_file import get_filepath
 from .dump_anything import Dumper, Loader
@@ -43,13 +41,11 @@ class BlFont(BlDatablock):
             return bpy.data.fonts.load(data['filepath'])
         else:
             filename = Path(data['filepath']).name
-
-            logging.info(f'loading {filename}')
-
             return bpy.data.fonts.load(get_filepath(filename))
 
     def _load(self, data, target):
-        pass
+        loader = Loader()
+        loader.load(target, data)
 
     def _dump(self, instance=None):
         return {

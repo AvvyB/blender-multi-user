@@ -44,7 +44,7 @@ class BlFile(ReplicatedDatablock):
     bl_id = 'file'
     bl_name = "file"
     bl_class = Path
-    bl_delay_refresh = 1
+    bl_delay_refresh = 0
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = False
@@ -56,7 +56,6 @@ class BlFile(ReplicatedDatablock):
         # TODO: handle packed_file
         # TODO: ensure absolute path
         # TODO: ensure file exist
-        logging.info(self.instance)
 
         self.preferences = utils.get_preferences()
         self.diff_method = DIFF_BINARY
@@ -105,18 +104,20 @@ class BlFile(ReplicatedDatablock):
         """
         logging.info(f"Writing {data['name']} to {target}")
 
-        # TODO: check fiile already exist
         # TODO: check for empty data
-        if target.exists() and (sys.getsizeof(data['file']) == self.instance.stat().st_size):
+
+        if target.exists() and not self.diff():
             logging.info("File already loaded, skipping.")
             return
         try:
             file = open(target, "wb")
-            file.write(data['file'])
+            file.write()
         except IOError:
             logging.warning(f"{target} doesn't exist, skipping")
         else:
             file.close()
 
     def diff(self):
-        return False
+        memory_size = sys.getsizeof(self.data['file'])-33
+        disk_size = self.instance.stat().st_size
+        return memory_size == disk_size

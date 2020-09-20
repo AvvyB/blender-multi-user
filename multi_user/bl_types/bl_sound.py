@@ -16,14 +16,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
-import mathutils
-import os
 import logging
-import pathlib
-from .. import utils
-from .dump_anything import Loader, Dumper
+import os
+from pathlib import Path
+
+import bpy
+
+from .bl_file import get_filepath
 from .bl_datablock import BlDatablock
+from .dump_anything import Dumper, Loader
+
 
 class BlSound(BlDatablock):
     bl_id = "sounds"
@@ -35,40 +37,25 @@ class BlSound(BlDatablock):
     bl_icon = 'SOUND'
 
     def _construct(self, data):
-        if 'file' in data.keys():
-            prefs = utils.get_preferences()
-            ext = data['filepath'].split(".")[-1]
-            sound_name = f"{self.uuid}.{ext}"
-            sound_path = os.path.join(prefs.cache_directory, sound_name)
-            
-            os.makedirs(prefs.cache_directory, exist_ok=True)
-            file = open(sound_path, 'wb')
-            file.write(data["file"])
-            file.close()
-
-            logging.info(f'loading {sound_path}')
-            return bpy.data.sounds.load(sound_path)
+        filename = Path(data['filepath']).name
+        return bpy.data.sounds.load(get_filepath(filename))
 
     def _load(self, data, target):
         loader = Loader()
         loader.load(target, data)
 
-    def _dump(self, instance=None):
-        if not instance.packed_file:
-            # prefs = utils.get_preferences()
-            # ext = pathlib.Path(instance.filepath).suffix
-            # sound_name = f"{self.uuid}{ext}"
-            # sound_path = os.path.join(prefs.cache_directory, sound_name)
-            # instance.filepath = sound_path
-            instance.pack()
-            #TODO:use file locally with unpack(method='USE_ORIGINAL') ?
-
-        return {
-            'filepath':instance.filepath,
-            'name':instance.name,
-            'file': instance.packed_file.data
-        }
-
-
     def diff(self):
         return False
+
+    def _dump(self, instance=None):
+        return {
+            'filepath': instance.filepath,
+            'name': instance.name
+        }
+
+    def _resolve_deps_implementation(self):
+        deps = []
+        if self.instance.filepath and self.instance.filepath != '<builtin>':
+            deps.append(Path(self.instance.filepath))
+
+        return deps
