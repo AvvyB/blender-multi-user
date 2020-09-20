@@ -16,13 +16,17 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import logging
+import os
+from pathlib import Path
+
 import bpy
 import mathutils
-import os
-import logging
+
 from .. import utils
-from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
+from .dump_anything import Dumper, Loader
+from .bl_file import get_filepath
 
 format_to_ext = {
     'BMP': 'bmp',
@@ -53,29 +57,6 @@ class BlImage(BlDatablock):
     bl_check_common = False
     bl_icon = 'IMAGE_DATA'
 
-    def dump_image(self, image):
-        pixels = None
-        if image.source == "GENERATED" or image.packed_file is not None:
-            prefs = utils.get_preferences()
-            img_name = f"{self.uuid}.{format_to_ext[image.file_format]}"
-
-            # Cache the image on the disk
-            image.filepath_raw = os.path.join(prefs.cache_directory, img_name)
-            os.makedirs(prefs.cache_directory, exist_ok=True)
-            image.save()
-
-        if image.source == "FILE":
-            image_path = bpy.path.abspath(image.filepath_raw)
-            image_directory = os.path.dirname(image_path)
-            os.makedirs(image_directory, exist_ok=True)
-            image.save()
-            file = open(image_path, "rb")
-            pixels = file.read()
-            file.close()
-        else:
-            raise ValueError()
-        return pixels
-
     def _construct(self, data):
         return bpy.data.images.new(
             name=data['name'],
@@ -84,28 +65,27 @@ class BlImage(BlDatablock):
         )
 
     def _load(self, data, target):
-        image = target
-        prefs = utils.get_preferences()
-        img_format = data['file_format']
-        img_name = f"{self.uuid}.{format_to_ext[img_format]}"
-
-        img_path = os.path.join(prefs.cache_directory, img_name)
-        os.makedirs(prefs.cache_directory, exist_ok=True)
-        file = open(img_path, 'wb')
-        file.write(data["pixels"])
-        file.close()
-
-        image.source = 'FILE'
-        image.filepath = img_path
-        image.colorspace_settings.name = data["colorspace_settings"]["name"]
+        target.source = 'FILE'
+        target.filepath_raw = get_filepath(data['filename'])
+        target.colorspace_settings.name = data["colorspace_settings"]["name"]
 
         loader = Loader()
         loader.load(data, target)
 
     def _dump(self, instance=None):
         assert(instance)
-        data = {}
-        data['pixels'] = self.dump_image(instance)
+
+        filename = Path(instance.filepath).name
+
+        # Cache the image on the disk
+        if instance.source == "GENERATED" or instance.packed_file is not None:
+            instance.filepath = get_filepath(filename)
+            instance.save()
+
+        data = {
+            "filename": filename
+        }
+
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
@@ -114,13 +94,9 @@ class BlImage(BlDatablock):
             'height',
             'alpha',
             'float_buffer',
-            'file_format',
             'alpha_mode',
-            'filepath',
-            'source',
             'colorspace_settings']
         data.update(dumper.dump(instance))
-
         return data
 
     def diff(self):
@@ -128,3 +104,10 @@ class BlImage(BlDatablock):
             return True
         else:
             return False
+
+    def _resolve_deps_implementation(self):
+        deps = []
+        if self.instance.filepath:
+            deps.append(Path(self.instance.filepath))
+
+        return deps
