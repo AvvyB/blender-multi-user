@@ -19,7 +19,7 @@
 import bpy
 
 from . import operators
-from .utils import get_preferences, get_expanded_icon
+from .utils import get_preferences, get_expanded_icon, get_folder_size
 from replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP,
                                                      STATE_ACTIVE, STATE_AUTH,
@@ -371,7 +371,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             cache_section_row = cache_section.row()
             cache_section_row.label(text="Clear memory filecache:")
             cache_section_row.prop(settings, "clear_memory_filecache", text="")
-
+            cache_section_row = cache_section.row()
+            cache_section_row.operator('session.clear_cache', text=f"Clear cache ({get_folder_size(settings.cache_directory)})")
         log_section = layout.row().box()
         log_section.prop(
             settings,

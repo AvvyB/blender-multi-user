@@ -63,16 +63,10 @@ class BlFile(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance = kwargs.get('instance', None)
-        # TODO: ensure absolute path
-        # TODO: ensure file exist
-
         self.preferences = utils.get_preferences()
         self.diff_method = DIFF_BINARY
 
     def resolve(self):
-        # TODO: generic check
-        os.makedirs(self.preferences.cache_directory, exist_ok=True)
-
         if self.data:
             self.instance = Path(get_filepath(self.data['name']))
 
