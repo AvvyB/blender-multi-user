@@ -26,7 +26,7 @@ import mathutils
 from .. import utils
 from .bl_datablock import BlDatablock
 from .dump_anything import Dumper, Loader
-from .bl_file import get_filepath
+from .bl_file import get_filepath, ensure_unpacked
 
 format_to_ext = {
     'BMP': 'bmp',
@@ -65,22 +65,18 @@ class BlImage(BlDatablock):
         )
 
     def _load(self, data, target):
+        loader = Loader()
+        loader.load(data, target)
+
         target.source = 'FILE'
         target.filepath_raw = get_filepath(data['filename'])
         target.colorspace_settings.name = data["colorspace_settings"]["name"]
-
-        loader = Loader()
-        loader.load(data, target)
+       
 
     def _dump(self, instance=None):
         assert(instance)
 
         filename = Path(instance.filepath).name
-
-        # Cache the image on the disk
-        if instance.source == "GENERATED" or instance.packed_file is not None:
-            instance.filepath = get_filepath(filename)
-            instance.save()
 
         data = {
             "filename": filename
@@ -108,6 +104,20 @@ class BlImage(BlDatablock):
     def _resolve_deps_implementation(self):
         deps = []
         if self.instance.filepath:
+
+            if self.instance.packed_file:
+                filename = Path(bpy.path.abspath(self.instance.filepath)).name
+                self.instance.filepath = get_filepath(filename)
+                self.instance.save()
+                # An image can't be unpacked to the modified path
+                # TODO: make a bug report
+                self.instance.unpack(method="REMOVE")
+
+            elif self.instance.source == "GENERATED":
+                filename = f"{self.instance.name}.png"
+                self.instance.filepath = get_filepath(filename)
+                self.instance.save()
+
             deps.append(Path(self.instance.filepath))
 
         return deps

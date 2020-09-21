@@ -22,7 +22,7 @@ from pathlib import Path
 
 import bpy
 
-from .bl_file import get_filepath
+from .bl_file import get_filepath, ensure_unpacked
 from .bl_datablock import BlDatablock
 from .dump_anything import Dumper, Loader
 
@@ -56,6 +56,8 @@ class BlSound(BlDatablock):
     def _resolve_deps_implementation(self):
         deps = []
         if self.instance.filepath and self.instance.filepath != '<builtin>':
+            ensure_unpacked(self.instance)
+            
             deps.append(Path(self.instance.filepath))
 
         return deps

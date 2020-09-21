@@ -162,6 +162,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Enable objects update in edit mode (! Impact performances !)",
         default=False
     )
+    clear_memory_filecache: bpy.props.BoolProperty(
+        name="Clear memory filecache",
+        description="Remove filecache from memory",
+        default=False
+    )
     # for UI
     category: bpy.props.EnumProperty(
         name="Category",
@@ -230,6 +235,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="sidebar_advanced_net_expanded",
         default=False
     )
+    sidebar_advanced_cache_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_cache_expanded",
+        description="sidebar_advanced_cache_expanded",
+        default=False
+    )
+
     auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
         description="If enabled, auto-check for updates using an interval",
@@ -343,6 +354,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 emboss=False)
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
+                box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
 
             # INTERFACE SETTINGS
             box = grid.box()

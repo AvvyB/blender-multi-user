@@ -34,10 +34,20 @@ def get_filepath(filename):
     """
     Construct the local filepath 
     """
-    return os.path.join(
+    return str(Path(
         utils.get_preferences().cache_directory,
         filename
-    )
+    ))
+
+
+def ensure_unpacked(datablock):
+    if datablock.packed_file:
+        logging.info(f"Unpacking {datablock.name}")
+
+        filename = Path(bpy.path.abspath(datablock.filepath)).name
+        datablock.filepath = get_filepath(filename)
+
+        datablock.unpack(method="WRITE_ORIGINAL")
 
 
 class BlFile(ReplicatedDatablock):
@@ -53,7 +63,6 @@ class BlFile(ReplicatedDatablock):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance = kwargs.get('instance', None)
-        # TODO: handle packed_file
         # TODO: ensure absolute path
         # TODO: ensure file exist
 
@@ -62,11 +71,16 @@ class BlFile(ReplicatedDatablock):
 
     def resolve(self):
         # TODO: generic check
-        # Ensure local cache directory
         os.makedirs(self.preferences.cache_directory, exist_ok=True)
 
         if self.data:
             self.instance = Path(get_filepath(self.data['name']))
+
+    def push(self, socket, identity=None):
+        super().push(socket, identity=None)
+        
+        if self.preferences.clear_memory_filecache:
+                del self.data['file']
 
     def _dump(self, instance=None):
         """
@@ -102,16 +116,17 @@ class BlFile(ReplicatedDatablock):
         """
         Writing the file
         """
-        logging.info(f"Writing {data['name']} to {target}")
-
         # TODO: check for empty data
 
         if target.exists() and not self.diff():
-            logging.info("File already loaded, skipping.")
+            logging.info(f"{data['name']} already on the disk, skipping.")
             return
         try:
             file = open(target, "wb")
-            file.write()
+            file.write(data['file'])
+            
+            if self.preferences.clear_memory_filecache:
+                del self.data['file']
         except IOError:
             logging.warning(f"{target} doesn't exist, skipping")
         else:
