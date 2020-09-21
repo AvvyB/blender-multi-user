@@ -355,6 +355,26 @@ Replication
 - **Refresh**: pushed data update rate (in second)
 - **Apply**: pulled data update rate (in second)
 
+-----
+Cache
+-----
+
+The multi-user allows to replicate external blend dependencies such as images, movies sounds. 
+On each client, those files are stored into the cache folder.
+
+.. figure:: img/quickstart_advanced_cache.png
+   :align: center
+
+   Advanced cache settings
+
+**cache_directory** allows to choose where cached files (images, sound, movies) will be saved.
+
+**Clear memory filecache** will save memory space at runtime by removing the file content from memory as soon as it have been written to the disk.
+
+**Clear cache** will remove all file from the cache folder. 
+
+.. warning:: Clear cash could break your scene image/movie/sound if they are used into the blend ! 
+
 ---
 Log
 ---
