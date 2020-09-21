@@ -139,11 +139,11 @@ class SessionStartOperator(bpy.types.Operator):
 
             runtime_settings.is_host = True
             runtime_settings.internet_ip = environment.get_ip()
-
-            for scene in bpy.data.scenes:
-                client.add(scene)
-
+            
             try:
+                for scene in bpy.data.scenes:
+                    client.add(scene)
+
                 client.host(
                     id=settings.username,
                     port=settings.port,
