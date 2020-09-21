@@ -27,6 +27,8 @@ from operator import itemgetter
 from pathlib import Path
 from subprocess import PIPE, Popen, TimeoutExpired
 import zmq
+import shutil
+from pathlib import Path
 
 import bpy
 import mathutils
@@ -608,6 +610,34 @@ class ApplyArmatureOperator(bpy.types.Operator):
         stop_modal_executor = False
 
 
+class ClearCache(bpy.types.Operator):
+    "Clear local session cache"
+    bl_idname = "session.clear_cache"
+    bl_label = "Modal Executor Operator"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        cache_dir =  utils.get_preferences().cache_directory
+        try:
+            for root, dirs, files in os.walk(cache_dir):
+                for name in files:
+                    Path(root, name).unlink()
+
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to remove local cache ? ")
+
 classes = (
     SessionStartOperator,
     SessionStopOperator,
@@ -620,7 +650,7 @@ classes = (
     ApplyArmatureOperator,
     SessionKickOperator,
     SessionInitOperator,
-
+    ClearCache,
 )
 
 

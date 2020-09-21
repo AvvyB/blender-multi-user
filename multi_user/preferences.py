@@ -20,6 +20,9 @@ import logging
 import bpy
 import string
 import re
+import os
+
+from pathlib import Path
 
 from . import bl_types, environment, addon_updater_ops, presence, ui
 from .utils import get_preferences, get_expanded_icon
@@ -66,6 +69,16 @@ def update_port(self, context):
         logging.error(
             "IPC Port in conflic with the port, assigning a random value")
         self['ipc_port'] = random.randrange(self.port+4, 10000)
+
+
+def update_directory(self, context):
+    new_dir = Path(self.cache_directory)
+    if new_dir.exists() and any(Path(self.cache_directory).iterdir()):
+        logging.error("The folder is not empty, choose another one.")
+        self['cache_directory'] = environment.DEFAULT_CACHE_DIR
+    elif not new_dir.exists():
+        logging.info("Target cache folder doesn't exist, creating it.")
+        os.makedirs(self.cache_directory, exist_ok=True)
 
 
 def set_log_level(self, value):
@@ -136,7 +149,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
-        default=environment.DEFAULT_CACHE_DIR)
+        default=environment.DEFAULT_CACHE_DIR,
+        update=update_directory)
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
         description='connection timeout before disconnection',
@@ -160,6 +174,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
     enable_editmode_updates: bpy.props.BoolProperty(
         name="Edit mode updates",
         description="Enable objects update in edit mode (! Impact performances !)",
+        default=False
+    )
+    clear_memory_filecache: bpy.props.BoolProperty(
+        name="Clear memory filecache",
+        description="Remove filecache from memory",
         default=False
     )
     # for UI
@@ -230,6 +249,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="sidebar_advanced_net_expanded",
         default=False
     )
+    sidebar_advanced_cache_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_cache_expanded",
+        description="sidebar_advanced_cache_expanded",
+        default=False
+    )
+
     auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
         description="If enabled, auto-check for updates using an interval",
@@ -343,6 +368,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 emboss=False)
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
+                box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
 
             # INTERFACE SETTINGS
             box = grid.box()

@@ -16,14 +16,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
-import mathutils
-import os
 import logging
-import pathlib
-from .. import utils
-from .dump_anything import Loader, Dumper
+import os
+from pathlib import Path
+
+import bpy
+
 from .bl_datablock import BlDatablock
+from .bl_file import get_filepath, ensure_unpacked
+from .dump_anything import Dumper, Loader
+
 
 class BlFont(BlDatablock):
     bl_id = "fonts"
@@ -37,33 +39,28 @@ class BlFont(BlDatablock):
     def _construct(self, data):
         if data['filepath'] == '<builtin>':
             return bpy.data.fonts.load(data['filepath'])
-        elif 'font_file' in data.keys():
-            prefs = utils.get_preferences()
-            ext = pathlib.Path(data['filepath']).suffix
-            font_name = f"{self.uuid}{ext}"
-            font_path = os.path.join(prefs.cache_directory, font_name)
-            
-            os.makedirs(prefs.cache_directory, exist_ok=True)
-            file = open(font_path, 'wb')
-            file.write(data["font_file"])
-            file.close()
-
-            logging.info(f'loading {font_path}')
-            return bpy.data.fonts.load(font_path)
+        else:
+            filename = Path(data['filepath']).name
+            return bpy.data.fonts.load(get_filepath(filename))
 
     def _load(self, data, target):
-        pass
+        loader = Loader()
+        loader.load(target, data)
 
     def _dump(self, instance=None):
-        data = {
-            'filepath':instance.filepath,
-            'name':instance.name
+        return {
+            'filepath': instance.filepath,
+            'name': instance.name
         }
-        if instance.filepath != '<builtin>' and not instance.is_embedded_data:            
-            file = open(instance.filepath, "rb")
-            data['font_file'] = file.read()
-            file.close()
-        return data
 
     def diff(self):
         return False
+
+    def _resolve_deps_implementation(self):
+        deps = []
+        if self.instance.filepath and self.instance.filepath != '<builtin>':
+            ensure_unpacked(self.instance)
+            
+            deps.append(Path(self.instance.filepath))
+
+        return deps
