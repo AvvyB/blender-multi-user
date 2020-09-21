@@ -49,7 +49,7 @@ def get_datablock_users(datablock):
     if hasattr(datablock, 'users_group') and datablock.users_scene:
         users.extend(list(datablock.users_scene))
     for datatype in supported_types:
-        if datatype.bl_name != 'users':
+        if datatype.bl_name != 'users' and hasattr(bpy.data, datatype.bl_name):
             root = getattr(bpy.data, datatype.bl_name)
             for item in root:
                 if hasattr(item, 'data') and datablock == item.data or \
