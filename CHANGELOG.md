@@ -76,6 +76,7 @@ All notable changes to this project will be documented in this file.
 - Sync collection offset
 - Sync camera  orthographic scale
 - Logging basic configuration (file output and level)
+- Object visibility type replication
 
 ### Changed
 

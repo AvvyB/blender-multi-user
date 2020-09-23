@@ -114,7 +114,9 @@ class BlScene(BlDatablock):
                 'preview_samples',
                 'sample_clamp_indirect',
                 'samples',
-                'volume_bounces'
+                'volume_bounces',
+                'file_extension',
+                'use_denoising'
             ]
             data['eevee'] = scene_dumper.dump(instance.eevee)
             data['cycles'] = scene_dumper.dump(instance.cycles)        

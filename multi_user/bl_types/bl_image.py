@@ -118,6 +118,6 @@ class BlImage(BlDatablock):
                 self.instance.filepath = get_filepath(filename)
                 self.instance.save()
 
-            deps.append(Path(self.instance.filepath))
+            deps.append(Path(bpy.path.abspath(self.instance.filepath)))
 
         return deps

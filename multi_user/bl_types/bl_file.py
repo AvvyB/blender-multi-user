@@ -74,6 +74,10 @@ class BlFile(ReplicatedDatablock):
         if self.data:
             self.instance = Path(get_filepath(self.data['name']))
 
+            if not self.instance.exists():
+                logging.debug("File don't exist, loading it.")
+                self._load(self.data, self.instance)
+
     def push(self, socket, identity=None):
         super().push(socket, identity=None)
         

@@ -61,6 +61,6 @@ class BlFont(BlDatablock):
         if self.instance.filepath and self.instance.filepath != '<builtin>':
             ensure_unpacked(self.instance)
             
-            deps.append(Path(self.instance.filepath))
+            deps.append(Path(bpy.path.abspath(self.instance.filepath)))
 
         return deps
