@@ -232,6 +232,7 @@ class BlObject(BlDatablock):
             'lock_location',
             'lock_rotation',
             'lock_scale',
+            'hide_render',
             'display_type',
             'display_bounds_type',
             'show_bounds',
