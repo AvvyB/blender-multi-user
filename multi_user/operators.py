@@ -72,20 +72,20 @@ class SessionStartOperator(bpy.types.Operator):
         use_extern_update = settings.update_method == 'DEPSGRAPH'
         users.clear()
         delayables.clear()
-        
+
         logger = logging.getLogger()
-        if len(logger.handlers)==1: 
+        if len(logger.handlers) == 1:
             formatter = logging.Formatter(
                 fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
                 datefmt='%H:%M:%S'
             )
-            
+
             log_directory = os.path.join(
                 settings.cache_directory,
                 "multiuser_client.log")
 
             os.makedirs(settings.cache_directory, exist_ok=True)
-            
+
             handler = logging.FileHandler(log_directory, mode='w')
             logger.addHandler(handler)
 
@@ -106,7 +106,11 @@ class SessionStartOperator(bpy.types.Operator):
 
             supported_bl_types.append(type_module_class.bl_id)
 
-            # Retreive local replicated types settings
+            if type_impl_name not in settings.supported_datablocks:
+                logging.info(f"{type_impl_name} not found, \
+                             regenerate type settings...")
+                settings.generate_supported_types()
+
             type_local_config = settings.supported_datablocks[type_impl_name]
 
             bpy_factory.register_type(
@@ -139,7 +143,7 @@ class SessionStartOperator(bpy.types.Operator):
 
             runtime_settings.is_host = True
             runtime_settings.internet_ip = environment.get_ip()
-            
+
             try:
                 for scene in bpy.data.scenes:
                     client.add(scene)
@@ -620,7 +624,7 @@ class ClearCache(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        cache_dir =  utils.get_preferences().cache_directory
+        cache_dir = utils.get_preferences().cache_directory
         try:
             for root, dirs, files in os.walk(cache_dir):
                 for name in files:
@@ -637,6 +641,7 @@ class ClearCache(bpy.types.Operator):
     def draw(self, context):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
+
 
 classes = (
     SessionStartOperator,
