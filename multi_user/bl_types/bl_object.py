@@ -161,6 +161,8 @@ class BlObject(BlDatablock):
         # Load transformation data
         loader.load(target, data)
 
+        loader.load(target.display, data['display'])
+
         # Pose
         if 'pose' in data:
             if not target.pose:
@@ -231,11 +233,25 @@ class BlObject(BlDatablock):
             'lock_rotation',
             'lock_scale',
             'display_type',
+            'display_bounds_type',
+            'show_bounds',
+            'show_name',
+            'show_axis',
+            'show_wire',
+            'show_all_edges',
+            'show_texture_space',
+            'show_in_front',
             'type',
             'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
 
         data = dumper.dump(instance)
+
+        dumper.include_filter = [
+            'show_shadows',
+        ]
+        data['display'] = dumper.dump(instance.display)
+
         data['data_uuid'] = getattr(instance.data, 'uuid', None)
         if self.is_library:
             return data
