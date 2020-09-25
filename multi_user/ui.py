@@ -122,61 +122,31 @@ class SESSION_PT_settings(bpy.types.Panel):
                or (operators.client and operators.client.state['STATE'] == STATE_INITIAL):
                 pass
             else:
-                cli_state = operators.client.state
-
-                
+                cli_state = operators.client.state                
                 row = layout.row()
 
                 current_state = cli_state['STATE']
-
-                # STATE ACTIVE
-                if current_state in [STATE_ACTIVE]:
-                    row.operator("session.stop", icon='QUIT', text="Exit")
-                    row = layout.row()
-                    if runtime_settings.is_host:
-                        row = row.box()
-                        row.label(text=f"LAN: {runtime_settings.internet_ip}", icon='INFO')
-                        row = layout.row()
+                info_msg = None
+    
+                if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
+                    info_msg = f"LAN: {runtime_settings.internet_ip}" 
                 if current_state == STATE_LOBBY:
-                    row = row.box()
-                    row.label(text=f"Waiting the session to start", icon='INFO')
-                    row = layout.row()
-                    row.operator("session.stop", icon='QUIT', text="Exit")
-                # CONNECTION STATE
-                elif current_state in [STATE_SRV_SYNC,
-                                       STATE_SYNCING,
-                                       STATE_AUTH,
-                                       STATE_CONFIG,
-                                       STATE_WAITING]:
+                    info_msg = "Waiting the session to start."
 
-                    if cli_state['STATE'] in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
-                        box = row.box()
-                        box.label(text=printProgressBar(
-                            cli_state['CURRENT'],
-                            cli_state['TOTAL'],
-                            length=16
-                        ))
+                if info_msg:
+                    info_box = row.box()
+                    info_box.row().label(text=info_msg,icon='INFO')
 
-                    row = layout.row()
-                    row.operator("session.stop", icon='QUIT', text="CANCEL")
-                elif current_state == STATE_QUITTING:
-                    row = layout.row()
-                    box = row.box()
-
-                    num_online_services = 0
-                    for name, state in operators.client.services_state.items():
-                        if state == STATE_ACTIVE:
-                            num_online_services += 1
-
-                    total_online_services = len(
-                        operators.client.services_state)
-
-                    box.label(text=printProgressBar(
-                        total_online_services-num_online_services,
-                        total_online_services,
+                # Progress bar
+                if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
+                    info_box = row.box()
+                    info_box.row().label(text=printProgressBar(
+                        cli_state['CURRENT'],
+                        cli_state['TOTAL'],
                         length=16
                     ))
 
+                layout.row().operator("session.stop", icon='QUIT', text="Exit")
 
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
@@ -321,9 +291,9 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             replication_section_row.prop(settings.sync_flags, "sync_render_settings")
             replication_section_row = replication_section.row()
 
-            replication_section_row.prop(settings, "enable_editmode_updates")
+            replication_section_row.prop(settings.sync_flags, "sync_during_editmode")
             replication_section_row = replication_section.row()
-            if settings.enable_editmode_updates:
+            if settings.sync_flags.sync_during_editmode:
                 warning = replication_section_row.box()
                 warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
                 replication_section_row = replication_section.row()
@@ -503,9 +473,9 @@ class SESSION_PT_presence(bpy.types.Panel):
         row.prop(settings, "presence_show_far_user")
 
 
-class SESSION_PT_services(bpy.types.Panel):
+class SESSION_PT_synchronization(bpy.types.Panel):
     bl_idname = "MULTIUSER_SERVICE_PT_panel"
-    bl_label = "Services"
+    bl_label = "Synchronization"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
@@ -516,21 +486,16 @@ class SESSION_PT_services(bpy.types.Panel):
         return operators.client and operators.client.state['STATE'] == 2
 
     def draw_header(self, context):
-        self.layout.label(text="", icon='FILE_CACHE')
+        self.layout.label(text="", icon='COLLECTION_NEW')
 
     def draw(self, context):
         layout = self.layout
-        online_users = context.window_manager.online_users
-        selected_user = context.window_manager.user_index
-        settings = context.window_manager.session
-        active_user = online_users[selected_user] if len(online_users)-1 >= selected_user else 0
-
-        # Create a simple row.
-        for name, state in operators.client.services_state.items():
-            row = layout.row()
-            row.label(text=name)
-            row.label(text=get_state_str(state))
-
+        settings  = get_preferences()
+        
+        row = layout.row()
+        row.prop(settings.sync_flags, "sync_render_settings")
+        row = layout.row()
+        row.prop(settings.sync_flags, "sync_during_editmode")
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
@@ -681,7 +646,7 @@ classes = (
     SESSION_PT_presence,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
-    SESSION_PT_services,
+    SESSION_PT_synchronization,
     SESSION_PT_repository,
 
 )

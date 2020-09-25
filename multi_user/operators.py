@@ -713,7 +713,7 @@ def depsgraph_evaluation(scene):
                 if node and node.owner in [client.id, RP_COMMON] and node.state == UP:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode and \
-                            not settings.enable_editmode_updates:
+                            not settings.sync_during_editmode:
                         break
 
                     client.stash(node.uuid)

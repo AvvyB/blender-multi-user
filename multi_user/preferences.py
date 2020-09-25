@@ -99,11 +99,29 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     icon: bpy.props.StringProperty()
 
 
+def update_scene_settings(self, value):
+    from .operators import client
+
+    self['sync_render_settings'] = value
+
+    if client and bpy.context.scene.uuid and value:
+        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+
 class ReplicationFlags(bpy.types.PropertyGroup):
+    def get_scene_settings(self):
+        return self.get('sync_render_settings', False)
+
     sync_render_settings: bpy.props.BoolProperty(
         name="Synchronize render settings",
         description="Synchronize render settings (eevee and cycles only)",
-        default=True)
+        default=True,
+        set=update_scene_settings,
+        get=get_scene_settings)
+    sync_during_editmode: bpy.props.BoolProperty(
+        name="Edit mode updates",
+        description="Enable objects update in edit mode (! Impact performances !)",
+        default=False
+    )
 
 
 class SessionPrefs(bpy.types.AddonPreferences):
@@ -136,8 +154,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ipc_port: bpy.props.IntProperty(
         name="ipc_port",
         description='internal ttl port(only usefull for multiple local instances)',
-        default=5561,
-        update=update_port
+        default=random.randrange(5570,70000),
+        update=update_port,
     )
     init_method: bpy.props.EnumProperty(
         name='init_method',
@@ -170,11 +188,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name='depsgraph update rate',
         description='Dependency graph uppdate rate (milliseconds)',
         default=100
-    )
-    enable_editmode_updates: bpy.props.BoolProperty(
-        name="Edit mode updates",
-        description="Enable objects update in edit mode (! Impact performances !)",
-        default=False
     )
     clear_memory_filecache: bpy.props.BoolProperty(
         name="Clear memory filecache",

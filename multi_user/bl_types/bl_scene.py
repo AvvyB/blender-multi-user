@@ -23,6 +23,9 @@ from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 from .bl_collection import dump_collection_children, dump_collection_objects, load_collection_childrens, load_collection_objects
 from ..utils import get_preferences
+from replication.constants import (DIFF_JSON, MODIFIED)
+from deepdiff import DeepDiff
+import logging
 
 class BlScene(BlDatablock):
     bl_id = "scenes"
@@ -32,6 +35,11 @@ class BlScene(BlDatablock):
     bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'SCENE_DATA'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.diff_method = DIFF_JSON
 
     def _construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
@@ -52,23 +60,23 @@ class BlScene(BlDatablock):
         # Annotation
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
+        if self.preferences.sync_flags.sync_render_settings:
+            if 'eevee' in data.keys():
+                loader.load(target.eevee, data['eevee'])
 
-        if 'eevee' in data.keys():
-            loader.load(target.eevee, data['eevee'])
-        
-        if 'cycles' in data.keys():
-            loader.load(target.eevee, data['cycles'])
+            if 'cycles' in data.keys():
+                loader.load(target.eevee, data['cycles'])
 
-        if 'render' in data.keys():
-            loader.load(target.render, data['render'])
+            if 'render' in data.keys():
+                loader.load(target.render, data['render'])
 
-        if 'view_settings' in data.keys():
-            loader.load(target.view_settings, data['view_settings'])
-            if target.view_settings.use_curve_mapping:
-                #TODO: change this ugly fix
-                target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
-                target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
-                target.view_settings.curve_mapping.update()
+            if 'view_settings' in data.keys():
+                loader.load(target.view_settings, data['view_settings'])
+                if target.view_settings.use_curve_mapping:
+                    #TODO: change this ugly fix
+                    target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
+                    target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
+                    target.view_settings.curve_mapping.update()
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -97,10 +105,8 @@ class BlScene(BlDatablock):
         
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
-        
-        pref = get_preferences()
 
-        if pref.sync_flags.sync_render_settings:
+        if self.preferences.sync_flags.sync_render_settings:
             scene_dumper.exclude_filter = [
                 'gi_cache_info',
                 'feature_set',
@@ -156,3 +162,14 @@ class BlScene(BlDatablock):
             deps.append(self.instance.grease_pencil)
 
         return deps
+
+    def diff(self):
+        exclude_path = []
+
+        if not self.preferences.sync_flags.sync_render_settings:
+            exclude_path.append("root['eevee']")
+            exclude_path.append("root['cycles']")
+            exclude_path.append("root['view_settings']")
+            exclude_path.append("root['render']")
+
+        return DeepDiff(self.data, self._dump(instance=self.instance),exclude_paths=exclude_path, cache_size=5000)
