@@ -60,6 +60,7 @@ class BlScene(BlDatablock):
         # Annotation
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
+
         if self.preferences.sync_flags.sync_render_settings:
             if 'eevee' in data.keys():
                 loader.load(target.eevee, data['eevee'])
@@ -88,12 +89,14 @@ class BlScene(BlDatablock):
             'name',
             'world',
             'id',
-            'camera',
             'grease_pencil',
             'frame_start',
             'frame_end',
             'frame_step',
         ]
+        if self.preferences.sync_flags.sync_active_camera:
+            scene_dumper.include_filter.append('camera')
+
         data = scene_dumper.dump(instance)
 
         scene_dumper.depth = 3
@@ -171,5 +174,8 @@ class BlScene(BlDatablock):
             exclude_path.append("root['cycles']")
             exclude_path.append("root['view_settings']")
             exclude_path.append("root['render']")
+
+        if not self.preferences.sync_flags.sync_active_camera:
+            exclude_path.append("root['camera']")
 
         return DeepDiff(self.data, self._dump(instance=self.instance),exclude_paths=exclude_path, cache_size=5000)

@@ -99,28 +99,46 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     icon: bpy.props.StringProperty()
 
 
-def update_scene_settings(self, value):
-    from .operators import client
-
+def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
 
+    from .operators import client
     if client and bpy.context.scene.uuid and value:
         bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
 
+
+def set_sync_active_camera(self, value):
+    self['sync_active_camera'] = value
+
+    from .operators import client
+    if client and bpy.context.scene.uuid and value:
+        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+
+
 class ReplicationFlags(bpy.types.PropertyGroup):
-    def get_scene_settings(self):
+    def get_sync_render_settings(self):
         return self.get('sync_render_settings', False)
+
+    def get_sync_active_camera(self):
+        return self.get('sync_active_camera', True)
 
     sync_render_settings: bpy.props.BoolProperty(
         name="Synchronize render settings",
         description="Synchronize render settings (eevee and cycles only)",
         default=True,
-        set=update_scene_settings,
-        get=get_scene_settings)
+        set=set_sync_render_settings,
+        get=get_sync_render_settings)
     sync_during_editmode: bpy.props.BoolProperty(
         name="Edit mode updates",
         description="Enable objects update in edit mode (! Impact performances !)",
         default=False
+    )
+    sync_active_camera: bpy.props.BoolProperty(
+        name="Synchronize active camera",
+        description="Synchronize the active camera",
+        default=True,
+        get=get_sync_active_camera,
+        set=set_sync_active_camera
     )
 
 
@@ -154,7 +172,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ipc_port: bpy.props.IntProperty(
         name="ipc_port",
         description='internal ttl port(only usefull for multiple local instances)',
-        default=random.randrange(5570,70000),
+        default=random.randrange(5570, 70000),
         update=update_port,
     )
     init_method: bpy.props.EnumProperty(

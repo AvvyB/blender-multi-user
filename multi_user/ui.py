@@ -290,6 +290,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             replication_section_row = replication_section.row()
             replication_section_row.prop(settings.sync_flags, "sync_render_settings")
             replication_section_row = replication_section.row()
+            replication_section_row.prop(settings.sync_flags, "sync_active_camera")
+            replication_section_row = replication_section.row()
 
             replication_section_row.prop(settings.sync_flags, "sync_during_editmode")
             replication_section_row = replication_section.row()
@@ -496,6 +498,8 @@ class SESSION_PT_synchronization(bpy.types.Panel):
         row.prop(settings.sync_flags, "sync_render_settings")
         row = layout.row()
         row.prop(settings.sync_flags, "sync_during_editmode")
+        row = layout.row()
+        row.prop(settings.sync_flags, "sync_active_camera")
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
