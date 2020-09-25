@@ -117,7 +117,7 @@ def set_sync_active_camera(self, value):
 
 class ReplicationFlags(bpy.types.PropertyGroup):
     def get_sync_render_settings(self):
-        return self.get('sync_render_settings', False)
+        return self.get('sync_render_settings', True)
 
     def get_sync_active_camera(self):
         return self.get('sync_active_camera', True)

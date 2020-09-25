@@ -127,7 +127,15 @@ class SESSION_PT_settings(bpy.types.Panel):
 
                 current_state = cli_state['STATE']
                 info_msg = None
-    
+
+                if current_state in [STATE_ACTIVE]:
+                    row = row.split(factor=0.3)
+                    row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
+                    row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
+                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='OBJECT_DATAMODE')
+                
+                row= layout.row()
+
                 if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
                     info_msg = f"LAN: {runtime_settings.internet_ip}" 
                 if current_state == STATE_LOBBY:
@@ -474,33 +482,6 @@ class SESSION_PT_presence(bpy.types.Panel):
         row.active = settings.presence_show_user
         row.prop(settings, "presence_show_far_user")
 
-
-class SESSION_PT_synchronization(bpy.types.Panel):
-    bl_idname = "MULTIUSER_SERVICE_PT_panel"
-    bl_label = "Synchronization"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        return operators.client and operators.client.state['STATE'] == 2
-
-    def draw_header(self, context):
-        self.layout.label(text="", icon='COLLECTION_NEW')
-
-    def draw(self, context):
-        layout = self.layout
-        settings  = get_preferences()
-        
-        row = layout.row()
-        row.prop(settings.sync_flags, "sync_render_settings")
-        row = layout.row()
-        row.prop(settings.sync_flags, "sync_during_editmode")
-        row = layout.row()
-        row.prop(settings.sync_flags, "sync_active_camera")
-
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
@@ -650,9 +631,7 @@ classes = (
     SESSION_PT_presence,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
-    SESSION_PT_synchronization,
     SESSION_PT_repository,
-
 )
 
 
