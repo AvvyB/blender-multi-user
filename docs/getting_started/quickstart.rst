@@ -161,6 +161,19 @@ The collaboration quality directly depend on the communication quality. This sec
 various tools made in an effort to ease the communication between the different session users.
 Feel free to suggest any idea for communication tools `here <https://gitlab.com/slumber/multi-user/-/issues/75>`_ .
 
+---------------------------
+Change replication behavior
+---------------------------
+
+During a session, the multi-user will replicate your modifications to other instances.
+In order to avoid annoying other users when you are experimenting, some of those modifications can be ignored via 
+various flags present at the top of the panel (see red area in the image bellow). Those flags are explained in the :ref:`replication` section.
+
+.. figure:: img/quickstart_replication.png
+      :align: center
+
+      Session replication flags
+
 --------------------
 Monitor online users
 --------------------
@@ -241,6 +254,8 @@ various drawn parts via the following flags:
 - **Show selected objects**: display other users current selection
 - **Show users**: display users current viewpoint 
 - **Show different scenes**: display users working on other scenes
+
+
 
 -----------
 Manage data
@@ -330,6 +345,8 @@ of the multi-user are using the same IPC port it will create conflict !
 **Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
 You should only increase it if you have a bad connection.
 
+.. _replication:
+
 -----------
 Replication
 -----------
@@ -340,6 +357,8 @@ Replication
    Advanced replication settings
 
 **Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
+
+**Synchronize active camera** sync the scene active camera.
 
 **Edit Mode Updates** enable objects update while you are in Edit_Mode.
 
