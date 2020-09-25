@@ -44,10 +44,12 @@ from . import environment, utils
 
 
 DEPENDENCIES = {
-    ("replication", '0.0.21a9'),
+    ("replication", '0.0.21a10'),
 }
 
 
+module_error_msg = "Insufficient rights to install the multi-user \
+                dependencies, aunch blender with administrator rights."
 def register():
     # Setup logging policy
     logging.basicConfig(
@@ -57,22 +59,22 @@ def register():
 
     try:
         environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
-    except ModuleNotFoundError:
-        logging.fatal("Fail to install multi-user dependencies, try to execute blender with admin rights.")
-        return
-        
-    from . import presence
-    from . import operators
-    from . import ui
-    from . import preferences
-    from . import addon_updater_ops
 
-    preferences.register()
-    addon_updater_ops.register(bl_info)
-    presence.register()
-    operators.register()
-    ui.register()
+        from . import presence
+        from . import operators
+        from . import ui
+        from . import preferences
+        from . import addon_updater_ops
 
+        preferences.register()
+        addon_updater_ops.register(bl_info)
+        presence.register()
+        operators.register()
+        ui.register()
+    except ModuleNotFoundError as e:
+        raise Exception(module_error_msg)
+        logging.error(module_error_msg)
+ 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps)
     bpy.types.ID.uuid = bpy.props.StringProperty(

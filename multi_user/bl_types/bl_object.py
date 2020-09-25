@@ -201,7 +201,7 @@ class BlObject(BlDatablock):
         assert(instance)
 
         if _is_editmode(instance):
-            if self.preferences.enable_editmode_updates:
+            if self.preferences.sync_flags.sync_during_editmode:
                 instance.update_from_editmode()
             else:
                 raise ContextError("Object is in edit-mode.")
