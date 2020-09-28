@@ -239,6 +239,11 @@ class SessionStartOperator(bpy.types.Operator):
                 bpy.app.handlers.depsgraph_update_post.remove(
                     depsgraph_evaluation)
 
+            logger = logging.getLogger()
+            for handler in logger.handlers:
+                if isinstance(handler, logging.FileHandler):
+                    logger.removeHandler(handler)
+
         bpy.ops.session.apply_armature_operator()
 
         self.report(
@@ -304,12 +309,6 @@ class SessionStopOperator(bpy.types.Operator):
         if client:
             try:
                 client.disconnect()
-
-                logger = logging.getLogger()
-                
-                for handler in logger.handlers:
-                    if isinstance(handler, logging.FileHandler):
-                        logger.removeHandler(handler)
 
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
