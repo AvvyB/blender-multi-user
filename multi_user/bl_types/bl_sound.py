@@ -37,7 +37,8 @@ class BlSound(BlDatablock):
     bl_icon = 'SOUND'
 
     def _construct(self, data):
-        filename = Path(data['filepath']).name
+        filename = data.get('filename')
+
         return bpy.data.sounds.load(get_filepath(filename))
 
     def _load(self, data, target):
@@ -48,8 +49,13 @@ class BlSound(BlDatablock):
         return False
 
     def _dump(self, instance=None):
+        filename = Path(instance.filepath).name
+
+        if not filename:
+            raise FileExistsError(instance.filepath)
+ 
         return {
-            'filepath': instance.filepath,
+            'filename': filename,
             'name': instance.name
         }
 

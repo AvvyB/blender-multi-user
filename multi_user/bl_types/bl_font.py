@@ -37,19 +37,27 @@ class BlFont(BlDatablock):
     bl_icon = 'FILE_FONT'
 
     def _construct(self, data):
-        if data['filepath'] == '<builtin>':
-            return bpy.data.fonts.load(data['filepath'])
+        filename = data.get('filename')
+
+        if filename == '<builtin>':
+            return bpy.data.fonts.load(filename)
         else:
-            filename = Path(data['filepath']).name
             return bpy.data.fonts.load(get_filepath(filename))
 
     def _load(self, data, target):
-        loader = Loader()
-        loader.load(target, data)
+        pass
 
     def _dump(self, instance=None):
+        if instance.filepath  == '<builtin>':
+            filename = '<builtin>'
+        else:
+            filename = Path(instance.filepath).name
+
+        if not filename:
+            raise FileExistsError(instance.filepath)
+
         return {
-            'filepath': instance.filepath,
+            'filename': filename,
             'name': instance.name
         }
 
@@ -60,7 +68,7 @@ class BlFont(BlDatablock):
         deps = []
         if self.instance.filepath and self.instance.filepath != '<builtin>':
             ensure_unpacked(self.instance)
-            
+
             deps.append(Path(bpy.path.abspath(self.instance.filepath)))
 
         return deps
