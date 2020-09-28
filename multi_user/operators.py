@@ -304,6 +304,13 @@ class SessionStopOperator(bpy.types.Operator):
         if client:
             try:
                 client.disconnect()
+
+                logger = logging.getLogger()
+                
+                for handler in logger.handlers:
+                    if isinstance(handler, logging.FileHandler):
+                        logger.removeHandler(handler)
+
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
         else:
