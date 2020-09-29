@@ -64,7 +64,7 @@ def install_package(name, version):
 
 def check_package_version(name, required_version):
     logging.info(f"Checking {name} version...")
-    out = subprocess.run(f"{str(PYTHON_PATH)} -m pip show {name}", capture_output=True)
+    out = subprocess.run([str(PYTHON_PATH), "-m", "pip", "show", name], capture_output=True)
 
     version = VERSION_EXPR.search(out.stdout.decode())
     if version and version.group() == required_version:
