@@ -37,6 +37,9 @@ class BlWorld(BlDatablock):
         return bpy.data.worlds.new(data["name"])
 
     def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
+        
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -60,6 +63,7 @@ class BlWorld(BlDatablock):
         world_dumper.include_filter = [
             "use_nodes",
             "name",
+            "color"
         ]
         data = world_dumper.dump(instance)
         if instance.use_nodes:
