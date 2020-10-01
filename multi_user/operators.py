@@ -25,10 +25,9 @@ import string
 import time
 from operator import itemgetter
 from pathlib import Path
-from subprocess import PIPE, Popen, TimeoutExpired
-import zmq
 import shutil
 from pathlib import Path
+from queue import Queue
 
 import bpy
 import mathutils
@@ -44,13 +43,70 @@ from replication.interface import Session
 
 
 client = None
+background_exec_queue = Queue()
 delayables = []
 stop_modal_executor = False
 
 
+def on_connection_start():
+    """Session connection init hander 
+    """
+    settings = utils.get_preferences()
+    runtime_settings = bpy.context.window_manager.session
+
+    # Step 1: Constrect nodes
+    for node in client._graph.list_ordered():
+        node_ref = client.get(node)
+        if node_ref.state == FETCHED:
+            node_ref.resolve()
+
+    # Step 2: Load nodes
+    for node in client._graph.list_ordered():
+        node_ref = client.get(node)
+        if node_ref.state == FETCHED:
+            node_ref.apply()
+
+    # Step 3: Launch presence overlay
+    if runtime_settings.enable_presence:
+        presence.renderer.run()
+
+    # Step 4: Register blender timers
+    for d in delayables:
+        d.register()
+
+    if settings.update_method == 'DEPSGRAPH':
+        bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+
+def on_connection_end():
+    """Session connection finished handler 
+    """
+    global delayables, stop_modal_executor
+    settings = utils.get_preferences()
+
+    # Step 1: Unregister blender timers
+    for d in delayables:
+        try:
+            d.unregister()
+        except:
+            continue
+    
+    stop_modal_executor = True
+
+    # Step 2: Unregister presence renderer
+    presence.renderer.stop()
+
+    if settings.update_method == 'DEPSGRAPH':
+        bpy.app.handlers.depsgraph_update_post.remove(
+            depsgraph_evaluation)
+    
+    # Step 3: remove file handled
+    logger = logging.getLogger()
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            logger.removeHandler(handler)
+
+
 # OPERATORS
-
-
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -189,60 +245,23 @@ class SessionStartOperator(bpy.types.Operator):
 
         session_update = delayable.SessionStatusUpdate()
         session_user_sync = delayable.SessionUserSync()
+        session_background_executor = delayable.SessionBackgroundExecutor(execution_queue=background_exec_queue)
+        
         session_update.register()
         session_user_sync.register()
+        session_background_executor.register()
 
+        delayables.append(session_background_executor)
         delayables.append(session_update)
         delayables.append(session_user_sync)
 
         @client.register('on_connection')
         def initialize_session():
-            settings = utils.get_preferences()
-
-            for node in client._graph.list_ordered():
-                node_ref = client.get(node)
-                if node_ref.state == FETCHED:
-                    node_ref.resolve()
-
-            for node in client._graph.list_ordered():
-                node_ref = client.get(node)
-                if node_ref.state == FETCHED:
-                    node_ref.apply()
-
-            # Launch drawing module
-            if runtime_settings.enable_presence:
-                presence.renderer.run()
-
-            # Register blender main thread tools
-            for d in delayables:
-                d.register()
-
-            if settings.update_method == 'DEPSGRAPH':
-                bpy.app.handlers.depsgraph_update_post.append(
-                    depsgraph_evaluation)
+            background_exec_queue.put(on_connection_start)
 
         @client.register('on_exit')
         def desinitialize_session():
-            global delayables, stop_modal_executor
-            settings = utils.get_preferences()
-
-            for d in delayables:
-                try:
-                    d.unregister()
-                except:
-                    continue
-
-            stop_modal_executor = True
-            presence.renderer.stop()
-
-            if settings.update_method == 'DEPSGRAPH':
-                bpy.app.handlers.depsgraph_update_post.remove(
-                    depsgraph_evaluation)
-
-            logger = logging.getLogger()
-            for handler in logger.handlers:
-                if isinstance(handler, logging.FileHandler):
-                    logger.removeHandler(handler)
+           background_exec_queue.put(on_connection_end)
 
         bpy.ops.session.apply_armature_operator()
 
