@@ -622,6 +622,35 @@ class SESSION_PT_repository(bpy.types.Panel):
         else:
             row.label(text="Waiting to start")
 
+class VIEW3D_PT_overlay_session(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'HEADER'
+    bl_parent_id = 'VIEW3D_PT_overlay'
+    bl_label = "Multi-user"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        view = context.space_data
+        overlay = view.overlay
+        display_all = overlay.show_overlays
+
+        col = layout.column()
+        col.active = display_all
+
+        row = col.row(align=True)
+        settings = context.window_manager.session
+        layout.active = settings.enable_presence
+        col = layout.column()
+        col.prop(settings, "presence_show_selected")
+        col.prop(settings, "presence_show_user")
+        row = layout.column()
+        row.active = settings.presence_show_user
+        row.prop(settings, "presence_show_far_user")
 
 classes = (
     SESSION_UL_users,
@@ -632,6 +661,7 @@ classes = (
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
     SESSION_PT_repository,
+    VIEW3D_PT_overlay_session,
 )
 
 
