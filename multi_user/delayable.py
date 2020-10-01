@@ -35,6 +35,8 @@ from replication.constants import (FETCHED,
 class Delayable():
     """Delayable task interface
     """
+    def __init__(self):
+        self.is_registered = False
 
     def register(self):
         raise NotImplementedError
@@ -53,13 +55,20 @@ class Timer(Delayable):
     """
 
     def __init__(self, duration=1):
+        super().__init__()
         self._timeout = duration
         self._running = True
 
     def register(self):
         """Register the timer into the blender timer system
         """
-        bpy.app.timers.register(self.main)
+        
+        if not self.is_registered:
+            bpy.app.timers.register(self.main)
+            self.is_registered = True
+            logging.debug(f"Register {self.__class__.__name__}")
+        else:
+            logging.debug(f"Timer {self.__class__.__name__} already registered")
 
     def main(self):
         self.execute()
@@ -205,11 +214,16 @@ class DynamicRightSelectTimer(Timer):
 
 class Draw(Delayable):
     def __init__(self):
+        super().__init__()
         self._handler = None
 
     def register(self):
-        self._handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.execute, (), 'WINDOW', 'POST_VIEW')
+        if not self.is_registered:
+            self._handler = bpy.types.SpaceView3D.draw_handler_add(
+                self.execute, (), 'WINDOW', 'POST_VIEW')
+            logging.debug(f"Register {self.__class__.__name__}")
+        else:
+            logging.debug(f"Drow {self.__class__.__name__} already registered")
 
     def execute(self):
         raise NotImplementedError()
@@ -350,3 +364,15 @@ class SessionUserSync(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
+
+
+class SessionBackgroundExecutor(Timer):
+    def __init__(self, timout=1, execution_queue=None):
+        super().__init__(timout)
+        self.execution_queue = execution_queue
+    
+    def execute(self):
+        while not self.execution_queue.empty():
+            function = self.execution_queue.get()
+            logging.debug(f"Executing {function.__name__}")
+            function()
