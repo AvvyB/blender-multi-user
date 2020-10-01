@@ -21,9 +21,8 @@ import mathutils
 import logging
 import re
 
-from ..utils import get_datablock_from_uuid
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 

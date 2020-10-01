@@ -22,7 +22,6 @@ import mathutils
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 from .bl_collection import dump_collection_children, dump_collection_objects, load_collection_childrens, load_collection_objects
-from ..utils import get_preferences
 from replication.constants import (DIFF_JSON, MODIFIED)
 from deepdiff import DeepDiff
 import logging

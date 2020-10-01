@@ -16,14 +16,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import logging
+from collections.abc import Iterable
+
 import bpy
 import mathutils
-import logging
+from replication.constants import DIFF_BINARY, UP
+from replication.data import ReplicatedDatablock
 
 from .. import utils
-from .dump_anything import Loader, Dumper
-from replication.data import ReplicatedDatablock
-from replication.constants import (UP, DIFF_BINARY)
+from .dump_anything import Dumper, Loader
 
 
 def has_action(target):
@@ -85,6 +87,19 @@ def load_driver(target_datablock, src_driver):
     for index, src_point in enumerate(src_driver['keyframe_points']):
         new_point = new_fcurve[index]
         loader.load(new_point, src_driver['keyframe_points'][src_point])
+
+
+def get_datablock_from_uuid(uuid, default, ignore=[]):
+    if not uuid:
+        return default
+
+    for category in dir(bpy.data):
+        root = getattr(bpy.data, category)
+        if isinstance(root, Iterable) and category not in ignore:
+            for item in root:
+                if getattr(item, 'uuid', None) == uuid:
+                    return item
+    return default
 
 
 class BlDatablock(ReplicatedDatablock):
