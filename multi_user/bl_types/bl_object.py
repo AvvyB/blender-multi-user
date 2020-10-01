@@ -22,7 +22,7 @@ import bpy
 import mathutils
 from replication.exception import ContextError
 
-from .bl_datablock import BlDatablock
+from .bl_datablock import BlDatablock, get_datablock_from_uuid
 from .dump_anything import Dumper, Loader
 from replication.exception import ReparentException
 
