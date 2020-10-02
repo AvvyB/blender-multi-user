@@ -1,6 +1,6 @@
 deploy:
   stage: deploy
-  image: docker:19.03.12
+  image: slumber/docker-python
   services:
   - docker:19.03.12-dind
 
@@ -8,8 +8,8 @@ deploy:
     - docker info
  
   script:
-    # - VERSION="$(python scripts/get_replication_version.py)"
-    # - echo "Building docker image with version ${VERSION}"
+    - VERSION="$(python scripts/get_replication_version.py)"
+    - echo "Building docker image with version ${VERSION}"
     - docker build --build-arg version=${VERSION} -t registry.gitlab.com/slumber/multi-user/multi-user-server:0.1.0 ./scripts/docker_server
     - echo "Pushing to gitlab registry ${VERSION}"
     - docker push registry.gitlab.com/slumber/multi-user/multi-user-server:0.1.0 
