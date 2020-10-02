@@ -43,12 +43,27 @@ from replication.interface import session
 
 
 client = None
-background_exec_queue = Queue()
+background_execution_queue = Queue()
 delayables = []
 stop_modal_executor = False
 
 
-def on_connection_start():
+def session_callback(name):
+    """ Session callback wrapper
+
+    This allow to encapsulate session callbacks to background_execution_queue.
+    By doing this way callback are executed from the main thread. 
+    """
+    def func_wrapper(func):
+        @session.register(name)
+        def add_background_task():
+            background_execution_queue.put(func)
+        return add_background_task
+    return func_wrapper
+
+
+@session_callback('on_connection')
+def initialize_session():
     """Session connection init hander 
     """
     settings = utils.get_preferences()
@@ -77,6 +92,8 @@ def on_connection_start():
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
+
+@session_callback('on_exit')
 def on_connection_end():
     """Session connection finished handler 
     """
@@ -89,7 +106,7 @@ def on_connection_end():
             d.unregister()
         except:
             continue
-    
+
     stop_modal_executor = True
 
     # Step 2: Unregister presence renderer
@@ -98,7 +115,7 @@ def on_connection_end():
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.remove(
             depsgraph_evaluation)
-    
+
     # Step 3: remove file handled
     logger = logging.getLogger()
     for handler in logger.handlers:
@@ -119,7 +136,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables
+        global delayables
 
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
@@ -183,11 +200,10 @@ class SessionStartOperator(bpy.types.Operator):
                             timout=type_local_config.bl_delay_apply,
                             target_type=type_module_class))
 
-        session.setup( factory=bpy_factory,
+        session.configure(
+            factory=bpy_factory,
             python_path=bpy.app.binary_path_python,
             external_update_handling=use_extern_update)
-
-        client = session
 
         if settings.update_method == 'DEPSGRAPH':
             delayables.append(delayable.ApplyTimer(
@@ -246,8 +262,9 @@ class SessionStartOperator(bpy.types.Operator):
 
         session_update = delayable.SessionStatusUpdate()
         session_user_sync = delayable.SessionUserSync()
-        session_background_executor = delayable.SessionBackgroundExecutor(execution_queue=background_exec_queue)
-        
+        session_background_executor = delayable.MainThreadExecutor(
+            execution_queue=background_execution_queue)
+
         session_update.register()
         session_user_sync.register()
         session_background_executor.register()
@@ -255,14 +272,6 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(session_background_executor)
         delayables.append(session_update)
         delayables.append(session_user_sync)
-
-        @session.register('on_connection')
-        def initialize_session():
-            background_exec_queue.put(on_connection_start)
-
-        @session.register('on_exit')
-        def desinitialize_session():
-           background_exec_queue.put(on_connection_end)
 
         bpy.ops.session.apply_armature_operator()
 
@@ -464,7 +473,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            area, region, rv3d = presence.view3d_find() 
+            area, region, rv3d = presence.view3d_find()
 
             if session:
                 target_ref = session.online_users.get(self.target_client)
@@ -749,9 +758,8 @@ def register():
 
 
 def unregister():
-    if session and session.state['STATE'] == 2:
+    if session and session.state['STATE'] == STATE_ACTIVE:
         session.disconnect()
-        client = None
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):

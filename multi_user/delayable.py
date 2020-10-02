@@ -362,7 +362,7 @@ class SessionUserSync(Timer):
                     new_key.username = user
 
 
-class SessionBackgroundExecutor(Timer):
+class MainThreadExecutor(Timer):
     def __init__(self, timout=1, execution_queue=None):
         super().__init__(timout)
         self.execution_queue = execution_queue
