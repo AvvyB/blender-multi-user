@@ -25,27 +25,32 @@ See the [documentation](https://multi-user.readthedocs.io/en/latest/) for detail
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
 
-| Name        | Status |                            Comment                            |
-| ----------- | :----: | :-----------------------------------------------------------: |
-| action      |   ❗    |                          Not stable                           |
-| armature    |   ❗    |                          Not stable                           |
-| camera      |   ✔️   |                                                               |
-| collection  |   ✔️   |                                                               |
-| curve       |   ✔️   |              Nurbs surface don't load correctly               |
-| gpencil     |   ✔️   |                                                               |
-| image       |   ❗    |                        Not stable yet                         |
-| mesh        |   ✔️   |                                                               |
-| material    |   ✔️   |                                                               |
-| metaball    |   ✔️   |                                                               |
-| object      |   ✔️   |                                                               |
-| scene       |   ✔️   |                                                               |
-| world       |   ✔️   |                                                               |
-| lightprobes |   ✔️   |                                                               |
-| particles   |   ❌    | [On-going](https://gitlab.com/slumber/multi-user/-/issues/24) |
-| speakers    |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/65)  |
-| vse         |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)  |
-| physics     |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)  |
-| libraries   |   ❗    |                            Partial                            |
+| Name        | Status |                                   Comment                                    |
+| ----------- | :----: | :--------------------------------------------------------------------------: |
+| action      |   ✔️    |                                                                              |
+| armature    |   ❗    |                                  Not stable                                  |
+| camera      |   ✔️    |                                                                              |
+| collection  |   ✔️    |                                                                              |
+| curve       |   ❗    |                             Nurbs not supported                              |
+| gpencil     |   ✔️    | [Airbrush not supported](https://gitlab.com/slumber/multi-user/-/issues/123) |
+| image       |   ✔️    |                                                                              |
+| mesh        |   ✔️    |                                                                              |
+| material    |   ✔️    |                                                                              |
+| metaball    |   ✔️    |                                                                              |
+| object      |   ✔️    |                                                                              |
+| texts       |   ✔️    |                                                                              |
+| scene       |   ✔️    |                                                                              |
+| world       |   ✔️    |                                                                              |
+| lightprobes |   ✔️    |                                                                              |
+| compositing |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/46)         |
+| texts       |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/81)         |
+| nla         |   ❌    |                                                                              |
+| volumes     |   ❌    |                                                                              |
+| particles   |   ❌    |        [On-going](https://gitlab.com/slumber/multi-user/-/issues/24)         |
+| speakers    |   ❗    |         [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)         |
+| vse         |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)         |
+| physics     |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)         |
+| libraries   |   ❗    |                                   Partial                                    |
 
 
 ### Performance issues
@@ -57,7 +62,7 @@ I'm working on it.
 
 | Dependencies | Version | Needed |
 | ------------ | :-----: | -----: |
-| Replication       | latest  |    yes |
+| Replication  | latest  |    yes |
 
 
 
