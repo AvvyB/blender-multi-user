@@ -12,13 +12,15 @@ deploy:
   services:
   - docker:19.03.12-dind
 
-  before_script:
-    - docker info
-    - docker login -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD $CI_REGISTRY
- 
+  # variables:
+  #   # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+  #   DOCKER_HOST: tcp://docker:2376
+    # DOCKER_TLS_CERTDIR: "/certs"
+
   script:
     - VERSION="$(python scripts/get_replication_version.py)"
     - echo "Building docker image with version ${VERSION}"
     - docker build --build-arg version=${VERSION} -t registry.gitlab.com/slumber/multi-user/multi-user-server:0.1.0 ./scripts/docker_server
     - echo "Pushing to gitlab registry ${VERSION}"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.gitlab.com/slumber/multi-user/multi-user-server:0.1.0 
