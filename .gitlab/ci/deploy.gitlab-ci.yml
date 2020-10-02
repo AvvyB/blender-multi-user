@@ -1,7 +1,5 @@
 deploy:
   stage: deploy
-  image: docker:stable 
+  image: slumber/docker-python
   script:
-    - apk update
-    - apk add python
     - VERSION="$(python scripts/get_replication_version.py)"
