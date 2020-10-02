@@ -6,6 +6,7 @@ deploy:
 
   before_script:
     - docker info
+    - docker login -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD $CI_REGISTRY
  
   script:
     - VERSION="$(python scripts/get_replication_version.py)"
