@@ -2,5 +2,6 @@ deploy:
   stage: deploy
   image: docker:stable 
   script:
-    - apk add --no-cache python
+    - apk update
+    - apk add python
     - VERSION="$(python scripts/get_replication_version.py)"

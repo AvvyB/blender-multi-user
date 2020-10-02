@@ -3,7 +3,10 @@ build:
   image: debian:stable-slim
   script:
     - rm -rf tests .git .gitignore script
-
+  only:
+    refs:
+      - master
+      - develop
   artifacts:
     name: multi_user
     paths: 
