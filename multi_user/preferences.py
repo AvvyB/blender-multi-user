@@ -27,6 +27,7 @@ from pathlib import Path
 from . import bl_types, environment, addon_updater_ops, presence, ui
 from .utils import get_preferences, get_expanded_icon
 from replication.constants import RP_COMMON
+from replication.interface import session
 
 IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
 
@@ -101,17 +102,14 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
-
-    from .operators import client
-    if client and bpy.context.scene.uuid and value:
+    if session and bpy.context.scene.uuid and value:
         bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
 
 
 def set_sync_active_camera(self, value):
     self['sync_active_camera'] = value
 
-    from .operators import client
-    if client and bpy.context.scene.uuid and value:
+    if session and bpy.context.scene.uuid and value:
         bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
 
 
@@ -440,9 +438,9 @@ def client_list_callback(scene, context):
     items = [(RP_COMMON, RP_COMMON, "")]
 
     username = get_preferences().username
-    cli = operators.client
-    if cli:
-        client_ids = cli.online_users.keys()
+
+    if session:
+        client_ids = session.online_users.keys()
         for id in client_ids:
             name_desc = id
             if id == username:

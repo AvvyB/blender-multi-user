@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 0, 4),
+    "version": (0, 1, 0),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -44,7 +44,7 @@ from . import environment, utils
 
 
 DEPENDENCIES = {
-    ("replication", '0.0.21a13'),
+    ("replication", '0.0.21a15'),
 }
 
 

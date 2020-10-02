@@ -19,7 +19,7 @@ import logging
 
 import bpy
 
-from . import operators, presence, utils
+from . import presence, utils
 from replication.constants import (FETCHED,
                                    UP,
                                    RP_COMMON,
@@ -31,6 +31,7 @@ from replication.constants import (FETCHED,
                                    STATE_SRV_SYNC,
                                    REPARENT)
 
+from replication.interface import session
 
 class Delayable():
     """Delayable task interface
@@ -96,29 +97,28 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        client = operators.client
-        if client and client.state['STATE'] == STATE_ACTIVE:
+        if session and session.state['STATE'] == STATE_ACTIVE:
             if self._type:
-                nodes = client.list(filter=self._type)
+                nodes = session.list(filter=self._type)
             else:
-                nodes = client.list()
+                nodes = session.list()
 
             for node in nodes:
-                node_ref = client.get(uuid=node)
+                node_ref = session.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        client.apply(node, force=True)
+                        session.apply(node, force=True)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
                 elif node_ref.state == REPARENT:
                     # Reload the node
                     node_ref.remove_instance()
                     node_ref.resolve()
-                    client.apply(node, force=True)
-                    for parent in client._graph.find_parents(node):
+                    session.apply(node, force=True)
+                    for parent in session._graph.find_parents(node):
                         logging.info(f"Applying parent {parent}")
-                        client.apply(parent, force=True)
+                        session.apply(parent, force=True)
                     node_ref.state = UP
 
 
@@ -130,7 +130,6 @@ class DynamicRightSelectTimer(Timer):
         self._right_strategy = RP_COMMON
 
     def execute(self):
-        session = operators.client
         settings = utils.get_preferences()
 
         if session and session.state['STATE'] == STATE_ACTIVE:
@@ -238,7 +237,6 @@ class Draw(Delayable):
 
 class DrawClient(Draw):
     def execute(self):
-        session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         prefs = utils.get_preferences()
 
@@ -274,22 +272,21 @@ class ClientUpdate(Timer):
 
     def execute(self):
         settings = utils.get_preferences()
-        session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
 
         if session and renderer:
             if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
-                local_user = operators.client.online_users.get(
+                local_user = session.online_users.get(
                     settings.username)
 
                 if not local_user:
                     return
                 else:
-                    for username, user_data in operators.client.online_users.items():
+                    for username, user_data in session.online_users.items():
                         if username != settings.username:
                             cached_user_data = self.users_metadata.get(
                                 username)
-                            new_user_data = operators.client.online_users[username]['metadata']
+                            new_user_data = session.online_users[username]['metadata']
 
                             if cached_user_data is None:
                                 self.users_metadata[username] = user_data['metadata']
@@ -344,12 +341,11 @@ class SessionUserSync(Timer):
         super().__init__(timout)
 
     def execute(self):
-        session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
 
         if session and renderer:
             # sync online users
-            session_users = operators.client.online_users
+            session_users = session.online_users
             ui_users = bpy.context.window_manager.online_users
 
             for index, user in enumerate(ui_users):
@@ -366,7 +362,7 @@ class SessionUserSync(Timer):
                     new_key.username = user
 
 
-class SessionBackgroundExecutor(Timer):
+class MainThreadExecutor(Timer):
     def __init__(self, timout=1, execution_queue=None):
         super().__init__(timout)
         self.execution_queue = execution_queue

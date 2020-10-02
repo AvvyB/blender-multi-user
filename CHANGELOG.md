@@ -65,7 +65,7 @@ All notable changes to this project will be documented in this file.
 - Unused strict right management strategy
 - Legacy config management system
 
-## [0.0.4] - preview
+## [0.1.0] - preview
 
 ### Added
 
@@ -77,13 +77,18 @@ All notable changes to this project will be documented in this file.
 - Sync camera  orthographic scale
 - Logging basic configuration (file output and level)
 - Object visibility type replication
+- Sync custom fonts support
+- Sync sound files
+- Optionnal sync for active camera
 
 ### Changed
 
 - Auto updater now handle installation from branches
 - use uuid for collection loading
+- moved session instance to replication package
 
 ### Fixed
 
 - Prevent unsuported datatypes to crash the session
 - Modifier vertex group assignation
+- World sync
