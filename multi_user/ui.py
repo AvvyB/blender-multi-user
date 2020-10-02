@@ -35,7 +35,8 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'KEYTYPE_KEYFRAME_VEC',  # PUSHED
                      'TRIA_DOWN',  # FETCHED
                      'FILE_REFRESH',   # UP
-                     'TRIA_UP']  # CHANGED
+                     'TRIA_UP',
+                     'ERROR']  # CHANGED
 
 
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', fill_empty='  '):
@@ -486,13 +487,13 @@ def draw_property(context, parent, property_uuid, level=0):
     runtime_settings = context.window_manager.session
     item = session.get(uuid=property_uuid)
 
-    if item.state == ERROR:
-        return
-
     area_msg = parent.row(align=True)
-    if level > 0:
-        for i in range(level):
-            area_msg.label(text="")
+
+    if item.state == ERROR:
+        area_msg.alert=True
+    else:
+        area_msg.alert=False
+
     line = area_msg.box()
 
     name = item.data['name'] if item.data else item.uuid
@@ -505,8 +506,8 @@ def draw_property(context, parent, property_uuid, level=0):
 
     # Operations
 
-    have_right_to_modify = item.owner == settings.username or \
-        item.owner == RP_COMMON
+    have_right_to_modify = (item.owner == settings.username or \
+        item.owner == RP_COMMON) and item.state != ERROR
 
     if have_right_to_modify:
         detail_item_box.operator(
@@ -541,7 +542,6 @@ def draw_property(context, parent, property_uuid, level=0):
             "session.remove_prop", text="", icon="X").property_path = property_uuid
     else:
         detail_item_box.label(text="", icon="DECORATE_LOCKED")
-
 
 class SESSION_PT_repository(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
