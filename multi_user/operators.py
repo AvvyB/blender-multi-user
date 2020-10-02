@@ -42,7 +42,6 @@ from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
 
-client = None
 background_execution_queue = Queue()
 delayables = []
 stop_modal_executor = False
