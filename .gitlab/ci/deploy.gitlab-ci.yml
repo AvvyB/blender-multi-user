@@ -2,6 +2,5 @@ deploy:
   stage: deploy
   image: docker:stable 
   script:
-    - apt-get -qq update
-    - apt-get -qq install -y python python-virtualenv
+    - apk add --no-cache python
     - VERSION="$(python scripts/get_replication_version.py)"
