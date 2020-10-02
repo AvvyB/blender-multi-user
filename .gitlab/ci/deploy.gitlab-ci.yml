@@ -1,5 +1,7 @@
 deploy:
   stage: deploy
-  image: docker:stable
+  image: docker:stable 
   script:
+    - apt-get -qq update
+    - apt-get -qq install -y python python-virtualenv
     - VERSION="$(python scripts/get_replication_version.py)"

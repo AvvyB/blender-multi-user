@@ -3,3 +3,8 @@ test:
   image: slumber/blender-addon-testing:latest
   script:
     - python3 scripts/test_addon.py
+
+  only:
+    refs:
+      - master
+      - develop
