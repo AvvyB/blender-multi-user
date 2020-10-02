@@ -1,7 +1,5 @@
 build:
-  stage: build
+  stage: deploy
   image: docker:stable
   script:
     - docker login -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD $CI_REGISTRY
-
-
