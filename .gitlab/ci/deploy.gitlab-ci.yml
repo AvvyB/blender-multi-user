@@ -1,4 +1,4 @@
-build:
+deploy:
   stage: deploy
   image: docker:stable
   script:
