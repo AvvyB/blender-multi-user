@@ -16,7 +16,7 @@ deploy:
     - echo "Pushing to gitlab registry ${VERSION}"
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} 
-    only:
-      refs:
-          - master
-          - develop
+  only:
+    refs:
+        - master
+        - develop
