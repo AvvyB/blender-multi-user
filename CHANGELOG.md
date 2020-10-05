@@ -64,3 +64,35 @@ All notable changes to this project will be documented in this file.
 
 - Unused strict right management strategy
 - Legacy config management system
+
+## [0.1.0] - preview
+
+### Added
+
+- Dependency graph driven updates [experimental]
+- Edit Mode updates
+- Late join mechanism 
+- Sync Axis lock replication
+- Sync collection offset
+- Sync camera  orthographic scale
+- Sync custom fonts
+- Sync sound files
+- Logging configuration (file output and level)
+- Object visibility type replication
+- Optionnal sync for active camera
+- Curve->Mesh conversion
+- Mesh->gpencil conversion
+
+### Changed
+
+- Auto updater now handle installation from branches
+- Use uuid for collection loading
+- Moved session instance to replication package
+
+### Fixed
+
+- Prevent unsupported data types to crash the session
+- Modifier vertex group assignation
+- World sync
+- Snapshot UUID error
+- The world is not synchronized

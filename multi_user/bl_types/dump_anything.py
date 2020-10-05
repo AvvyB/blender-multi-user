@@ -115,7 +115,7 @@ def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attri
         :return: numpy byte buffer
     """
     if len(collection) == 0:
-        logging.warning(f'Skipping empty {attribute} attribute')
+        logging.debug(f'Skipping empty {attribute} attribute')
         return {}
 
     attr_infos = collection[0].bl_rna.properties.get(attribute)
@@ -192,7 +192,7 @@ def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attr
         :type sequence: strr
     """
     if len(collection) == 0 or not sequence:
-        logging.warning(f"Skipping loadin {attribute}")
+        logging.debug(f"Skipping loading {attribute}")
         return
     
     attr_infos = collection[0].bl_rna.properties.get(attribute)
@@ -301,7 +301,7 @@ class Dumper:
         self._dump_ID = (lambda x, depth: x.name, self._dump_default_as_branch)
         self._dump_collection = (
             self._dump_default_as_leaf, self._dump_collection_as_branch)
-        self._dump_array = (self._dump_default_as_leaf,
+        self._dump_array = (self._dump_array_as_branch,
                             self._dump_array_as_branch)
         self._dump_matrix = (self._dump_matrix_as_leaf,
                              self._dump_matrix_as_leaf)
@@ -593,6 +593,10 @@ class Loader:
             instance.write(bpy.data.materials.get(dump))
         elif isinstance(rna_property_type, T.Collection):
             instance.write(bpy.data.collections.get(dump))
+        elif isinstance(rna_property_type, T.VectorFont):
+            instance.write(bpy.data.fonts.get(dump))
+        elif isinstance(rna_property_type, T.Sound):
+            instance.write(bpy.data.sounds.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))

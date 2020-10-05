@@ -16,32 +16,54 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import logging
+import os
+from pathlib import Path
+
 import bpy
-import mathutils
 
-from .dump_anything import Loader, Dumper
+from .bl_file import get_filepath, ensure_unpacked
 from .bl_datablock import BlDatablock
+from .dump_anything import Dumper, Loader
 
 
-class BlLibrary(BlDatablock):
-    bl_id = "libraries"
-    bl_class = bpy.types.Library
+class BlSound(BlDatablock):
+    bl_id = "sounds"
+    bl_class = bpy.types.Sound
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = False
-    bl_icon = 'LIBRARY_DATA_DIRECT'
+    bl_icon = 'SOUND'
 
     def _construct(self, data):
-        with bpy.data.libraries.load(filepath=data["filepath"], link=True) as (sourceData, targetData):
-            targetData = sourceData
-            return sourceData
+        filename = data.get('filename')
+
+        return bpy.data.sounds.load(get_filepath(filename))
+
     def _load(self, data, target):
-        pass
+        loader = Loader()
+        loader.load(target, data)
+
+    def diff(self):
+        return False
 
     def _dump(self, instance=None):
-        assert(instance)
-        dumper = Dumper()
-        return dumper.dump(instance)
+        filename = Path(instance.filepath).name
 
+        if not filename:
+            raise FileExistsError(instance.filepath)
+ 
+        return {
+            'filename': filename,
+            'name': instance.name
+        }
 
+    def _resolve_deps_implementation(self):
+        deps = []
+        if self.instance.filepath and self.instance.filepath != '<builtin>':
+            ensure_unpacked(self.instance)
+            
+            deps.append(Path(bpy.path.abspath(self.instance.filepath)))
+
+        return deps

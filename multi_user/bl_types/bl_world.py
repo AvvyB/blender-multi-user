@@ -30,12 +30,16 @@ class BlWorld(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = True
     bl_icon = 'WORLD_DATA'
 
     def _construct(self, data):
         return bpy.data.worlds.new(data["name"])
 
     def _load_implementation(self, data, target):
+        loader = Loader()
+        loader.load(target, data)
+        
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -55,19 +59,15 @@ class BlWorld(BlDatablock):
         assert(instance)
 
         world_dumper = Dumper()
-        world_dumper.depth = 2
-        world_dumper.exclude_filter = [
-            "preview",
-            "original",
-            "uuid",
-            "color",
-            "cycles",
-            "light_settings",
-            "users",
-            "view_center"
+        world_dumper.depth = 1
+        world_dumper.include_filter = [
+            "use_nodes",
+            "name",
+            "color"
         ]
         data = world_dumper.dump(instance)
         if instance.use_nodes:
+            data['node_tree'] = {}
             nodes = {}
 
             for node in instance.node_tree.nodes:
@@ -84,7 +84,7 @@ class BlWorld(BlDatablock):
 
         if self.instance.use_nodes:
             for node in self.instance.node_tree.nodes:
-                if node.type == 'TEX_IMAGE':
+                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT']:
                     deps.append(node.image)
         if self.is_library:
             deps.append(self.instance.library)

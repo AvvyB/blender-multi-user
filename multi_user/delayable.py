@@ -19,20 +19,25 @@ import logging
 
 import bpy
 
-from . import operators, presence, utils
+from . import presence, utils
 from replication.constants import (FETCHED,
-                                                    RP_COMMON,
-                                                    STATE_INITIAL,
-                                                    STATE_QUITTING,
-                                                    STATE_ACTIVE,
-                                                    STATE_SYNCING,
-                                                    STATE_LOBBY,
-                                                    STATE_SRV_SYNC)
+                                   UP,
+                                   RP_COMMON,
+                                   STATE_INITIAL,
+                                   STATE_QUITTING,
+                                   STATE_ACTIVE,
+                                   STATE_SYNCING,
+                                   STATE_LOBBY,
+                                   STATE_SRV_SYNC,
+                                   REPARENT)
 
+from replication.interface import session
 
 class Delayable():
     """Delayable task interface
     """
+    def __init__(self):
+        self.is_registered = False
 
     def register(self):
         raise NotImplementedError
@@ -51,13 +56,20 @@ class Timer(Delayable):
     """
 
     def __init__(self, duration=1):
+        super().__init__()
         self._timeout = duration
         self._running = True
 
     def register(self):
         """Register the timer into the blender timer system
         """
-        bpy.app.timers.register(self.main)
+        
+        if not self.is_registered:
+            bpy.app.timers.register(self.main)
+            self.is_registered = True
+            logging.debug(f"Register {self.__class__.__name__}")
+        else:
+            logging.debug(f"Timer {self.__class__.__name__} already registered")
 
     def main(self):
         self.execute()
@@ -85,18 +97,29 @@ class ApplyTimer(Timer):
         super().__init__(timout)
 
     def execute(self):
-        client = operators.client
-        if client and client.state['STATE'] == STATE_ACTIVE:
-            nodes = client.list(filter=self._type)
+        if session and session.state['STATE'] == STATE_ACTIVE:
+            if self._type:
+                nodes = session.list(filter=self._type)
+            else:
+                nodes = session.list()
 
             for node in nodes:
-                node_ref = client.get(uuid=node)
+                node_ref = session.get(uuid=node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        client.apply(node)
+                        session.apply(node, force=True)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
+                elif node_ref.state == REPARENT:
+                    # Reload the node
+                    node_ref.remove_instance()
+                    node_ref.resolve()
+                    session.apply(node, force=True)
+                    for parent in session._graph.find_parents(node):
+                        logging.info(f"Applying parent {parent}")
+                        session.apply(parent, force=True)
+                    node_ref.state = UP
 
 
 class DynamicRightSelectTimer(Timer):
@@ -107,7 +130,6 @@ class DynamicRightSelectTimer(Timer):
         self._right_strategy = RP_COMMON
 
     def execute(self):
-        session = operators.client
         settings = utils.get_preferences()
 
         if session and session.state['STATE'] == STATE_ACTIVE:
@@ -191,11 +213,16 @@ class DynamicRightSelectTimer(Timer):
 
 class Draw(Delayable):
     def __init__(self):
+        super().__init__()
         self._handler = None
 
     def register(self):
-        self._handler = bpy.types.SpaceView3D.draw_handler_add(
-            self.execute, (), 'WINDOW', 'POST_VIEW')
+        if not self.is_registered:
+            self._handler = bpy.types.SpaceView3D.draw_handler_add(
+                self.execute, (), 'WINDOW', 'POST_VIEW')
+            logging.debug(f"Register {self.__class__.__name__}")
+        else:
+            logging.debug(f"Drow {self.__class__.__name__} already registered")
 
     def execute(self):
         raise NotImplementedError()
@@ -210,7 +237,6 @@ class Draw(Delayable):
 
 class DrawClient(Draw):
     def execute(self):
-        session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
         prefs = utils.get_preferences()
 
@@ -239,27 +265,28 @@ class DrawClient(Draw):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=.032):
+    def __init__(self, timout=.1):
         super().__init__(timout)
         self.handle_quit = False
         self.users_metadata = {}
 
     def execute(self):
         settings = utils.get_preferences()
-        session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
 
         if session and renderer:
             if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
-                local_user =  operators.client.online_users.get(settings.username)
+                local_user = session.online_users.get(
+                    settings.username)
 
                 if not local_user:
                     return
                 else:
-                    for username, user_data in operators.client.online_users.items():
+                    for username, user_data in session.online_users.items():
                         if username != settings.username:
-                            cached_user_data = self.users_metadata.get(username)
-                            new_user_data = operators.client.online_users[username]['metadata']
+                            cached_user_data = self.users_metadata.get(
+                                username)
+                            new_user_data = session.online_users[username]['metadata']
 
                             if cached_user_data is None:
                                 self.users_metadata[username] = user_data['metadata']
@@ -272,7 +299,7 @@ class ClientUpdate(Timer):
 
                 local_user_metadata = local_user.get('metadata')
                 scene_current = bpy.context.scene.name
-                local_user =  session.online_users.get(settings.username)
+                local_user = session.online_users.get(settings.username)
                 current_view_corners = presence.get_view_corners()
 
                 # Init client metadata
@@ -281,9 +308,9 @@ class ClientUpdate(Timer):
                         'view_corners': presence.get_view_matrix(),
                         'view_matrix': presence.get_view_matrix(),
                         'color': (settings.client_color.r,
-                                settings.client_color.g,
-                                settings.client_color.b,
-                                1),
+                                  settings.client_color.g,
+                                  settings.client_color.b,
+                                  1),
                         'frame_current': bpy.context.scene.frame_current,
                         'scene_current': scene_current
                     }
@@ -296,8 +323,10 @@ class ClientUpdate(Timer):
                     session.update_user_metadata(local_user_metadata)
                 elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
-                    local_user_metadata['view_matrix'] = presence.get_view_matrix()
+                    local_user_metadata['view_matrix'] = presence.get_view_matrix(
+                    )
                     session.update_user_metadata(local_user_metadata)
+
 
 class SessionStatusUpdate(Timer):
     def __init__(self, timout=1):
@@ -306,17 +335,17 @@ class SessionStatusUpdate(Timer):
     def execute(self):
         presence.refresh_sidebar_view()
 
+
 class SessionUserSync(Timer):
     def __init__(self, timout=1):
         super().__init__(timout)
 
     def execute(self):
-        session = getattr(operators, 'client', None)
         renderer = getattr(presence, 'renderer', None)
 
         if session and renderer:
             # sync online users
-            session_users = operators.client.online_users
+            session_users = session.online_users
             ui_users = bpy.context.window_manager.online_users
 
             for index, user in enumerate(ui_users):
@@ -331,3 +360,15 @@ class SessionUserSync(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
+
+
+class MainThreadExecutor(Timer):
+    def __init__(self, timout=1, execution_queue=None):
+        super().__init__(timout)
+        self.execution_queue = execution_queue
+    
+    def execute(self):
+        while not self.execution_queue.empty():
+            function = self.execution_queue.get()
+            logging.debug(f"Executing {function.__name__}")
+            function()

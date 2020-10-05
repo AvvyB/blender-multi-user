@@ -20,9 +20,14 @@ import logging
 import bpy
 import string
 import re
+import os
 
-from . import utils, bl_types, environment, addon_updater_ops, presence, ui
+from pathlib import Path
+
+from . import bl_types, environment, addon_updater_ops, presence, ui
+from .utils import get_preferences, get_expanded_icon
 from replication.constants import RP_COMMON
+from replication.interface import session
 
 IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
 
@@ -46,6 +51,7 @@ def update_panel_category(self, context):
     ui.SESSION_PT_settings.bl_category = self.panel_category
     ui.register()
 
+
 def update_ip(self, context):
     ip = IP_EXPR.search(self.ip)
 
@@ -55,13 +61,34 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
+
 def update_port(self, context):
     max_port = self.port + 3
 
     if self.ipc_port < max_port and \
-        self['ipc_port'] >= self.port:
-        logging.error("IPC Port in conflic with the port, assigning a random value")
+            self['ipc_port'] >= self.port:
+        logging.error(
+            "IPC Port in conflic with the port, assigning a random value")
         self['ipc_port'] = random.randrange(self.port+4, 10000)
+
+
+def update_directory(self, context):
+    new_dir = Path(self.cache_directory)
+    if new_dir.exists() and any(Path(self.cache_directory).iterdir()):
+        logging.error("The folder is not empty, choose another one.")
+        self['cache_directory'] = environment.DEFAULT_CACHE_DIR
+    elif not new_dir.exists():
+        logging.info("Target cache folder doesn't exist, creating it.")
+        os.makedirs(self.cache_directory, exist_ok=True)
+
+
+def set_log_level(self, value):
+    logging.getLogger().setLevel(value)
+
+
+def get_log_level(self):
+    return logging.getLogger().level
+
 
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
@@ -73,11 +100,44 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     icon: bpy.props.StringProperty()
 
 
+def set_sync_render_settings(self, value):
+    self['sync_render_settings'] = value
+    if session and bpy.context.scene.uuid and value:
+        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+
+
+def set_sync_active_camera(self, value):
+    self['sync_active_camera'] = value
+
+    if session and bpy.context.scene.uuid and value:
+        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+
+
 class ReplicationFlags(bpy.types.PropertyGroup):
+    def get_sync_render_settings(self):
+        return self.get('sync_render_settings', True)
+
+    def get_sync_active_camera(self):
+        return self.get('sync_active_camera', True)
+
     sync_render_settings: bpy.props.BoolProperty(
         name="Synchronize render settings",
         description="Synchronize render settings (eevee and cycles only)",
-        default=True)
+        default=True,
+        set=set_sync_render_settings,
+        get=get_sync_render_settings)
+    sync_during_editmode: bpy.props.BoolProperty(
+        name="Edit mode updates",
+        description="Enable objects update in edit mode (! Impact performances !)",
+        default=False
+    )
+    sync_active_camera: bpy.props.BoolProperty(
+        name="Synchronize active camera",
+        description="Synchronize the active camera",
+        default=True,
+        get=get_sync_active_camera,
+        set=set_sync_active_camera
+    )
 
 
 class SessionPrefs(bpy.types.AddonPreferences):
@@ -110,8 +170,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ipc_port: bpy.props.IntProperty(
         name="ipc_port",
         description='internal ttl port(only usefull for multiple local instances)',
-        default=5561,
-        update=update_port
+        default=random.randrange(5570, 70000),
+        update=update_port,
     )
     init_method: bpy.props.EnumProperty(
         name='init_method',
@@ -123,11 +183,32 @@ class SessionPrefs(bpy.types.AddonPreferences):
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
-        default=environment.DEFAULT_CACHE_DIR)
+        default=environment.DEFAULT_CACHE_DIR,
+        update=update_directory)
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
         description='connection timeout before disconnection',
         default=1000
+    )
+    update_method: bpy.props.EnumProperty(
+        name='update method',
+        description='replication update method',
+        items=[
+            ('DEFAULT', "Default", "Default: Use threads to monitor databloc changes"),
+            ('DEPSGRAPH', "Depsgraph",
+             "Experimental: Use the blender dependency graph to trigger updates"),
+        ],
+    )
+    # Replication update settings
+    depsgraph_update_rate: bpy.props.IntProperty(
+        name='depsgraph update rate',
+        description='Dependency graph uppdate rate (milliseconds)',
+        default=100
+    )
+    clear_memory_filecache: bpy.props.BoolProperty(
+        name="Clear memory filecache",
+        description="Remove filecache from memory",
+        default=False
     )
     # for UI
     category: bpy.props.EnumProperty(
@@ -139,17 +220,18 @@ class SessionPrefs(bpy.types.AddonPreferences):
         ],
         default='CONFIG'
     )
-    # WIP
     logging_level: bpy.props.EnumProperty(
         name="Log level",
         description="Log verbosity level",
         items=[
-            ('ERROR', "error", "show only errors"),
-            ('WARNING', "warning", "only show warnings and errors"),
-            ('INFO', "info", "default level"),
-            ('DEBUG', "debug", "show all logs"),
+            ('ERROR', "error", "show only errors",  logging.ERROR),
+            ('WARNING', "warning", "only show warnings and errors", logging.WARNING),
+            ('INFO', "info", "default level", logging.INFO),
+            ('DEBUG', "debug", "show all logs", logging.DEBUG),
         ],
-        default='INFO'
+        default='INFO',
+        set=set_log_level,
+        get=get_log_level
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
@@ -179,6 +261,26 @@ class SessionPrefs(bpy.types.AddonPreferences):
     conf_session_ui_expanded: bpy.props.BoolProperty(
         name="Interface",
         description="Interface",
+        default=False
+    )
+    sidebar_advanced_rep_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_rep_expanded",
+        description="sidebar_advanced_rep_expanded",
+        default=False
+    )
+    sidebar_advanced_log_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_log_expanded",
+        description="sidebar_advanced_log_expanded",
+        default=False
+    )
+    sidebar_advanced_net_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_net_expanded",
+        description="sidebar_advanced_net_expanded",
+        default=False
+    )
+    sidebar_advanced_cache_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_cache_expanded",
+        description="sidebar_advanced_cache_expanded",
         default=False
     )
 
@@ -233,8 +335,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_identity_expanded", text="User informations",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_identity_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_identity_expanded),
+                emboss=False)
             if self.conf_session_identity_expanded:
                 box.row().prop(self, "username", text="name")
                 box.row().prop(self, "client_color", text="color")
@@ -243,23 +345,26 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_net_expanded", text="Netorking",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_net_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_net_expanded),
+                emboss=False)
 
             if self.conf_session_net_expanded:
                 box.row().prop(self, "ip", text="Address")
                 row = box.row()
                 row.label(text="Port:")
-                row.prop(self, "port", text="Address")
+                row.prop(self, "port", text="")
                 row = box.row()
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
+                row = box.row()
+                row.label(text="Update method:")
+                row.prop(self, "update_method", text="")
 
                 table = box.box()
                 table.row().prop(
                     self, "conf_session_timing_expanded", text="Refresh rates",
-                    icon='DISCLOSURE_TRI_DOWN' if self.conf_session_timing_expanded
-                    else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                    icon=get_expanded_icon(self.conf_session_timing_expanded),
+                    emboss=False)
 
                 if self.conf_session_timing_expanded:
                     line = table.row()
@@ -277,8 +382,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_hosting_expanded", text="Hosting",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_hosting_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_hosting_expanded),
+                emboss=False)
             if self.conf_session_hosting_expanded:
                 row = box.row()
                 row.label(text="Init the session from:")
@@ -288,23 +393,24 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_cache_expanded", text="Cache",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_cache_expanded
-                else 'DISCLOSURE_TRI_RIGHT', emboss=False)
+                icon=get_expanded_icon(self.conf_session_cache_expanded),
+                emboss=False)
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
+                box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
 
             # INTERFACE SETTINGS
             box = grid.box()
             box.prop(
                 self, "conf_session_ui_expanded", text="Interface",
-                icon='DISCLOSURE_TRI_DOWN' if self.conf_session_ui_expanded else 'DISCLOSURE_TRI_RIGHT',
+                icon=get_expanded_icon(self.conf_session_ui_expanded),
                 emboss=False)
             if self.conf_session_ui_expanded:
                 box.row().prop(self, "panel_category", text="Panel category", expand=True)
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
-            addon_updater_ops.update_settings_ui_condensed(self, context)
+            addon_updater_ops.update_settings_ui(self, context)
 
     def generate_supported_types(self):
         self.supported_datablocks.clear()
@@ -331,10 +437,10 @@ def client_list_callback(scene, context):
 
     items = [(RP_COMMON, RP_COMMON, "")]
 
-    username = utils.get_preferences().username
-    cli = operators.client
-    if cli:
-        client_ids = cli.online_users.keys()
+    username = get_preferences().username
+
+    if session:
+        client_ids = session.online_users.keys()
         for id in client_ids:
             name_desc = id
             if id == username:

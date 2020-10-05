@@ -46,12 +46,105 @@ SPLINE_POINT = [
     "radius",
 ]
 
+CURVE_METADATA = [
+    'align_x',
+    'align_y',
+    'bevel_depth',
+    'bevel_factor_end',
+    'bevel_factor_mapping_end',
+    'bevel_factor_mapping_start',
+    'bevel_factor_start',
+    'bevel_object',
+    'bevel_resolution',
+    'body',
+    'body_format',
+    'dimensions',
+    'eval_time',
+    'extrude',
+    'family',
+    'fill_mode',
+    'follow_curve',
+    'font',
+    'font_bold',
+    'font_bold_italic',
+    'font_italic',
+    'make_local',
+    'materials',
+    'name',
+    'offset',
+    'offset_x',
+    'offset_y',
+    'overflow',
+    'original',
+    'override_create',
+    'override_library',
+    'path_duration',
+    'preview',
+    'render_resolution_u',
+    'render_resolution_v',
+    'resolution_u',
+    'resolution_v',
+    'shape_keys',
+    'shear',
+    'size',
+    'small_caps_scale',
+    'space_character',
+    'space_line',
+    'space_word',
+    'type',
+    'taper_object',
+    'texspace_location',
+    'texspace_size',
+    'transform',
+    'twist_mode',
+    'twist_smooth',
+    'underline_height',
+    'underline_position',
+    'use_auto_texspace',
+    'use_deform_bounds',
+    'use_fake_user',
+    'use_fill_caps',
+    'use_fill_deform',
+    'use_map_taper',
+    'use_path',
+    'use_path_follow',
+    'use_radius',
+    'use_stretch',
+]
+
+
+
+
+SPLINE_METADATA = [
+    'hide',
+    'material_index',
+    # 'order_u',
+    # 'order_v',
+    # 'point_count_u',
+    # 'point_count_v',
+    'points',
+    'radius_interpolation',
+    'resolution_u',
+    'resolution_v',
+    'tilt_interpolation',
+    'type',
+    'use_bezier_u',
+    'use_bezier_v',
+    'use_cyclic_u',
+    'use_cyclic_v',
+    'use_endpoint_u',
+    'use_endpoint_v',
+    'use_smooth',
+]
+
+
 class BlCurve(BlDatablock):
     bl_id = "curves"
     bl_class = bpy.types.Curve
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'CURVE_DATA'
 
     def _construct(self, data):
@@ -62,6 +155,7 @@ class BlCurve(BlDatablock):
         loader.load(target, data)
 
         target.splines.clear()
+
         # load splines
         for spline in data['splines'].values():
             new_spline = target.splines.new(spline['type'])
@@ -72,8 +166,12 @@ class BlCurve(BlDatablock):
                 bezier_points = new_spline.bezier_points 
                 bezier_points.add(spline['bezier_points_count'])
                 np_load_collection(spline['bezier_points'], bezier_points, SPLINE_BEZIER_POINT)
-                
-            # Not really working for now...
+            
+            if new_spline.type == 'POLY':
+                points = new_spline.points 
+                points.add(spline['points_count'])
+                np_load_collection(spline['points'], points, SPLINE_POINT)
+            # Not working for now...
             # See https://blender.stackexchange.com/questions/7020/create-nurbs-surface-with-python
             if new_spline.type == 'NURBS':
                 logging.error("NURBS not supported.")
@@ -83,11 +181,14 @@ class BlCurve(BlDatablock):
             #             new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
             loader.load(new_spline, spline)
+    
     def _dump_implementation(self, data, instance=None):
         assert(instance)
         dumper = Dumper()
         # Conflicting attributes
         # TODO: remove them with the NURBS support
+        dumper.include_filter = CURVE_METADATA
+
         dumper.exclude_filter = [
             'users',
             'order_u',
@@ -105,8 +206,13 @@ class BlCurve(BlDatablock):
 
         for index, spline in enumerate(instance.splines):
             dumper.depth = 2
+            dumper.include_filter = SPLINE_METADATA
             spline_data = dumper.dump(spline)
-            # spline_data['points'] = np_dump_collection(spline.points, SPLINE_POINT)
+
+            if spline.type == 'POLY':
+                spline_data['points_count'] = len(spline.points)-1
+                spline_data['points'] = np_dump_collection(spline.points, SPLINE_POINT)
+
             spline_data['bezier_points_count'] = len(spline.bezier_points)-1
             spline_data['bezier_points'] = np_dump_collection(spline.bezier_points, SPLINE_BEZIER_POINT)
             data['splines'][index] = spline_data
@@ -118,3 +224,17 @@ class BlCurve(BlDatablock):
         elif isinstance(instance, T.Curve):
             data['type'] = 'CURVE'
         return data
+
+    def _resolve_deps_implementation(self):
+        # TODO: resolve material
+        deps = []
+        curve = self.instance
+
+        if isinstance(curve, T.TextCurve):
+            deps.extend([
+                curve.font,
+                curve.font_bold,
+                curve.font_bold_italic,
+                curve.font_italic])
+    
+        return deps

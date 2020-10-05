@@ -25,7 +25,7 @@ from pathlib import Path
 import socket
 import re
 
-VERSION_EXPR = re.compile('\d+\.\d+\.\d+')
+VERSION_EXPR = re.compile('\d+\.\d+\.\d+\w\d+')
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 DEFAULT_CACHE_DIR = os.path.join(
@@ -52,14 +52,21 @@ def install_pip():
 
 def install_package(name, version):
     logging.info(f"installing {name} version...")
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"])
+    env = os.environ
+    if "PIP_REQUIRE_VIRTUALENV" in env:
+        # PIP_REQUIRE_VIRTUALENV is an env var to ensure pip cannot install packages outside a virtual env
+        # https://docs.python-guide.org/dev/pip-virtualenv/
+        # But since Blender's pip is outside of a virtual env, it can block our packages installation, so we unset the
+        # env var for the subprocess.
+        env = os.environ.copy()
+        del env["PIP_REQUIRE_VIRTUALENV"]
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"], env=env)
 
 def check_package_version(name, required_version):
     logging.info(f"Checking {name} version...")
-    out = subprocess.run(f"{str(PYTHON_PATH)} -m pip show {name}", capture_output=True)
+    out = subprocess.run([str(PYTHON_PATH), "-m", "pip", "show", name], capture_output=True)
 
     version = VERSION_EXPR.search(out.stdout.decode())
-
     if version and version.group() == required_version:
         logging.info(f"{name} is up to date")
         return True

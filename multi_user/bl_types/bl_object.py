@@ -16,13 +16,15 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
-import mathutils
 import logging
 
-from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+import bpy
+import mathutils
 from replication.exception import ContextError
+
+from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from .dump_anything import Dumper, Loader
+from replication.exception import ReparentException
 
 
 def load_pose(target_bone, data):
@@ -31,12 +33,59 @@ def load_pose(target_bone, data):
     loader.load(target_bone, data)
 
 
+def find_data_from_name(name=None):
+    instance = None
+    if not name:
+            pass
+    elif name in bpy.data.meshes.keys():
+        instance = bpy.data.meshes[name]
+    elif name in bpy.data.lights.keys():
+        instance = bpy.data.lights[name]
+    elif name in bpy.data.cameras.keys():
+        instance = bpy.data.cameras[name]
+    elif name in bpy.data.curves.keys():
+        instance = bpy.data.curves[name]
+    elif name in bpy.data.metaballs.keys():
+        instance = bpy.data.metaballs[name]
+    elif name in bpy.data.armatures.keys():
+        instance = bpy.data.armatures[name]
+    elif name in bpy.data.grease_pencils.keys():
+        instance = bpy.data.grease_pencils[name]
+    elif name in bpy.data.curves.keys():
+        instance = bpy.data.curves[name]
+    elif name in bpy.data.lattices.keys():
+        instance = bpy.data.lattices[name]
+    elif name in bpy.data.speakers.keys():
+        instance = bpy.data.speakers[name]
+    elif name in bpy.data.lightprobes.keys():
+        # Only supported since 2.83
+        if bpy.app.version[1] >= 83:
+            instance = bpy.data.lightprobes[name]
+        else:
+            logging.warning(
+                "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+    return instance
+
+
+def load_data(object, name):
+    logging.info("loading data")
+    pass
+
+
+def _is_editmode(object: bpy.types.Object) -> bool:
+    child_data = getattr(object, 'data', None)
+    return (child_data and
+            hasattr(child_data, 'is_editmode') and
+            child_data.is_editmode)
+
+
 class BlObject(BlDatablock):
     bl_id = "objects"
     bl_class = bpy.types.Object
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'OBJECT_DATA'
 
     def _construct(self, data):
@@ -52,44 +101,66 @@ class BlObject(BlDatablock):
             return instance
 
         # TODO: refactoring
-        if "data" not in data:
-            pass
-        elif data["data"] in bpy.data.meshes.keys():
-            instance = bpy.data.meshes[data["data"]]
-        elif data["data"] in bpy.data.lights.keys():
-            instance = bpy.data.lights[data["data"]]
-        elif data["data"] in bpy.data.cameras.keys():
-            instance = bpy.data.cameras[data["data"]]
-        elif data["data"] in bpy.data.curves.keys():
-            instance = bpy.data.curves[data["data"]]
-        elif data["data"] in bpy.data.metaballs.keys():
-            instance = bpy.data.metaballs[data["data"]]
-        elif data["data"] in bpy.data.armatures.keys():
-            instance = bpy.data.armatures[data["data"]]
-        elif data["data"] in bpy.data.grease_pencils.keys():
-            instance = bpy.data.grease_pencils[data["data"]]
-        elif data["data"] in bpy.data.curves.keys():
-            instance = bpy.data.curves[data["data"]]
-        elif data["data"] in bpy.data.lattices.keys():
-            instance = bpy.data.lattices[data["data"]]
-        elif data["data"] in bpy.data.speakers.keys():
-            instance = bpy.data.speakers[data["data"]]
-        elif data["data"] in bpy.data.lightprobes.keys():
-            # Only supported since 2.83
-            if bpy.app.version[1] >= 83:
-                instance = bpy.data.lightprobes[data["data"]]
-            else:
-                logging.warning(
-                    "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
-        instance = bpy.data.objects.new(data["name"], instance)
+        object_name = data.get("name")
+        data_uuid = data.get("data_uuid")
+        data_id = data.get("data")
+
+        object_data = get_datablock_from_uuid(
+            data_uuid, 
+            find_data_from_name(data_id),
+            ignore=['images']) #TODO: use resolve_from_id
+        instance = bpy.data.objects.new(object_name, object_data)
         instance.uuid = self.uuid
 
         return instance
 
     def _load_implementation(self, data, target):
-        # Load transformation data
         loader = Loader()
+
+        data_uuid = data.get("data_uuid")
+        data_id = data.get("data")
+
+        if target.type != data['type']:
+            raise ReparentException()
+        elif target.data and (target.data.name != data_id):
+            target.data = get_datablock_from_uuid(data_uuid, find_data_from_name(data_id), ignore=['images'])
+
+        # vertex groups
+        if 'vertex_groups' in data:
+            target.vertex_groups.clear()
+            for vg in data['vertex_groups']:
+                vertex_group=target.vertex_groups.new(name = vg['name'])
+                point_attr='vertices' if 'vertices' in vg else 'points'
+                for vert in vg[point_attr]:
+                    vertex_group.add(
+                        [vert['index']], vert['weight'], 'REPLACE')
+
+        # SHAPE KEYS
+        if 'shape_keys' in data:
+            target.shape_key_clear()
+
+            object_data=target.data
+
+            # Create keys and load vertices coords
+            for key_block in data['shape_keys']['key_blocks']:
+                key_data=data['shape_keys']['key_blocks'][key_block]
+                target.shape_key_add(name = key_block)
+
+                loader.load(
+                    target.data.shape_keys.key_blocks[key_block], key_data)
+                for vert in key_data['data']:
+                    target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
+
+            # Load relative key after all
+            for key_block in data['shape_keys']['key_blocks']:
+                reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
+
+                target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
+
+        # Load transformation data
         loader.load(target, data)
+
+        loader.load(target.display, data['display'])
 
         # Pose
         if 'pose' in data:
@@ -114,58 +185,25 @@ class BlObject(BlDatablock):
                 if 'constraints' in bone_data.keys():
                     loader.load(target_bone, bone_data['constraints'])
 
-
                 load_pose(target_bone, bone_data)
 
                 if 'bone_index' in bone_data.keys():
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
 
-        # vertex groups
-        if 'vertex_groups' in data:
-            target.vertex_groups.clear()
-            for vg in data['vertex_groups']:
-                vertex_group = target.vertex_groups.new(name=vg['name'])
-                point_attr =  'vertices' if 'vertices' in vg else 'points'
-                for vert in vg[point_attr]:
-                    vertex_group.add(
-                        [vert['index']], vert['weight'], 'REPLACE')
-
-        # SHAPE KEYS
-        if 'shape_keys' in data:
-            target.shape_key_clear()
-
-            object_data = target.data
-
-            # Create keys and load vertices coords
-            for key_block in data['shape_keys']['key_blocks']:
-                key_data = data['shape_keys']['key_blocks'][key_block]
-                target.shape_key_add(name=key_block)
-
-                loader.load(
-                    target.data.shape_keys.key_blocks[key_block], key_data)
-                for vert in key_data['data']:
-                    target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
-
-            # Load relative key after all
-            for key_block in data['shape_keys']['key_blocks']:
-                reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
-
-                target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
-
         # TODO: find another way...
         if target.type == 'EMPTY':
-            img_key = data.get('data')
-
-            if target.data is None and img_key:
-                target.data = bpy.data.images.get(img_key, None)
+            img_uuid = data.get('data_uuid')
+            if target.data is None and img_uuid:
+                target.data = get_datablock_from_uuid(img_uuid, None)#bpy.data.images.get(img_key, None)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        
-        child_data = getattr(instance, 'data', None)
-        
-        if child_data and hasattr(child_data, 'is_editmode') and child_data.is_editmode:
-            raise ContextError("Object is in edit-mode.")
+
+        if _is_editmode(instance):
+            if self.preferences.sync_flags.sync_during_editmode:
+                instance.update_from_editmode()
+            else:
+                raise ContextError("Object is in edit-mode.")
 
         dumper = Dumper()
         dumper.depth = 1
@@ -185,29 +223,48 @@ class BlObject(BlDatablock):
             "show_empty_image_perspective",
             "show_empty_image_only_axis_aligned",
             "use_empty_image_alpha",
-            "color"
+            "color",
             "instance_collection",
             "instance_type",
             "location",
             "scale",
+            'lock_location',
+            'lock_rotation',
+            'lock_scale',
+            'hide_render',
+            'display_type',
+            'display_bounds_type',
+            'show_bounds',
+            'show_name',
+            'show_axis',
+            'show_wire',
+            'show_all_edges',
+            'show_texture_space',
+            'show_in_front',
+            'type',
             'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
         ]
 
         data = dumper.dump(instance)
 
+        dumper.include_filter = [
+            'show_shadows',
+        ]
+        data['display'] = dumper.dump(instance.display)
+
+        data['data_uuid'] = getattr(instance.data, 'uuid', None)
         if self.is_library:
             return data
 
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
             dumper.include_filter = None
-            dumper.depth = 2
+            dumper.depth = 1
             data["modifiers"] = {}
             for index, modifier in enumerate(instance.modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
 
         # CONSTRAINTS
-        # OBJECT
         if hasattr(instance, 'constraints'):
             dumper.depth = 3
             data["constraints"] = dumper.dump(instance.constraints)
@@ -260,7 +317,8 @@ class BlObject(BlDatablock):
 
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
-            points_attr = 'vertices' if isinstance(instance.data, bpy.types.Mesh) else 'points'
+            points_attr = 'vertices' if isinstance(
+                instance.data, bpy.types.Mesh) else 'points'
             vg_data = []
             for vg in instance.vertex_groups:
                 vg_idx = vg.index
@@ -315,7 +373,7 @@ class BlObject(BlDatablock):
 
     def _resolve_deps_implementation(self):
         deps = []
-    
+
         # Avoid Empty case
         if self.instance.data:
             deps.append(self.instance.data)
@@ -330,4 +388,3 @@ class BlObject(BlDatablock):
             deps.append(self.instance.instance_collection)
 
         return deps
-

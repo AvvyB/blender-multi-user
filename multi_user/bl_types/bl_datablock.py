@@ -16,13 +16,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import logging
+from collections.abc import Iterable
+
 import bpy
 import mathutils
+from replication.constants import DIFF_BINARY, UP
+from replication.data import ReplicatedDatablock
 
 from .. import utils
-from .dump_anything import Loader, Dumper
-from replication.data import ReplicatedDatablock
-from replication.constants import (UP, DIFF_BINARY)
+from .dump_anything import Dumper, Loader
 
 
 def has_action(target):
@@ -86,6 +89,19 @@ def load_driver(target_datablock, src_driver):
         loader.load(new_point, src_driver['keyframe_points'][src_point])
 
 
+def get_datablock_from_uuid(uuid, default, ignore=[]):
+    if not uuid:
+        return default
+
+    for category in dir(bpy.data):
+        root = getattr(bpy.data, category)
+        if isinstance(root, Iterable) and category not in ignore:
+            for item in root:
+                if getattr(item, 'uuid', None) == uuid:
+                    return item
+    return default
+
+
 class BlDatablock(ReplicatedDatablock):
     """BlDatablock
 
@@ -95,11 +111,14 @@ class BlDatablock(ReplicatedDatablock):
         bl_delay_apply :    refresh rate in sec for apply
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
+        bl_check_common:    enable check even in common rights
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         instance = kwargs.get('instance', None)
+        
+        self.preferences = utils.get_preferences()
 
         # TODO: use is_library_indirect
         self.is_library = (instance and hasattr(instance, 'library') and
@@ -120,12 +139,23 @@ class BlDatablock(ReplicatedDatablock):
             try:
                 datablock_ref = datablock_root[self.data['name']]
             except Exception:
+                name = self.data.get('name')
+                logging.debug(f"Constructing {name}")
                 datablock_ref = self._construct(data=self.data)
 
             if datablock_ref:
                 setattr(datablock_ref, 'uuid', self.uuid)
 
         self.instance = datablock_ref
+
+    def remove_instance(self):
+        """
+        Remove instance from blender data
+        """
+        assert(self.instance)
+
+        datablock_root = getattr(bpy.data, self.bl_id)
+        datablock_root.remove(self.instance)
 
     def _dump(self, instance=None):
         dumper = Dumper()
@@ -187,6 +217,7 @@ class BlDatablock(ReplicatedDatablock):
         if not self.is_library:
             dependencies.extend(self._resolve_deps_implementation())
 
+        logging.debug(f"{self.instance.name} dependencies: {dependencies}")
         return dependencies
 
     def _resolve_deps_implementation(self):

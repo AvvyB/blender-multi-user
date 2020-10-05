@@ -21,8 +21,10 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-
-from ..utils import get_preferences
+from .bl_collection import dump_collection_children, dump_collection_objects, load_collection_childrens, load_collection_objects
+from replication.constants import (DIFF_JSON, MODIFIED)
+from deepdiff import DeepDiff
+import logging
 
 class BlScene(BlDatablock):
     bl_id = "scenes"
@@ -30,7 +32,13 @@ class BlScene(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = True
     bl_icon = 'SCENE_DATA'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.diff_method = DIFF_JSON
 
     def _construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
@@ -42,24 +50,8 @@ class BlScene(BlDatablock):
         loader.load(target, data)
 
         # Load master collection
-        for object in data["collection"]["objects"]:
-            if object not in target.collection.objects.keys():
-                target.collection.objects.link(bpy.data.objects[object])
-
-        for object in target.collection.objects.keys():
-            if object not in data["collection"]["objects"]:
-                target.collection.objects.unlink(bpy.data.objects[object])
-
-        # load collections
-        for collection in data["collection"]["children"]:
-            if collection not in target.collection.children.keys():
-                target.collection.children.link(
-                    bpy.data.collections[collection])
-
-        for collection in target.collection.children.keys():
-            if collection not in data["collection"]["children"]:
-                target.collection.children.unlink(
-                    bpy.data.collections[collection])
+        load_collection_objects(data['collection']['objects'], target.collection)
+        load_collection_childrens(data['collection']['children'], target.collection)
 
         if 'world' in data.keys():
             target.world = bpy.data.worlds[data['world']]
@@ -68,19 +60,23 @@ class BlScene(BlDatablock):
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
-        if 'eevee' in data.keys():
-            loader.load(target.eevee, data['eevee'])
-        
-        if 'cycles' in data.keys():
-            loader.load(target.eevee, data['cycles'])
+        if self.preferences.sync_flags.sync_render_settings:
+            if 'eevee' in data.keys():
+                loader.load(target.eevee, data['eevee'])
 
-        if 'view_settings' in data.keys():
-            loader.load(target.view_settings, data['view_settings'])
-            if target.view_settings.use_curve_mapping:
-                #TODO: change this ugly fix
-                target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
-                target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
-                target.view_settings.curve_mapping.update()
+            if 'cycles' in data.keys():
+                loader.load(target.eevee, data['cycles'])
+
+            if 'render' in data.keys():
+                loader.load(target.render, data['render'])
+
+            if 'view_settings' in data.keys():
+                loader.load(target.view_settings, data['view_settings'])
+                if target.view_settings.use_curve_mapping:
+                    #TODO: change this ugly fix
+                    target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
+                    target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
+                    target.view_settings.curve_mapping.update()
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -92,22 +88,27 @@ class BlScene(BlDatablock):
             'name',
             'world',
             'id',
-            'camera',
             'grease_pencil',
+            'frame_start',
+            'frame_end',
+            'frame_step',
         ]
+        if self.preferences.sync_flags.sync_active_camera:
+            scene_dumper.include_filter.append('camera')
+
         data = scene_dumper.dump(instance)
 
         scene_dumper.depth = 3
 
         scene_dumper.include_filter = ['children','objects','name']
-        data['collection'] = scene_dumper.dump(instance.collection)
+        data['collection'] = {}
+        data['collection']['children'] = dump_collection_children(instance.collection)
+        data['collection']['objects'] = dump_collection_objects(instance.collection)
         
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
-        
-        pref = get_preferences()
 
-        if pref.sync_flags.sync_render_settings:
+        if self.preferences.sync_flags.sync_render_settings:
             scene_dumper.exclude_filter = [
                 'gi_cache_info',
                 'feature_set',
@@ -121,12 +122,15 @@ class BlScene(BlDatablock):
                 'preview_samples',
                 'sample_clamp_indirect',
                 'samples',
-                'volume_bounces'
+                'volume_bounces',
+                'file_extension',
+                'use_denoising'
             ]
             data['eevee'] = scene_dumper.dump(instance.eevee)
             data['cycles'] = scene_dumper.dump(instance.cycles)        
             data['view_settings'] = scene_dumper.dump(instance.view_settings)
-           
+            data['render'] = scene_dumper.dump(instance.render)
+
             if instance.view_settings.use_curve_mapping:
                 data['view_settings']['curve_mapping'] = scene_dumper.dump(instance.view_settings.curve_mapping)
                 scene_dumper.depth = 5
@@ -160,3 +164,17 @@ class BlScene(BlDatablock):
             deps.append(self.instance.grease_pencil)
 
         return deps
+
+    def diff(self):
+        exclude_path = []
+
+        if not self.preferences.sync_flags.sync_render_settings:
+            exclude_path.append("root['eevee']")
+            exclude_path.append("root['cycles']")
+            exclude_path.append("root['view_settings']")
+            exclude_path.append("root['render']")
+
+        if not self.preferences.sync_flags.sync_active_camera:
+            exclude_path.append("root['camera']")
+
+        return DeepDiff(self.data, self._dump(instance=self.instance),exclude_paths=exclude_path, cache_size=5000)

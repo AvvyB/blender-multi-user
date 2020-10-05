@@ -61,7 +61,8 @@ def refresh_sidebar_view():
     """
     area, region, rv3d = view3d_find()
 
-    area.regions[3].tag_redraw()
+    if area:
+        area.regions[3].tag_redraw()
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]

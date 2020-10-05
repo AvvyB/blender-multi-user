@@ -29,6 +29,7 @@ class BlSpeaker(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'SPEAKER'
 
     def _load_implementation(self, data, target):
@@ -48,6 +49,7 @@ class BlSpeaker(BlDatablock):
             'volume',
             'name',
             'pitch',
+            'sound',
             'volume_min',
             'volume_max',
             'attenuation',
@@ -60,6 +62,15 @@ class BlSpeaker(BlDatablock):
 
         return dumper.dump(instance)
 
-    
+    def _resolve_deps_implementation(self):
+        # TODO: resolve material
+        deps = []
+
+        sound = self.instance.sound
+
+        if sound:
+            deps.append(sound)
+
+        return deps
 
 

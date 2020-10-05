@@ -21,6 +21,55 @@ import mathutils
 
 from .. import utils
 from .bl_datablock import BlDatablock
+from .dump_anything import Loader, Dumper
+
+
+def dump_collection_children(collection):
+    collection_children = []
+    for child in collection.children:
+        if child not in collection_children:
+            collection_children.append(child.uuid)
+    return collection_children
+
+
+def dump_collection_objects(collection):
+    collection_objects = []
+    for object in collection.objects:
+        if object not in collection_objects:
+            collection_objects.append(object.uuid)
+
+    return collection_objects
+
+
+def load_collection_objects(dumped_objects, collection):
+    for object in dumped_objects:
+        object_ref = utils.find_from_attr('uuid', object, bpy.data.objects)
+
+        if object_ref is None:
+            continue
+        elif object_ref.name not in collection.objects.keys():
+            collection.objects.link(object_ref)
+
+    for object in collection.objects:
+        if object.uuid not in dumped_objects:
+            collection.objects.unlink(object)
+
+
+def load_collection_childrens(dumped_childrens, collection):
+    for child_collection in dumped_childrens:
+        collection_ref = utils.find_from_attr(
+            'uuid',
+            child_collection,
+            bpy.data.collections)
+
+        if collection_ref is None:
+            continue
+        if collection_ref.name not in collection.children.keys():
+            collection.children.link(collection_ref)
+
+    for child_collection in collection.children:
+        if child_collection.uuid not in dumped_childrens:
+            collection.children.unlink(child_collection)
 
 
 class BlCollection(BlDatablock):
@@ -30,71 +79,47 @@ class BlCollection(BlDatablock):
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
-
+    bl_check_common = True
+    
     def _construct(self, data):
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.collections = [
                     name for name in sourceData.collections if name == self.data['name']]
-            
+
             instance = bpy.data.collections[self.data['name']]
-            
+
             return instance
 
         instance = bpy.data.collections.new(data["name"])
         return instance
 
     def _load_implementation(self, data, target):
-        # Load other meshes metadata
-        target.name = data["name"]
-        
+        loader = Loader()
+        loader.load(target, data)
+
         # Objects
-        for object in data["objects"]:
-            object_ref = bpy.data.objects.get(object)
-
-            if object_ref is None:
-                continue
-
-            if object not in target.objects.keys(): 
-                target.objects.link(object_ref)
-
-        for object in target.objects:
-            if object.name not in data["objects"]:
-                target.objects.unlink(object)
+        load_collection_objects(data['objects'], target)
 
         # Link childrens
-        for collection in data["children"]:
-            collection_ref = bpy.data.collections.get(collection)
-
-            if collection_ref is None:
-                continue
-            if collection_ref.name not in target.children.keys():
-                target.children.link(collection_ref)
-
-        for collection in target.children:
-            if collection.name not in data["children"]:
-                target.children.unlink(collection)
+        load_collection_childrens(data['children'], target)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        data = {}
-        data['name'] = instance.name
+
+        dumper = Dumper()
+        dumper.depth = 1
+        dumper.include_filter = [
+            "name",
+            "instance_offset"
+        ]
+        data = dumper.dump(instance)
 
         # dump objects
-        collection_objects = []
-        for object in instance.objects:
-            if object not in collection_objects:
-                collection_objects.append(object.name)
-
-        data['objects'] = collection_objects
+        data['objects'] = dump_collection_objects(instance)
 
         # dump children collections
-        collection_children = []
-        for child in instance.children:
-            if child not in collection_children:
-                collection_children.append(child.name)
-
-        data['children'] = collection_children
+        data['children'] = dump_collection_children(instance)
 
         return data
 

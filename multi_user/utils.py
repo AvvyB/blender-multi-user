@@ -21,8 +21,10 @@ import logging
 import os
 import sys
 import time
-from uuid import uuid4
 from collections.abc import Iterable
+from pathlib import Path
+from uuid import uuid4
+import math
 
 import bpy
 import mathutils
@@ -39,7 +41,7 @@ def find_from_attr(attr_name, attr_value, list):
 
 def get_datablock_users(datablock):
     users = []
-    supported_types =  get_preferences().supported_datablocks
+    supported_types = get_preferences().supported_datablocks
     if hasattr(datablock, 'users_collection') and datablock.users_collection:
         users.extend(list(datablock.users_collection))
     if hasattr(datablock, 'users_scene') and datablock.users_scene:
@@ -47,7 +49,7 @@ def get_datablock_users(datablock):
     if hasattr(datablock, 'users_group') and datablock.users_scene:
         users.extend(list(datablock.users_scene))
     for datatype in supported_types:
-        if datatype.bl_name != 'users':
+        if datatype.bl_name != 'users' and hasattr(bpy.data, datatype.bl_name):
             root = getattr(bpy.data, datatype.bl_name)
             for item in root:
                 if hasattr(item, 'data') and datablock == item.data or \
@@ -77,10 +79,76 @@ def resolve_from_id(id, optionnal_type=None):
             if id in root and ((optionnal_type is None) or (optionnal_type.lower() in root[id].__class__.__name__.lower())):
                 return root[id]
     return None
-            
+
 
 def get_preferences():
     return bpy.context.preferences.addons[__package__].preferences
 
+
 def current_milli_time():
     return int(round(time.time() * 1000))
+
+
+def get_expanded_icon(prop: bpy.types.BoolProperty) -> str:
+    if prop:
+        return 'DISCLOSURE_TRI_DOWN'
+    else:
+        return 'DISCLOSURE_TRI_RIGHT'
+
+
+# Taken from here: https://stackoverflow.com/a/55659577
+def get_folder_size(folder):
+    return ByteSize(sum(file.stat().st_size for file in Path(folder).rglob('*')))
+
+
+class ByteSize(int):
+
+    _kB = 1024
+    _suffixes = 'B', 'kB', 'MB', 'GB', 'PB'
+
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls, *args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        self.bytes = self.B = int(self)
+        self.kilobytes = self.kB = self / self._kB**1
+        self.megabytes = self.MB = self / self._kB**2
+        self.gigabytes = self.GB = self / self._kB**3
+        self.petabytes = self.PB = self / self._kB**4
+        *suffixes, last = self._suffixes
+        suffix = next((
+            suffix
+            for suffix in suffixes
+            if 1 < getattr(self, suffix) < self._kB
+        ), last)
+        self.readable = suffix, getattr(self, suffix)
+
+        super().__init__()
+
+    def __str__(self):
+        return self.__format__('.2f')
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, super().__repr__())
+
+    def __format__(self, format_spec):
+        suffix, val = self.readable
+        return '{val:{fmt}} {suf}'.format(val=math.ceil(val), fmt=format_spec, suf=suffix)
+
+    def __sub__(self, other):
+        return self.__class__(super().__sub__(other))
+
+    def __add__(self, other):
+        return self.__class__(super().__add__(other))
+
+    def __mul__(self, other):
+        return self.__class__(super().__mul__(other))
+
+    def __rsub__(self, other):
+        return self.__class__(super().__sub__(other))
+
+    def __radd__(self, other):
+        return self.__class__(super().__add__(other))
+
+    def __rmul__(self, other):
+        return self.__class__(super().__rmul__(other))

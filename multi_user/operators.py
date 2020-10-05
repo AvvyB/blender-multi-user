@@ -25,8 +25,9 @@ import string
 import time
 from operator import itemgetter
 from pathlib import Path
-from subprocess import PIPE, Popen, TimeoutExpired
-import zmq
+import shutil
+from pathlib import Path
+from queue import Queue
 
 import bpy
 import mathutils
@@ -34,21 +35,94 @@ from bpy.app.handlers import persistent
 
 from . import bl_types, delayable, environment, presence, ui, utils
 from replication.constants import (FETCHED, STATE_ACTIVE,
-                                                     STATE_INITIAL,
-                                                     STATE_SYNCING)
+                                   STATE_INITIAL,
+                                   STATE_SYNCING, RP_COMMON, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
-from replication.interface import Session
+from replication.interface import session
 
 
-client = None
+background_execution_queue = Queue()
 delayables = []
 stop_modal_executor = False
 
 
+def session_callback(name):
+    """ Session callback wrapper
+
+    This allow to encapsulate session callbacks to background_execution_queue.
+    By doing this way callback are executed from the main thread. 
+    """
+    def func_wrapper(func):
+        @session.register(name)
+        def add_background_task():
+            background_execution_queue.put(func)
+        return add_background_task
+    return func_wrapper
+
+
+@session_callback('on_connection')
+def initialize_session():
+    """Session connection init hander 
+    """
+    settings = utils.get_preferences()
+    runtime_settings = bpy.context.window_manager.session
+
+    # Step 1: Constrect nodes
+    for node in session._graph.list_ordered():
+        node_ref = session.get(node)
+        if node_ref.state == FETCHED:
+            node_ref.resolve()
+
+    # Step 2: Load nodes
+    for node in session._graph.list_ordered():
+        node_ref = session.get(node)
+        if node_ref.state == FETCHED:
+            node_ref.apply()
+
+    # Step 3: Launch presence overlay
+    if runtime_settings.enable_presence:
+        presence.renderer.run()
+
+    # Step 4: Register blender timers
+    for d in delayables:
+        d.register()
+
+    if settings.update_method == 'DEPSGRAPH':
+        bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+
+
+@session_callback('on_exit')
+def on_connection_end():
+    """Session connection finished handler 
+    """
+    global delayables, stop_modal_executor
+    settings = utils.get_preferences()
+
+    # Step 1: Unregister blender timers
+    for d in delayables:
+        try:
+            d.unregister()
+        except:
+            continue
+
+    stop_modal_executor = True
+
+    # Step 2: Unregister presence renderer
+    presence.renderer.stop()
+
+    if settings.update_method == 'DEPSGRAPH':
+        bpy.app.handlers.depsgraph_update_post.remove(
+            depsgraph_evaluation)
+
+    # Step 3: remove file handled
+    logger = logging.getLogger()
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            logger.removeHandler(handler)
+
+
 # OPERATORS
-
-
 class SessionStartOperator(bpy.types.Operator):
     bl_idname = "session.start"
     bl_label = "start"
@@ -61,15 +135,37 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables
+        global delayables
 
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = runtime_settings.password
-
+        use_extern_update = settings.update_method == 'DEPSGRAPH'
         users.clear()
         delayables.clear()
+
+        logger = logging.getLogger()
+        if len(logger.handlers) == 1:
+            formatter = logging.Formatter(
+                fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
+                datefmt='%H:%M:%S'
+            )
+
+            log_directory = os.path.join(
+                settings.cache_directory,
+                "multiuser_client.log")
+
+            os.makedirs(settings.cache_directory, exist_ok=True)
+
+            handler = logging.FileHandler(log_directory, mode='w')
+            logger.addHandler(handler)
+
+            for handler in logger.handlers:
+                if isinstance(handler, logging.NullHandler):
+                    continue
+
+                handler.setFormatter(formatter)
 
         bpy_factory = ReplicatedDataFactory()
         supported_bl_types = []
@@ -82,24 +178,35 @@ class SessionStartOperator(bpy.types.Operator):
 
             supported_bl_types.append(type_module_class.bl_id)
 
-            # Retreive local replicated types settings
+            if type_impl_name not in settings.supported_datablocks:
+                logging.info(f"{type_impl_name} not found, \
+                             regenerate type settings...")
+                settings.generate_supported_types()
+
             type_local_config = settings.supported_datablocks[type_impl_name]
 
             bpy_factory.register_type(
                 type_module_class.bl_class,
                 type_module_class,
-                timer=type_local_config.bl_delay_refresh,
-                automatic=type_local_config.auto_push)
+                timer=type_local_config.bl_delay_refresh*1000,
+                automatic=type_local_config.auto_push,
+                check_common=type_module_class.bl_check_common)
 
-            if type_local_config.bl_delay_apply > 0:
-                delayables.append(
-                    delayable.ApplyTimer(
-                        timout=type_local_config.bl_delay_apply,
-                        target_type=type_module_class))
+            if settings.update_method == 'DEFAULT':
+                if type_local_config.bl_delay_apply > 0:
+                    delayables.append(
+                        delayable.ApplyTimer(
+                            timout=type_local_config.bl_delay_apply,
+                            target_type=type_module_class))
 
-        client = Session(
+        session.configure(
             factory=bpy_factory,
-            python_path=bpy.app.binary_path_python)
+            python_path=bpy.app.binary_path_python,
+            external_update_handling=use_extern_update)
+
+        if settings.update_method == 'DEPSGRAPH':
+            delayables.append(delayable.ApplyTimer(
+                settings.depsgraph_update_rate/1000))
 
         # Host a session
         if self.host:
@@ -109,16 +216,19 @@ class SessionStartOperator(bpy.types.Operator):
             runtime_settings.is_host = True
             runtime_settings.internet_ip = environment.get_ip()
 
-            for scene in bpy.data.scenes:
-                client.add(scene)
-
             try:
-                client.host(
+                for scene in bpy.data.scenes:
+                    session.add(scene)
+
+                session.host(
                     id=settings.username,
                     port=settings.port,
                     ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,
-                    password=admin_pass
+                    password=admin_pass,
+                    cache_directory=settings.cache_directory,
+                    server_log_level=logging.getLevelName(
+                        logging.getLogger().level),
                 )
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
@@ -128,11 +238,11 @@ class SessionStartOperator(bpy.types.Operator):
         else:
             if not runtime_settings.admin:
                 utils.clean_scene()
-                # regular client, no password needed
+                # regular session, no password needed
                 admin_pass = None
 
             try:
-                client.connect(
+                session.connect(
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
@@ -145,48 +255,22 @@ class SessionStartOperator(bpy.types.Operator):
                 logging.error(str(e))
 
         # Background client updates service
-        #TODO: Refactoring
         delayables.append(delayable.ClientUpdate())
         delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
         session_user_sync = delayable.SessionUserSync()
+        session_background_executor = delayable.MainThreadExecutor(
+            execution_queue=background_execution_queue)
+
         session_update.register()
         session_user_sync.register()
+        session_background_executor.register()
 
+        delayables.append(session_background_executor)
         delayables.append(session_update)
         delayables.append(session_user_sync)
-
-
-        @client.register('on_connection')
-        def initialize_session():
-            for node in client._graph.list_ordered():
-                node_ref = client.get(node)
-                if node_ref.state == FETCHED:
-                    node_ref.resolve()
-                    node_ref.apply()
-
-            # Launch drawing module
-            if runtime_settings.enable_presence:
-                presence.renderer.run()
-
-            # Register blender main thread tools
-            for d in delayables:
-                d.register()
-
-        @client.register('on_exit')
-        def desinitialize_session():
-            global delayables, stop_modal_executor
-
-            for d in delayables:
-                try:
-                    d.unregister()
-                except:
-                    continue
-
-            stop_modal_executor = True
-            presence.renderer.stop()
 
         bpy.ops.session.apply_armature_operator()
 
@@ -224,15 +308,13 @@ class SessionInitOperator(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
     def execute(self, context):
-        global client
-
         if self.init_method == 'EMPTY':
             utils.clean_scene()
 
         for scene in bpy.data.scenes:
-            client.add(scene)
+            session.add(scene)
 
-        client.init()
+        session.init()
 
         return {"FINISHED"}
 
@@ -248,11 +330,12 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, stop_modal_executor
+        global delayables, stop_modal_executor
 
-        if client:
+        if session:
             try:
-                client.disconnect()
+                session.disconnect()
+
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
         else:
@@ -274,11 +357,11 @@ class SessionKickOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client, delayables, stop_modal_executor
-        assert(client)
+        global delayables, stop_modal_executor
+        assert(session)
 
         try:
-            client.kick(self.user)
+            session.kick(self.user)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
@@ -305,9 +388,8 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client
         try:
-            client.remove(self.property_path)
+            session.remove(self.property_path)
 
             return {"FINISHED"}
         except:  # NonAuthorizedOperationError:
@@ -342,10 +424,9 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
     def execute(self, context):
         runtime_settings = context.window_manager.session
-        global client
 
-        if client:
-            client.change_owner(self.key, runtime_settings.clients)
+        if session:
+            session.change_owner(self.key, runtime_settings.clients)
 
         return {"FINISHED"}
 
@@ -392,10 +473,9 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
         if event.type == 'TIMER':
             area, region, rv3d = presence.view3d_find()
-            global client
 
-            if client:
-                target_ref = client.online_users.get(self.target_client)
+            if session:
+                target_ref = session.online_users.get(self.target_client)
 
                 if target_ref:
                     target_scene = target_ref['metadata']['scene_current']
@@ -404,14 +484,16 @@ class SessionSnapUserOperator(bpy.types.Operator):
                     if target_scene != context.scene.name:
                         blender_scene = bpy.data.scenes.get(target_scene, None)
                         if blender_scene is None:
-                            self.report({'ERROR'}, f"Scene {target_scene} doesn't exist on the local client.")
+                            self.report(
+                                {'ERROR'}, f"Scene {target_scene} doesn't exist on the local client.")
                             session_sessings.time_snap_running = False
                             return {"CANCELLED"}
 
                         bpy.context.window.scene = blender_scene
 
                     # Update client viewmatrix
-                    client_vmatrix = target_ref['metadata'].get('view_matrix', None)
+                    client_vmatrix = target_ref['metadata'].get(
+                        'view_matrix', None)
 
                     if client_vmatrix:
                         rv3d.view_matrix = mathutils.Matrix(client_vmatrix)
@@ -464,10 +546,8 @@ class SessionSnapTimeOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            global client
-
-            if client:
-                target_ref = client.online_users.get(self.target_client)
+            if session:
+                target_ref = session.online_users.get(self.target_client)
 
                 if target_ref:
                     context.scene.frame_current = target_ref['metadata']['frame_current']
@@ -490,9 +570,7 @@ class SessionApply(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client
-
-        client.apply(self.target)
+        session.apply(self.target)
 
         return {"FINISHED"}
 
@@ -510,10 +588,9 @@ class SessionCommit(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global client
-        # client.get(uuid=target).diff()
-        client.commit(uuid=self.target)
-        client.push(self.target)
+        # session.get(uuid=target).diff()
+        session.commit(uuid=self.target)
+        session.push(self.target)
         return {"FINISHED"}
 
 
@@ -531,16 +608,15 @@ class ApplyArmatureOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            global client
-            if client and client.state['STATE'] == STATE_ACTIVE:
-                nodes = client.list(filter=bl_types.bl_armature.BlArmature)
+            if session and session.state['STATE'] == STATE_ACTIVE:
+                nodes = session.list(filter=bl_types.bl_armature.BlArmature)
 
                 for node in nodes:
-                    node_ref = client.get(uuid=node)
+                    node_ref = session.get(uuid=node)
 
                     if node_ref.state == FETCHED:
                         try:
-                            client.apply(node)
+                            session.apply(node)
                         except Exception as e:
                             logging.error("Fail to apply armature: {e}")
 
@@ -561,6 +637,35 @@ class ApplyArmatureOperator(bpy.types.Operator):
         stop_modal_executor = False
 
 
+class ClearCache(bpy.types.Operator):
+    "Clear local session cache"
+    bl_idname = "session.clear_cache"
+    bl_label = "Modal Executor Operator"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        cache_dir = utils.get_preferences().cache_directory
+        try:
+            for root, dirs, files in os.walk(cache_dir):
+                for name in files:
+                    Path(root, name).unlink()
+
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to remove local cache ? ")
+
+
 classes = (
     SessionStartOperator,
     SessionStopOperator,
@@ -573,7 +678,7 @@ classes = (
     ApplyArmatureOperator,
     SessionKickOperator,
     SessionInitOperator,
-
+    ClearCache,
 )
 
 
@@ -585,27 +690,58 @@ def sanitize_deps_graph(dummy):
     A future solution should be to avoid storing dataclock reference...
 
     """
-    global client
-
-    if client and client.state['STATE'] == STATE_ACTIVE:
-        for node_key in client.list():
-            client.get(node_key).resolve()
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        for node_key in session.list():
+            session.get(node_key).resolve()
 
 
 @persistent
 def load_pre_handler(dummy):
-    global client
-
-    if client and client.state['STATE'] in [STATE_ACTIVE, STATE_SYNCING]:
+    if session and session.state['STATE'] in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
 
 
 @persistent
 def update_client_frame(scene):
-    if client and client.state['STATE'] == STATE_ACTIVE:
-        client.update_user_metadata({
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        session.update_user_metadata({
             'frame_current': scene.frame_current
         })
+
+
+@persistent
+def depsgraph_evaluation(scene):
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        context = bpy.context
+        blender_depsgraph = bpy.context.view_layer.depsgraph
+        dependency_updates = [u for u in blender_depsgraph.updates]
+        settings = utils.get_preferences()
+
+        # NOTE: maybe we don't need to check each update but only the first
+
+        for update in reversed(dependency_updates):
+            # Is the object tracked ?
+            if update.id.uuid:
+                # Retrieve local version
+                node = session.get(update.id.uuid)
+
+                # Check our right on this update:
+                #   - if its ours or ( under common and diff), launch the
+                # update process
+                #   - if its to someone else, ignore the update (go deeper ?)
+                if node and node.owner in [session.id, RP_COMMON] and node.state == UP:
+                    # Avoid slow geometry update
+                    if 'EDIT' in context.mode and \
+                            not settings.sync_during_editmode:
+                        break
+
+                    session.stash(node.uuid)
+                else:
+                    # Distant update
+                    continue
+            # else:
+            #     # New items !
+            #     logger.error("UPDATE: ADD")
 
 
 def register():
@@ -621,11 +757,8 @@ def register():
 
 
 def unregister():
-    global client
-
-    if client and client.state['STATE'] == 2:
-        client.disconnect()
-        client = None
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        session.disconnect()
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
@@ -636,7 +769,3 @@ def unregister():
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
-
-
-if __name__ == "__main__":
-    register()

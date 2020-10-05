@@ -27,7 +27,6 @@ from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
 from .bl_datablock import BlDatablock
 
-
 VERTICE = ['co']
 
 EDGE = [
@@ -53,6 +52,7 @@ class BlMesh(BlDatablock):
     bl_delay_refresh = 2
     bl_delay_apply = 1
     bl_automatic_push = True
+    bl_check_common = False
     bl_icon = 'MESH_DATA'
 
     def _construct(self, data):
@@ -89,32 +89,34 @@ class BlMesh(BlDatablock):
             np_load_collection(data["polygons"],target.polygons, POLYGON)
 
             # UV Layers
-            for layer in data['uv_layers']:
-                if layer not in target.uv_layers:
-                    target.uv_layers.new(name=layer)
+            if 'uv_layers' in data.keys():
+                for layer in data['uv_layers']:
+                    if layer not in target.uv_layers:
+                        target.uv_layers.new(name=layer)
 
-                np_load_collection_primitives(
-                    target.uv_layers[layer].data, 
-                    'uv', 
-                    data["uv_layers"][layer]['data'])
+                    np_load_collection_primitives(
+                        target.uv_layers[layer].data, 
+                        'uv', 
+                        data["uv_layers"][layer]['data'])
             
             # Vertex color
-            for color_layer in data['vertex_colors']:
-                if color_layer not in target.vertex_colors:
-                    target.vertex_colors.new(name=color_layer)
+            if 'vertex_colors' in data.keys():
+                for color_layer in data['vertex_colors']:
+                    if color_layer not in target.vertex_colors:
+                        target.vertex_colors.new(name=color_layer)
 
-                np_load_collection_primitives(
-                    target.vertex_colors[color_layer].data, 
-                    'color', 
-                    data["vertex_colors"][color_layer]['data'])
+                    np_load_collection_primitives(
+                        target.vertex_colors[color_layer].data, 
+                        'color', 
+                        data["vertex_colors"][color_layer]['data'])
 
             target.validate()
             target.update()
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        
-        if instance.is_editmode:
+
+        if instance.is_editmode and not self.preferences.sync_flags.sync_during_editmode:
             raise ContextError("Mesh is in edit mode")
         mesh = instance
 
@@ -147,16 +149,18 @@ class BlMesh(BlDatablock):
         data["loops"] = np_dump_collection(mesh.loops, LOOP)
 
         # UV Layers
-        data['uv_layers'] = {}
-        for layer in mesh.uv_layers:
-            data['uv_layers'][layer.name] = {}
-            data['uv_layers'][layer.name]['data'] = np_dump_collection_primitive(layer.data, 'uv')
+        if mesh.uv_layers:
+            data['uv_layers'] = {}
+            for layer in mesh.uv_layers:
+                data['uv_layers'][layer.name] = {}
+                data['uv_layers'][layer.name]['data'] = np_dump_collection_primitive(layer.data, 'uv')
 
         # Vertex color
-        data['vertex_colors'] = {}
-        for color_map in mesh.vertex_colors:
-            data['vertex_colors'][color_map.name] = {}
-            data['vertex_colors'][color_map.name]['data'] = np_dump_collection_primitive(color_map.data, 'color')
+        if mesh.vertex_colors:
+            data['vertex_colors'] = {}
+            for color_map in mesh.vertex_colors:
+                data['vertex_colors'][color_map.name] = {}
+                data['vertex_colors'][color_map.name]['data'] = np_dump_collection_primitive(color_map.data, 'color')
 
         # Fix material index
         m_list = []

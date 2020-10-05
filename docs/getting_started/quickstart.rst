@@ -161,6 +161,19 @@ The collaboration quality directly depend on the communication quality. This sec
 various tools made in an effort to ease the communication between the different session users.
 Feel free to suggest any idea for communication tools `here <https://gitlab.com/slumber/multi-user/-/issues/75>`_ .
 
+---------------------------
+Change replication behavior
+---------------------------
+
+During a session, the multi-user will replicate your modifications to other instances.
+In order to avoid annoying other users when you are experimenting, some of those modifications can be ignored via 
+various flags present at the top of the panel (see red area in the image bellow). Those flags are explained in the :ref:`replication` section.
+
+.. figure:: img/quickstart_replication.png
+      :align: center
+
+      Session replication flags
+
 --------------------
 Monitor online users
 --------------------
@@ -242,6 +255,8 @@ various drawn parts via the following flags:
 - **Show users**: display users current viewpoint 
 - **Show different scenes**: display users working on other scenes
 
+
+
 -----------
 Manage data
 -----------
@@ -299,37 +314,105 @@ Here is a quick list of available actions:
 
 .. _advanced:
 
-Advanced configuration
-======================
+Advanced settings
+=================
 
 This section contains optional settings to configure the session behavior.
 
 .. figure:: img/quickstart_advanced.png
    :align: center
 
-   Repository panel
+   Advanced configuration panel
 
-.. rubric:: Network
+-------
+Network
+-------
+
+.. figure:: img/quickstart_advanced_network.png
+   :align: center
+
+   Advanced network settings
 
 **IPC Port** is the port used for Inter Process Communication. This port is used 
 by the multi-users subprocesses to communicate with each others. If different instances
 of the multi-user are using the same IPC port it will create conflict !
 
-You only need to modify it if you need to launch multiple clients from the same
-computer(or if you try to host and join on the same computer). You should just enter a different
-**IPC port** for each blender instance.
+.. note::
+   You only need to modify it if you need to launch multiple clients from the same
+   computer(or if you try to host and join on the same computer). You should just enter a different
+   **IPC port** for each blender instance.
 
 **Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
 You should only increase it if you have a bad connection.
 
-.. rubric:: Replication
+.. _replication:
+
+-----------
+Replication
+-----------
+
+.. figure:: img/quickstart_advanced_replication.png
+   :align: center
+
+   Advanced replication settings
 
 **Synchronize render settings** (only host) enable replication of EEVEE and CYCLES render settings to match render between clients.
+
+**Synchronize active camera** sync the scene active camera.
+
+**Edit Mode Updates** enable objects update while you are in Edit_Mode.
+
+.. warning::  Edit Mode Updates kill performances with complex objects (heavy meshes, gpencil, etc...).
+
+**Update method** allow you to change how replication update are triggered. Until now two update methode are implemented:
+
+- **Default**: Use external threads to monitor datablocks changes, slower and less accurate.
+- **Despgraph ⚠️**: Use the blender dependency graph to trigger updates. Faster but experimental and unstable !
 
 **Properties frequency gird** allow to set a custom replication frequency for each type of data-block:
 
 - **Refresh**: pushed data update rate (in second)
 - **Apply**: pulled data update rate (in second)
 
-.. note:: Per-data type settings will soon be revamped for simplification purposes
+-----
+Cache
+-----
 
+The multi-user allows to replicate external blend dependencies such as images, movies sounds. 
+On each client, those files are stored into the cache folder.
+
+.. figure:: img/quickstart_advanced_cache.png
+   :align: center
+
+   Advanced cache settings
+
+**cache_directory** allows to choose where cached files (images, sound, movies) will be saved.
+
+**Clear memory filecache** will save memory space at runtime by removing the file content from memory as soon as it have been written to the disk.
+
+**Clear cache** will remove all file from the cache folder. 
+
+.. warning:: Clear cash could break your scene image/movie/sound if they are used into the blend ! 
+
+---
+Log
+---
+
+.. figure:: img/quickstart_advanced_logging.png
+   :align: center
+
+   Advanced log settings
+
+**log level** allow to set the logging level of detail. Here is the detail for each values:
+
++-----------+-----------------------------------------------+
+| Log level |                  Description                  |
++===========+===============================================+
+| ERROR     | Shows only critical error                     |
++-----------+-----------------------------------------------+
+| WARNING   | Shows only errors (all kind)                  |
++-----------+-----------------------------------------------+
+| INFO      | Shows only status related messages and errors |
++-----------+-----------------------------------------------+
+| DEBUG     | Shows every possible information.             |
++-----------+-----------------------------------------------+

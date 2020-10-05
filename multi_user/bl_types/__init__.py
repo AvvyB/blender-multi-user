@@ -34,7 +34,10 @@ __all__ = [
     'bl_metaball',
     'bl_lattice',
     'bl_lightprobe',
-    'bl_speaker'
+    'bl_speaker',
+    'bl_font',
+    'bl_sound',
+    'bl_file'
 ]  # Order here defines execution order
 
 from . import *

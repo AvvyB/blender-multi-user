@@ -18,7 +18,7 @@
 
 import bpy
 
-from . import operators, utils
+from .utils import get_preferences, get_expanded_icon, get_folder_size
 from replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP,
                                                      STATE_ACTIVE, STATE_AUTH,
@@ -27,13 +27,16 @@ from replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_WAITING, STATE_QUITTING,
                                                      STATE_LOBBY,
                                                      STATE_LAUNCHING_SERVICES)
+from replication import __version__
+from replication.interface import session
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
                      'KEYTYPE_KEYFRAME_VEC',  # PUSHED
                      'TRIA_DOWN',  # FETCHED
                      'FILE_REFRESH',   # UP
-                     'TRIA_UP']  # CHANGED
+                     'TRIA_UP',
+                     'ERROR']  # CHANGED
 
 
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', fill_empty='  '):
@@ -93,9 +96,9 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw_header(self, context):
         layout = self.layout
-        if operators.client and operators.client.state['STATE'] != STATE_INITIAL:
-            cli_state = operators.client.state
-            state =  operators.client.state.get('STATE')
+        if session and session.state['STATE'] != STATE_INITIAL:
+            cli_state = session.state
+            state =  session.state.get('STATE')
             connection_icon = "KEYTYPE_MOVING_HOLD_VEC"
 
             if state == STATE_ACTIVE:
@@ -105,76 +108,54 @@ class SESSION_PT_settings(bpy.types.Panel):
 
             layout.label(text=f"Session - {get_state_str(cli_state['STATE'])}", icon=connection_icon)
         else:
-            layout.label(text="Session",icon="PROP_OFF")
+            layout.label(text=f"Session - v{__version__}",icon="PROP_OFF")
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         row = layout.row()
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
-            if not operators.client \
-               or (operators.client and operators.client.state['STATE'] == STATE_INITIAL):
+            if not session \
+               or (session and session.state['STATE'] == STATE_INITIAL):
                 pass
             else:
-                cli_state = operators.client.state
-
-                
+                cli_state = session.state                
                 row = layout.row()
 
                 current_state = cli_state['STATE']
+                info_msg = None
 
-                # STATE ACTIVE
                 if current_state in [STATE_ACTIVE]:
-                    row.operator("session.stop", icon='QUIT', text="Exit")
-                    row = layout.row()
-                    if runtime_settings.is_host:
-                        row = row.box()
-                        row.label(text=f"LAN: {runtime_settings.internet_ip}", icon='INFO')
-                        row = layout.row()
+                    row = row.split(factor=0.3)
+                    row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
+                    row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
+                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='OBJECT_DATAMODE')
+                
+                row= layout.row()
+
+                if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
+                    info_msg = f"LAN: {runtime_settings.internet_ip}" 
                 if current_state == STATE_LOBBY:
-                    row = row.box()
-                    row.label(text=f"Waiting the session to start", icon='INFO')
-                    row = layout.row()
-                    row.operator("session.stop", icon='QUIT', text="Exit")
-                # CONNECTION STATE
-                elif current_state in [STATE_SRV_SYNC,
-                                       STATE_SYNCING,
-                                       STATE_AUTH,
-                                       STATE_CONFIG,
-                                       STATE_WAITING]:
+                    info_msg = "Waiting the session to start."
 
-                    if cli_state['STATE'] in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
-                        box = row.box()
-                        box.label(text=printProgressBar(
-                            cli_state['CURRENT'],
-                            cli_state['TOTAL'],
-                            length=16
-                        ))
+                if info_msg:
+                    info_box = row.box()
+                    info_box.row().label(text=info_msg,icon='INFO')
 
-                    row = layout.row()
-                    row.operator("session.stop", icon='QUIT', text="CANCEL")
-                elif current_state == STATE_QUITTING:
-                    row = layout.row()
-                    box = row.box()
-
-                    num_online_services = 0
-                    for name, state in operators.client.services_state.items():
-                        if state == STATE_ACTIVE:
-                            num_online_services += 1
-
-                    total_online_services = len(
-                        operators.client.services_state)
-
-                    box.label(text=printProgressBar(
-                        total_online_services-num_online_services,
-                        total_online_services,
+                # Progress bar
+                if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
+                    info_box = row.box()
+                    info_box.row().label(text=printProgressBar(
+                        cli_state['CURRENT'],
+                        cli_state['TOTAL'],
                         length=16
                     ))
 
+                layout.row().operator("session.stop", icon='QUIT', text="Exit")
 
 class SESSION_PT_settings_network(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
@@ -185,8 +166,8 @@ class SESSION_PT_settings_network(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return not operators.client \
-            or (operators.client and operators.client.state['STATE'] == 0)
+        return not session \
+            or (session and session.state['STATE'] == 0)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='URL')
@@ -195,7 +176,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         # USER SETTINGS
         row = layout.row()
@@ -243,8 +224,8 @@ class SESSION_PT_settings_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return not operators.client \
-            or (operators.client and operators.client.state['STATE'] == 0)
+        return not session \
+            or (session and session.state['STATE'] == 0)
     
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -253,7 +234,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         row = layout.row()
         # USER SETTINGS
@@ -274,8 +255,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return not operators.client \
-            or (operators.client and operators.client.state['STATE'] == 0)
+        return not session \
+            or (session and session.state['STATE'] == 0)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='PREFERENCES')
@@ -284,44 +265,107 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         layout = self.layout
 
         runtime_settings = context.window_manager.session
-        settings = utils.get_preferences()
+        settings = get_preferences()
 
         
         net_section = layout.row().box()
-        net_section.label(text="Network ", icon='TRIA_DOWN')
-        net_section_row = net_section.row()
-        net_section_row.label(text="IPC Port:")
-        net_section_row.prop(settings, "ipc_port", text="")
-        net_section_row = net_section.row()
-        net_section_row.label(text="Timeout (ms):")
-        net_section_row.prop(settings, "connection_timeout", text="")
+        net_section.prop(
+            settings,
+            "sidebar_advanced_net_expanded",
+            text="Network",
+            icon=get_expanded_icon(settings.sidebar_advanced_net_expanded), 
+            emboss=False)
+        
+        if settings.sidebar_advanced_net_expanded:
+            net_section_row = net_section.row()
+            net_section_row.label(text="IPC Port:")
+            net_section_row.prop(settings, "ipc_port", text="")
+            net_section_row = net_section.row()
+            net_section_row.label(text="Timeout (ms):")
+            net_section_row.prop(settings, "connection_timeout", text="")
 
         replication_section = layout.row().box()
-        replication_section.label(text="Replication ", icon='TRIA_DOWN')
-        replication_section_row = replication_section.row()
-        if runtime_settings.session_mode == 'HOST':
+        replication_section.prop(
+            settings,
+            "sidebar_advanced_rep_expanded",
+            text="Replication",
+            icon=get_expanded_icon(settings.sidebar_advanced_rep_expanded), 
+            emboss=False)
+
+        if settings.sidebar_advanced_rep_expanded:
+            replication_section_row = replication_section.row()
+
+            replication_section_row.label(text="Sync flags", icon='COLLECTION_NEW')
+            replication_section_row = replication_section.row()
             replication_section_row.prop(settings.sync_flags, "sync_render_settings")
+            replication_section_row = replication_section.row()
+            replication_section_row.prop(settings.sync_flags, "sync_active_camera")
+            replication_section_row = replication_section.row()
 
-        replication_section_row = replication_section.row()
-        replication_section_row.label(text="Per data type timers:")
-        replication_section_row = replication_section.row()
-        # Replication frequencies
-        flow = replication_section_row .grid_flow(
-            row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-        line = flow.row(align=True)
-        line.label(text=" ")
-        line.separator()
-        line.label(text="refresh (sec)")
-        line.label(text="apply (sec)")
+            replication_section_row.prop(settings.sync_flags, "sync_during_editmode")
+            replication_section_row = replication_section.row()
+            if settings.sync_flags.sync_during_editmode:
+                warning = replication_section_row.box()
+                warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
+                replication_section_row = replication_section.row()
 
-        for item in settings.supported_datablocks:
-            line = flow.row(align=True)
-            line.prop(item, "auto_push", text="", icon=item.icon)
-            line.separator()
-            line.prop(item, "bl_delay_refresh", text="")
-            line.prop(item, "bl_delay_apply", text="")
+            replication_section_row.label(text="Update method", icon='RECOVER_LAST')
+            replication_section_row = replication_section.row()
+            replication_section_row.prop(settings, "update_method", expand=True)
+            replication_section_row = replication_section.row()
+            replication_timers = replication_section_row.box()
+            replication_timers.label(text="Replication timers", icon='TIME')
+            if settings.update_method == "DEFAULT":
+                replication_timers = replication_timers.row()
+                # Replication frequencies
+                flow = replication_timers.grid_flow(
+                    row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+                line = flow.row(align=True)
+                line.label(text=" ")
+                line.separator()
+                line.label(text="refresh (sec)")
+                line.label(text="apply (sec)")
 
+                for item in settings.supported_datablocks:
+                    line = flow.row(align=True)
+                    line.prop(item, "auto_push", text="", icon=item.icon)
+                    line.separator()
+                    line.prop(item, "bl_delay_refresh", text="")
+                    line.prop(item, "bl_delay_apply", text="")
+            else:
+                replication_timers = replication_timers.row()
+                replication_timers.label(text="Update rate (ms):")
+                replication_timers.prop(settings, "depsgraph_update_rate", text="")
+        
+        cache_section = layout.row().box()
+        cache_section.prop(
+            settings,
+            "sidebar_advanced_cache_expanded",
+            text="Cache",
+            icon=get_expanded_icon(settings.sidebar_advanced_cache_expanded), 
+            emboss=False)
+        if settings.sidebar_advanced_cache_expanded:
+            cache_section_row = cache_section.row()
+            cache_section_row.label(text="Cache directory:")
+            cache_section_row = cache_section.row()
+            cache_section_row.prop(settings, "cache_directory", text="")
+            cache_section_row = cache_section.row()
+            cache_section_row.label(text="Clear memory filecache:")
+            cache_section_row.prop(settings, "clear_memory_filecache", text="")
+            cache_section_row = cache_section.row()
+            cache_section_row.operator('session.clear_cache', text=f"Clear cache ({get_folder_size(settings.cache_directory)})")
+        log_section = layout.row().box()
+        log_section.prop(
+            settings,
+            "sidebar_advanced_log_expanded",
+            text="Logging",
+            icon=get_expanded_icon(settings.sidebar_advanced_log_expanded), 
+            emboss=False)
 
+        if settings.sidebar_advanced_log_expanded:
+            log_section_row = log_section.row()
+            log_section_row.label(text="Log level:")
+            log_section_row.prop(settings, 'logging_level', text="")
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
     bl_label = "Online users"
@@ -331,7 +375,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return operators.client and operators.client.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
+        return session and session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -340,7 +384,7 @@ class SESSION_PT_user(bpy.types.Panel):
         layout = self.layout
         online_users = context.window_manager.online_users
         selected_user = context.window_manager.user_index
-        settings = utils.get_preferences()
+        settings = get_preferences()
         active_user = online_users[selected_user] if len(
             online_users)-1 >= selected_user else 0
         runtime_settings = context.window_manager.session
@@ -362,7 +406,7 @@ class SESSION_PT_user(bpy.types.Panel):
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
-            if  operators.client.state['STATE'] == STATE_ACTIVE:
+            if  session.state['STATE'] == STATE_ACTIVE:
                 
                 user_operations.alert = context.window_manager.session.time_snap_running
                 user_operations.operator(
@@ -376,7 +420,7 @@ class SESSION_PT_user(bpy.types.Panel):
                     text="",
                     icon='TIME').target_client = active_user.username
 
-            if operators.client.online_users[settings.username]['admin']:
+            if session.online_users[settings.username]['admin']:
                 user_operations.operator(
                     "session.kick",
                     text="",
@@ -385,8 +429,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
-        session = operators.client
-        settings = utils.get_preferences()
+        settings = get_preferences()
         is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
@@ -398,8 +441,8 @@ class SESSION_UL_users(bpy.types.UIList):
                 ping = str(user['latency'])
                 metadata = user.get('metadata')
                 if metadata and 'frame_current' in metadata:
-                    frame_current = str(metadata['frame_current'])
-                    scene_current = metadata['scene_current']
+                    frame_current = str(metadata.get('frame_current','-'))
+                    scene_current = metadata.get('scene_current','-')
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
         split = layout.split(factor=0.35)
@@ -420,8 +463,8 @@ class SESSION_PT_presence(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return not operators.client \
-            or (operators.client and operators.client.state['STATE'] in [STATE_INITIAL, STATE_ACTIVE])
+        return not session \
+            or (session and session.state['STATE'] in [STATE_INITIAL, STATE_ACTIVE])
 
     def draw_header(self, context):
         self.layout.prop(context.window_manager.session,
@@ -439,48 +482,18 @@ class SESSION_PT_presence(bpy.types.Panel):
         row.active = settings.presence_show_user
         row.prop(settings, "presence_show_far_user")
 
-
-class SESSION_PT_services(bpy.types.Panel):
-    bl_idname = "MULTIUSER_SERVICE_PT_panel"
-    bl_label = "Services"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        return operators.client and operators.client.state['STATE'] == 2
-
-    def draw_header(self, context):
-        self.layout.label(text="", icon='FILE_CACHE')
-
-    def draw(self, context):
-        layout = self.layout
-        online_users = context.window_manager.online_users
-        selected_user = context.window_manager.user_index
-        settings = context.window_manager.session
-        active_user = online_users[selected_user] if len(online_users)-1 >= selected_user else 0
-
-        # Create a simple row.
-        for name, state in operators.client.services_state.items():
-            row = layout.row()
-            row.label(text=name)
-            row.label(text=get_state_str(state))
-
-
 def draw_property(context, parent, property_uuid, level=0):
-    settings = utils.get_preferences()
+    settings = get_preferences()
     runtime_settings = context.window_manager.session
-    item = operators.client.get(uuid=property_uuid)
-
-    if item.state == ERROR:
-        return
+    item = session.get(uuid=property_uuid)
 
     area_msg = parent.row(align=True)
-    if level > 0:
-        for i in range(level):
-            area_msg.label(text="")
+
+    if item.state == ERROR:
+        area_msg.alert=True
+    else:
+        area_msg.alert=False
+
     line = area_msg.box()
 
     name = item.data['name'] if item.data else item.uuid
@@ -493,8 +506,8 @@ def draw_property(context, parent, property_uuid, level=0):
 
     # Operations
 
-    have_right_to_modify = item.owner == settings.username or \
-        item.owner == RP_COMMON
+    have_right_to_modify = (item.owner == settings.username or \
+        item.owner == RP_COMMON) and item.state != ERROR
 
     if have_right_to_modify:
         detail_item_box.operator(
@@ -530,7 +543,6 @@ def draw_property(context, parent, property_uuid, level=0):
     else:
         detail_item_box.label(text="", icon="DECORATE_LOCKED")
 
-
 class SESSION_PT_repository(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
     bl_label = "Repository"
@@ -540,8 +552,7 @@ class SESSION_PT_repository(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        session = operators.client
-        settings = utils.get_preferences()
+        settings = get_preferences()
         admin = False
 
         if session and hasattr(session,'online_users'):
@@ -549,9 +560,9 @@ class SESSION_PT_repository(bpy.types.Panel):
             if usr:
                 admin = usr['admin']
         return hasattr(context.window_manager, 'session') and \
-            operators.client and \
-            (operators.client.state['STATE'] == STATE_ACTIVE or \
-            operators.client.state['STATE'] == STATE_LOBBY and admin)
+            session and \
+            (session.state['STATE'] == STATE_ACTIVE or \
+            session.state['STATE'] == STATE_LOBBY and admin)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -560,10 +571,9 @@ class SESSION_PT_repository(bpy.types.Panel):
         layout = self.layout
 
         # Filters
-        settings = utils.get_preferences()
+        settings = get_preferences()
         runtime_settings = context.window_manager.session
 
-        session = operators.client
         usr = session.online_users.get(settings.username)
 
         row = layout.row()
@@ -589,11 +599,11 @@ class SESSION_PT_repository(bpy.types.Panel):
             types_filter = [t.type_name for t in settings.supported_datablocks
                             if t.use_as_filter]
 
-            key_to_filter = operators.client.list(
-                filter_owner=settings.username) if runtime_settings.filter_owned else operators.client.list()
+            key_to_filter = session.list(
+                filter_owner=settings.username) if runtime_settings.filter_owned else session.list()
 
             client_keys = [key for key in key_to_filter
-                           if operators.client.get(uuid=key).str_type
+                           if session.get(uuid=key).str_type
                            in types_filter]
 
             if client_keys:
@@ -609,6 +619,35 @@ class SESSION_PT_repository(bpy.types.Panel):
         else:
             row.label(text="Waiting to start")
 
+class VIEW3D_PT_overlay_session(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'HEADER'
+    bl_parent_id = 'VIEW3D_PT_overlay'
+    bl_label = "Multi-user"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+
+        view = context.space_data
+        overlay = view.overlay
+        display_all = overlay.show_overlays
+
+        col = layout.column()
+        col.active = display_all
+
+        row = col.row(align=True)
+        settings = context.window_manager.session
+        layout.active = settings.enable_presence
+        col = layout.column()
+        col.prop(settings, "presence_show_selected")
+        col.prop(settings, "presence_show_user")
+        row = layout.column()
+        row.active = settings.presence_show_user
+        row.prop(settings, "presence_show_far_user")
 
 classes = (
     SESSION_UL_users,
@@ -618,9 +657,8 @@ classes = (
     SESSION_PT_presence,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
-    SESSION_PT_services,
     SESSION_PT_repository,
-
+    VIEW3D_PT_overlay_session,
 )
 
 

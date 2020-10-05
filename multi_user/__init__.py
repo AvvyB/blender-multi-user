@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 0, 3),
+    "version": (0, 1, 0),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -43,35 +43,38 @@ from bpy.app.handlers import persistent
 from . import environment, utils
 
 
-# TODO: remove dependency as soon as replication will be installed as a module
 DEPENDENCIES = {
-    ("replication", '0.0.20'),
-    ("deepdiff", '5.0.1'),
+    ("replication", '0.0.21a15'),
 }
 
 
+module_error_msg = "Insufficient rights to install the multi-user \
+                dependencies, aunch blender with administrator rights."
 def register():
     # Setup logging policy
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s CLIENT %(levelname)-8s %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.INFO)
 
     try:
         environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
-    except ModuleNotFoundError:
-        logging.fatal("Fail to install multi-user dependencies, try to execute blender with admin rights.")
-        return
-        
-    from . import presence
-    from . import operators
-    from . import ui
-    from . import preferences
-    from . import addon_updater_ops
 
-    preferences.register()
-    addon_updater_ops.register(bl_info)
-    presence.register()
-    operators.register()
-    ui.register()
+        from . import presence
+        from . import operators
+        from . import ui
+        from . import preferences
+        from . import addon_updater_ops
 
+        preferences.register()
+        addon_updater_ops.register(bl_info)
+        presence.register()
+        operators.register()
+        ui.register()
+    except ModuleNotFoundError as e:
+        raise Exception(module_error_msg)
+        logging.error(module_error_msg)
+ 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps)
     bpy.types.ID.uuid = bpy.props.StringProperty(
