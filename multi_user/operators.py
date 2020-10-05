@@ -80,10 +80,6 @@ def initialize_session():
         if node_ref.state == FETCHED:
             node_ref.apply()
 
-    # Step 3: Launch presence overlay
-    # if runtime_settings.enable_presence:
-    #     presence.renderer.run()
-
     # Step 4: Register blender timers
     for d in delayables:
         d.register()
@@ -107,9 +103,6 @@ def on_connection_end():
             continue
 
     stop_modal_executor = True
-
-    # Step 2: Unregister presence renderer
-    presence.renderer.stop()
 
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.remove(

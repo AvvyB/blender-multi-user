@@ -34,7 +34,10 @@ from gpu_extras.batch import batch_for_shader
 from . import utils
 from replication.interface import session
 
-def view3d_find():
+
+# Helper functions
+
+def view3d_find() -> tuple:
     """ Find the first 'VIEW_3D' windows found in areas
 
         :return: tuple(Area, Region, RegionView3D)
@@ -58,7 +61,7 @@ def refresh_3d_view():
 
 
 def refresh_sidebar_view():
-    """ Refresh the blender sidebar
+    """ Refresh the blender viewport sidebar
     """
     area, region, rv3d = view3d_find()
 
@@ -66,29 +69,38 @@ def refresh_sidebar_view():
         area.regions[3].tag_redraw()
 
 
-def get_target(region, rv3d, coord):
+def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: list, distance: float = 1.0) -> list:
+    """ Compute a projection from 2D to 3D viewport coordinate
+
+        :param region: target windows region
+        :type region:  bpy.types.Region
+        :param rv3d: view 3D
+        :type rv3d: bpy.types.RegionView3D
+        :param coords: coordinate to project
+        :type coords: list
+        :param distance: distance offset into viewport
+        :type distance: float
+        :return: list of coordinates [x,y,z]
+    """
     target = [0, 0, 0]
 
-    if coord and region and rv3d:
-        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
-        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
-        target = ray_origin + view_vector
-
-    return [target.x, target.y, target.z]
-
-
-def get_target_far(region, rv3d, coord, distance):
-    target = [0, 0, 0]
-
-    if coord and region and rv3d:
-        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
-        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+    if coords and region and rv3d:
+        view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coords)
+        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coords)
         target = ray_origin + view_vector * distance
 
     return [target.x, target.y, target.z]
 
 
-def get_default_bbox(obj, radius):
+def bbox_from_obj(obj: bpy.types.Object, radius: float) -> list:
+    """ Generate a bounding box for a given object by using its world matrix
+
+        :param obj: target object
+        :type obj: bpy.types.Object
+        :param radius: bounding box radius
+        :type radius: float
+        :return: list of 8 points [(x,y,z),...]
+    """
     coords = [
         (-radius, -radius, -radius), (+radius, -radius, -radius),
         (-radius, +radius, -radius), (+radius, +radius, -radius),
@@ -102,36 +114,41 @@ def get_default_bbox(obj, radius):
             for point in bbox_corners]
 
 
-def get_view_corners():
+def generate_user_camera() -> list:
+    """ Generate a basic camera represention of the user point of view
+
+    :return: list of 7 points
+    """
     area, region, rv3d = view3d_find()
 
-    v1 = [0, 0, 0]
-    v2 = [0, 0, 0]
-    v3 = [0, 0, 0]
-    v4 = [0, 0, 0]
-    v5 = [0, 0, 0]
-    v6 = [0, 0, 0]
-    v7 = [0, 0, 0]
+    v1 = v2 = v3 = v4 = v5 = v6 = v7 = [0, 0, 0]
 
     if area and region and rv3d:
         width = region.width
         height = region.height
 
-        v1 = get_target(region, rv3d, (0, 0))
-        v3 = get_target(region, rv3d, (0, height))
-        v2 = get_target(region, rv3d, (width, height))
-        v4 = get_target(region, rv3d, (width, 0))
+        v1 = project_to_viewport(region, rv3d, (0, 0))
+        v3 = project_to_viewport(region, rv3d, (0, height))
+        v2 = project_to_viewport(region, rv3d, (width, height))
+        v4 = project_to_viewport(region, rv3d, (width, 0))
 
-        v5 = get_target(region, rv3d, (width/2, height/2))
+        v5 = project_to_viewport(region, rv3d, (width/2, height/2))
         v6 = list(rv3d.view_location)
-        v7 = get_target_far(region, rv3d, (width/2, height/2), -.8)
+        v7 = project_to_viewport(
+            region, rv3d, (width/2, height/2), distance=-.8)
 
     coords = [v1, v2, v3, v4, v5, v6, v7]
 
     return coords
 
 
-def get_client_2d(coords):
+def project_to_screen(coords: list) -> list:
+    """ Project 3D coordinate to 2D screen coordinates
+
+    :param coords: 3D coordinates (x,y,z)
+    :type coords: list
+    :return: list of 2D coordinates [x,y]
+    """
     area, region, rv3d = view3d_find()
     if area and region and rv3d:
         return view3d_utils.location_3d_to_region_2d(region, rv3d, coords)
@@ -139,7 +156,15 @@ def get_client_2d(coords):
         return (0, 0)
 
 
-def get_bb_coords_from_obj(object, parent=None):
+def get_bb_coords_from_obj(object: bpy.types.Object, parent: bpy.types.Object = None) -> list:
+    """ Generate  bounding box in world coordinate from object bound box
+
+    :param object: target object
+    :type object: bpy.types.Object
+    :param parent: optionnal parent
+    :type parent: bpy.types.Object
+    :return: list of 8 points [(x,y,z),...]
+    """
     base = object.matrix_world if parent is None else parent.matrix_world
     bbox_corners = [base @ mathutils.Vector(
         corner) for corner in object.bound_box]
@@ -148,19 +173,15 @@ def get_bb_coords_from_obj(object, parent=None):
             for point in bbox_corners]
 
 
-def get_view_matrix():
+def get_view_matrix() -> list:
+    """ Return the 3d viewport view matrix
+
+    :return: view matrix as a 4x4 list
+    """
     area, region, rv3d = view3d_find()
 
     if area and region and rv3d:
         return [list(v) for v in rv3d.view_matrix]
-
-
-def update_presence(self, context):
-    if 'renderer' in globals() and hasattr(renderer, 'run'):
-        if self.enable_presence:
-            renderer.run()
-        else:
-            renderer.stop()
 
 
 class Widget(object):
@@ -169,6 +190,10 @@ class Widget(object):
 
     def draw(self):
         raise NotImplementedError()
+
+
+class ViewportWidget(Widget):
+    pass
 
 
 class UserWidget(Widget):
@@ -200,9 +225,9 @@ class UserWidget(Widget):
 
         return (scene_current == bpy.context.scene.name or
                 self.settings.presence_show_far_user) and \
-                view_corners and \
-                self.settings.presence_show_user and \
-                self.settings.enable_presence 
+            view_corners and \
+            self.settings.presence_show_user and \
+            self.settings.enable_presence
 
     def draw(self):
         location = self.data.get('view_corners')
@@ -252,9 +277,9 @@ class UserSelectionWidget(Widget):
 
         return (scene_current == bpy.context.scene.name or
                 self.settings.presence_show_far_user) and \
-                user_selection and \
-                self.settings.presence_show_selected and \
-                self.settings.enable_presence
+            user_selection and \
+            self.settings.presence_show_selected and \
+            self.settings.enable_presence
 
     def draw(self):
         user_selection = self.data.get('selected_objects')
@@ -273,7 +298,7 @@ class UserSelectionWidget(Widget):
                 if ob.instance_collection:
                     for obj in ob.instance_collection.objects:
                         if obj.type == 'MESH':
-                            positions =  get_bb_coords_from_obj(obj, parent=ob)
+                            positions = get_bb_coords_from_obj(obj, parent=ob)
 
             if hasattr(ob, 'bound_box'):
                 indices = (
@@ -286,9 +311,9 @@ class UserSelectionWidget(Widget):
                     (0, 1), (0, 2), (1, 3), (2, 3),
                     (4, 5), (4, 6), (5, 7), (6, 7),
                     (0, 4), (1, 5), (2, 6), (3, 7))
-                
+
                 positions = get_default_bbox(ob, ob.scale.x)
-            
+
             shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
             batch = batch_for_shader(
                 shader,
@@ -299,6 +324,7 @@ class UserSelectionWidget(Widget):
             shader.bind()
             shader.uniform_float("color", self.data.get('color'))
             batch.draw(shader)
+
 
 class DrawFactory(object):
     def __init__(self):
@@ -311,17 +337,7 @@ class DrawFactory(object):
         self.active_object = None
         self.widgets = []
 
-    def run(self):
-        self.register_handlers()
-
-    def stop(self):
-        self.flush_users()
-        self.flush_selection()
-        self.unregister_handlers()
-
-        refresh_3d_view()
-
-    def register(self, widget):
+    def register(self, widget: Widget):
         self.widgets.append(widget)
 
     def unregister(self, widget):
@@ -347,28 +363,6 @@ class DrawFactory(object):
         self.d3d_items.clear()
         self.d2d_items.clear()
 
-    def flush_selection(self, user=None):
-        key_to_remove = []
-        select_key = f"{user}_select" if user else "select"
-        for k in self.d3d_items.keys():
-
-            if select_key in k:
-                key_to_remove.append(k)
-
-        for k in key_to_remove:
-            del self.d3d_items[k]
-
-    def flush_users(self):
-        key_to_remove = []
-        for k in self.d3d_items.keys():
-            if "select" not in k:
-                key_to_remove.append(k)
-
-        for k in key_to_remove:
-            del self.d3d_items[k]
-
-        self.d2d_items.clear()
-
     def post_view_callback(self):
         bgl.glLineWidth(2.)
         bgl.glEnable(bgl.GL_DEPTH_TEST)
@@ -376,11 +370,6 @@ class DrawFactory(object):
         bgl.glEnable(bgl.GL_LINE_SMOOTH)
 
         try:
-            for shader, batch, color in self.d3d_items.values():
-                shader.bind()
-                shader.uniform_float("color", color)
-                batch.draw(shader)
-
             for widget in self.widgets:
                 if widget.poll():
                     widget.draw()
@@ -390,7 +379,7 @@ class DrawFactory(object):
     def post_pixel_callback(self):
         for position, font, color in self.d2d_items.values():
             try:
-                coords = get_client_2d(position)
+                coords = project_to_screen(position)
 
                 if coords:
                     blf.position(0, coords[0], coords[1]+10, 0)
@@ -401,12 +390,14 @@ class DrawFactory(object):
             except Exception:
                 logging.error(f"2D Exception: {e} \n {traceback.print_exc()}")
 
+
 this = sys.modules[__name__]
 this.renderer = DrawFactory()
 
+
 def register():
-    renderer.run()
+    renderer.register_handlers()
 
 
 def unregister():
-    renderer.stop()
+    renderer.unregister_handlers()

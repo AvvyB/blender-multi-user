@@ -211,30 +211,6 @@ class DynamicRightSelectTimer(Timer):
                                 obj.hide_select = True
 
 
-class Draw(Delayable):
-    def __init__(self):
-        super().__init__()
-        self._handler = None
-
-    def register(self):
-        if not self.is_registered:
-            self._handler = bpy.types.SpaceView3D.draw_handler_add(
-                self.execute, (), 'WINDOW', 'POST_VIEW')
-            logging.debug(f"Register {self.__class__.__name__}")
-        else:
-            logging.debug(f"Drow {self.__class__.__name__} already registered")
-
-    def execute(self):
-        raise NotImplementedError()
-
-    def unregister(self):
-        try:
-            bpy.types.SpaceView3D.draw_handler_remove(
-                self._handler, "WINDOW")
-        except:
-            pass
-
-
 class ClientUpdate(Timer):
     def __init__(self, timout=.1):
         super().__init__(timout)
@@ -271,7 +247,7 @@ class ClientUpdate(Timer):
                 local_user_metadata = local_user.get('metadata')
                 scene_current = bpy.context.scene.name
                 local_user = session.online_users.get(settings.username)
-                current_view_corners = presence.get_view_corners()
+                current_view_corners = presence.generate_user_camera()
 
                 # Init client metadata
                 if not local_user_metadata or 'color' not in local_user_metadata.keys():
