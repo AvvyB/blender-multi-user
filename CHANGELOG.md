@@ -70,25 +70,29 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Dependency graph driven updates [experimental]
-- Optional Edit Mode update
+- Edit Mode updates
 - Late join mechanism 
 - Sync Axis lock replication
 - Sync collection offset
 - Sync camera  orthographic scale
-- Logging basic configuration (file output and level)
-- Object visibility type replication
-- Sync custom fonts support
+- Sync custom fonts
 - Sync sound files
+- Logging configuration (file output and level)
+- Object visibility type replication
 - Optionnal sync for active camera
+- Curve->Mesh conversion
+- Mesh->gpencil conversion
 
 ### Changed
 
 - Auto updater now handle installation from branches
-- use uuid for collection loading
-- moved session instance to replication package
+- Use uuid for collection loading
+- Moved session instance to replication package
 
 ### Fixed
 
-- Prevent unsuported datatypes to crash the session
+- Prevent unsupported data types to crash the session
 - Modifier vertex group assignation
 - World sync
+- Snapshot UUID error
+- The world is not synchronized
