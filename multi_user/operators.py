@@ -21,26 +21,25 @@ import logging
 import os
 import queue
 import random
+import shutil
 import string
 import time
 from operator import itemgetter
-from pathlib import Path
-import shutil
 from pathlib import Path
 from queue import Queue
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-
-from . import bl_types, delayable, environment, presence, ui, utils
-from replication.constants import (FETCHED, STATE_ACTIVE,
-                                   STATE_INITIAL,
-                                   STATE_SYNCING, RP_COMMON, UP)
+from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
+                                   STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
+from . import bl_types, delayable, environment, ui, utils
+from .presence import (SessionStatusWidget, refresh_3d_view, renderer,
+                       view3d_find)
 
 background_execution_queue = Queue()
 delayables = []
@@ -107,6 +106,9 @@ def on_connection_end():
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.remove(
             depsgraph_evaluation)
+
+    renderer.clear_widgets()
+    refresh_3d_view()
 
     # Step 3: remove file handled
     logger = logging.getLogger()
@@ -265,6 +267,8 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(session_user_sync)
 
         bpy.ops.session.apply_armature_operator()
+
+        renderer.add_widget(SessionStatusWidget())
 
         self.report(
             {'INFO'},
@@ -464,7 +468,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            area, region, rv3d = presence.view3d_find()
+            area, region, rv3d = view3d_find()
 
             if session:
                 target_ref = session.online_users.get(self.target_client)

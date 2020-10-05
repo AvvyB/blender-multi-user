@@ -315,9 +315,9 @@ class SessionUserSync(Timer):
                     new_key.name = user
                     new_key.username = user
                     if user != self.settings.username:
-                        renderer.register(UserFrustumWidget(user))
-                        renderer.register(UserSelectionWidget(user))
-                        renderer.register(UserNameWidget(user))
+                        renderer.add_widget(UserFrustumWidget(user))
+                        renderer.add_widget(UserSelectionWidget(user))
+                        renderer.add_widget(UserNameWidget(user))
 
 
 class MainThreadExecutor(Timer):

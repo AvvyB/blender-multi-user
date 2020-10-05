@@ -18,7 +18,7 @@
 
 import bpy
 
-from .utils import get_preferences, get_expanded_icon, get_folder_size
+from .utils import get_preferences, get_expanded_icon, get_folder_size, get_state_str
 from replication.constants import (ADDED, ERROR, FETCHED,
                                                      MODIFIED, RP_COMMON, UP,
                                                      STATE_ACTIVE, STATE_AUTH,
@@ -58,32 +58,6 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + fill_empty * (length - filledLength)
     return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
-
-
-def get_state_str(state):
-    state_str = 'UNKNOWN'
-    if state == STATE_WAITING:
-        state_str = 'WARMING UP DATA'
-    elif state == STATE_SYNCING:
-        state_str = 'FETCHING'
-    elif state == STATE_AUTH:
-        state_str = 'AUTHENTIFICATION'
-    elif state == STATE_CONFIG:
-        state_str = 'CONFIGURATION'
-    elif state == STATE_ACTIVE:
-        state_str = 'ONLINE'
-    elif state == STATE_SRV_SYNC:
-        state_str = 'PUSHING'
-    elif state == STATE_INITIAL:
-        state_str = 'INIT'
-    elif state == STATE_QUITTING:
-        state_str = 'QUITTING'
-    elif state == STATE_LAUNCHING_SERVICES:
-        state_str = 'LAUNCHING SERVICES'
-    elif state == STATE_LOBBY:
-        state_str = 'LOBBY'
-
-    return state_str
 
 
 class SESSION_PT_settings(bpy.types.Panel):
@@ -476,6 +450,7 @@ class SESSION_PT_presence(bpy.types.Panel):
         settings = context.window_manager.session
         layout.active = settings.enable_presence
         col = layout.column()
+        col.prop(settings, "presence_show_session_status")
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
         row = layout.column()
@@ -642,8 +617,10 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         settings = context.window_manager.session
         layout.active = settings.enable_presence
         col = layout.column()
+        col.prop(settings, "presence_show_session_status")
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
+        
         row = layout.column()
         row.active = settings.presence_show_user
         row.prop(settings, "presence_show_far_user")

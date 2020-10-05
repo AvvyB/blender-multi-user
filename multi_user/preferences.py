@@ -492,6 +492,11 @@ class SessionProps(bpy.types.PropertyGroup):
         description="Show user on different scenes",
         default=False,
     )
+    presence_show_session_status: bpy.props.BoolProperty(
+        name="Show session status ",
+        description="Show session status on the viewport",
+        default=True,
+    )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',

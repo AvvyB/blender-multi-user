@@ -31,7 +31,13 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
 
-from . import utils
+from .utils import find_from_attr, get_state_str
+from replication.constants import (STATE_ACTIVE, STATE_AUTH,
+                                   STATE_CONFIG, STATE_SYNCING,
+                                   STATE_INITIAL, STATE_SRV_SYNC,
+                                   STATE_WAITING, STATE_QUITTING,
+                                   STATE_LOBBY,
+                                   STATE_LAUNCHING_SERVICES)
 from replication.interface import session
 
 
@@ -193,6 +199,7 @@ class Widget(object):
     def draw(self):
         raise NotImplementedError()
 
+
 class UserFrustumWidget(Widget):
     # Camera widget indices
     indices = ((1, 3), (2, 1), (3, 0),
@@ -281,7 +288,7 @@ class UserSelectionWidget(Widget):
     def draw(self):
         user_selection = self.data.get('selected_objects')
         for select_ob in user_selection:
-            ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
+            ob = find_from_attr("uuid", select_ob, bpy.data.objects)
             if not ob:
                 return
 
@@ -353,7 +360,6 @@ class UserNameWidget(Widget):
             self.settings.presence_show_user and \
             self.settings.enable_presence
 
-
     def draw(self):
         view_corners = self.data.get('view_corners')
         color = self.data.get('color')
@@ -366,20 +372,47 @@ class UserNameWidget(Widget):
             blf.color(0, color[0], color[1], color[2], color[3])
             blf.draw(0,  self.username)
 
+
+class SessionStatusWidget(Widget):
+    draw_type = 'POST_PIXEL'
+
+    def __init__(self):
+        self.settings = bpy.context.window_manager.session
+
+    def poll(self):
+        return self.settings.presence_show_session_status and \
+               self.settings.enable_presence
+
+    def draw(self):
+        color = [1, 1, 0, 1]
+        state = session.state.get('STATE')
+        state_str = f"{get_state_str(state)}"
+
+        if state == STATE_ACTIVE:
+            color = [0, 1, 0, 1]
+        elif state == STATE_INITIAL:
+            color = [1, 0, 0, 1]
+
+        blf.position(0, 10, 20, 0)
+        blf.size(0, 16, 45)
+        blf.color(0, color[0], color[1], color[2], color[3])
+        blf.draw(0,  state_str)
+
+
 class DrawFactory(object):
     def __init__(self):
         self.post_view_handle = None
         self.post_pixel_handle = None
-        self.draw_event = None
-        self.coords = None
-        self.active_object = None
         self.widgets = []
 
-    def register(self, widget: Widget):
+    def add_widget(self, widget: Widget):
         self.widgets.append(widget)
 
-    def unregister(self, widget):
+    def remove_widget(self, widget):
         self.widgets.remove(widget)
+
+    def clear_widgets(self):
+        self.widgets.clear()
 
     def register_handlers(self):
         self.post_view_handle = bpy.types.SpaceView3D.draw_handler_add(
@@ -412,7 +445,8 @@ class DrawFactory(object):
                 if widget.draw_type == 'POST_VIEW' and widget.poll():
                     widget.draw()
         except Exception as e:
-            logging.error(f"Post view widget exception: {e} \n {traceback.print_exc()}")
+            logging.error(
+                f"Post view widget exception: {e} \n {traceback.print_exc()}")
 
     def post_pixel_callback(self):
         try:
@@ -420,7 +454,8 @@ class DrawFactory(object):
                 if widget.draw_type == 'POST_PIXEL' and widget.poll():
                     widget.draw()
         except Exception as e:
-            logging.error(f"Post pixel widget Exception: {e} \n {traceback.print_exc()}")
+            logging.error(
+                f"Post pixel widget Exception: {e} \n {traceback.print_exc()}")
 
 
 this = sys.modules[__name__]
@@ -428,8 +463,8 @@ this.renderer = DrawFactory()
 
 
 def register():
-    renderer.register_handlers()
+    this.renderer.register_handlers()
 
 
 def unregister():
-    renderer.unregister_handlers()
+    this.renderer.unregister_handlers()
