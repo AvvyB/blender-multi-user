@@ -29,10 +29,10 @@ import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
-from replication.interface import session
+
 
 from . import utils
-
+from replication.interface import session
 
 def view3d_find():
     """ Find the first 'VIEW_3D' windows found in areas
