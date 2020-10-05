@@ -19,6 +19,7 @@
 import copy
 import logging
 import math
+import sys
 import traceback
 
 import bgl
@@ -28,10 +29,9 @@ import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+from replication.interface import session
 
 from . import utils
-
-renderer = None
 
 
 def view3d_find():
@@ -56,6 +56,7 @@ def refresh_3d_view():
     if area and region and rv3d:
         area.tag_redraw()
 
+
 def refresh_sidebar_view():
     """ Refresh the blender sidebar
     """
@@ -63,6 +64,7 @@ def refresh_sidebar_view():
 
     if area:
         area.regions[3].tag_redraw()
+
 
 def get_target(region, rv3d, coord):
     target = [0, 0, 0]
@@ -85,6 +87,7 @@ def get_target_far(region, rv3d, coord, distance):
 
     return [target.x, target.y, target.z]
 
+
 def get_default_bbox(obj, radius):
     coords = [
         (-radius, -radius, -radius), (+radius, -radius, -radius),
@@ -93,10 +96,11 @@ def get_default_bbox(obj, radius):
         (-radius, +radius, +radius), (+radius, +radius, +radius)]
 
     base = obj.matrix_world
-    bbox_corners =  [base @ mathutils.Vector(corner) for corner in coords]
+    bbox_corners = [base @ mathutils.Vector(corner) for corner in coords]
 
     return [(point.x, point.y, point.z)
-                for point in bbox_corners]
+            for point in bbox_corners]
+
 
 def get_view_corners():
     area, region, rv3d = view3d_find()
@@ -134,24 +138,24 @@ def get_client_2d(coords):
     else:
         return (0, 0)
 
+
 def get_bb_coords_from_obj(object, parent=None):
     base = object.matrix_world if parent is None else parent.matrix_world
     bbox_corners = [base @ mathutils.Vector(
-                corner) for corner in object.bound_box]
+        corner) for corner in object.bound_box]
 
     return [(point.x, point.y, point.z)
-                for point in bbox_corners]
+            for point in bbox_corners]
 
 
 def get_view_matrix():
     area, region, rv3d = view3d_find()
 
-    if area and region and rv3d:       
+    if area and region and rv3d:
         return [list(v) for v in rv3d.view_matrix]
 
-def update_presence(self, context):
-    global renderer
 
+def update_presence(self, context):
     if 'renderer' in globals() and hasattr(renderer, 'run'):
         if self.enable_presence:
             renderer.run()
@@ -159,24 +163,153 @@ def update_presence(self, context):
             renderer.stop()
 
 
-def update_overlay_settings(self, context):
-    global renderer
+class Widget(object):
+    def poll(self) -> bool:
+        return True
 
-    if renderer and not self.presence_show_selected:
-        renderer.flush_selection()
-    if renderer and not self.presence_show_user:
-        renderer.flush_users()
+    def draw(self):
+        raise NotImplementedError()
 
+
+class UserWidget(Widget):
+    # Camera widget indices
+    indices = ((1, 3), (2, 1), (3, 0),
+               (2, 0), (4, 5), (1, 6),
+               (2, 6), (3, 6), (0, 6))
+
+    def __init__(
+            self,
+            username):
+        self.username = username
+        self.settings = bpy.context.window_manager.session
+
+    @property
+    def data(self):
+        user = session.online_users.get(self.username)
+        if user:
+            return user.get('metadata')
+        else:
+            return None
+
+    def poll(self):
+        if self.data is None:
+            return False
+
+        scene_current = self.data.get('scene_current')
+        view_corners = self.data.get('view_corners')
+
+        return (scene_current == bpy.context.scene.name or
+                self.settings.presence_show_far_user) and \
+                view_corners and \
+                self.settings.presence_show_user and \
+                self.settings.enable_presence 
+
+    def draw(self):
+        location = self.data.get('view_corners')
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        positions = [tuple(coord) for coord in location]
+
+        if len(positions) != 7:
+            return
+
+        batch = batch_for_shader(
+            shader,
+            'LINES',
+            {"pos": positions},
+            indices=self.indices)
+
+        bgl.glLineWidth(2.)
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+
+        shader.bind()
+        shader.uniform_float("color", self.data.get('color'))
+        batch.draw(shader)
+
+
+class UserSelectionWidget(Widget):
+    def __init__(
+            self,
+            username):
+        self.username = username
+        self.settings = bpy.context.window_manager.session
+
+    @property
+    def data(self):
+        user = session.online_users.get(self.username)
+        if user:
+            return user.get('metadata')
+        else:
+            return None
+
+    def poll(self):
+        if self.data is None:
+            return False
+
+        user_selection = self.data.get('selected_objects')
+        scene_current = self.data.get('scene_current')
+
+        return (scene_current == bpy.context.scene.name or
+                self.settings.presence_show_far_user) and \
+                user_selection and \
+                self.settings.presence_show_selected and \
+                self.settings.enable_presence
+
+    def draw(self):
+        user_selection = self.data.get('selected_objects')
+        for select_ob in user_selection:
+            ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
+            if not ob:
+                return
+
+            if ob.type == 'EMPTY':
+                # TODO: Child case
+                # Collection instance case
+                indices = (
+                    (0, 1), (1, 2), (2, 3), (0, 3),
+                    (4, 5), (5, 6), (6, 7), (4, 7),
+                    (0, 4), (1, 5), (2, 6), (3, 7))
+                if ob.instance_collection:
+                    for obj in ob.instance_collection.objects:
+                        if obj.type == 'MESH':
+                            positions =  get_bb_coords_from_obj(obj, parent=ob)
+
+            if hasattr(ob, 'bound_box'):
+                indices = (
+                    (0, 1), (1, 2), (2, 3), (0, 3),
+                    (4, 5), (5, 6), (6, 7), (4, 7),
+                    (0, 4), (1, 5), (2, 6), (3, 7))
+                positions = get_bb_coords_from_obj(ob)
+            else:
+                indices = (
+                    (0, 1), (0, 2), (1, 3), (2, 3),
+                    (4, 5), (4, 6), (5, 7), (6, 7),
+                    (0, 4), (1, 5), (2, 6), (3, 7))
+                
+                positions = get_default_bbox(ob, ob.scale.x)
+            
+            shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+            batch = batch_for_shader(
+                shader,
+                'LINES',
+                {"pos": positions},
+                indices=indices)
+
+            shader.bind()
+            shader.uniform_float("color", self.data.get('color'))
+            batch.draw(shader)
 
 class DrawFactory(object):
     def __init__(self):
         self.d3d_items = {}
         self.d2d_items = {}
-        self.draw3d_handle = None
-        self.draw2d_handle = None
+        self.post_view_handle = None
+        self.post_pixel_handle = None
         self.draw_event = None
         self.coords = None
         self.active_object = None
+        self.widgets = []
 
     def run(self):
         self.register_handlers()
@@ -188,22 +321,28 @@ class DrawFactory(object):
 
         refresh_3d_view()
 
+    def register(self, widget):
+        self.widgets.append(widget)
+
+    def unregister(self, widget):
+        self.widgets.remove(widget)
+
     def register_handlers(self):
-        self.draw3d_handle = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw3d_callback, (), 'WINDOW', 'POST_VIEW')
-        self.draw2d_handle = bpy.types.SpaceView3D.draw_handler_add(
-            self.draw2d_callback, (), 'WINDOW', 'POST_PIXEL')
+        self.post_view_handle = bpy.types.SpaceView3D.draw_handler_add(
+            self.post_view_callback, (), 'WINDOW', 'POST_VIEW')
+        self.post_pixel_handle = bpy.types.SpaceView3D.draw_handler_add(
+            self.post_pixel_callback, (), 'WINDOW', 'POST_PIXEL')
 
     def unregister_handlers(self):
-        if self.draw2d_handle:
+        if self.post_pixel_handle:
             bpy.types.SpaceView3D.draw_handler_remove(
-                self.draw2d_handle, "WINDOW")
-            self.draw2d_handle = None
+                self.post_pixel_handle, "WINDOW")
+            self.post_pixel_handle = None
 
-        if self.draw3d_handle:
+        if self.post_view_handle:
             bpy.types.SpaceView3D.draw_handler_remove(
-                self.draw3d_handle, "WINDOW")
-            self.draw3d_handle = None
+                self.post_view_handle, "WINDOW")
+            self.post_view_handle = None
 
         self.d3d_items.clear()
         self.d2d_items.clear()
@@ -230,92 +369,7 @@ class DrawFactory(object):
 
         self.d2d_items.clear()
 
-    def draw_client_selection(self, client_id, client_color, client_selection):
-        local_user = utils.get_preferences().username
-
-        if local_user != client_id:
-            self.flush_selection(client_id)
-
-            for select_ob in client_selection:
-                drawable_key = f"{client_id}_select_{select_ob}"
-               
-                ob = utils.find_from_attr("uuid", select_ob, bpy.data.objects)
-                if not ob:
-                    return
-            
-                if ob.type == 'EMPTY':
-                    # TODO: Child case
-                    # Collection instance case
-                    indices = (
-                        (0, 1), (1, 2), (2, 3), (0, 3),
-                        (4, 5), (5, 6), (6, 7), (4, 7),
-                        (0, 4), (1, 5), (2, 6), (3, 7))
-                    if ob.instance_collection:
-                        for obj in ob.instance_collection.objects:
-                            if obj.type == 'MESH':
-                                self.append_3d_item(
-                                    drawable_key,
-                                    client_color,
-                                    get_bb_coords_from_obj(obj, parent=ob),
-                                    indices)
-                    
-                if ob.type in ['MESH','META']:
-                    indices = (
-                        (0, 1), (1, 2), (2, 3), (0, 3),
-                        (4, 5), (5, 6), (6, 7), (4, 7),
-                        (0, 4), (1, 5), (2, 6), (3, 7))
-                        
-                    self.append_3d_item(
-                        drawable_key,
-                        client_color,
-                        get_bb_coords_from_obj(ob),
-                        indices)
-                else:
-                    indices = (
-                        (0, 1), (0, 2), (1, 3), (2, 3),
-                        (4, 5), (4, 6), (5, 7), (6, 7),
-                        (0, 4), (1, 5), (2, 6), (3, 7))
-
-                    self.append_3d_item(
-                        drawable_key,
-                        client_color,
-                        get_default_bbox(ob, ob.scale.x),
-                        indices)
-                        
-    def append_3d_item(self,key,color, coords, indices):
-        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-        color = color
-        batch = batch_for_shader(
-            shader, 'LINES', {"pos": coords}, indices=indices)
-
-        self.d3d_items[key] = (shader, batch, color)
-
-    def draw_client_camera(self, client_id, client_location, client_color):
-        if client_location:
-            local_user = utils.get_preferences().username
-
-            if local_user != client_id:
-                try:
-                    indices = (
-                        (1, 3), (2, 1), (3, 0),
-                        (2, 0), (4, 5), (1, 6),
-                        (2, 6), (3, 6), (0, 6)
-                    )
-
-                    shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-                    position = [tuple(coord) for coord in client_location]
-                    color = client_color
-
-                    batch = batch_for_shader(
-                        shader, 'LINES', {"pos": position}, indices=indices)
-
-                    self.d3d_items[client_id] = (shader, batch, color)
-                    self.d2d_items[client_id] = (position[1], client_id, color)
-
-                except Exception as e:
-                    logging.debug(f"Draw client exception: {e} \n  {traceback.format_exc()}\n pos:{position},ind:{indices}")
-
-    def draw3d_callback(self):
+    def post_view_callback(self):
         bgl.glLineWidth(2.)
         bgl.glEnable(bgl.GL_DEPTH_TEST)
         bgl.glEnable(bgl.GL_BLEND)
@@ -326,10 +380,14 @@ class DrawFactory(object):
                 shader.bind()
                 shader.uniform_float("color", color)
                 batch.draw(shader)
-        except Exception:
-            logging.error("3D Exception")
 
-    def draw2d_callback(self):
+            for widget in self.widgets:
+                if widget.poll():
+                    widget.draw()
+        except Exception as e:
+            logging.error(f"3D Exception: {e} \n {traceback.print_exc()}")
+
+    def post_pixel_callback(self):
         for position, font, color in self.d2d_items.values():
             try:
                 coords = get_client_2d(position)
@@ -341,16 +399,14 @@ class DrawFactory(object):
                     blf.draw(0,  font)
 
             except Exception:
-                logging.error("2D EXCEPTION")
+                logging.error(f"2D Exception: {e} \n {traceback.print_exc()}")
 
+this = sys.modules[__name__]
+this.renderer = DrawFactory()
 
 def register():
-    global renderer
-    renderer = DrawFactory()
+    renderer.run()
 
 
 def unregister():
-    global renderer
-    renderer.unregister_handlers()
-
-    del renderer
+    renderer.stop()

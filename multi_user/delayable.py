@@ -235,35 +235,6 @@ class Draw(Delayable):
             pass
 
 
-class DrawClient(Draw):
-    def execute(self):
-        renderer = getattr(presence, 'renderer', None)
-        prefs = utils.get_preferences()
-
-        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
-            settings = bpy.context.window_manager.session
-            users = session.online_users
-
-            # Update users
-            for user in users.values():
-                metadata = user.get('metadata')
-                color = metadata.get('color')
-                scene_current = metadata.get('scene_current')
-                user_showable = scene_current == bpy.context.scene.name or settings.presence_show_far_user
-                if color and scene_current and user_showable:
-                    if settings.presence_show_selected and 'selected_objects' in metadata.keys():
-                        renderer.draw_client_selection(
-                            user['id'], color, metadata['selected_objects'])
-                    if settings.presence_show_user and 'view_corners' in metadata:
-                        renderer.draw_client_camera(
-                            user['id'], metadata['view_corners'], color)
-                if not user_showable:
-                    # TODO: remove this when user event drivent update will be
-                    # ready
-                    renderer.flush_selection()
-                    renderer.flush_users()
-
-
 class ClientUpdate(Timer):
     def __init__(self, timout=.1):
         super().__init__(timout)
@@ -351,8 +322,6 @@ class SessionUserSync(Timer):
             for index, user in enumerate(ui_users):
                 if user.username not in session_users.keys():
                     ui_users.remove(index)
-                    renderer.flush_selection()
-                    renderer.flush_users()
                     break
 
             for user in session_users:
@@ -360,6 +329,9 @@ class SessionUserSync(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
+                    presence.renderer.register(presence.UserWidget(user))
+                    presence.renderer.register(presence.UserSelectionWidget(user))
+
 
 
 class MainThreadExecutor(Timer):

@@ -637,7 +637,6 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         display_all = overlay.show_overlays
 
         col = layout.column()
-        col.active = display_all
 
         row = col.row(align=True)
         settings = context.window_manager.session

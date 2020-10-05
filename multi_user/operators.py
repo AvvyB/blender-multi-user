@@ -81,8 +81,8 @@ def initialize_session():
             node_ref.apply()
 
     # Step 3: Launch presence overlay
-    if runtime_settings.enable_presence:
-        presence.renderer.run()
+    # if runtime_settings.enable_presence:
+    #     presence.renderer.run()
 
     # Step 4: Register blender timers
     for d in delayables:
@@ -256,7 +256,6 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Background client updates service
         delayables.append(delayable.ClientUpdate())
-        delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
