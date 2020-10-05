@@ -1,0 +1,18 @@
+deploy:
+  stage: deploy
+  image: slumber/docker-python  
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: "/certs"
+  
+  services:
+  - docker:19.03.12-dind
+
+  script:
+    - RP_VERSION="$(python scripts/get_replication_version.py)"
+    - VERSION="$(python scripts/get_addon_version.py)"
+    - echo "Building docker image with replication ${RP_VERSION}"
+    - docker build --build-arg replication_version=${RP_VERSION}  --build-arg version={VERSION} -t registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} ./scripts/docker_server
+    - echo "Pushing to gitlab registry ${VERSION}"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} 
