@@ -185,18 +185,15 @@ def get_view_matrix() -> list:
 
 
 class Widget(object):
+    draw_type = 'POST_VIEW'
+
     def poll(self) -> bool:
         return True
 
     def draw(self):
         raise NotImplementedError()
 
-
-class ViewportWidget(Widget):
-    pass
-
-
-class UserWidget(Widget):
+class UserFrustumWidget(Widget):
     # Camera widget indices
     indices = ((1, 3), (2, 1), (3, 0),
                (2, 0), (4, 5), (1, 6),
@@ -312,7 +309,7 @@ class UserSelectionWidget(Widget):
                     (4, 5), (4, 6), (5, 7), (6, 7),
                     (0, 4), (1, 5), (2, 6), (3, 7))
 
-                positions = get_default_bbox(ob, ob.scale.x)
+                positions = bbox_from_obj(ob, ob.scale.x)
 
             shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
             batch = batch_for_shader(
@@ -326,10 +323,51 @@ class UserSelectionWidget(Widget):
             batch.draw(shader)
 
 
+class UserNameWidget(Widget):
+    draw_type = 'POST_PIXEL'
+
+    def __init__(
+            self,
+            username):
+        self.username = username
+        self.settings = bpy.context.window_manager.session
+
+    @property
+    def data(self):
+        user = session.online_users.get(self.username)
+        if user:
+            return user.get('metadata')
+        else:
+            return None
+
+    def poll(self):
+        if self.data is None:
+            return False
+
+        scene_current = self.data.get('scene_current')
+        view_corners = self.data.get('view_corners')
+
+        return (scene_current == bpy.context.scene.name or
+                self.settings.presence_show_far_user) and \
+            view_corners and \
+            self.settings.presence_show_user and \
+            self.settings.enable_presence
+
+
+    def draw(self):
+        view_corners = self.data.get('view_corners')
+        color = self.data.get('color')
+        position = [tuple(coord) for coord in view_corners]
+        coords = project_to_screen(position[1])
+
+        if coords:
+            blf.position(0, coords[0], coords[1]+10, 0)
+            blf.size(0, 16, 72)
+            blf.color(0, color[0], color[1], color[2], color[3])
+            blf.draw(0,  self.username)
+
 class DrawFactory(object):
     def __init__(self):
-        self.d3d_items = {}
-        self.d2d_items = {}
         self.post_view_handle = None
         self.post_pixel_handle = None
         self.draw_event = None
@@ -345,50 +383,44 @@ class DrawFactory(object):
 
     def register_handlers(self):
         self.post_view_handle = bpy.types.SpaceView3D.draw_handler_add(
-            self.post_view_callback, (), 'WINDOW', 'POST_VIEW')
+            self.post_view_callback,
+            (),
+            'WINDOW',
+            'POST_VIEW')
         self.post_pixel_handle = bpy.types.SpaceView3D.draw_handler_add(
-            self.post_pixel_callback, (), 'WINDOW', 'POST_PIXEL')
+            self.post_pixel_callback,
+            (),
+            'WINDOW',
+            'POST_PIXEL')
 
     def unregister_handlers(self):
         if self.post_pixel_handle:
             bpy.types.SpaceView3D.draw_handler_remove(
-                self.post_pixel_handle, "WINDOW")
+                self.post_pixel_handle,
+                "WINDOW")
             self.post_pixel_handle = None
 
         if self.post_view_handle:
             bpy.types.SpaceView3D.draw_handler_remove(
-                self.post_view_handle, "WINDOW")
+                self.post_view_handle,
+                "WINDOW")
             self.post_view_handle = None
 
-        self.d3d_items.clear()
-        self.d2d_items.clear()
-
     def post_view_callback(self):
-        bgl.glLineWidth(2.)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-
         try:
             for widget in self.widgets:
-                if widget.poll():
+                if widget.draw_type == 'POST_VIEW' and widget.poll():
                     widget.draw()
         except Exception as e:
-            logging.error(f"3D Exception: {e} \n {traceback.print_exc()}")
+            logging.error(f"Post view widget exception: {e} \n {traceback.print_exc()}")
 
     def post_pixel_callback(self):
-        for position, font, color in self.d2d_items.values():
-            try:
-                coords = project_to_screen(position)
-
-                if coords:
-                    blf.position(0, coords[0], coords[1]+10, 0)
-                    blf.size(0, 16, 72)
-                    blf.color(0, color[0], color[1], color[2], color[3])
-                    blf.draw(0,  font)
-
-            except Exception:
-                logging.error(f"2D Exception: {e} \n {traceback.print_exc()}")
+        try:
+            for widget in self.widgets:
+                if widget.draw_type == 'POST_PIXEL' and widget.poll():
+                    widget.draw()
+        except Exception as e:
+            logging.error(f"Post pixel widget Exception: {e} \n {traceback.print_exc()}")
 
 
 this = sys.modules[__name__]

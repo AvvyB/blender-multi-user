@@ -19,7 +19,15 @@ import logging
 
 import bpy
 
-from . import presence, utils
+from . import utils
+from .presence import (renderer,
+                       UserFrustumWidget,
+                       UserNameWidget,
+                       UserSelectionWidget,
+                       refresh_3d_view,
+                       generate_user_camera,
+                       get_view_matrix,
+                       refresh_sidebar_view)
 from replication.constants import (FETCHED,
                                    UP,
                                    RP_COMMON,
@@ -33,9 +41,11 @@ from replication.constants import (FETCHED,
 
 from replication.interface import session
 
+
 class Delayable():
     """Delayable task interface
     """
+
     def __init__(self):
         self.is_registered = False
 
@@ -63,13 +73,14 @@ class Timer(Delayable):
     def register(self):
         """Register the timer into the blender timer system
         """
-        
+
         if not self.is_registered:
             bpy.app.timers.register(self.main)
             self.is_registered = True
             logging.debug(f"Register {self.__class__.__name__}")
         else:
-            logging.debug(f"Timer {self.__class__.__name__} already registered")
+            logging.debug(
+                f"Timer {self.__class__.__name__} already registered")
 
     def main(self):
         self.execute()
@@ -219,7 +230,6 @@ class ClientUpdate(Timer):
 
     def execute(self):
         settings = utils.get_preferences()
-        renderer = getattr(presence, 'renderer', None)
 
         if session and renderer:
             if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
@@ -238,7 +248,7 @@ class ClientUpdate(Timer):
                             if cached_user_data is None:
                                 self.users_metadata[username] = user_data['metadata']
                             elif 'view_matrix' in cached_user_data and 'view_matrix' in new_user_data and cached_user_data['view_matrix'] != new_user_data['view_matrix']:
-                                presence.refresh_3d_view()
+                                refresh_3d_view()
                                 self.users_metadata[username] = user_data['metadata']
                                 break
                             else:
@@ -247,13 +257,13 @@ class ClientUpdate(Timer):
                 local_user_metadata = local_user.get('metadata')
                 scene_current = bpy.context.scene.name
                 local_user = session.online_users.get(settings.username)
-                current_view_corners = presence.generate_user_camera()
+                current_view_corners = generate_user_camera()
 
                 # Init client metadata
                 if not local_user_metadata or 'color' not in local_user_metadata.keys():
                     metadata = {
-                        'view_corners': presence.get_view_matrix(),
-                        'view_matrix': presence.get_view_matrix(),
+                        'view_corners': get_view_matrix(),
+                        'view_matrix': get_view_matrix(),
                         'color': (settings.client_color.r,
                                   settings.client_color.g,
                                   settings.client_color.b,
@@ -270,7 +280,7 @@ class ClientUpdate(Timer):
                     session.update_user_metadata(local_user_metadata)
                 elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
-                    local_user_metadata['view_matrix'] = presence.get_view_matrix(
+                    local_user_metadata['view_matrix'] = get_view_matrix(
                     )
                     session.update_user_metadata(local_user_metadata)
 
@@ -280,16 +290,15 @@ class SessionStatusUpdate(Timer):
         super().__init__(timout)
 
     def execute(self):
-        presence.refresh_sidebar_view()
+        refresh_sidebar_view()
 
 
 class SessionUserSync(Timer):
     def __init__(self, timout=1):
         super().__init__(timout)
+        self.settings = utils.get_preferences()
 
     def execute(self):
-        renderer = getattr(presence, 'renderer', None)
-
         if session and renderer:
             # sync online users
             session_users = session.online_users
@@ -305,16 +314,17 @@ class SessionUserSync(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
-                    presence.renderer.register(presence.UserWidget(user))
-                    presence.renderer.register(presence.UserSelectionWidget(user))
-
+                    if user != self.settings.username:
+                        renderer.register(UserFrustumWidget(user))
+                        renderer.register(UserSelectionWidget(user))
+                        renderer.register(UserNameWidget(user))
 
 
 class MainThreadExecutor(Timer):
     def __init__(self, timout=1, execution_queue=None):
         super().__init__(timout)
         self.execution_queue = execution_queue
-    
+
     def execute(self):
         while not self.execution_queue.empty():
             function = self.execution_queue.get()
