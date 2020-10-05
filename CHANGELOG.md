@@ -65,7 +65,7 @@ All notable changes to this project will be documented in this file.
 - Unused strict right management strategy
 - Legacy config management system
 
-## [0.1.0] - preview
+## [0.1.0] - 2020-10-05
 
 ### Added
 
