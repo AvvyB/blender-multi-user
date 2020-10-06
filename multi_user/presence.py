@@ -191,12 +191,20 @@ def get_view_matrix() -> list:
 
 
 class Widget(object):
-    draw_type = 'POST_VIEW'
+    """ Base class to define an interface element
+    """
+    draw_type: str = 'POST_VIEW'  # Draw event type
 
     def poll(self) -> bool:
+        """Test if the widget can be drawn or not 
+
+        :return: bool
+        """
         return True
 
     def draw(self):
+        """How to draw the widget
+        """
         raise NotImplementedError()
 
 
@@ -376,12 +384,13 @@ class UserNameWidget(Widget):
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
 
-    def __init__(self):
-        self.settings = bpy.context.window_manager.session
+    @property
+    def settings(self):
+        return getattr(bpy.context.window_manager, 'session', None)
 
     def poll(self):
-        return self.settings.presence_show_session_status and \
-               self.settings.enable_presence
+        return self.settings and self.settings.presence_show_session_status and \
+            self.settings.enable_presence
 
     def draw(self):
         color = [1, 1, 0, 1]
@@ -403,13 +412,16 @@ class DrawFactory(object):
     def __init__(self):
         self.post_view_handle = None
         self.post_pixel_handle = None
-        self.widgets = []
+        self.widgets = {}
 
-    def add_widget(self, widget: Widget):
-        self.widgets.append(widget)
+    def add_widget(self, name:str, widget: Widget):
+        self.widgets[name] = widget
 
-    def remove_widget(self, widget):
-        self.widgets.remove(widget)
+    def remove_widget(self,  name: str):
+        if name in self.widgets:
+            del self.widgets[name]
+        else:
+            logging.info("Widget {name} not existing")
 
     def clear_widgets(self):
         self.widgets.clear()
@@ -441,7 +453,7 @@ class DrawFactory(object):
 
     def post_view_callback(self):
         try:
-            for widget in self.widgets:
+            for widget in self.widgets.values():
                 if widget.draw_type == 'POST_VIEW' and widget.poll():
                     widget.draw()
         except Exception as e:
@@ -450,7 +462,7 @@ class DrawFactory(object):
 
     def post_pixel_callback(self):
         try:
-            for widget in self.widgets:
+            for widget in self.widgets.values():
                 if widget.draw_type == 'POST_PIXEL' and widget.poll():
                     widget.draw()
         except Exception as e:
@@ -465,6 +477,10 @@ this.renderer = DrawFactory()
 def register():
     this.renderer.register_handlers()
 
+    renderer.add_widget("session_status", SessionStatusWidget())
+
 
 def unregister():
     this.renderer.unregister_handlers()
+    
+    this.renderer.clear_widgets()

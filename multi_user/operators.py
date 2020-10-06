@@ -107,9 +107,6 @@ def on_connection_end():
         bpy.app.handlers.depsgraph_update_post.remove(
             depsgraph_evaluation)
 
-    renderer.clear_widgets()
-    refresh_3d_view()
-
     # Step 3: remove file handled
     logger = logging.getLogger()
     for handler in logger.handlers:
@@ -267,8 +264,6 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(session_user_sync)
 
         bpy.ops.session.apply_armature_operator()
-
-        renderer.add_widget(SessionStatusWidget())
 
         self.report(
             {'INFO'},
@@ -742,6 +737,7 @@ def depsgraph_evaluation(scene):
 
 def register():
     from bpy.utils import register_class
+
     for cls in classes:
         register_class(cls)
 

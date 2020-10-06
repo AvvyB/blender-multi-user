@@ -307,6 +307,9 @@ class SessionUserSync(Timer):
             for index, user in enumerate(ui_users):
                 if user.username not in session_users.keys():
                     ui_users.remove(index)
+                    renderer.remove_widget(f"{user}_cam")
+                    renderer.remove_widget(f"{user}_select")
+                    renderer.remove_widget(f"{user}_name")
                     break
 
             for user in session_users:
@@ -315,9 +318,9 @@ class SessionUserSync(Timer):
                     new_key.name = user
                     new_key.username = user
                     if user != self.settings.username:
-                        renderer.add_widget(UserFrustumWidget(user))
-                        renderer.add_widget(UserSelectionWidget(user))
-                        renderer.add_widget(UserNameWidget(user))
+                        renderer.add_widget(f"{user}_cam", UserFrustumWidget(user))
+                        renderer.add_widget(f"{user}_select", UserSelectionWidget(user))
+                        renderer.add_widget(f"{user}_name", UserNameWidget(user))
 
 
 class MainThreadExecutor(Timer):
