@@ -29,17 +29,13 @@ import gpu
 import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
-
-
-from .utils import find_from_attr, get_state_str
-from replication.constants import (STATE_ACTIVE, STATE_AUTH,
-                                   STATE_CONFIG, STATE_SYNCING,
-                                   STATE_INITIAL, STATE_SRV_SYNC,
-                                   STATE_WAITING, STATE_QUITTING,
-                                   STATE_LOBBY,
-                                   STATE_LAUNCHING_SERVICES)
+from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
+                                   STATE_INITIAL, STATE_LAUNCHING_SERVICES,
+                                   STATE_LOBBY, STATE_QUITTING, STATE_SRV_SYNC,
+                                   STATE_SYNCING, STATE_WAITING)
 from replication.interface import session
 
+from .utils import find_from_attr, get_state_str
 
 # Helper functions
 
@@ -414,7 +410,7 @@ class DrawFactory(object):
         self.post_pixel_handle = None
         self.widgets = {}
 
-    def add_widget(self, name:str, widget: Widget):
+    def add_widget(self, name: str, widget: Widget):
         self.widgets[name] = widget
 
     def remove_widget(self,  name: str):
@@ -477,10 +473,10 @@ this.renderer = DrawFactory()
 def register():
     this.renderer.register_handlers()
 
-    renderer.add_widget("session_status", SessionStatusWidget())
+    this.renderer.add_widget("session_status", SessionStatusWidget())
 
 
 def unregister():
     this.renderer.unregister_handlers()
-    
+
     this.renderer.clear_widgets()
