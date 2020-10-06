@@ -40,7 +40,7 @@ import sys
 import bpy
 from bpy.app.handlers import persistent
 
-from . import environment, utils
+from . import environment
 
 
 DEPENDENCIES = {
