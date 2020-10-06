@@ -417,7 +417,7 @@ class DrawFactory(object):
         if name in self.widgets:
             del self.widgets[name]
         else:
-            logging.info("Widget {name} not existing")
+            logging.error(f"Widget {name} not existing")
 
     def clear_widgets(self):
         self.widgets.clear()
