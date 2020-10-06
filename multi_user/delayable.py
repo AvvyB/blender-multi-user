@@ -19,7 +19,15 @@ import logging
 
 import bpy
 
-from . import presence, utils
+from . import utils
+from .presence import (renderer,
+                       UserFrustumWidget,
+                       UserNameWidget,
+                       UserSelectionWidget,
+                       refresh_3d_view,
+                       generate_user_camera,
+                       get_view_matrix,
+                       refresh_sidebar_view)
 from replication.constants import (FETCHED,
                                    UP,
                                    RP_COMMON,
@@ -33,9 +41,11 @@ from replication.constants import (FETCHED,
 
 from replication.interface import session
 
+
 class Delayable():
     """Delayable task interface
     """
+
     def __init__(self):
         self.is_registered = False
 
@@ -63,13 +73,14 @@ class Timer(Delayable):
     def register(self):
         """Register the timer into the blender timer system
         """
-        
+
         if not self.is_registered:
             bpy.app.timers.register(self.main)
             self.is_registered = True
             logging.debug(f"Register {self.__class__.__name__}")
         else:
-            logging.debug(f"Timer {self.__class__.__name__} already registered")
+            logging.debug(
+                f"Timer {self.__class__.__name__} already registered")
 
     def main(self):
         self.execute()
@@ -211,59 +222,6 @@ class DynamicRightSelectTimer(Timer):
                                 obj.hide_select = True
 
 
-class Draw(Delayable):
-    def __init__(self):
-        super().__init__()
-        self._handler = None
-
-    def register(self):
-        if not self.is_registered:
-            self._handler = bpy.types.SpaceView3D.draw_handler_add(
-                self.execute, (), 'WINDOW', 'POST_VIEW')
-            logging.debug(f"Register {self.__class__.__name__}")
-        else:
-            logging.debug(f"Drow {self.__class__.__name__} already registered")
-
-    def execute(self):
-        raise NotImplementedError()
-
-    def unregister(self):
-        try:
-            bpy.types.SpaceView3D.draw_handler_remove(
-                self._handler, "WINDOW")
-        except:
-            pass
-
-
-class DrawClient(Draw):
-    def execute(self):
-        renderer = getattr(presence, 'renderer', None)
-        prefs = utils.get_preferences()
-
-        if session and renderer and session.state['STATE'] == STATE_ACTIVE:
-            settings = bpy.context.window_manager.session
-            users = session.online_users
-
-            # Update users
-            for user in users.values():
-                metadata = user.get('metadata')
-                color = metadata.get('color')
-                scene_current = metadata.get('scene_current')
-                user_showable = scene_current == bpy.context.scene.name or settings.presence_show_far_user
-                if color and scene_current and user_showable:
-                    if settings.presence_show_selected and 'selected_objects' in metadata.keys():
-                        renderer.draw_client_selection(
-                            user['id'], color, metadata['selected_objects'])
-                    if settings.presence_show_user and 'view_corners' in metadata:
-                        renderer.draw_client_camera(
-                            user['id'], metadata['view_corners'], color)
-                if not user_showable:
-                    # TODO: remove this when user event drivent update will be
-                    # ready
-                    renderer.flush_selection()
-                    renderer.flush_users()
-
-
 class ClientUpdate(Timer):
     def __init__(self, timout=.1):
         super().__init__(timout)
@@ -272,7 +230,6 @@ class ClientUpdate(Timer):
 
     def execute(self):
         settings = utils.get_preferences()
-        renderer = getattr(presence, 'renderer', None)
 
         if session and renderer:
             if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
@@ -291,7 +248,7 @@ class ClientUpdate(Timer):
                             if cached_user_data is None:
                                 self.users_metadata[username] = user_data['metadata']
                             elif 'view_matrix' in cached_user_data and 'view_matrix' in new_user_data and cached_user_data['view_matrix'] != new_user_data['view_matrix']:
-                                presence.refresh_3d_view()
+                                refresh_3d_view()
                                 self.users_metadata[username] = user_data['metadata']
                                 break
                             else:
@@ -300,13 +257,13 @@ class ClientUpdate(Timer):
                 local_user_metadata = local_user.get('metadata')
                 scene_current = bpy.context.scene.name
                 local_user = session.online_users.get(settings.username)
-                current_view_corners = presence.get_view_corners()
+                current_view_corners = generate_user_camera()
 
                 # Init client metadata
                 if not local_user_metadata or 'color' not in local_user_metadata.keys():
                     metadata = {
-                        'view_corners': presence.get_view_matrix(),
-                        'view_matrix': presence.get_view_matrix(),
+                        'view_corners': get_view_matrix(),
+                        'view_matrix': get_view_matrix(),
                         'color': (settings.client_color.r,
                                   settings.client_color.g,
                                   settings.client_color.b,
@@ -323,7 +280,7 @@ class ClientUpdate(Timer):
                     session.update_user_metadata(local_user_metadata)
                 elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
-                    local_user_metadata['view_matrix'] = presence.get_view_matrix(
+                    local_user_metadata['view_matrix'] = get_view_matrix(
                     )
                     session.update_user_metadata(local_user_metadata)
 
@@ -333,26 +290,27 @@ class SessionStatusUpdate(Timer):
         super().__init__(timout)
 
     def execute(self):
-        presence.refresh_sidebar_view()
+        refresh_sidebar_view()
 
 
 class SessionUserSync(Timer):
     def __init__(self, timout=1):
         super().__init__(timout)
+        self.settings = utils.get_preferences()
 
     def execute(self):
-        renderer = getattr(presence, 'renderer', None)
-
         if session and renderer:
             # sync online users
             session_users = session.online_users
             ui_users = bpy.context.window_manager.online_users
 
             for index, user in enumerate(ui_users):
-                if user.username not in session_users.keys():
+                if user.username not in session_users.keys() and \
+                        user.username != self.settings.username:
+                    renderer.remove_widget(f"{user.username}_cam")
+                    renderer.remove_widget(f"{user.username}_select")
+                    renderer.remove_widget(f"{user.username}_name")
                     ui_users.remove(index)
-                    renderer.flush_selection()
-                    renderer.flush_users()
                     break
 
             for user in session_users:
@@ -360,13 +318,20 @@ class SessionUserSync(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
+                    if user != self.settings.username:
+                        renderer.add_widget(
+                            f"{user}_cam", UserFrustumWidget(user))
+                        renderer.add_widget(
+                            f"{user}_select", UserSelectionWidget(user))
+                        renderer.add_widget(
+                            f"{user}_name", UserNameWidget(user))
 
 
 class MainThreadExecutor(Timer):
     def __init__(self, timout=1, execution_queue=None):
         super().__init__(timout)
         self.execution_queue = execution_queue
-    
+
     def execute(self):
         while not self.execution_queue.empty():
             function = self.execution_queue.get()

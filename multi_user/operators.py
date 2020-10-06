@@ -21,26 +21,25 @@ import logging
 import os
 import queue
 import random
+import shutil
 import string
 import time
 from operator import itemgetter
-from pathlib import Path
-import shutil
 from pathlib import Path
 from queue import Queue
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-
-from . import bl_types, delayable, environment, presence, ui, utils
-from replication.constants import (FETCHED, STATE_ACTIVE,
-                                   STATE_INITIAL,
-                                   STATE_SYNCING, RP_COMMON, UP)
+from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
+                                   STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
+from . import bl_types, delayable, environment, ui, utils
+from .presence import (SessionStatusWidget, refresh_3d_view, renderer,
+                       view3d_find)
 
 background_execution_queue = Queue()
 delayables = []
@@ -80,10 +79,6 @@ def initialize_session():
         if node_ref.state == FETCHED:
             node_ref.apply()
 
-    # Step 3: Launch presence overlay
-    if runtime_settings.enable_presence:
-        presence.renderer.run()
-
     # Step 4: Register blender timers
     for d in delayables:
         d.register()
@@ -107,9 +102,6 @@ def on_connection_end():
             continue
 
     stop_modal_executor = True
-
-    # Step 2: Unregister presence renderer
-    presence.renderer.stop()
 
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.remove(
@@ -256,7 +248,6 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Background client updates service
         delayables.append(delayable.ClientUpdate())
-        delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
@@ -472,7 +463,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            area, region, rv3d = presence.view3d_find()
+            area, region, rv3d = view3d_find()
 
             if session:
                 target_ref = session.online_users.get(self.target_client)
@@ -746,6 +737,7 @@ def depsgraph_evaluation(scene):
 
 def register():
     from bpy.utils import register_class
+
     for cls in classes:
         register_class(cls)
 

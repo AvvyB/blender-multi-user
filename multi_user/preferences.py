@@ -476,25 +476,26 @@ class SessionProps(bpy.types.PropertyGroup):
         name="Presence overlay",
         description='Enable overlay drawing module',
         default=True,
-        update=presence.update_presence
     )
     presence_show_selected: bpy.props.BoolProperty(
         name="Show selected objects",
         description='Enable selection overlay ',
         default=True,
-        update=presence.update_overlay_settings
     )
     presence_show_user: bpy.props.BoolProperty(
         name="Show users",
         description='Enable user overlay ',
         default=True,
-        update=presence.update_overlay_settings
     )
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show users on different scenes",
         description="Show user on different scenes",
         default=False,
-        update=presence.update_overlay_settings
+    )
+    presence_show_session_status: bpy.props.BoolProperty(
+        name="Show session status ",
+        description="Show session status on the viewport",
+        default=True,
     )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
