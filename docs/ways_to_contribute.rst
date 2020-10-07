@@ -35,8 +35,21 @@ Here are some useful information you should provide in a bug report:
 Contributing code
 =================
 
-1. Fork it (https://gitlab.com/yourname/yourproject/fork)
-2. Create your feature branch (git checkout -b feature/fooBar)
-3. Commit your changes (git commit -am 'Add some fooBar')
-4. Push to the branch (git push origin feature/fooBar)
-5. Create a new Pull Request
+1. Fork the project into a new repository: https://gitlab.com/yourname/multi-user
+2. Clone the new repository locally:
+        .. code-block:: bash
+            git clone https://gitlab.com/yourname/multi-user.git
+3. Create your own feature branch from the develop branch, using the syntax:
+        .. code-block:: bash
+            git checkout -b feature/yourfeaturename
+    where 'feature/' designates a feature branch, and 'yourfeaturename' is a name of your choosing
+4. Pull any recent changes from the 'develop' branch:
+        .. code-block:: bash
+            git pull
+5. Add and commit your changes, including a commit message:
+        .. code-block:: bash
+            git commit -am 'Add fooBar'
+6. Push committed changes to the remote feature branch you created
+        .. code-block:: bash
+            git push origin feature/yourfeaturename
+7. Create a new Pull Request on Gitlab to merge the changes into the develop branch
