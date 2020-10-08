@@ -47,7 +47,7 @@ def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, att
         :type attributes: list
     """
     if not dikt or len(collection) == 0:
-        logging.warning(f'Skipping collection')
+        logging.debug(f'Skipping collection')
         return
 
     if attributes is None:

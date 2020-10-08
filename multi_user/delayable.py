@@ -119,14 +119,14 @@ class ApplyTimer(Timer):
 
                 if node_ref.state == FETCHED:
                     try:
-                        session.apply(node, force=True)
+                        session.apply(node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
                 elif node_ref.state == REPARENT:
                     # Reload the node
                     node_ref.remove_instance()
                     node_ref.resolve()
-                    session.apply(node, force=True)
+                    session.apply(node)
                     for parent in session._graph.find_parents(node):
                         logging.info(f"Applying parent {parent}")
                         session.apply(parent, force=True)
