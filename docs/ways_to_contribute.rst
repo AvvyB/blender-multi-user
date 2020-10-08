@@ -87,11 +87,18 @@ The following example suggests how to contribute a feature.
 10. Push committed changes to the remote copy of your new feature branch which will be created in this step:
     
     .. code-block:: bash
-        
+
         git push -u origin feature/yourfeaturename
 
+    If it's been some time since performing steps 4 through 7, make sure to checkout 'develop' again and pull the latest changes from upstream before checking out and creating feature/yourfeaturename and pushing changes. Alternatively, checkout 'feature/yourfeaturename' and simply run:
+    
+    .. code-block:: bash
+
+        git rebase upstream/develop
+
+    and your staged commits will be merged along with the changes.
+
 .. Hint:: -u option sets up your locally created new branch to follow a remote branch which is now created with the same name on your remote repository.
-.. Note:: If it's been some time since performing steps 4 through 7, make sure to checkout 'develop' again and pull the latest changes from upstream before checking out and creating feature/yourfeaturename and pushing changes
 
 11. Finally, create a new Pull/Merge Request on Gitlab to merge the remote version of this new branch with commited updates, back into the upstream develop branch, finalising the integration of the new feature.
 
