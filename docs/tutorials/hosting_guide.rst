@@ -144,7 +144,7 @@ Let's check the connection status. Right click on the tray icon and click on **S
     Network status.
 
 The network status must be **OK** for each user(like in the picture above) otherwise it means that you are not connected to the network.
-If you see something like **ACCESS_DENIED**, it means that you were not authorized to join the network. Please check the :ref:`network-authorization` section.
+If you see something like **ACCESS_DENIED**, it means that you were not authorized to join the network. Please check the section :ref:`network-authorization`
 
 This is it for the ZeroTier network setup. Now everything should be setup to use the multi-user add-on over internet ! You can now follow the :ref:`quickstart` guide to start using the multi-user add-on !
 
@@ -171,26 +171,28 @@ From the dedicated server
     run it at home for LAN but for internet hosting you need to follow the :ref:`port-forwarding` setup first.  
 
 The dedicated server allow you to host a session with simplicity from any location.
-It was developed to improve intaernet hosting performance.
+It was developed to improve internet hosting performance.
 
-The dedicated server can be run in tow ways:
+The dedicated server can be run in two ways:
 
 - :ref:`cmd-line`
 - :ref:`docker`
+
+.. Note:: There are shell scripts to conveniently start a dedicated server via either of these approaches available in the gitlab repository. See section: :ref:`serverstartscripts`
 
 .. _cmd-line:
 
 Using a regular command line
 ----------------------------
 
-You can run the dedicated server on any platform by following those steps:
+You can run the dedicated server on any platform by following these steps:
 
 1. Firstly, download and intall python 3 (3.6 or above).
-2. Install the replication library:
+2. Install the latest version of the replication library:
 
     .. code-block:: bash
 
-        python -m pip install replication
+        python -m pip install replication==0.0.21a15
 
 4. Launch the server with:
 
@@ -199,17 +201,20 @@ You can run the dedicated server on any platform by following those steps:
         replication.serve
 
 .. hint::
-    You can also specify a custom **port** (-p), **timeout** (-t), **admin password** (-pwd), **log level(ERROR, WARNING, INFO or DEBUG)** (-l) and **log file** (-lf) with the following optionnal argument
+    You can also specify a custom **port** (-p), **timeout** (-t), **admin password** (-pwd), **log level (ERROR, WARNING, INFO or DEBUG)** (-l) and **log file** (-lf) with the following optional arguments
 
     .. code-block:: bash
 
-        replication.serve -p 5555 -pwd toto -t 1000 -l INFO -lf server.log
+        replication.serve -p 5555 -pwd admin -t 1000 -l INFO -lf server.log
 
-As soon as the dedicated server is running, you can connect to it from blender (follow :ref:`how-to-join`).
+Here, for example, a server is instantiated on port 5555, with password 'admin', a 1 second timeout, and logging enabled.
+
+As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
+
 
 
 .. hint::
-    Some commands are available to manage the session. Check :ref:`dedicated-management` to learn more.
+    Some commands are available to enable an administrator to manage the session. Check :ref:`dedicated-management` to learn more.
 
 
 .. _docker:
@@ -217,22 +222,56 @@ As soon as the dedicated server is running, you can connect to it from blender (
 Using a pre-configured image on docker engine
 ---------------------------------------------
 
-Launching the dedicated server from a docker server is simple as:
+Launching the dedicated server from a docker server is simple as running:
 
 .. code-block:: bash
 
     docker run -d \
         -p 5555-5560:5555-5560 \
         -e port=5555 \
+        -e log_level=DEBUG \
         -e password=admin \
         -e timeout=1000 \
-        registry.gitlab.com/slumber/multi-user/multi-user-server:0.0.3
+        registry.gitlab.com/slumber/multi-user/multi-user-server:0.1.0
 
-As soon as the dedicated server is running, you can connect to it from blender.
-You can check the :ref:`how-to-join` section.
+As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
+
+You can check your container is running, and find its ID with:
+
+.. code-block:: bash
+
+    docker ps
+
+Logs for the server running in the docker container can be accessed by outputting the following to a log file:
+
+.. code-block:: bash
+
+    docker log your-container-id >& dockerserver.log
+
+.. Note:: If using WSL2 on Windows 10 (Windows Subsystem for Linux), it is preferable to run a dedicated server via regular command line approach (or the associated startup script) from within Windows - docker desktop for windows 10 usually uses the WSL2 backend where it is available.
+
+
+.. _serverstartscripts:
+
+Server startup scripts
+----------------------
+
+Convenient scripts are available in the Gitlab repository: https://gitlab.com/slumber/multi-user/scripts/startup_scripts/
+
+Simply run the relevant script in a shell on the host machine to start a server with one line of code via replication directly or via a docker container. Choose between the two methods:
+
+    .. code-block:: bash
+
+        ./start-server.sh
+
+or
+
+    .. code-block:: bash
+
+        ./run-dockerfile.sh
 
 .. hint::
-    Some commands are available to manage the session. Check :ref:`dedicated-management` to learn more.
+    Once your server is up and running, some commands are available to manage the session :ref:`dedicated-management`
 
 .. _dedicated-management:
 
