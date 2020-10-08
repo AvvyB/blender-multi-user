@@ -1,7 +1,7 @@
 stages:
   - test
   - build
-  - deploy
+  # - deploy
 
 include:
   - local: .gitlab/ci/test.gitlab-ci.yml
