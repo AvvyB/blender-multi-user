@@ -41,7 +41,7 @@ def randomColor():
 
 
 def random_string_digits(stringLength=6):
-    """Generate a random string of letters and digits """
+    """Generate a random string of letters and digits"""
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choices(lettersAndDigits, k=stringLength))
 
@@ -68,7 +68,7 @@ def update_port(self, context):
     if self.ipc_port < max_port and \
             self['ipc_port'] >= self.port:
         logging.error(
-            "IPC Port in conflic with the port, assigning a random value")
+            "IPC Port in conflict with the port, assigning a random value")
         self['ipc_port'] = random.randrange(self.port+4, 10000)
 
 
@@ -169,7 +169,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     )
     ipc_port: bpy.props.IntProperty(
         name="ipc_port",
-        description='internal ttl port(only usefull for multiple local instances)',
+        description='internal ttl port(only useful for multiple local instances)',
         default=random.randrange(5570, 70000),
         update=update_port,
     )
@@ -215,7 +215,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="Category",
         description="Preferences Category",
         items=[
-            ('CONFIG', "Configuration", "Configuration about this add-on"),
+            ('CONFIG', "Configuration", "Configuration of this add-on"),
             ('UPDATE', "Update", "Update this add-on"),
         ],
         default='CONFIG'
@@ -334,7 +334,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             # USER INFORMATIONS
             box = grid.box()
             box.prop(
-                self, "conf_session_identity_expanded", text="User informations",
+                self, "conf_session_identity_expanded", text="User information",
                 icon=get_expanded_icon(self.conf_session_identity_expanded),
                 emboss=False)
             if self.conf_session_identity_expanded:
@@ -344,7 +344,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             # NETWORK SETTINGS
             box = grid.box()
             box.prop(
-                self, "conf_session_net_expanded", text="Netorking",
+                self, "conf_session_net_expanded", text="Networking",
                 icon=get_expanded_icon(self.conf_session_net_expanded),
                 emboss=False)
 
