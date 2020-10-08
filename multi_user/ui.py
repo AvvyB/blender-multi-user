@@ -114,7 +114,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                 if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
                     info_msg = f"LAN: {runtime_settings.internet_ip}" 
                 if current_state == STATE_LOBBY:
-                    info_msg = "Waiting the session to start."
+                    info_msg = "Waiting for the session to start."
 
                 if info_msg:
                     info_box = row.box()

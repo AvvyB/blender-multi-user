@@ -72,7 +72,7 @@ def get_state_str(state):
     elif state == STATE_SYNCING:
         state_str = 'FETCHING'
     elif state == STATE_AUTH:
-        state_str = 'AUTHENTIFICATION'
+        state_str = 'AUTHENTICATION'
     elif state == STATE_CONFIG:
         state_str = 'CONFIGURATION'
     elif state == STATE_ACTIVE:
