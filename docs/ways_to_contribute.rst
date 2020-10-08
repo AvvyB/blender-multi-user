@@ -96,7 +96,7 @@ The following example suggests how to contribute a feature.
 
         git rebase upstream/develop
 
-    and your staged commits will be merged along with the changes.
+    and your staged commits will be merged along with the changes. More information on `rebasing here <https://git-scm.com/book/en/v2/Git-Branching-Rebasing>`_
 
 .. Hint:: -u option sets up your locally created new branch to follow a remote branch which is now created with the same name on your remote repository.
 
