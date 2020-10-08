@@ -38,8 +38,7 @@ from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
 from . import bl_types, delayable, environment, ui, utils
-from .presence import (SessionStatusWidget, refresh_3d_view, renderer,
-                       view3d_find)
+from .presence import (SessionStatusWidget, renderer, view3d_find)
 
 background_execution_queue = Queue()
 delayables = []
@@ -85,6 +84,8 @@ def initialize_session():
 
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+
+    bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
 
 @session_callback('on_exit')
@@ -263,7 +264,7 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(session_update)
         delayables.append(session_user_sync)
 
-        bpy.ops.session.apply_armature_operator()
+        
 
         self.report(
             {'INFO'},
