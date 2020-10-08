@@ -21,7 +21,7 @@ In order to help with the testing, you have several possibilities:
 - Test `development branch <https://gitlab.com/slumber/multi-user/-/branches>`_ 
 
 --------------------------
-Filling an issue on Gitlab
+Filing an issue on Gitlab
 --------------------------
 
 The `gitlab issue tracker <https://gitlab.com/slumber/multi-user/issues>`_ is used for bug report and enhancement suggestion.
@@ -35,21 +35,37 @@ Here are some useful information you should provide in a bug report:
 Contributing code
 =================
 
-1. Fork the project into a new repository: https://gitlab.com/yourname/multi-user
+In general, this project follows the `Gitflow Workflow <https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow>`_.
+The following example suggests how to contribute a feature.
+
+1. Fork the project into a new repository:
+    https://gitlab.com/yourname/multi-user
+
 2. Clone the new repository locally:
-        .. code-block:: bash
-            git clone https://gitlab.com/yourname/multi-user.git
+    .. code-block:: bash
+
+        git clone https://gitlab.com/yourname/multi-user.git
+
 3. Create your own feature branch from the develop branch, using the syntax:
-        .. code-block:: bash
-            git checkout -b feature/yourfeaturename
-    where 'feature/' designates a feature branch, and 'yourfeaturename' is a name of your choosing
+    .. code-block:: bash
+
+        git checkout -b feature/yourfeaturename
+    ...where 'feature/' designates a feature branch, and 'yourfeaturename' is a name of your choosing
+
 4. Pull any recent changes from the 'develop' branch:
-        .. code-block:: bash
-            git pull
+    .. code-block:: bash
+
+        git pull
 5. Add and commit your changes, including a commit message:
-        .. code-block:: bash
-            git commit -am 'Add fooBar'
+    .. code-block:: bash
+
+        git commit -am 'Add fooBar'
 6. Push committed changes to the remote feature branch you created
-        .. code-block:: bash
-            git push origin feature/yourfeaturename
-7. Create a new Pull Request on Gitlab to merge the changes into the develop branch
+    .. code-block:: bash
+
+        git push origin feature/yourfeaturename
+7. Create a new Pull Request on Gitlab
+    merging the changes into the develop branch
+
+.. Note:: For hotfixes, replace 'feature/' with 'hotfix/' and fork from 'master' branch instead of 'develop' branch
+.. Note:: Let's follow the Atlassian `Gitflow Workflow <https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow>`_, except for one main difference - submitting a pull request rather than merging by ourselves.
