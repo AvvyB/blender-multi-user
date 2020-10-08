@@ -67,7 +67,7 @@ def get_state_str(state):
     elif state == STATE_SYNCING:
         state_str = 'FETCHING'
     elif state == STATE_AUTH:
-        state_str = 'AUTHENTIFICATION'
+        state_str = 'AUTHENTICATION'
     elif state == STATE_CONFIG:
         state_str = 'CONFIGURATION'
     elif state == STATE_ACTIVE:
@@ -140,7 +140,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                 if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
                     info_msg = f"LAN: {runtime_settings.internet_ip}" 
                 if current_state == STATE_LOBBY:
-                    info_msg = "Waiting the session to start."
+                    info_msg = "Waiting for the session to start."
 
                 if info_msg:
                     info_box = row.box()
