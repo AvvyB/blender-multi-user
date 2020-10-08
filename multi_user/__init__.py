@@ -44,7 +44,7 @@ from . import environment
 
 
 DEPENDENCIES = {
-    ("replication", '0.0.21a17'),
+    ("replication", '0.0.21a18'),
 }
 
 
