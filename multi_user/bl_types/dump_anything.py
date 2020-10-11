@@ -47,7 +47,7 @@ def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, att
         :type attributes: list
     """
     if not dikt or len(collection) == 0:
-        logging.debug(f'Skipping collection')
+        logging.debug(f'Skipping collection {collection}')
         return
 
     if attributes is None:
@@ -626,11 +626,11 @@ class Loader:
         for k in self._ordered_keys(dump.keys()):
             v = dump[k]
             if not hasattr(default.read(), k):
-                logging.debug(f"Load default, skipping {default} : {k}")
+                continue
             try:
                 self._load_any(default.extend(k), v)
             except Exception as err:
-                logging.debug(f"Cannot load {k}: {err}")
+                logging.debug(f"Skipping {k}")
 
     @property
     def match_subset_all(self):
