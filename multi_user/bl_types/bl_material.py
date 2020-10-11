@@ -105,7 +105,6 @@ def dump_node(node):
         "show_expanded",
         "name_full",
         "select",
-        "bl_label",
         "bl_height_min",
         "bl_height_max",
         "bl_height_default",
