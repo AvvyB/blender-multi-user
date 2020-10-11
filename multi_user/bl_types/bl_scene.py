@@ -124,7 +124,14 @@ class BlScene(BlDatablock):
                 'samples',
                 'volume_bounces',
                 'file_extension',
-                'use_denoising'
+                'use_denoising',
+                'ffmpeg',
+                'stereo_views',
+                'has_multiple_engines',
+                'bake',
+                'views',
+                'motion_blur_shutter_curve',
+                'image_settings'
             ]
             data['eevee'] = scene_dumper.dump(instance.eevee)
             data['cycles'] = scene_dumper.dump(instance.cycles)        
