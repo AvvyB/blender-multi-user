@@ -123,9 +123,10 @@ class ReplicationFlags(bpy.types.PropertyGroup):
     sync_render_settings: bpy.props.BoolProperty(
         name="Synchronize render settings",
         description="Synchronize render settings (eevee and cycles only)",
-        default=True,
+        default=False,
         set=set_sync_render_settings,
-        get=get_sync_render_settings)
+        get=get_sync_render_settings
+    )
     sync_during_editmode: bpy.props.BoolProperty(
         name="Edit mode updates",
         description="Enable objects update in edit mode (! Impact performances !)",
