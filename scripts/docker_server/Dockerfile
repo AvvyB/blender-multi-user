@@ -1,8 +1,8 @@
 # Download base image debian jessie
 FROM python:slim
 
-ARG replication_version=0.0.21a17
-ARG version=0.1.0
+ARG replication_version=0.0.21a19
+ARG version=0.1.1
 
 # Infos
 LABEL maintainer="Swann Martinez"
