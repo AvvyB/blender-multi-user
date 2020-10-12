@@ -209,18 +209,12 @@ class DynamicRightSelectTimer(Timer):
                                 RP_COMMON,
                                 recursive=recursive)
 
-            for user, user_info in session.online_users.items():
-                if user != settings.username:
-                    metadata = user_info.get('metadata')
-
-                    if 'selected_objects' in metadata:
-                        # Update selectionnable objects
-                        for obj in bpy.data.objects:
-                            if obj.hide_select and obj.uuid not in metadata['selected_objects']:
-                                obj.hide_select = False
-                            elif not obj.hide_select and obj.uuid in metadata['selected_objects']:
-                                obj.hide_select = True
-
+            for obj in bpy.data.objects:
+                object_uuid = getattr(obj, 'uuid', None)
+                if object_uuid:
+                    is_selectable = not session.is_readonly(object_uuid)
+                    if obj.hide_select != is_selectable:
+                        obj.hide_select = is_selectable
 
 class ClientUpdate(Timer):
     def __init__(self, timout=.1):
