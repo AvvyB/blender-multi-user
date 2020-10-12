@@ -86,8 +86,7 @@ def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: lis
     properties = collection[0].bl_rna.properties
 
     if attributes is None:
-        attributes = [
-            p.identifier for p in properties if p.type in NP_COMPATIBLE_TYPES and not p.is_readonly]
+        attributes = [p.identifier for p in properties if p.type in NP_COMPATIBLE_TYPES and not p.is_readonly]
 
     for attr in attributes:
         attr_type = properties[attr].type
@@ -98,8 +97,7 @@ def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: lis
         elif attr_type == 'ENUM':
             dumped_collection[attr] = np_dump_collection_enum(collection, attr)
         else:
-            logging.error(
-                f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
+            logging.error(f"{attr} of type {attr_type} not supported. Only {PRIMITIVE_TYPES} and ENUM supported. Skipping it.")
 
     return dumped_collection
 
@@ -124,6 +122,7 @@ def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attri
 
     assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
 
+    
     size = sum(attr_infos.array_dimensions) if attr_infos.is_array else 1
 
     dumped_sequence = np.zeros(
@@ -195,7 +194,7 @@ def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attr
     if len(collection) == 0 or not sequence:
         logging.debug(f"Skipping loading {attribute}")
         return
-
+    
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
     assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
@@ -396,13 +395,8 @@ class Dumper:
             if (self.exclude_filter and p in self.exclude_filter) or\
                     (self.include_filter and p not in self.include_filter):
                 return False
-            if not self.accept_read_only and getattr(default, p) and \
-                    hasattr(default, "is_property_readonly") and \
-                    default.is_property_readonly(p):
-                logging.debug(f"Skipping read only property:{default} - {p}")
-                return False
             dp = self._dump_any(getattr(default, p), depth)
-            if dp:
+            if not (dp is None):
                 dump[p] = dp
         return dump
 
@@ -544,7 +538,7 @@ class Loader:
             else:
                 try:
                     _constructor_parameters = [dumped_element[name]
-                                               for name in _constructor[1]]
+                                              for name in _constructor[1]]
                 except KeyError:
                     logging.debug("Collection load error, missing parameters.")
                     continue  # TODO handle error
@@ -572,10 +566,10 @@ class Loader:
                     break
 
             default_point_count = len(dst_curve.points)
-
+            
             for point_idx, point in curve['points'].items():
                 pos = point['location']
-
+                
                 if point_idx < default_point_count:
                     dst_curve.points[int(point_idx)].location = pos
                 else:
