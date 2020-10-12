@@ -300,6 +300,8 @@ class UserSelectionWidget(Widget):
             ob = find_from_attr("uuid", select_ob, bpy.data.objects)
             if not ob:
                 return
+            
+            position = None
 
             if ob.type == 'EMPTY':
                 # TODO: Child case
@@ -312,13 +314,14 @@ class UserSelectionWidget(Widget):
                     for obj in ob.instance_collection.objects:
                         if obj.type == 'MESH' and  hasattr(obj, 'bound_box'):
                             positions = get_bb_coords_from_obj(obj, instance=ob)
+                            break
             elif hasattr(ob, 'bound_box'):
                 indices = (
                     (0, 1), (1, 2), (2, 3), (0, 3),
                     (4, 5), (5, 6), (6, 7), (4, 7),
                     (0, 4), (1, 5), (2, 6), (3, 7))
                 positions = get_bb_coords_from_obj(ob)
-            else:
+            if positions is None:
                 indices = (
                     (0, 1), (0, 2), (1, 3), (2, 3),
                     (4, 5), (4, 6), (5, 7), (6, 7),
