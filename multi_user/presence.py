@@ -158,21 +158,26 @@ def project_to_screen(coords: list) -> list:
         return (0, 0)
 
 
-def get_bb_coords_from_obj(object: bpy.types.Object, parent: bpy.types.Object = None) -> list:
+def get_bb_coords_from_obj(object: bpy.types.Object, instance: bpy.types.Object = None) -> list:
     """ Generate  bounding box in world coordinate from object bound box
 
     :param object: target object
     :type object: bpy.types.Object
-    :param parent: optionnal parent
-    :type parent: bpy.types.Object
+    :param instance: optionnal instance
+    :type instance: bpy.types.Object
     :return: list of 8 points [(x,y,z),...]
     """
-    base = object.matrix_world if parent is None else parent.matrix_world
+    base = object.matrix_world
+
+    if instance:
+        scale =  mathutils.Matrix.Diagonal(object.matrix_world.to_scale())
+        base = instance.matrix_world @ scale.to_4x4()
+
     bbox_corners = [base @ mathutils.Vector(
         corner) for corner in object.bound_box]
+    
 
-    return [(point.x, point.y, point.z)
-            for point in bbox_corners]
+    return [(point.x, point.y, point.z) for point in bbox_corners]
 
 
 def get_view_matrix() -> list:
@@ -305,10 +310,9 @@ class UserSelectionWidget(Widget):
                     (0, 4), (1, 5), (2, 6), (3, 7))
                 if ob.instance_collection:
                     for obj in ob.instance_collection.objects:
-                        if obj.type == 'MESH':
-                            positions = get_bb_coords_from_obj(obj, parent=ob)
-
-            if hasattr(ob, 'bound_box'):
+                        if obj.type == 'MESH' and  hasattr(obj, 'bound_box'):
+                            positions = get_bb_coords_from_obj(obj, instance=ob)
+            elif hasattr(ob, 'bound_box'):
                 indices = (
                     (0, 1), (1, 2), (2, 3), (0, 3),
                     (4, 5), (5, 6), (6, 7), (4, 7),
