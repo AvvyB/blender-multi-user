@@ -51,6 +51,14 @@ def load_node(node_data, node_tree):
                 logging.error(
                     f"Material {input} parameter not supported, skipping")
 
+    for output in node_data["outputs"]:
+        if hasattr(target_node.outputs[output], "default_value"):
+            try:
+                target_node.outputs[output].default_value = node_data["outputs"][output]["default_value"]
+            except:
+                logging.error(
+                    f"Material {output} parameter not supported, skipping")
+
 
 def load_links(links_data, node_tree):
     """ Load node_tree links from a list
@@ -137,8 +145,17 @@ def dump_node(node):
             input_dumper.include_filter = ["default_value"]
 
             if hasattr(i, 'default_value'):
-                dumped_node['inputs'][i.name] = input_dumper.dump(
-                    i)
+                dumped_node['inputs'][i.name] = input_dumper.dump(i)
+
+        dumped_node['outputs'] = {}
+        for i in node.outputs:
+            output_dumper = Dumper()
+            output_dumper.depth = 2
+            output_dumper.include_filter = ["default_value"]
+
+            if hasattr(i, 'default_value'):
+                dumped_node['outputs'][i.name] = output_dumper.dump(i)
+
     if hasattr(node, 'color_ramp'):
         ramp_dumper = Dumper()
         ramp_dumper.depth = 4
@@ -267,7 +284,7 @@ class BlMaterial(BlDatablock):
 
         if self.instance.use_nodes:
             for node in self.instance.node_tree.nodes:
-                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT']:
+                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT'] and node.image:
                     deps.append(node.image)
         if self.is_library:
             deps.append(self.instance.library)
