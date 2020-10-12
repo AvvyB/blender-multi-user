@@ -26,6 +26,7 @@ from replication.constants import (DIFF_JSON, MODIFIED)
 from deepdiff import DeepDiff
 import logging
 
+
 class BlScene(BlDatablock):
     bl_id = "scenes"
     bl_class = bpy.types.Scene
@@ -50,12 +51,14 @@ class BlScene(BlDatablock):
         loader.load(target, data)
 
         # Load master collection
-        load_collection_objects(data['collection']['objects'], target.collection)
-        load_collection_childrens(data['collection']['children'], target.collection)
+        load_collection_objects(
+            data['collection']['objects'], target.collection)
+        load_collection_childrens(
+            data['collection']['children'], target.collection)
 
         if 'world' in data.keys():
             target.world = bpy.data.worlds[data['world']]
-        
+
         # Annotation
         if 'grease_pencil' in data.keys():
             target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
@@ -73,7 +76,7 @@ class BlScene(BlDatablock):
             if 'view_settings' in data.keys():
                 loader.load(target.view_settings, data['view_settings'])
                 if target.view_settings.use_curve_mapping:
-                    #TODO: change this ugly fix
+                    # TODO: change this ugly fix
                     target.view_settings.curve_mapping.white_level = data['view_settings']['curve_mapping']['white_level']
                     target.view_settings.curve_mapping.black_level = data['view_settings']['curve_mapping']['black_level']
                     target.view_settings.curve_mapping.update()
@@ -100,11 +103,13 @@ class BlScene(BlDatablock):
 
         scene_dumper.depth = 3
 
-        scene_dumper.include_filter = ['children','objects','name']
+        scene_dumper.include_filter = ['children', 'objects', 'name']
         data['collection'] = {}
-        data['collection']['children'] = dump_collection_children(instance.collection)
-        data['collection']['objects'] = dump_collection_objects(instance.collection)
-        
+        data['collection']['children'] = dump_collection_children(
+            instance.collection)
+        data['collection']['objects'] = dump_collection_objects(
+            instance.collection)
+
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
 
@@ -133,22 +138,28 @@ class BlScene(BlDatablock):
                 'motion_blur_shutter_curve',
                 'image_settings'
             ]
-            data['eevee'] = scene_dumper.dump(instance.eevee)
-            data['cycles'] = scene_dumper.dump(instance.cycles)        
-            data['view_settings'] = scene_dumper.dump(instance.view_settings)
+
             data['render'] = scene_dumper.dump(instance.render)
 
+            if instance.render.engine == 'BLENDER_EEVEE':
+                data['eevee'] = scene_dumper.dump(instance.eevee)
+            elif instance.render.engine == 'CYCLES':
+                data['cycles'] = scene_dumper.dump(instance.cycles)
+
+            data['view_settings'] = scene_dumper.dump(instance.view_settings)
+
             if instance.view_settings.use_curve_mapping:
-                data['view_settings']['curve_mapping'] = scene_dumper.dump(instance.view_settings.curve_mapping)
+                data['view_settings']['curve_mapping'] = scene_dumper.dump(
+                    instance.view_settings.curve_mapping)
                 scene_dumper.depth = 5
                 scene_dumper.include_filter = [
                     'curves',
                     'points',
                     'location'
                 ]
-                data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(instance.view_settings.curve_mapping.curves)
-        
-        
+                data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(
+                    instance.view_settings.curve_mapping.curves)
+
         return data
 
     def _resolve_deps_implementation(self):
@@ -157,15 +168,15 @@ class BlScene(BlDatablock):
         # child collections
         for child in self.instance.collection.children:
             deps.append(child)
-        
+
         # childs objects
-        for object in self.instance.objects:
+        for object in self.instance.collection.objects:
             deps.append(object)
-        
+
         # world
         if self.instance.world:
             deps.append(self.instance.world)
-        
+
         # annotations
         if self.instance.grease_pencil:
             deps.append(self.instance.grease_pencil)
@@ -184,4 +195,4 @@ class BlScene(BlDatablock):
         if not self.preferences.sync_flags.sync_active_camera:
             exclude_path.append("root['camera']")
 
-        return DeepDiff(self.data, self._dump(instance=self.instance),exclude_paths=exclude_path)
+        return DeepDiff(self.data, self._dump(instance=self.instance), exclude_paths=exclude_path)
