@@ -184,4 +184,4 @@ class BlScene(BlDatablock):
         if not self.preferences.sync_flags.sync_active_camera:
             exclude_path.append("root['camera']")
 
-        return DeepDiff(self.data, self._dump(instance=self.instance),exclude_paths=exclude_path, cache_size=5000)
+        return DeepDiff(self.data, self._dump(instance=self.instance),exclude_paths=exclude_path)

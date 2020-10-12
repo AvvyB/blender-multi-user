@@ -65,7 +65,7 @@ class BlFile(ReplicatedDatablock):
         self.instance = kwargs.get('instance', None)
         
         if self.instance and not self.instance.exists():
-            raise FileNotFoundError(self.instance)
+            raise FileNotFoundError(str(self.instance))
    
         self.preferences = utils.get_preferences()
         self.diff_method = DIFF_BINARY
