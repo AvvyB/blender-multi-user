@@ -1,7 +1,7 @@
 # Download base image debian jessie
 FROM python:slim
 
-ARG replication_version=0.0.21a21
+ARG replication_version=0.0.21
 ARG version=0.1.1
 
 # Infos
