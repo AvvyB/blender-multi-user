@@ -107,7 +107,7 @@ class BlImage(BlDatablock):
 
             if self.instance.packed_file:
                 filename = Path(bpy.path.abspath(self.instance.filepath)).name
-                self.instance.filepath = get_filepath(filename)
+                self.instance.filepath_raw = get_filepath(filename)
                 self.instance.save()
                 # An image can't be unpacked to the modified path
                 # TODO: make a bug report
