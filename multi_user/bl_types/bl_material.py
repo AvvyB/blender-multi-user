@@ -26,6 +26,7 @@ from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 
+
 def load_node(node_data, node_tree):
     """ Load a node into a node_tree from a dict
 
@@ -41,7 +42,7 @@ def load_node(node_data, node_tree):
     image_uuid = node_data.get('image_uuid', None)
 
     if image_uuid and not target_node.image:
-        target_node.image = get_datablock_from_uuid(image_uuid,None)
+        target_node.image = get_datablock_from_uuid(image_uuid, None)
 
     for input in node_data["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
@@ -70,8 +71,10 @@ def load_links(links_data, node_tree):
     """
 
     for link in links_data:
-        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
-        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
+        input_socket = node_tree.nodes[link['to_node']
+                                       ].inputs[int(link['to_socket'])]
+        output_socket = node_tree.nodes[link['from_node']].outputs[int(
+            link['from_socket'])]
         node_tree.links.new(input_socket, output_socket)
 
 
@@ -86,8 +89,10 @@ def dump_links(links):
     links_data = []
 
     for link in links:
-        to_socket = NODE_SOCKET_INDEX.search(link.to_socket.path_from_id()).group(1)
-        from_socket = NODE_SOCKET_INDEX.search(link.from_socket.path_from_id()).group(1)
+        to_socket = NODE_SOCKET_INDEX.search(
+            link.to_socket.path_from_id()).group(1)
+        from_socket = NODE_SOCKET_INDEX.search(
+            link.from_socket.path_from_id()).group(1)
         links_data.append({
             'to_node': link.to_node.name,
             'to_socket': to_socket,
@@ -178,6 +183,12 @@ def dump_node(node):
     if hasattr(node, 'image') and getattr(node, 'image'):
         dumped_node['image_uuid'] = node.image.uuid
     return dumped_node
+
+
+def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
+    has_image = lambda node : (node.type in ['TEX_IMAGE', 'TEX_ENVIRONMENT'] and node.image)
+
+    return [node.image for node in node_tree.nodes if has_image(node)]
 
 
 class BlMaterial(BlDatablock):
@@ -283,9 +294,7 @@ class BlMaterial(BlDatablock):
         deps = []
 
         if self.instance.use_nodes:
-            for node in self.instance.node_tree.nodes:
-                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT'] and node.image:
-                    deps.append(node.image)
+            deps.extend(get_node_tree_dependencies(self.instance.node_tree))
         if self.is_library:
             deps.append(self.instance.library)
 

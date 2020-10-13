@@ -21,7 +21,11 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from .bl_material import load_links, load_node, dump_node, dump_links
+from .bl_material import (load_links,
+                          load_node,
+                          dump_node,
+                          dump_links,
+                          get_node_tree_dependencies)
 
 
 class BlWorld(BlDatablock):
@@ -39,7 +43,7 @@ class BlWorld(BlDatablock):
     def _load_implementation(self, data, target):
         loader = Loader()
         loader.load(target, data)
-        
+
         if data["use_nodes"]:
             if target.node_tree is None:
                 target.use_nodes = True
@@ -52,7 +56,6 @@ class BlWorld(BlDatablock):
             # Load nodes links
             target.node_tree.links.clear()
 
-            
             load_links(data["node_tree"]["links"], target.node_tree)
 
     def _dump_implementation(self, data, instance=None):
@@ -83,10 +86,7 @@ class BlWorld(BlDatablock):
         deps = []
 
         if self.instance.use_nodes:
-            for node in self.instance.node_tree.nodes:
-                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT']:
-                    deps.append(node.image)
+            deps.extend(get_node_tree_dependencies(self.instance.node_tree))
         if self.is_library:
             deps.append(self.instance.library)
         return deps
-
