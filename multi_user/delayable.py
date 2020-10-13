@@ -40,7 +40,7 @@ from replication.constants import (FETCHED,
                                    REPARENT)
 
 from replication.interface import session
-
+from replication.exception import NonAuthorizedOperationError
 
 class Delayable():
     """Delayable task interface
@@ -167,10 +167,13 @@ class DynamicRightSelectTimer(Timer):
                             recursive = True
                             if node.data and 'instance_type' in node.data.keys():
                                 recursive = node.data['instance_type'] != 'COLLECTION'
-                            session.change_owner(
-                                node.uuid,
-                                RP_COMMON,
-                                recursive=recursive)
+                            try:
+                                session.change_owner(
+                                    node.uuid,
+                                    RP_COMMON,
+                                    recursive=recursive)
+                            except NonAuthorizedOperationError:
+                                logging.warning(f"Not authorized to change {node} owner")
 
                     # change new selection to our
                     for obj in obj_ours:
@@ -181,10 +184,13 @@ class DynamicRightSelectTimer(Timer):
                             if node.data and 'instance_type' in node.data.keys():
                                 recursive = node.data['instance_type'] != 'COLLECTION'
 
-                            session.change_owner(
-                                node.uuid,
-                                settings.username,
-                                recursive=recursive)
+                            try:
+                                session.change_owner(
+                                    node.uuid,
+                                    settings.username,
+                                    recursive=recursive)
+                            except NonAuthorizedOperationError:
+                                logging.warning(f"Not authorized to change {node} owner")
                         else:
                             return
 
@@ -203,11 +209,13 @@ class DynamicRightSelectTimer(Timer):
                             filter_owner=settings.username)
                         for key in owned_keys:
                             node = session.get(uuid=key)
-
-                            session.change_owner(
-                                key,
-                                RP_COMMON,
-                                recursive=recursive)
+                            try:
+                                session.change_owner(
+                                    key,
+                                    RP_COMMON,
+                                    recursive=recursive)
+                            except NonAuthorizedOperationError:
+                                logging.warning(f"Not authorized to change {key} owner")
 
             for obj in bpy.data.objects:
                 object_uuid = getattr(obj, 'uuid', None)
