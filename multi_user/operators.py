@@ -562,7 +562,8 @@ class SessionApply(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        session.apply(self.target)
+        logging.debug(f"Running apply on {self.target}")
+        session.apply(self.target, force=True)
 
         return {"FINISHED"}
 
