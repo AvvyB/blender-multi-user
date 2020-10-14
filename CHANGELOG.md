@@ -96,3 +96,24 @@ All notable changes to this project will be documented in this file.
 - World sync
 - Snapshot UUID error
 - The world is not synchronized
+
+## [0.1.1] - Preview
+
+### Added
+
+- Session status widget
+
+### Changed
+
+- Refactored presence.py
+
+### Fixed
+
+- Render sync race condition (causing scene errors)
+- Binary differentials
+- Hybrid session crashes between linux/windows
+- Materials node default output value
+- Right selection
+- Client node rights changed to COMMON after disconnecting from the server 
+- Collection instances selection draw
+- Packed image save error
