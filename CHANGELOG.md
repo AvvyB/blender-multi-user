@@ -102,10 +102,12 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Session status widget
+- Affect dependencies during change owner
 
 ### Changed
 
 - Refactored presence.py
+- Reset button UI icon 
 
 ### Fixed
 
@@ -117,3 +119,4 @@ All notable changes to this project will be documented in this file.
 - Client node rights changed to COMMON after disconnecting from the server 
 - Collection instances selection draw
 - Packed image save error
+- Material replication
