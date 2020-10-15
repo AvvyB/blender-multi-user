@@ -205,21 +205,21 @@ class BlMaterial(BlDatablock):
 
     def _load_implementation(self, data, target):
         loader = Loader()
-        target.name = data['name']
-        if data['is_grease_pencil']:
+
+        is_grease_pencil = data.get('is_grease_pencil')
+        use_nodes = data.get('use_nodes')
+
+        loader.load(target, data)
+
+        if is_grease_pencil:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
-
-            loader.load(
-                target.grease_pencil, data['grease_pencil'])
-
-        if data["use_nodes"]:
+            loader.load(target.grease_pencil, data['grease_pencil'])
+        elif use_nodes:
             if target.node_tree is None:
                 target.use_nodes = True
 
             target.node_tree.nodes.clear()
-
-            loader.load(target, data)
 
             # Load nodes
             for node in data["node_tree"]["nodes"]:
