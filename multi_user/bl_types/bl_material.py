@@ -234,57 +234,69 @@ class BlMaterial(BlDatablock):
         assert(instance)
         mat_dumper = Dumper()
         mat_dumper.depth = 2
-        mat_dumper.exclude_filter = [
-            "is_embed_data",
-            "is_evaluated",
-            "name_full",
-            "bl_description",
-            "bl_icon",
-            "bl_idname",
-            "bl_label",
-            "preview",
-            "original",
-            "uuid",
-            "users",
-            "alpha_threshold",
-            "line_color",
-            "view_center",
+        mat_dumper.include_filter = [
+            'name',
+            'blend_method',
+            'shadow_method',
+            'alpha_threshold',
+            'show_transparent_back',
+            'use_backface_culling',
+            'use_screen_refraction',
+            'use_sss_translucency',
+            'refraction_depth',
+            'preview_render_type',
+            'use_preview_world',
+            'pass_index',
+            'use_nodes',
+            'diffuse_color',
+            'specular_color',
+            'roughness',
+            'specular_intensity',
+            'metallic',
+            'line_color',
+            'line_priority',
+            'is_grease_pencil'
         ]
         data = mat_dumper.dump(instance)
 
         if instance.use_nodes:
             nodes = {}
+            data["node_tree"] = {}
             for node in instance.node_tree.nodes:
                 nodes[node.name] = dump_node(node)
             data["node_tree"]['nodes'] = nodes
 
             data["node_tree"]["links"] = dump_links(instance.node_tree.links)
-
-        if instance.is_grease_pencil:
+        elif instance.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
             gp_mat_dumper.include_filter = [
+                'color',
+                'fill_color',
+                'mix_color',
+                'mix_factor',
+                'mix_stroke_factor',
+                # 'texture_angle',
+                # 'texture_scale',
+                # 'texture_offset',
+                'pixel_size',
+                'hide',
+                'lock',
+                'ghost',
+                # 'texture_clamp',
+                'flip',
+                'use_overlap_strokes',
                 'show_stroke',
+                'show_fill',
+                'alignment_mode',
+                'pass_index',
                 'mode',
                 'stroke_style',
-                'color',
-                'use_overlap_strokes',
-                'show_fill',
+                # 'stroke_image',
                 'fill_style',
-                'fill_color',
-                'pass_index',
-                'alignment_mode',
-                # 'fill_image',
-                'texture_opacity',
-                'mix_factor',
-                'texture_offset',
-                'texture_angle',
-                'texture_scale',
-                'texture_clamp',
                 'gradient_type',
-                'mix_color',
-                'flip'
+                # 'fill_image',
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         return data

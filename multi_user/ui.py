@@ -34,9 +34,9 @@ ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
                      'KEYTYPE_KEYFRAME_VEC',  # PUSHED
                      'TRIA_DOWN',  # FETCHED
-                     'FILE_REFRESH',   # UP
-                     'TRIA_UP',
-                     'ERROR']  # CHANGED
+                     'RECOVER_LAST',   # RESET
+                     'TRIA_UP', # CHANGED
+                     'ERROR']  # ERROR
 
 
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', fill_empty='  '):
@@ -492,10 +492,12 @@ def draw_property(context, parent, property_uuid, level=0):
         detail_item_box.separator()
 
     if item.state in [FETCHED, UP]:
-        detail_item_box.operator(
+        apply = detail_item_box.operator(
             "session.apply",
             text="",
-            icon=ICONS_PROP_STATES[item.state]).target = item.uuid
+            icon=ICONS_PROP_STATES[item.state])
+        apply.target = item.uuid
+        apply.reset_dependencies = True
     elif item.state in [MODIFIED, ADDED]:
         detail_item_box.operator(
             "session.commit",
