@@ -556,6 +556,7 @@ class SessionApply(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     target: bpy.props.StringProperty()
+    reset_dependencies: bpy.props.BoolProperty(default=False)
 
     @classmethod
     def poll(cls, context):
@@ -563,7 +564,9 @@ class SessionApply(bpy.types.Operator):
 
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
-        session.apply(self.target, force=True)
+        session.apply(self.target,
+                      force=True,
+                      force_dependencies=self.reset_dependencies)
 
         return {"FINISHED"}
 

@@ -103,14 +103,18 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
     if session and bpy.context.scene.uuid and value:
-        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+        bpy.ops.session.apply('INVOKE_DEFAULT',
+                              target=bpy.context.scene.uuid,
+                              reset_dependencies=False)
 
 
 def set_sync_active_camera(self, value):
     self['sync_active_camera'] = value
 
     if session and bpy.context.scene.uuid and value:
-        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+        bpy.ops.session.apply('INVOKE_DEFAULT',
+                              target=bpy.context.scene.uuid,
+                              reset_dependencies=False)
 
 
 class ReplicationFlags(bpy.types.PropertyGroup):
