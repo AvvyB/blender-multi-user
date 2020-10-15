@@ -398,6 +398,7 @@ class SessionPropertyRightOperator(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     key: bpy.props.StringProperty(default="None")
+    recursive: bpy.props.BoolProperty(default=True)
 
     @classmethod
     def poll(cls, context):
@@ -413,12 +414,17 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
         col = layout.column()
         col.prop(runtime_settings, "clients")
+        row = col.row()
+        row.label(text="Affect dependencies")
+        row.prop(self, "recursive", text="")
 
     def execute(self, context):
         runtime_settings = context.window_manager.session
 
         if session:
-            session.change_owner(self.key, runtime_settings.clients)
+            session.change_owner(self.key,
+                                 runtime_settings.clients,
+                                 recursive=self.recursive)
 
         return {"FINISHED"}
 
