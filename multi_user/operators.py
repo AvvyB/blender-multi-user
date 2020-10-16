@@ -339,7 +339,7 @@ class SessionStopOperator(bpy.types.Operator):
 class SessionKickOperator(bpy.types.Operator):
     bl_idname = "session.kick"
     bl_label = "Kick"
-    bl_description = "Kick the user"
+    bl_description = "Kick the target user"
     bl_options = {"REGISTER"}
 
     user: bpy.props.StringProperty()
@@ -369,8 +369,9 @@ class SessionKickOperator(bpy.types.Operator):
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
-    bl_label = "remove"
-    bl_description = "broadcast a property to connected client_instances"
+    bl_label = "Delete cache"
+    bl_description = "Stop tracking modification on the target datablock." + \
+        "The datablock will no longer be updated for others client. "
     bl_options = {"REGISTER"}
 
     property_path: bpy.props.StringProperty(default="None")
@@ -393,8 +394,8 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 
 class SessionPropertyRightOperator(bpy.types.Operator):
     bl_idname = "session.right"
-    bl_label = "Change owner to"
-    bl_description = "Change owner of specified datablock"
+    bl_label = "Change modification rights"
+    bl_description = "Modify the owner of the target datablock"
     bl_options = {"REGISTER"}
 
     key: bpy.props.StringProperty(default="None")
@@ -412,9 +413,10 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         layout = self.layout
         runtime_settings = context.window_manager.session
 
-        col = layout.column()
-        col.prop(runtime_settings, "clients")
-        row = col.row()
+        row = layout.row()
+        row.label(text="Give the owning rights to:")
+        row.prop(runtime_settings, "clients", text="")
+        row = layout.row()
         row.label(text="Affect dependencies")
         row.prop(self, "recursive", text="")
 
@@ -557,8 +559,9 @@ class SessionSnapTimeOperator(bpy.types.Operator):
 
 class SessionApply(bpy.types.Operator):
     bl_idname = "session.apply"
-    bl_label = "apply selected block into blender"
-    bl_description = "Apply selected block into blender"
+    bl_label = "Revert"
+    bl_description = "Revert the selected datablock from his cached" + \
+        " version."
     bl_options = {"REGISTER"}
 
     target: bpy.props.StringProperty()
@@ -579,8 +582,8 @@ class SessionApply(bpy.types.Operator):
 
 class SessionCommit(bpy.types.Operator):
     bl_idname = "session.commit"
-    bl_label = "commit and push selected datablock to server"
-    bl_description = "commit and push selected datablock to server"
+    bl_label = "Force server update"
+    bl_description = "Commit and push the target datablock to server"
     bl_options = {"REGISTER"}
 
     target: bpy.props.StringProperty()
