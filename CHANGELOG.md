@@ -65,7 +65,7 @@ All notable changes to this project will be documented in this file.
 - Unused strict right management strategy
 - Legacy config management system
 
-## [0.1.0] - preview
+## [0.1.0] - 2020-10-05
 
 ### Added
 
@@ -96,3 +96,32 @@ All notable changes to this project will be documented in this file.
 - World sync
 - Snapshot UUID error
 - The world is not synchronized
+
+## [0.1.1] - 2020-10-16
+
+### Added
+
+- Session status widget
+- Affect dependencies during change owner
+- Dedicated server managment scripts(@brybalicious)
+
+### Changed
+
+- Refactored presence.py
+- Reset button UI icon 
+- Documentation `How to contribute` improvements (@brybalicious)
+- Documentation `Hosting guide` improvements (@brybalicious)
+- Show flags are now available from the viewport overlay
+ 
+### Fixed
+
+- Render sync race condition (causing scene errors)
+- Binary differentials
+- Hybrid session crashes between Linux/Windows
+- Materials node default output value
+- Right selection
+- Client node rights changed to COMMON after disconnecting from the server 
+- Collection instances selection draw
+- Packed image save error
+- Material replication
+- UI spelling errors (@brybalicious)

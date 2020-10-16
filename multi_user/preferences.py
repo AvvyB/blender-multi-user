@@ -103,14 +103,18 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
     if session and bpy.context.scene.uuid and value:
-        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+        bpy.ops.session.apply('INVOKE_DEFAULT',
+                              target=bpy.context.scene.uuid,
+                              reset_dependencies=False)
 
 
 def set_sync_active_camera(self, value):
     self['sync_active_camera'] = value
 
     if session and bpy.context.scene.uuid and value:
-        bpy.ops.session.apply('INVOKE_DEFAULT', target=bpy.context.scene.uuid)
+        bpy.ops.session.apply('INVOKE_DEFAULT',
+                              target=bpy.context.scene.uuid,
+                              reset_dependencies=False)
 
 
 class ReplicationFlags(bpy.types.PropertyGroup):
@@ -123,9 +127,10 @@ class ReplicationFlags(bpy.types.PropertyGroup):
     sync_render_settings: bpy.props.BoolProperty(
         name="Synchronize render settings",
         description="Synchronize render settings (eevee and cycles only)",
-        default=True,
+        default=False,
         set=set_sync_render_settings,
-        get=get_sync_render_settings)
+        get=get_sync_render_settings
+    )
     sync_during_editmode: bpy.props.BoolProperty(
         name="Edit mode updates",
         description="Enable objects update in edit mode (! Impact performances !)",
@@ -476,25 +481,26 @@ class SessionProps(bpy.types.PropertyGroup):
         name="Presence overlay",
         description='Enable overlay drawing module',
         default=True,
-        update=presence.update_presence
     )
     presence_show_selected: bpy.props.BoolProperty(
         name="Show selected objects",
         description='Enable selection overlay ',
         default=True,
-        update=presence.update_overlay_settings
     )
     presence_show_user: bpy.props.BoolProperty(
         name="Show users",
         description='Enable user overlay ',
         default=True,
-        update=presence.update_overlay_settings
     )
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show users on different scenes",
         description="Show user on different scenes",
         default=False,
-        update=presence.update_overlay_settings
+    )
+    presence_show_session_status: bpy.props.BoolProperty(
+        name="Show session status ",
+        description="Show session status on the viewport",
+        default=True,
     )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",

@@ -26,6 +26,7 @@ from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 
+
 def load_node(node_data, node_tree):
     """ Load a node into a node_tree from a dict
 
@@ -41,7 +42,7 @@ def load_node(node_data, node_tree):
     image_uuid = node_data.get('image_uuid', None)
 
     if image_uuid and not target_node.image:
-        target_node.image = get_datablock_from_uuid(image_uuid,None)
+        target_node.image = get_datablock_from_uuid(image_uuid, None)
 
     for input in node_data["inputs"]:
         if hasattr(target_node.inputs[input], "default_value"):
@@ -50,6 +51,14 @@ def load_node(node_data, node_tree):
             except:
                 logging.error(
                     f"Material {input} parameter not supported, skipping")
+
+    for output in node_data["outputs"]:
+        if hasattr(target_node.outputs[output], "default_value"):
+            try:
+                target_node.outputs[output].default_value = node_data["outputs"][output]["default_value"]
+            except:
+                logging.error(
+                    f"Material {output} parameter not supported, skipping")
 
 
 def load_links(links_data, node_tree):
@@ -62,8 +71,10 @@ def load_links(links_data, node_tree):
     """
 
     for link in links_data:
-        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
-        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
+        input_socket = node_tree.nodes[link['to_node']
+                                       ].inputs[int(link['to_socket'])]
+        output_socket = node_tree.nodes[link['from_node']].outputs[int(
+            link['from_socket'])]
         node_tree.links.new(input_socket, output_socket)
 
 
@@ -78,8 +89,10 @@ def dump_links(links):
     links_data = []
 
     for link in links:
-        to_socket = NODE_SOCKET_INDEX.search(link.to_socket.path_from_id()).group(1)
-        from_socket = NODE_SOCKET_INDEX.search(link.from_socket.path_from_id()).group(1)
+        to_socket = NODE_SOCKET_INDEX.search(
+            link.to_socket.path_from_id()).group(1)
+        from_socket = NODE_SOCKET_INDEX.search(
+            link.from_socket.path_from_id()).group(1)
         links_data.append({
             'to_node': link.to_node.name,
             'to_socket': to_socket,
@@ -105,6 +118,7 @@ def dump_node(node):
         "show_expanded",
         "name_full",
         "select",
+        "bl_label",
         "bl_height_min",
         "bl_height_max",
         "bl_height_default",
@@ -136,8 +150,17 @@ def dump_node(node):
             input_dumper.include_filter = ["default_value"]
 
             if hasattr(i, 'default_value'):
-                dumped_node['inputs'][i.name] = input_dumper.dump(
-                    i)
+                dumped_node['inputs'][i.name] = input_dumper.dump(i)
+
+        dumped_node['outputs'] = {}
+        for i in node.outputs:
+            output_dumper = Dumper()
+            output_dumper.depth = 2
+            output_dumper.include_filter = ["default_value"]
+
+            if hasattr(i, 'default_value'):
+                dumped_node['outputs'][i.name] = output_dumper.dump(i)
+
     if hasattr(node, 'color_ramp'):
         ramp_dumper = Dumper()
         ramp_dumper.depth = 4
@@ -162,6 +185,12 @@ def dump_node(node):
     return dumped_node
 
 
+def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
+    has_image = lambda node : (node.type in ['TEX_IMAGE', 'TEX_ENVIRONMENT'] and node.image)
+
+    return [node.image for node in node_tree.nodes if has_image(node)]
+
+
 class BlMaterial(BlDatablock):
     bl_id = "materials"
     bl_class = bpy.types.Material
@@ -176,21 +205,21 @@ class BlMaterial(BlDatablock):
 
     def _load_implementation(self, data, target):
         loader = Loader()
-        target.name = data['name']
-        if data['is_grease_pencil']:
+
+        is_grease_pencil = data.get('is_grease_pencil')
+        use_nodes = data.get('use_nodes')
+
+        loader.load(target, data)
+
+        if is_grease_pencil:
             if not target.is_grease_pencil:
                 bpy.data.materials.create_gpencil_data(target)
-
-            loader.load(
-                target.grease_pencil, data['grease_pencil'])
-
-        if data["use_nodes"]:
+            loader.load(target.grease_pencil, data['grease_pencil'])
+        elif use_nodes:
             if target.node_tree is None:
                 target.use_nodes = True
 
             target.node_tree.nodes.clear()
-
-            loader.load(target, data)
 
             # Load nodes
             for node in data["node_tree"]["nodes"]:
@@ -205,57 +234,69 @@ class BlMaterial(BlDatablock):
         assert(instance)
         mat_dumper = Dumper()
         mat_dumper.depth = 2
-        mat_dumper.exclude_filter = [
-            "is_embed_data",
-            "is_evaluated",
-            "name_full",
-            "bl_description",
-            "bl_icon",
-            "bl_idname",
-            "bl_label",
-            "preview",
-            "original",
-            "uuid",
-            "users",
-            "alpha_threshold",
-            "line_color",
-            "view_center",
+        mat_dumper.include_filter = [
+            'name',
+            'blend_method',
+            'shadow_method',
+            'alpha_threshold',
+            'show_transparent_back',
+            'use_backface_culling',
+            'use_screen_refraction',
+            'use_sss_translucency',
+            'refraction_depth',
+            'preview_render_type',
+            'use_preview_world',
+            'pass_index',
+            'use_nodes',
+            'diffuse_color',
+            'specular_color',
+            'roughness',
+            'specular_intensity',
+            'metallic',
+            'line_color',
+            'line_priority',
+            'is_grease_pencil'
         ]
         data = mat_dumper.dump(instance)
 
         if instance.use_nodes:
             nodes = {}
+            data["node_tree"] = {}
             for node in instance.node_tree.nodes:
                 nodes[node.name] = dump_node(node)
             data["node_tree"]['nodes'] = nodes
 
             data["node_tree"]["links"] = dump_links(instance.node_tree.links)
-
-        if instance.is_grease_pencil:
+        elif instance.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
             gp_mat_dumper.include_filter = [
+                'color',
+                'fill_color',
+                'mix_color',
+                'mix_factor',
+                'mix_stroke_factor',
+                # 'texture_angle',
+                # 'texture_scale',
+                # 'texture_offset',
+                'pixel_size',
+                'hide',
+                'lock',
+                'ghost',
+                # 'texture_clamp',
+                'flip',
+                'use_overlap_strokes',
                 'show_stroke',
+                'show_fill',
+                'alignment_mode',
+                'pass_index',
                 'mode',
                 'stroke_style',
-                'color',
-                'use_overlap_strokes',
-                'show_fill',
+                # 'stroke_image',
                 'fill_style',
-                'fill_color',
-                'pass_index',
-                'alignment_mode',
-                # 'fill_image',
-                'texture_opacity',
-                'mix_factor',
-                'texture_offset',
-                'texture_angle',
-                'texture_scale',
-                'texture_clamp',
                 'gradient_type',
-                'mix_color',
-                'flip'
+                # 'fill_image',
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         return data
@@ -265,9 +306,7 @@ class BlMaterial(BlDatablock):
         deps = []
 
         if self.instance.use_nodes:
-            for node in self.instance.node_tree.nodes:
-                if node.type in ['TEX_IMAGE','TEX_ENVIRONMENT']:
-                    deps.append(node.image)
+            deps.extend(get_node_tree_dependencies(self.instance.node_tree))
         if self.is_library:
             deps.append(self.instance.library)
 

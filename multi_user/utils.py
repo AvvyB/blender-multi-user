@@ -29,7 +29,14 @@ import math
 import bpy
 import mathutils
 
-from . import environment, presence
+from . import environment
+
+from replication.constants import (STATE_ACTIVE, STATE_AUTH,
+                                  STATE_CONFIG, STATE_SYNCING,
+                                  STATE_INITIAL, STATE_SRV_SYNC,
+                                  STATE_WAITING, STATE_QUITTING,
+                                  STATE_LOBBY,
+                                  STATE_LAUNCHING_SERVICES)
 
 
 def find_from_attr(attr_name, attr_value, list):
@@ -56,6 +63,32 @@ def get_datablock_users(datablock):
                         datatype.bl_name != 'collections' and hasattr(item, 'children') and datablock in item.children:
                     users.append(item)
     return users
+
+
+def get_state_str(state):
+    state_str = 'UNKOWN'
+    if state == STATE_WAITING:
+        state_str = 'WARMING UP DATA'
+    elif state == STATE_SYNCING:
+        state_str = 'FETCHING'
+    elif state == STATE_AUTH:
+        state_str = 'AUTHENTICATION'
+    elif state == STATE_CONFIG:
+        state_str = 'CONFIGURATION'
+    elif state == STATE_ACTIVE:
+        state_str = 'ONLINE'
+    elif state == STATE_SRV_SYNC:
+        state_str = 'PUSHING'
+    elif state == STATE_INITIAL:
+        state_str = 'OFFLINE'
+    elif state == STATE_QUITTING:
+        state_str = 'QUITTING'
+    elif state == STATE_LAUNCHING_SERVICES:
+        state_str = 'LAUNCHING SERVICES'
+    elif state == STATE_LOBBY:
+        state_str = 'LOBBY'
+
+    return state_str
 
 
 def clean_scene():

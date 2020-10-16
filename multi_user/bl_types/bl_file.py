@@ -65,7 +65,7 @@ class BlFile(ReplicatedDatablock):
         self.instance = kwargs.get('instance', None)
         
         if self.instance and not self.instance.exists():
-            raise FileNotFoundError(self.instance)
+            raise FileNotFoundError(str(self.instance))
    
         self.preferences = utils.get_preferences()
         self.diff_method = DIFF_BINARY
@@ -135,6 +135,9 @@ class BlFile(ReplicatedDatablock):
             file.close()
 
     def diff(self):
-        memory_size = sys.getsizeof(self.data['file'])-33
-        disk_size = self.instance.stat().st_size
-        return memory_size == disk_size
+        if self.preferences.clear_memory_filecache:
+            return False
+        else:
+            memory_size = sys.getsizeof(self.data['file'])-33
+            disk_size = self.instance.stat().st_size
+            return memory_size == disk_size

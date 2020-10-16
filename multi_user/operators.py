@@ -21,26 +21,24 @@ import logging
 import os
 import queue
 import random
+import shutil
 import string
 import time
 from operator import itemgetter
-from pathlib import Path
-import shutil
 from pathlib import Path
 from queue import Queue
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-
-from . import bl_types, delayable, environment, presence, ui, utils
-from replication.constants import (FETCHED, STATE_ACTIVE,
-                                   STATE_INITIAL,
-                                   STATE_SYNCING, RP_COMMON, UP)
+from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
+                                   STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
+from . import bl_types, delayable, environment, ui, utils
+from .presence import (SessionStatusWidget, renderer, view3d_find)
 
 background_execution_queue = Queue()
 delayables = []
@@ -80,16 +78,14 @@ def initialize_session():
         if node_ref.state == FETCHED:
             node_ref.apply()
 
-    # Step 3: Launch presence overlay
-    if runtime_settings.enable_presence:
-        presence.renderer.run()
-
     # Step 4: Register blender timers
     for d in delayables:
         d.register()
 
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+
+    bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
 
 @session_callback('on_exit')
@@ -107,9 +103,6 @@ def on_connection_end():
             continue
 
     stop_modal_executor = True
-
-    # Step 2: Unregister presence renderer
-    presence.renderer.stop()
 
     if settings.update_method == 'DEPSGRAPH':
         bpy.app.handlers.depsgraph_update_post.remove(
@@ -256,7 +249,6 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Background client updates service
         delayables.append(delayable.ClientUpdate())
-        delayables.append(delayable.DrawClient())
         delayables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
@@ -272,7 +264,7 @@ class SessionStartOperator(bpy.types.Operator):
         delayables.append(session_update)
         delayables.append(session_user_sync)
 
-        bpy.ops.session.apply_armature_operator()
+        
 
         self.report(
             {'INFO'},
@@ -347,7 +339,7 @@ class SessionStopOperator(bpy.types.Operator):
 class SessionKickOperator(bpy.types.Operator):
     bl_idname = "session.kick"
     bl_label = "Kick"
-    bl_description = "Kick the user"
+    bl_description = "Kick the target user"
     bl_options = {"REGISTER"}
 
     user: bpy.props.StringProperty()
@@ -377,8 +369,9 @@ class SessionKickOperator(bpy.types.Operator):
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
     bl_idname = "session.remove_prop"
-    bl_label = "remove"
-    bl_description = "broadcast a property to connected client_instances"
+    bl_label = "Delete cache"
+    bl_description = "Stop tracking modification on the target datablock." + \
+        "The datablock will no longer be updated for others client. "
     bl_options = {"REGISTER"}
 
     property_path: bpy.props.StringProperty(default="None")
@@ -401,11 +394,12 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 
 class SessionPropertyRightOperator(bpy.types.Operator):
     bl_idname = "session.right"
-    bl_label = "Change owner to"
-    bl_description = "Change owner of specified datablock"
+    bl_label = "Change modification rights"
+    bl_description = "Modify the owner of the target datablock"
     bl_options = {"REGISTER"}
 
     key: bpy.props.StringProperty(default="None")
+    recursive: bpy.props.BoolProperty(default=True)
 
     @classmethod
     def poll(cls, context):
@@ -419,14 +413,20 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         layout = self.layout
         runtime_settings = context.window_manager.session
 
-        col = layout.column()
-        col.prop(runtime_settings, "clients")
+        row = layout.row()
+        row.label(text="Give the owning rights to:")
+        row.prop(runtime_settings, "clients", text="")
+        row = layout.row()
+        row.label(text="Affect dependencies")
+        row.prop(self, "recursive", text="")
 
     def execute(self, context):
         runtime_settings = context.window_manager.session
 
         if session:
-            session.change_owner(self.key, runtime_settings.clients)
+            session.change_owner(self.key,
+                                 runtime_settings.clients,
+                                 recursive=self.recursive)
 
         return {"FINISHED"}
 
@@ -472,7 +472,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            area, region, rv3d = presence.view3d_find()
+            area, region, rv3d = view3d_find()
 
             if session:
                 target_ref = session.online_users.get(self.target_client)
@@ -559,26 +559,31 @@ class SessionSnapTimeOperator(bpy.types.Operator):
 
 class SessionApply(bpy.types.Operator):
     bl_idname = "session.apply"
-    bl_label = "apply selected block into blender"
-    bl_description = "Apply selected block into blender"
+    bl_label = "Revert"
+    bl_description = "Revert the selected datablock from his cached" + \
+        " version."
     bl_options = {"REGISTER"}
 
     target: bpy.props.StringProperty()
+    reset_dependencies: bpy.props.BoolProperty(default=False)
 
     @classmethod
     def poll(cls, context):
         return True
 
     def execute(self, context):
-        session.apply(self.target)
+        logging.debug(f"Running apply on {self.target}")
+        session.apply(self.target,
+                      force=True,
+                      force_dependencies=self.reset_dependencies)
 
         return {"FINISHED"}
 
 
 class SessionCommit(bpy.types.Operator):
     bl_idname = "session.commit"
-    bl_label = "commit and push selected datablock to server"
-    bl_description = "commit and push selected datablock to server"
+    bl_label = "Force server update"
+    bl_description = "Commit and push the target datablock to server"
     bl_options = {"REGISTER"}
 
     target: bpy.props.StringProperty()
@@ -746,6 +751,7 @@ def depsgraph_evaluation(scene):
 
 def register():
     from bpy.utils import register_class
+
     for cls in classes:
         register_class(cls)
 
