@@ -171,7 +171,8 @@ class DynamicRightSelectTimer(Timer):
                                 session.change_owner(
                                     node.uuid,
                                     RP_COMMON,
-                                    recursive=recursive)
+                                    ignore_warnings=True,
+                                    affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(f"Not authorized to change {node} owner")
 
@@ -188,7 +189,8 @@ class DynamicRightSelectTimer(Timer):
                                 session.change_owner(
                                     node.uuid,
                                     settings.username,
-                                    recursive=recursive)
+                                    ignore_warnings=True,
+                                    affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(f"Not authorized to change {node} owner")
                         else:
@@ -213,7 +215,8 @@ class DynamicRightSelectTimer(Timer):
                                 session.change_owner(
                                     key,
                                     RP_COMMON,
-                                    recursive=recursive)
+                                    ignore_warnings=True,
+                                    affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(f"Not authorized to change {key} owner")
 

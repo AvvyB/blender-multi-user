@@ -226,7 +226,8 @@ class SessionStartOperator(bpy.types.Operator):
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logging.error(f"Error: {e}")
-
+                import traceback
+                traceback.print_exc()
         # Join a session
         else:
             if not runtime_settings.admin:
@@ -424,9 +425,10 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
 
         if session:
-            session.change_owner(self.key,
-                                 runtime_settings.clients,
-                                 recursive=self.recursive)
+            session.affect_dependencies(self.key,
+                                        runtime_settings.clients,
+                                        ignore_warnings=True,
+                                        affect_dependencies=self.recursive)
 
         return {"FINISHED"}
 

@@ -92,7 +92,6 @@ def load_driver(target_datablock, src_driver):
 def get_datablock_from_uuid(uuid, default, ignore=[]):
     if not uuid:
         return default
-
     for category in dir(bpy.data):
         root = getattr(bpy.data, category)
         if isinstance(root, Iterable) and category not in ignore:
@@ -123,7 +122,7 @@ class BlDatablock(ReplicatedDatablock):
         # TODO: use is_library_indirect
         self.is_library = (instance and hasattr(instance, 'library') and
                            instance.library) or \
-            (self.data and 'library' in self.data)
+            (hasattr(self,'data') and self.data and 'library' in self.data)
 
         if instance and hasattr(instance, 'uuid'):
             instance.uuid = self.uuid
