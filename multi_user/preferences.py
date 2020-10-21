@@ -502,6 +502,31 @@ class SessionProps(bpy.types.PropertyGroup):
         description="Show session status on the viewport",
         default=True,
     )
+    presence_hud_scale: bpy.props.FloatProperty(
+        name="Text scale",
+        description="Adjust the session widget text scale",
+        min=7,
+        max=90,
+        default=15,
+    )
+    presence_hud_hpos: bpy.props.FloatProperty(
+        name="horizontal position",
+        description="Adjust the session widget horizontal position",
+        min=1,
+        max=90,
+        default=10,
+        step=1,
+        subtype='PERCENTAGE',
+    )
+    presence_hud_vpos: bpy.props.FloatProperty(
+        name="vertical position",
+        description="Adjust the session widget vertical position",
+        min=1,
+        max=94,
+        default=10,
+        step=1,
+        subtype='PERCENTAGE',
+    )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',

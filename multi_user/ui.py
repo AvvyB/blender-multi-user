@@ -451,6 +451,13 @@ class SESSION_PT_presence(bpy.types.Panel):
         layout.active = settings.enable_presence
         col = layout.column()
         col.prop(settings, "presence_show_session_status")
+        row = col.column()
+        row.active = settings.presence_show_session_status
+        row.prop(settings, "presence_hud_scale", expand=True)
+        row = col.column(align=True)
+        row.active = settings.presence_show_session_status
+        row.prop(settings, "presence_hud_hpos", expand=True)
+        row.prop(settings, "presence_hud_vpos", expand=True)
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
         row = layout.column()

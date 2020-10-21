@@ -393,6 +393,8 @@ class SessionStatusWidget(Widget):
             self.settings.enable_presence
 
     def draw(self):
+        text_scale = self.settings.presence_hud_scale
+        ui_scale = bpy.context.preferences.view.ui_scale
         color = [1, 1, 0, 1]
         state = session.state.get('STATE')
         state_str = f"{get_state_str(state)}"
@@ -401,9 +403,11 @@ class SessionStatusWidget(Widget):
             color = [0, 1, 0, 1]
         elif state == STATE_INITIAL:
             color = [1, 0, 0, 1]
+        hpos = (self.settings.presence_hud_hpos*bpy.context.area.width)/100
+        vpos = (self.settings.presence_hud_vpos*bpy.context.area.height)/100
 
-        blf.position(0, 10, 20, 0)
-        blf.size(0, 16, 45)
+        blf.position(0, hpos, vpos, 0)
+        blf.size(0, int(text_scale*ui_scale), 72)
         blf.color(0, color[0], color[1], color[2], color[3])
         blf.draw(0,  state_str)
 
