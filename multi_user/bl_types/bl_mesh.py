@@ -25,7 +25,7 @@ import numpy as np
 from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
 from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
-from .bl_datablock import BlDatablock
+from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 VERTICE = ['co']
 
@@ -70,8 +70,17 @@ class BlMesh(BlDatablock):
             # MATERIAL SLOTS
             target.materials.clear()
 
-            for m in data["material_list"]:
-                target.materials.append(bpy.data.materials[m])
+            for mat_uuid, mat_name in data["material_list"]:
+                mat_ref = None
+                if mat_uuid is not None:
+                    mat_ref = get_datablock_from_uuid(mat_uuid, None)
+                else:
+                    mat_ref = bpy.data.materials.get(mat_name, None)
+
+                if mat_ref is None:
+                    raise Exception("Material doesn't exist")
+
+                target.materials.append(mat_ref)
 
             # CLEAR GEOMETRY
             if target.vertices:
@@ -166,7 +175,7 @@ class BlMesh(BlDatablock):
         m_list = []
         for material in instance.materials:
             if material:
-                m_list.append(material.name)
+                m_list.append((material.uuid,material.name))
 
         data['material_list'] = m_list
 
