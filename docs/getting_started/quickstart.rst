@@ -251,6 +251,14 @@ it draw users related information in your viewport such as:
 The presence overlay panel (see image above) allow you to enable/disable 
 various drawn parts via the following flags:
 
+- **Show session statut**: display the session status in the viewport 
+   
+   .. figure:: img/quickstart_status.png
+      :align: center
+
+   - **Text scale**: session status text size
+   - **Vertical/Horizontal position**: session position in the viewport
+   
 - **Show selected objects**: display other users current selection
 - **Show users**: display users current viewpoint 
 - **Show different scenes**: display users working on other scenes

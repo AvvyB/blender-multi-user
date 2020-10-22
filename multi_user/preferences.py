@@ -250,7 +250,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Adjust the session widget horizontal position",
         min=1,
         max=90,
-        default=10,
+        default=3,
         step=1,
         subtype='PERCENTAGE',
     )
@@ -259,7 +259,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Adjust the session widget vertical position",
         min=1,
         max=94,
-        default=10,
+        default=1,
         step=1,
         subtype='PERCENTAGE',
     )
