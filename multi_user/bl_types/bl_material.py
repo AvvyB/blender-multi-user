@@ -259,15 +259,7 @@ class BlMaterial(BlDatablock):
         ]
         data = mat_dumper.dump(instance)
 
-        if instance.use_nodes:
-            nodes = {}
-            data["node_tree"] = {}
-            for node in instance.node_tree.nodes:
-                nodes[node.name] = dump_node(node)
-            data["node_tree"]['nodes'] = nodes
-
-            data["node_tree"]["links"] = dump_links(instance.node_tree.links)
-        elif instance.is_grease_pencil:
+        if instance.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
@@ -299,6 +291,14 @@ class BlMaterial(BlDatablock):
                 # 'fill_image',
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
+        elif instance.use_nodes:
+            nodes = {}
+            data["node_tree"] = {}
+            for node in instance.node_tree.nodes:
+                nodes[node.name] = dump_node(node)
+            data["node_tree"]['nodes'] = nodes
+
+            data["node_tree"]["links"] = dump_links(instance.node_tree.links)
         return data
 
     def _resolve_deps_implementation(self):
