@@ -448,16 +448,17 @@ class SESSION_PT_presence(bpy.types.Panel):
         layout = self.layout
 
         settings = context.window_manager.session
+        pref = get_preferences()
         layout.active = settings.enable_presence
         col = layout.column()
         col.prop(settings, "presence_show_session_status")
         row = col.column()
         row.active = settings.presence_show_session_status
-        row.prop(settings, "presence_hud_scale", expand=True)
+        row.prop(pref, "presence_hud_scale", expand=True)
         row = col.column(align=True)
         row.active = settings.presence_show_session_status
-        row.prop(settings, "presence_hud_hpos", expand=True)
-        row.prop(settings, "presence_hud_vpos", expand=True)
+        row.prop(pref, "presence_hud_hpos", expand=True)
+        row.prop(pref, "presence_hud_vpos", expand=True)
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
         row = layout.column()
@@ -629,7 +630,7 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         col.prop(settings, "presence_show_session_status")
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
-        
+
         row = layout.column()
         row.active = settings.presence_show_user
         row.prop(settings, "presence_show_far_user")

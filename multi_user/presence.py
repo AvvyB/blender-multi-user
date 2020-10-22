@@ -35,7 +35,7 @@ from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
                                    STATE_SYNCING, STATE_WAITING)
 from replication.interface import session
 
-from .utils import find_from_attr, get_state_str
+from .utils import find_from_attr, get_state_str, get_preferences
 
 # Helper functions
 
@@ -384,6 +384,9 @@ class UserNameWidget(Widget):
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
 
+    def __init__(self):
+        self.preferences = get_preferences()
+
     @property
     def settings(self):
         return getattr(bpy.context.window_manager, 'session', None)
@@ -393,7 +396,7 @@ class SessionStatusWidget(Widget):
             self.settings.enable_presence
 
     def draw(self):
-        text_scale = self.settings.presence_hud_scale
+        text_scale = self.preferences.presence_hud_scale
         ui_scale = bpy.context.preferences.view.ui_scale
         color = [1, 1, 0, 1]
         state = session.state.get('STATE')
@@ -403,8 +406,8 @@ class SessionStatusWidget(Widget):
             color = [0, 1, 0, 1]
         elif state == STATE_INITIAL:
             color = [1, 0, 0, 1]
-        hpos = (self.settings.presence_hud_hpos*bpy.context.area.width)/100
-        vpos = (self.settings.presence_hud_vpos*bpy.context.area.height)/100
+        hpos = (self.preferences.presence_hud_hpos*bpy.context.area.width)/100
+        vpos = (self.preferences.presence_hud_vpos*bpy.context.area.height)/100
 
         blf.position(0, hpos, vpos, 0)
         blf.size(0, int(text_scale*ui_scale), 72)

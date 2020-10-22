@@ -238,6 +238,31 @@ class SessionPrefs(bpy.types.AddonPreferences):
         set=set_log_level,
         get=get_log_level
     )
+    presence_hud_scale: bpy.props.FloatProperty(
+        name="Text scale",
+        description="Adjust the session widget text scale",
+        min=7,
+        max=90,
+        default=15,
+    )
+    presence_hud_hpos: bpy.props.FloatProperty(
+        name="Horizontal position",
+        description="Adjust the session widget horizontal position",
+        min=1,
+        max=90,
+        default=10,
+        step=1,
+        subtype='PERCENTAGE',
+    )
+    presence_hud_vpos: bpy.props.FloatProperty(
+        name="Vertical position",
+        description="Adjust the session widget vertical position",
+        min=1,
+        max=94,
+        default=10,
+        step=1,
+        subtype='PERCENTAGE',
+    )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
         description="Identity",
@@ -412,6 +437,15 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 emboss=False)
             if self.conf_session_ui_expanded:
                 box.row().prop(self, "panel_category", text="Panel category", expand=True)
+                row = box.row()
+                row.label(text="Session widget:")
+
+                col = box.column(align=True)
+                col.prop(self, "presence_hud_scale", expand=True)
+                
+
+                col.prop(self, "presence_hud_hpos", expand=True)
+                col.prop(self, "presence_hud_vpos", expand=True)
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
@@ -501,31 +535,6 @@ class SessionProps(bpy.types.PropertyGroup):
         name="Show session status ",
         description="Show session status on the viewport",
         default=True,
-    )
-    presence_hud_scale: bpy.props.FloatProperty(
-        name="Text scale",
-        description="Adjust the session widget text scale",
-        min=7,
-        max=90,
-        default=15,
-    )
-    presence_hud_hpos: bpy.props.FloatProperty(
-        name="horizontal position",
-        description="Adjust the session widget horizontal position",
-        min=1,
-        max=90,
-        default=10,
-        step=1,
-        subtype='PERCENTAGE',
-    )
-    presence_hud_vpos: bpy.props.FloatProperty(
-        name="vertical position",
-        description="Adjust the session widget vertical position",
-        min=1,
-        max=94,
-        default=10,
-        step=1,
-        subtype='PERCENTAGE',
     )
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
