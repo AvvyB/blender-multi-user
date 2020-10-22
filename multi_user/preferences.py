@@ -243,14 +243,14 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Adjust the session widget text scale",
         min=7,
         max=90,
-        default=15,
+        default=25,
     )
     presence_hud_hpos: bpy.props.FloatProperty(
         name="Horizontal position",
         description="Adjust the session widget horizontal position",
         min=1,
         max=90,
-        default=3,
+        default=1,
         step=1,
         subtype='PERCENTAGE',
     )
@@ -259,7 +259,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Adjust the session widget vertical position",
         min=1,
         max=94,
-        default=1,
+        default=3,
         step=1,
         subtype='PERCENTAGE',
     )
