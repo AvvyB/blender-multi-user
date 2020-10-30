@@ -21,7 +21,11 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from .bl_collection import dump_collection_children, dump_collection_objects, load_collection_childrens, load_collection_objects
+from .bl_collection import (dump_collection_children,
+                            dump_collection_objects,
+                            load_collection_childrens,
+                            load_collection_objects,
+                            resolve_collection_dependencies)
 from replication.constants import (DIFF_JSON, MODIFIED)
 from deepdiff import DeepDiff
 import logging
@@ -382,13 +386,8 @@ class BlScene(BlDatablock):
     def _resolve_deps_implementation(self):
         deps = []
 
-        # child collections
-        for child in self.instance.collection.children:
-            deps.append(child)
-
-        # childs objects
-        for object in self.instance.collection.objects:
-            deps.append(object)
+        # Master Collection
+        deps.extend(resolve_collection_dependencies(self.instance.collection))
 
         # world
         if self.instance.world:
@@ -398,6 +397,8 @@ class BlScene(BlDatablock):
         if self.instance.grease_pencil:
             deps.append(self.instance.grease_pencil)
 
+        # Sequences
+        
         return deps
 
     def diff(self):
