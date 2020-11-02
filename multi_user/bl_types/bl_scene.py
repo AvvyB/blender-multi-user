@@ -16,20 +16,20 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import logging
+from pathlib import Path
+
 import bpy
 import mathutils
-
-from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
-from .bl_collection import (dump_collection_children,
-                            dump_collection_objects,
-                            load_collection_childrens,
-                            load_collection_objects,
-                            resolve_collection_dependencies)
-from replication.constants import (DIFF_JSON, MODIFIED)
 from deepdiff import DeepDiff
-import logging
+from replication.constants import DIFF_JSON, MODIFIED
 
+from .bl_collection import (dump_collection_children, dump_collection_objects,
+                            load_collection_childrens, load_collection_objects,
+                            resolve_collection_dependencies)
+from .bl_datablock import BlDatablock
+from .dump_anything import Dumper, Loader
+from .bl_file import get_filepath
 RENDER_SETTINGS = [
     'dither_intensity',
     'engine',
@@ -265,6 +265,90 @@ VIEW_SETTINGS = [
     'black_level'
 ]
 
+
+def dump_sequence(sequence: bpy.types.Sequence) -> dict:
+    dumper = Dumper()
+    dumper.exclude_filter = [
+        'lock',
+        'select',
+        'select_left_handle',
+        'select_right_handle',
+    ]
+    dumper.depth = 1
+    data = dumper.dump(sequence)
+    input_count = getattr(sequence, 'input_count', None)
+
+    if sequence.type == 'IMAGE':
+        data['filename'] = sequence.elements[0].filename
+    if input_count:
+        for n in range(input_count):
+            input_name = f"input_{n+1}"
+            data[input_name] = getattr(sequence, input_name).name
+    return data
+
+
+def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor):
+    strip_type = sequence_data.get('type')
+    strip_name = sequence_data.get('name')
+    strip_channel = sequence_data.get('channel')
+    strip_frame_start = sequence_data.get('frame_start')
+
+    if strip_type == 'SCENE':
+        strip_scene = bpy.data.scenes.get(sequence_data.get('scene'))
+        sequence = sequence_editor.sequences.new_scene(strip_name,
+                                                       strip_scene,
+                                                       strip_channel,
+                                                       strip_frame_start)
+    elif strip_type == 'MOVIE':
+        filepath = get_filepath(Path(sequence_data['filepath']).name)
+        sequence = sequence_editor.sequences.new_movie(strip_name,
+                                                       filepath,
+                                                       strip_channel,
+                                                       strip_frame_start)
+    elif strip_type == 'SOUND':
+        filepath = bpy.data.sounds[sequence_data['sound']].filepath
+        sequence = sequence_editor.sequences.new_sound(strip_name,
+                                                       filepath,
+                                                       strip_channel,
+                                                       strip_frame_start)
+    elif strip_type == 'IMAGE':
+        filepath =  get_filepath(sequence_data['filename'])
+        sequence = sequence_editor.sequences.new_image(strip_name,
+                                                       filepath,
+                                                       strip_channel,
+                                                       strip_frame_start)
+    else:
+        seq1 = sequence_editor.sequences_all.get(sequence_data.get("input_1", None))
+        seq2 = seq3 = None
+
+        if sequence_data['input_count'] == 2:
+            seq2 = sequence_editor.sequences_all.get(sequence_data.get("input_2", None))
+        if sequence_data['input_count'] == 3:
+            seq3 = sequence_editor.sequences_all.get(sequence_data.get("input_3", None))
+        strip_frame_end = sequence_data.get("strip_frame_end")
+        sequence = sequence_editor.sequences.new_effect(strip_name,
+                                                       strip_type,
+                                                       strip_channel,
+                                                       strip_frame_start,
+                                                       seq1=seq1,
+                                                       seq2=seq2,
+                                                       seq3=seq3,
+                                                      )
+    loader = Loader()
+    loader.load(sequence, sequence_data)
+    sequence.select = False
+    # elif strip_type == 'MOVIE':
+
+
+def get_sequence_dependency(sequence: bpy.types.Sequence):
+    if sequence.type == 'MOVIE':
+        return Path(bpy.path.abspath(sequence.filepath))
+    elif sequence.type == 'SOUND':
+        return sequence.sound
+    elif sequence.type == 'IMAGE':
+        return Path(bpy.path.abspath(sequence.directory), sequence.elements[0].filename)
+
+
 class BlScene(BlDatablock):
     bl_id = "scenes"
     bl_class = bpy.types.Scene
@@ -314,7 +398,7 @@ class BlScene(BlDatablock):
             if 'view_settings' in data.keys():
                 loader.load(target.view_settings, data['view_settings'])
                 if target.view_settings.use_curve_mapping and \
-                    'curve_mapping' in data['view_settings']:
+                        'curve_mapping' in data['view_settings']:
                     # TODO: change this ugly fix
                     target.view_settings.curve_mapping.white_level = data[
                         'view_settings']['curve_mapping']['white_level']
@@ -322,10 +406,19 @@ class BlScene(BlDatablock):
                         'view_settings']['curve_mapping']['black_level']
                     target.view_settings.curve_mapping.update()
 
+        # Sequencer
+        sequences = data.get('sequences')
+        if sequences:
+            target.sequence_editor_clear()
+            if target.sequence_editor is None:
+                target.sequence_editor_create()
+            for seq_name, seq_data in sequences.items():
+                load_sequence(seq_data, target.sequence_editor)
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        data = {}
 
+        # Metadata
         scene_dumper = Dumper()
         scene_dumper.depth = 1
         scene_dumper.include_filter = [
@@ -340,11 +433,9 @@ class BlScene(BlDatablock):
         if self.preferences.sync_flags.sync_active_camera:
             scene_dumper.include_filter.append('camera')
 
-        data = scene_dumper.dump(instance)
+        data.update(scene_dumper.dump(instance))
 
-        scene_dumper.depth = 3
-
-        scene_dumper.include_filter = ['children', 'objects', 'name']
+        # Master collection
         data['collection'] = {}
         data['collection']['children'] = dump_collection_children(
             instance.collection)
@@ -354,6 +445,7 @@ class BlScene(BlDatablock):
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
 
+        # Render settings
         if self.preferences.sync_flags.sync_render_settings:
             scene_dumper.include_filter = RENDER_SETTINGS
 
@@ -381,6 +473,15 @@ class BlScene(BlDatablock):
                 data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(
                     instance.view_settings.curve_mapping.curves)
 
+        # Sequencer
+        if instance.sequence_editor is not None:
+            sequences = {}
+
+            for seq in instance.sequence_editor.sequences_all:
+                sequences[seq.name] = dump_sequence(seq)
+
+            data['sequences'] = sequences
+
         return data
 
     def _resolve_deps_implementation(self):
@@ -398,7 +499,12 @@ class BlScene(BlDatablock):
             deps.append(self.instance.grease_pencil)
 
         # Sequences
-        
+        if self.instance.sequence_editor:
+            for seq in self.instance.sequence_editor.sequences_all:
+                dep = get_sequence_dependency(seq)
+                if dep:
+                    deps.append(dep)
+        #     deps.extend(list(self.instance.sequence_editor.sequences_all))
         return deps
 
     def diff(self):

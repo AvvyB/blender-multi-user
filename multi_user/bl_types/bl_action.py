@@ -153,7 +153,8 @@ class BlAction(BlDatablock):
                     dumped_data_path, index=dumped_array_index)
 
             load_fcurve(dumped_fcurve, fcurve)
-        target.id_root = data['id_root']
+        if data['id_root']:
+            target.id_root = data['id_root']
 
     def _dump_implementation(self, data, instance=None):
         dumper = Dumper()
