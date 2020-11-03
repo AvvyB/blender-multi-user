@@ -37,28 +37,28 @@ def load_node(node_data, node_tree):
     """
     loader = Loader()
     target_node = node_tree.nodes.new(type=node_data["bl_idname"])
-
+    target_node.select = False
     loader.load(target_node, node_data)
     image_uuid = node_data.get('image_uuid', None)
 
     if image_uuid and not target_node.image:
         target_node.image = get_datablock_from_uuid(image_uuid, None)
 
-    for input in node_data["inputs"]:
-        if hasattr(target_node.inputs[input], "default_value"):
+    for idx, inpt in enumerate(node_data["inputs"]):
+        if hasattr(target_node.inputs[idx], "default_value"):
             try:
-                target_node.inputs[input].default_value = node_data["inputs"][input]["default_value"]
+                target_node.inputs[idx].default_value = inpt["default_value"]
             except:
                 logging.error(
-                    f"Material {input} parameter not supported, skipping")
+                    f"Material {inpt.keys()} parameter not supported, skipping")
 
-    for output in node_data["outputs"]:
-        if hasattr(target_node.outputs[output], "default_value"):
+    for idx, output in enumerate(node_data["outputs"]):
+        if hasattr(target_node.outputs[idx], "default_value"):
             try:
-                target_node.outputs[output].default_value = node_data["outputs"][output]["default_value"]
+                target_node.outputs[idx].default_value = output["default_value"]
             except:
                 logging.error(
-                    f"Material {output} parameter not supported, skipping")
+                    f"Material {output.keys()} parameter not supported, skipping")
 
 
 def load_links(links_data, node_tree):
@@ -142,24 +142,20 @@ def dump_node(node):
     dumped_node = node_dumper.dump(node)
 
     if hasattr(node, 'inputs'):
-        dumped_node['inputs'] = {}
+        dumped_node['inputs'] = []
 
-        for i in node.inputs:
-            input_dumper = Dumper()
-            input_dumper.depth = 2
-            input_dumper.include_filter = ["default_value"]
+        io_dumper = Dumper()
+        io_dumper.depth = 2
+        io_dumper.include_filter = ["default_value"]
 
-            if hasattr(i, 'default_value'):
-                dumped_node['inputs'][i.name] = input_dumper.dump(i)
+        for idx, inpt in enumerate(node.inputs):
+            if hasattr(inpt, 'default_value'):
+                dumped_node['inputs'].append(io_dumper.dump(inpt))
 
-        dumped_node['outputs'] = {}
-        for i in node.outputs:
-            output_dumper = Dumper()
-            output_dumper.depth = 2
-            output_dumper.include_filter = ["default_value"]
-
-            if hasattr(i, 'default_value'):
-                dumped_node['outputs'][i.name] = output_dumper.dump(i)
+        dumped_node['outputs'] = []
+        for idx, output in enumerate(node.outputs):
+            if hasattr(output, 'default_value'):
+                dumped_node['outputs'].append(io_dumper.dump(output))
 
     if hasattr(node, 'color_ramp'):
         ramp_dumper = Dumper()
