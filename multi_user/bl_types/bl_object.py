@@ -24,7 +24,6 @@ from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 from .dump_anything import Dumper, Loader
-from replication.exception import ReparentException
 
 
 def load_pose(target_bone, data):
@@ -120,9 +119,7 @@ class BlObject(BlDatablock):
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
 
-        if target.type != data['type']:
-            raise ReparentException()
-        elif target.data and (target.data.name != data_id):
+        if target.data and (target.data.name != data_id):
             target.data = get_datablock_from_uuid(data_uuid, find_data_from_name(data_id), ignore=['images'])
 
         # vertex groups
@@ -191,10 +188,10 @@ class BlObject(BlDatablock):
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
 
         # TODO: find another way...
-        if target.type == 'EMPTY':
+        if target.empty_display_type == "IMAGE":
             img_uuid = data.get('data_uuid')
             if target.data is None and img_uuid:
-                target.data = get_datablock_from_uuid(img_uuid, None)#bpy.data.images.get(img_key, None)
+                target.data = get_datablock_from_uuid(img_uuid, None)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)

@@ -36,8 +36,7 @@ from replication.constants import (FETCHED,
                                    STATE_ACTIVE,
                                    STATE_SYNCING,
                                    STATE_LOBBY,
-                                   STATE_SRV_SYNC,
-                                   REPARENT)
+                                   STATE_SRV_SYNC)
 
 from replication.interface import session
 from replication.exception import NonAuthorizedOperationError
@@ -122,15 +121,6 @@ class ApplyTimer(Timer):
                         session.apply(node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
-                elif node_ref.state == REPARENT:
-                    # Reload the node
-                    node_ref.remove_instance()
-                    node_ref.resolve()
-                    session.apply(node)
-                    for parent in session._graph.find_parents(node):
-                        logging.info(f"Applying parent {parent}")
-                        session.apply(parent, force=True)
-                    node_ref.state = UP
 
 
 class DynamicRightSelectTimer(Timer):
