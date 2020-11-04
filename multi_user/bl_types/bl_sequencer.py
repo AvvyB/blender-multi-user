@@ -32,6 +32,7 @@ def dump_sequence(sequence: bpy.types.Sequence) -> dict:
         'select',
         'select_left_handle',
         'select_right_handle',
+        'strobe'
     ]
     dumper.depth = 1
     data = dumper.dump(sequence)
@@ -83,7 +84,7 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
             seq = {}
 
             for i in range(sequence_data['input_count']):
-                seq[f"seq{i}"] = sequence_editor.sequences_all.get(sequence_data.get("input_{i}", None))
+                seq[f"seq{i+1}"] = sequence_editor.sequences_all.get(sequence_data.get(f"input_{i+1}", None))
 
             sequence = sequence_editor.sequences.new_effect(name=strip_name,
                                                         type=strip_type,
