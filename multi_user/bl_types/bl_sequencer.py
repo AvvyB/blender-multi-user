@@ -52,7 +52,7 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
     strip_name = sequence_data.get('name')
     strip_channel = sequence_data.get('channel')
     strip_frame_start = sequence_data.get('frame_start')
-    
+
     sequence = sequence_editor.sequences_all.get(strip_name, None)
 
     if sequence is None:
@@ -141,12 +141,11 @@ class BlSequencer(BlDatablock):
         # Sequencer
         sequences = data.get('sequences')
         if sequences:
-            # target.sequence_editor_clear()
-            # if target.sequence_editor is None:
-            #     target.sequence_editor_create()
+            for seq in target.sequences_all:
+                if seq.name not in sequences:
+                    target.sequences.remove(seq)
             for seq_name, seq_data in sequences.items():
                 load_sequence(seq_data, target)
-        pass
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
