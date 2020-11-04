@@ -42,7 +42,7 @@ KEYFRAME = [
 ]
 
 
-def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy:bool =True) -> dict:
+def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy: bool = True) -> dict:
     """ Dump a sigle curve to a dict
 
         :arg fcurve: fcurve to dump
@@ -59,7 +59,7 @@ def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy:bool =True) -> dict:
 
     if use_numpy:
         points = fcurve.keyframe_points
-        fcurve_data['keyframes_count']  = len(fcurve.keyframe_points)
+        fcurve_data['keyframes_count'] = len(fcurve.keyframe_points)
         fcurve_data['keyframe_points'] = np_dump_collection(points, KEYFRAME)
 
     else:  # Legacy method
@@ -92,7 +92,8 @@ def load_fcurve(fcurve_data, fcurve):
 
     if use_numpy:
         keyframe_points.add(fcurve_data['keyframes_count'])
-        np_load_collection(fcurve_data["keyframe_points"], keyframe_points, KEYFRAME)
+        np_load_collection(
+            fcurve_data["keyframe_points"], keyframe_points, KEYFRAME)
 
     else:
         # paste dumped keyframes
@@ -153,8 +154,11 @@ class BlAction(BlDatablock):
                     dumped_data_path, index=dumped_array_index)
 
             load_fcurve(dumped_fcurve, fcurve)
-        if data['id_root']:
-            target.id_root = data['id_root']
+
+        id_root = data.get('id_root')
+
+        if id_root:
+            target.id_root = id_root
 
     def _dump_implementation(self, data, instance=None):
         dumper = Dumper()

@@ -62,6 +62,9 @@ def install_package(name, version):
         del env["PIP_REQUIRE_VIRTUALENV"]
     subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"], env=env)
 
+    if name in sys.modules:
+        del sys.modules[name]
+
 def check_package_version(name, required_version):
     logging.info(f"Checking {name} version...")
     out = subprocess.run([str(PYTHON_PATH), "-m", "pip", "show", name], capture_output=True)

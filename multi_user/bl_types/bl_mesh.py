@@ -172,12 +172,7 @@ class BlMesh(BlDatablock):
                 data['vertex_colors'][color_map.name]['data'] = np_dump_collection_primitive(color_map.data, 'color')
 
         # Fix material index
-        m_list = []
-        for material in instance.materials:
-            if material:
-                m_list.append((material.uuid,material.name))
-
-        data['material_list'] = m_list
+        data['material_list'] = [(m.uuid, m.name) for m in instance.materials if m]
 
         return data
 
