@@ -29,8 +29,9 @@ from .utils import get_preferences, get_expanded_icon
 from replication.constants import RP_COMMON
 from replication.interface import session
 
-IP_EXPR = re.compile('\d+\.\d+\.\d+\.\d+')
-
+# From https://stackoverflow.com/a/106223
+IP_REGEX = re.compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
+HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
 def randomColor():
     """Generate a random color """
@@ -53,10 +54,13 @@ def update_panel_category(self, context):
 
 
 def update_ip(self, context):
-    ip = IP_EXPR.search(self.ip)
+    ip = IP_REGEX.search(self.ip)
+    dns = HOSTNAME_REGEX.search(self.ip)
 
     if ip:
         self['ip'] = ip.group()
+    elif dns:
+        self['ip'] = dns.group()
     else:
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
@@ -458,9 +462,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db = self.supported_datablocks.add()
 
             type_module = getattr(bl_types, type)
-            type_impl_name = f"Bl{type.split('_')[1].capitalize()}"
+            name = [e.capitalize() for e in type.split('_')[1:]]
+            type_impl_name = 'Bl'+''.join(name)
             type_module_class = getattr(type_module, type_impl_name)
-
             new_db.name = type_impl_name
             new_db.type_name = type_impl_name
             new_db.bl_delay_refresh = type_module_class.bl_delay_refresh

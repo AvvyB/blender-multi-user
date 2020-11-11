@@ -36,6 +36,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | image       |   ✔️    |                                                                              |
 | mesh        |   ✔️    |                                                                              |
 | material    |   ✔️    |                                                                              |
+| node_groups |   ❗    |                                Material only                                 |
 | metaball    |   ✔️    |                                                                              |
 | object      |   ✔️    |                                                                              |
 | texts       |   ✔️    |                                                                              |
