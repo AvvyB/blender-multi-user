@@ -181,6 +181,41 @@ def dump_node(node):
     return dumped_node
 
 
+def dump_shader_node_tree(node_tree:bpy.types.ShaderNodeTree)->dict:
+    """ Dump a shader node_tree to a dict including links and nodes
+    
+        :arg node_tree: dumped shader node tree
+        :type node_tree: bpy.types.ShaderNodeTree
+        :return: dict
+    """
+    return {
+        'nodes': {node.name: dump_node(node) for  node in node_tree.nodes},
+        'links': dump_links(node_tree.links)
+    }
+
+
+def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.ShaderNodeTree)->dict:
+    """
+
+        :arg node_tree: dumped node data
+        :type node_data: dict
+        :arg node_tree: target node_tree
+        :type node_tree: bpy.types.NodeTree
+    """
+    # TODO: load only required nodes
+    target_node_tree.nodes.clear()
+
+    # Load nodes
+    for node in node_tree_data["nodes"]:
+        load_node(node_tree_data["nodes"][node], target_node_tree)
+
+    # TODO: load only required nodes links
+    # Load nodes links
+    target_node_tree.links.clear()
+
+    load_links(node_tree_data["links"], target_node_tree)
+
+
 def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
     has_image = lambda node : (node.type in ['TEX_IMAGE', 'TEX_ENVIRONMENT'] and node.image)
 
@@ -215,16 +250,7 @@ class BlMaterial(BlDatablock):
             if target.node_tree is None:
                 target.use_nodes = True
 
-            target.node_tree.nodes.clear()
-
-            # Load nodes
-            for node in data["node_tree"]["nodes"]:
-                load_node(data["node_tree"]["nodes"][node], target.node_tree)
-
-            # Load nodes links
-            target.node_tree.links.clear()
-
-            load_links(data["node_tree"]["links"], target.node_tree)
+            load_shader_node_tree(data['node_tree'], target.node_tree)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -288,13 +314,8 @@ class BlMaterial(BlDatablock):
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         elif instance.use_nodes:
-            nodes = {}
-            data["node_tree"] = {}
-            for node in instance.node_tree.nodes:
-                nodes[node.name] = dump_node(node)
-            data["node_tree"]['nodes'] = nodes
+            data['node_tree'] = dump_shader_node_tree(instance.node_tree)
 
-            data["node_tree"]["links"] = dump_links(instance.node_tree.links)
         return data
 
     def _resolve_deps_implementation(self):
