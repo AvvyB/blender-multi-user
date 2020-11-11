@@ -46,7 +46,8 @@ def dump_sequence(sequence: bpy.types.Sequence) -> dict:
 
     # TODO: Support multiple images
     if sequence.type == 'IMAGE':
-        data['filename'] = sequence.elements[0].filename
+        data['filenames'] = [e.filename for e in sequence.elements]
+
 
     # Effect strip inputs
     input_count = getattr(sequence, 'input_count', None)
@@ -93,11 +94,16 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
                                                         strip_channel,
                                                         strip_frame_start)
         elif strip_type == 'IMAGE':
-            filepath =  get_filepath(sequence_data['filename'])
+            images_name = sequence_data.get('filenames')
+            filepath = get_filepath(images_name[0])
             sequence = sequence_editor.sequences.new_image(strip_name,
                                                         filepath,
                                                         strip_channel,
                                                         strip_frame_start)
+            # load other images
+            if len(images_name)>1:
+                for img_idx in range(1,len(images_name)):
+                    sequence.elements.append((images_name[img_idx]))
         else:
             seq = {}
 
@@ -114,14 +120,6 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
     loader = Loader()
     loader.load(sequence, sequence_data)
     sequence.select = False
-
-def get_sequence_dependency(sequence: bpy.types.Sequence):
-    if sequence.type == 'MOVIE':
-        return Path(bpy.path.abspath(sequence.filepath))
-    elif sequence.type == 'SOUND':
-        return sequence.sound
-    elif sequence.type == 'IMAGE':
-        return Path(bpy.path.abspath(sequence.directory), sequence.elements[0].filename)
 
 
 class BlSequencer(BlDatablock):
@@ -189,7 +187,11 @@ class BlSequencer(BlDatablock):
         deps = []
 
         for seq in self.instance.sequences_all:
-            dep = get_sequence_dependency(seq)
-            if dep:
-                deps.append(dep)
+            if seq.type == 'MOVIE' and seq.filepath:
+                deps.append(Path(bpy.path.abspath(seq.filepath)))
+            elif seq.type == 'SOUND' and seq.sound:
+                deps.append(seq.sound)
+            elif seq.type == 'IMAGE':
+                for e in seq.elements:
+                    deps.append(Path(bpy.path.abspath(seq.directory), e.filename))
         return deps
