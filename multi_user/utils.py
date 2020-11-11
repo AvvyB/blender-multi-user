@@ -99,7 +99,9 @@ def clean_scene():
                 type_collection.remove(item)
         except:
             continue
-
+    
+    # Clear sequencer
+    bpy.context.scene.sequence_editor_clear()
 
 def get_selected_objects(scene, active_view_layer):
     return [obj.uuid for obj in scene.objects if obj.select_get(view_layer=active_view_layer)]

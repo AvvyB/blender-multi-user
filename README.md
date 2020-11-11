@@ -49,7 +49,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | volumes     |   ❌    |                                                                              |
 | particles   |   ❌    |        [On-going](https://gitlab.com/slumber/multi-user/-/issues/24)         |
 | speakers    |   ❗    |         [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)         |
-| vse         |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)         |
+| vse         |   ❗    |                       Mask and Clip not supported yet                        |
 | physics     |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)         |
 | libraries   |   ❗    |                                   Partial                                    |
 

@@ -21,7 +21,7 @@ from collections.abc import Iterable
 
 import bpy
 import mathutils
-from replication.constants import DIFF_BINARY, UP
+from replication.constants import DIFF_BINARY, DIFF_JSON, UP
 from replication.data import ReplicatedDatablock
 
 from .. import utils
@@ -127,7 +127,10 @@ class BlDatablock(ReplicatedDatablock):
         if instance and hasattr(instance, 'uuid'):
             instance.uuid = self.uuid
 
-        self.diff_method = DIFF_BINARY
+        if logging.getLogger().level == logging.DEBUG:
+            self.diff_method = DIFF_JSON
+        else:
+            self.diff_method = DIFF_BINARY
 
     def resolve(self):
         datablock_ref = None
@@ -216,7 +219,7 @@ class BlDatablock(ReplicatedDatablock):
         if not self.is_library:
             dependencies.extend(self._resolve_deps_implementation())
 
-        logging.debug(f"{self.instance.name} dependencies: {dependencies}")
+        logging.debug(f"{self.instance} dependencies: {dependencies}")
         return dependencies
 
     def _resolve_deps_implementation(self):
