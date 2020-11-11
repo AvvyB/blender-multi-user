@@ -37,7 +37,8 @@ __all__ = [
     'bl_speaker',
     'bl_font',
     'bl_sound',
-    'bl_file'
+    'bl_file',
+    'bl_node_group'
 ]  # Order here defines execution order
 
 from . import *

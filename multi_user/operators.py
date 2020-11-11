@@ -166,7 +166,8 @@ class SessionStartOperator(bpy.types.Operator):
         # init the factory with supported types
         for type in bl_types.types_to_register():
             type_module = getattr(bl_types, type)
-            type_impl_name = f"Bl{type.split('_')[1].capitalize()}"
+            name = [e.capitalize() for e in type.split('_')[1:]]
+            type_impl_name = 'Bl'+''.join(name)
             type_module_class = getattr(type_module, type_impl_name)
 
             supported_bl_types.append(type_module_class.bl_id)
