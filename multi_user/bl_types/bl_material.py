@@ -21,6 +21,8 @@ import mathutils
 import logging
 import re
 
+from uuid import uuid4
+
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
@@ -44,25 +46,27 @@ def load_node(node_data, node_tree):
 
     if image_uuid and not target_node.image:
         target_node.image = get_datablock_from_uuid(image_uuid, None)
-    
+
     if node_tree_uuid:
         target_node.node_tree = get_datablock_from_uuid(node_tree_uuid, None)
 
-    for idx, inpt in enumerate(node_data['inputs']):
-        if hasattr(target_node.inputs[idx], "default_value"):
-            try:
-                target_node.inputs[idx].default_value = inpt["default_value"]
-            except:
-                logging.error(
-                    f"Material {inpt.keys()} parameter not supported, skipping")
+    inputs = node_data.get('inputs')
+    if inputs:
+        for idx, inpt in enumerate(inputs):
+            if hasattr(target_node.inputs[idx], "default_value"):
+                try:
+                    target_node.inputs[idx].default_value = inpt["default_value"]
+                except:
+                    logging.error(f"Material input {inpt.keys()} parameter not supported, skipping")
 
-    for idx, output in enumerate(node_data['outputs']):
-        if hasattr(target_node.outputs[idx], "default_value"):
-            try:
-                target_node.outputs[idx].default_value = output["default_value"]
-            except:
-                logging.error(
-                    f"Material {output.keys()} parameter not supported, skipping")
+    outputs = node_data.get('outputs')
+    if outputs:
+        for idx, output in enumerate(outputs):
+            if hasattr(target_node.outputs[idx], "default_value"):
+                try:
+                    target_node.outputs[idx].default_value = output["default_value"]
+                except:
+                    logging.error(f"Material output {output.keys()} parameter not supported, skipping")
 
 
 def load_links(links_data, node_tree):
@@ -152,9 +156,6 @@ def dump_node(node):
         io_dumper.depth = 2
         io_dumper.include_filter = ["default_value"]
 
-        if node.type in ['GROUP_INPUT', 'GROUP_OUTPUT']:
-            io_dumper.include_filter.extend(['name','type'])
-
         for idx, inpt in enumerate(node.inputs):
             if hasattr(inpt, 'default_value'):
                 dumped_node['inputs'].append(io_dumper.dump(inpt))
@@ -190,7 +191,7 @@ def dump_node(node):
     return dumped_node
 
 
-def dump_shader_node_tree(node_tree:bpy.types.ShaderNodeTree)->dict:
+def dump_shader_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
     """ Dump a shader node_tree to a dict including links and nodes
     
         :arg node_tree: dumped shader node tree
@@ -198,26 +199,74 @@ def dump_shader_node_tree(node_tree:bpy.types.ShaderNodeTree)->dict:
         :return: dict
     """
     node_tree_data = {
-        'nodes': {node.name: dump_node(node) for  node in node_tree.nodes},
+        'nodes': {node.name: dump_node(node) for node in node_tree.nodes},
         'links': dump_links(node_tree.links),
         'name': node_tree.name,
         'type': type(node_tree).__name__
     }
 
-    if node_tree.inputs:
-        node_tree_data['inputs'] = [(i.name, i.bl_socket_idname, i.identifier) for i in  node_tree.inputs]
-    if node_tree.outputs:
-        node_tree_data['outputs'] = [(o.name, o.bl_socket_idname)for o in  node_tree.outputs]
+    for socket_id in ['inputs', 'outputs']:
+        socket_collection = getattr(node_tree, socket_id)
+        node_tree_data[socket_id] = dump_node_tree_sockets(socket_collection)
 
     return node_tree_data
 
-def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.ShaderNodeTree)->dict:
-    """
 
-        :arg node_tree: dumped node data
-        :type node_data: dict
-        :arg node_tree: target node_tree
-        :type node_tree: bpy.types.NodeTree
+def dump_node_tree_sockets(sockets: bpy.types.Collection)->dict:
+    """ dump sockets of a shader_node_tree
+
+        :arg target_node_tree: target node_tree
+        :type target_node_tree: bpy.types.NodeTree
+        :arg socket_id: socket identifer 
+        :type socket_id: str
+        :return: dict
+    """
+    sockets_data = []
+    for socket in sockets:
+        try:
+            socket_uuid = socket['uuid']
+        except Exception:
+            socket_uuid = str(uuid4())
+            socket['uuid'] = socket_uuid
+
+        sockets_data.append((socket.name, socket.bl_socket_idname, socket_uuid))
+
+    return sockets_data
+
+def load_node_tree_sockets(sockets: bpy.types.Collection,
+                           sockets_data: dict):
+    """ load sockets of a shader_node_tree
+
+        :arg target_node_tree: target node_tree
+        :type target_node_tree: bpy.types.NodeTree
+        :arg socket_id: socket identifer 
+        :type socket_id: str
+        :arg socket_data: dumped socket data
+        :type socket_data: dict
+    """
+    # Check for removed sockets
+    for socket in sockets:
+        if not [s for s in sockets_data if socket['uuid'] == s[2]]:
+            sockets.remove(socket)
+
+    # Check for new sockets
+    for idx, socket_data in enumerate(sockets_data):
+        try:
+            checked_socket = sockets[idx]   
+            if checked_socket.name != socket_data[0]:
+                checked_socket.name = socket_data[0]
+        except Exception:
+            s = sockets.new(socket_data[1], socket_data[0])
+            s['uuid'] = socket_data[2]
+
+
+def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.ShaderNodeTree)->dict:
+    """Load a shader node_tree from dumped data
+
+        :arg node_tree_data: dumped node data
+        :type node_tree_data: dict
+        :arg target_node_tree: target node_tree
+        :type target_node_tree: bpy.types.NodeTree
     """
     # TODO: load only required nodes
     target_node_tree.nodes.clear()
@@ -226,30 +275,12 @@ def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.Shader
         target_node_tree.name = node_tree_data['name']
 
     if 'inputs' in node_tree_data:
-        for inpt in target_node_tree.inputs:
-            if not [i for i in node_tree_data['inputs'] if inpt.identifier == i[2]]:
-                target_node_tree.inputs.remove(inpt)
-
-        for idx, socket_data in enumerate(node_tree_data['inputs']):
-            try:
-                checked_input = target_node_tree.inputs[idx]
-                if checked_input.name != socket_data[0]:
-                    checked_input.name = socket_data[0]
-            except Exception:
-                target_node_tree.inputs.new(socket_data[1], socket_data[0])
+        socket_collection = getattr(target_node_tree, 'inputs')
+        load_node_tree_sockets(socket_collection, node_tree_data['inputs'])
 
     if 'outputs' in node_tree_data:
-        for inpt in target_node_tree.outputs:
-            if not [o for o in node_tree_data['outputs'] if inpt.identifier == o[2]]:
-                target_node_tree.outputs.remove(inpt)
-
-        for idx, socket_data in enumerate(node_tree_data['outputs']):
-            try:
-                checked_outputs = target_node_tree.outputs[idx]
-                if checked_outputs.name != socket_data[0]:
-                    checked_outputs.name = socket_data[0]
-            except Exception:
-                target_node_tree.outputs.new(socket_data[1], socket_data[0])
+        socket_collection = getattr(target_node_tree,  'outputs')
+        load_node_tree_sockets(socket_collection,node_tree_data['outputs'])
 
     # Load nodes
     for node in node_tree_data["nodes"]:
