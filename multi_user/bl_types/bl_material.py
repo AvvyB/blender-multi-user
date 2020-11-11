@@ -40,11 +40,15 @@ def load_node(node_data, node_tree):
     target_node.select = False
     loader.load(target_node, node_data)
     image_uuid = node_data.get('image_uuid', None)
+    node_tree_uuid = node_data.get('node_tree_uuid', None)
 
     if image_uuid and not target_node.image:
         target_node.image = get_datablock_from_uuid(image_uuid, None)
+    
+    if node_tree_uuid:
+        target_node.node_tree = get_datablock_from_uuid(node_tree_uuid, None)
 
-    for idx, inpt in enumerate(node_data["inputs"]):
+    for idx, inpt in enumerate(node_data['inputs']):
         if hasattr(target_node.inputs[idx], "default_value"):
             try:
                 target_node.inputs[idx].default_value = inpt["default_value"]
@@ -52,7 +56,7 @@ def load_node(node_data, node_tree):
                 logging.error(
                     f"Material {inpt.keys()} parameter not supported, skipping")
 
-    for idx, output in enumerate(node_data["outputs"]):
+    for idx, output in enumerate(node_data['outputs']):
         if hasattr(target_node.outputs[idx], "default_value"):
             try:
                 target_node.outputs[idx].default_value = output["default_value"]
@@ -148,6 +152,9 @@ def dump_node(node):
         io_dumper.depth = 2
         io_dumper.include_filter = ["default_value"]
 
+        if node.type in ['GROUP_INPUT', 'GROUP_OUTPUT']:
+            io_dumper.include_filter.extend(['name','type'])
+
         for idx, inpt in enumerate(node.inputs):
             if hasattr(inpt, 'default_value'):
                 dumped_node['inputs'].append(io_dumper.dump(inpt))
@@ -178,6 +185,8 @@ def dump_node(node):
         dumped_node['mapping'] = curve_dumper.dump(node.mapping)
     if hasattr(node, 'image') and getattr(node, 'image'):
         dumped_node['image_uuid'] = node.image.uuid
+    if hasattr(node, 'node_tree') and getattr(node, 'node_tree'):
+        dumped_node['node_tree_uuid'] = node.node_tree.uuid
     return dumped_node
 
 
@@ -188,11 +197,19 @@ def dump_shader_node_tree(node_tree:bpy.types.ShaderNodeTree)->dict:
         :type node_tree: bpy.types.ShaderNodeTree
         :return: dict
     """
-    return {
+    node_tree_data = {
         'nodes': {node.name: dump_node(node) for  node in node_tree.nodes},
-        'links': dump_links(node_tree.links)
+        'links': dump_links(node_tree.links),
+        'name': node_tree.name,
+        'type': type(node_tree).__name__
     }
 
+    if node_tree.inputs:
+        node_tree_data['inputs'] = [(i.name, i.bl_socket_idname, i.identifier) for i in  node_tree.inputs]
+    if node_tree.outputs:
+        node_tree_data['outputs'] = [(o.name, o.bl_socket_idname)for o in  node_tree.outputs]
+
+    return node_tree_data
 
 def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.ShaderNodeTree)->dict:
     """
@@ -204,6 +221,35 @@ def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.Shader
     """
     # TODO: load only required nodes
     target_node_tree.nodes.clear()
+
+    if not target_node_tree.is_property_readonly('name'):
+        target_node_tree.name = node_tree_data['name']
+
+    if 'inputs' in node_tree_data:
+        for inpt in target_node_tree.inputs:
+            if not [i for i in node_tree_data['inputs'] if inpt.identifier == i[2]]:
+                target_node_tree.inputs.remove(inpt)
+
+        for idx, socket_data in enumerate(node_tree_data['inputs']):
+            try:
+                checked_input = target_node_tree.inputs[idx]
+                if checked_input.name != socket_data[0]:
+                    checked_input.name = socket_data[0]
+            except Exception:
+                target_node_tree.inputs.new(socket_data[1], socket_data[0])
+
+    if 'outputs' in node_tree_data:
+        for inpt in target_node_tree.outputs:
+            if not [o for o in node_tree_data['outputs'] if inpt.identifier == o[2]]:
+                target_node_tree.outputs.remove(inpt)
+
+        for idx, socket_data in enumerate(node_tree_data['outputs']):
+            try:
+                checked_outputs = target_node_tree.outputs[idx]
+                if checked_outputs.name != socket_data[0]:
+                    checked_outputs.name = socket_data[0]
+            except Exception:
+                target_node_tree.outputs.new(socket_data[1], socket_data[0])
 
     # Load nodes
     for node in node_tree_data["nodes"]:
@@ -218,8 +264,17 @@ def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.Shader
 
 def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
     has_image = lambda node : (node.type in ['TEX_IMAGE', 'TEX_ENVIRONMENT'] and node.image)
+    has_node_group = lambda node : (hasattr(node,'node_tree') and node.node_tree)
 
-    return [node.image for node in node_tree.nodes if has_image(node)]
+    deps = []
+
+    for node in node_tree.nodes:
+        if has_image(node):
+            deps.append(node.image)
+        elif has_node_group(node):
+            deps.append(node.node_tree)
+
+    return deps
 
 
 class BlMaterial(BlDatablock):
