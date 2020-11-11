@@ -26,6 +26,12 @@ from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 def dump_sequence(sequence: bpy.types.Sequence) -> dict:
+    """ Dump a sequence to a dict
+
+        :arg sequence: sequence to dump
+        :type sequence: bpy.types.Sequence
+        :return dict:
+    """
     dumper = Dumper()
     dumper.exclude_filter = [
         'lock',
@@ -36,18 +42,30 @@ def dump_sequence(sequence: bpy.types.Sequence) -> dict:
     ]
     dumper.depth = 1
     data = dumper.dump(sequence)
-    input_count = getattr(sequence, 'input_count', None)
 
+
+    # TODO: Support multiple images
     if sequence.type == 'IMAGE':
         data['filename'] = sequence.elements[0].filename
+
+    # Effect strip inputs
+    input_count = getattr(sequence, 'input_count', None)
     if input_count:
         for n in range(input_count):
             input_name = f"input_{n+1}"
             data[input_name] = getattr(sequence, input_name).name
+
     return data
 
 
 def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor):
+    """ Load sequence from dumped data
+
+        :arg sequence_data: sequence to dump
+        :type sequence_data:dict
+        :arg sequence_editor: root sequence editor
+        :type sequence_editor: bpy.types.SequenceEditor
+    """
     strip_type = sequence_data.get('type')
     strip_name = sequence_data.get('name')
     strip_channel = sequence_data.get('channel')

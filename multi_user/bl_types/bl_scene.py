@@ -384,6 +384,12 @@ class BlScene(BlDatablock):
                 ]
                 data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(
                     instance.view_settings.curve_mapping.curves)
+
+        if instance.sequence_editor:
+            data['has_sequence'] = True
+        else:
+            data['has_sequence'] = False
+
         return data
 
     def _resolve_deps_implementation(self):
