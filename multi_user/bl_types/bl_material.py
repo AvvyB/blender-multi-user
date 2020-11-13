@@ -172,7 +172,9 @@ def dump_node(node):
             'elements',
             'alpha',
             'color',
-            'position'
+            'position',
+            'interpolation',
+            'color_mode'
         ]
         dumped_node['color_ramp'] = ramp_dumper.dump(node.color_ramp)
     if hasattr(node, 'mapping'):
