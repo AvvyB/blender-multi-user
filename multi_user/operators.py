@@ -576,9 +576,13 @@ class SessionApply(bpy.types.Operator):
 
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
-        session.apply(self.target,
-                      force=True,
-                      force_dependencies=self.reset_dependencies)
+        try:
+            session.apply(self.target,
+                        force=True,
+                        force_dependencies=self.reset_dependencies)
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+            return {"CANCELED"}    
 
         return {"FINISHED"}
 
@@ -596,11 +600,13 @@ class SessionCommit(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        # session.get(uuid=target).diff()
-        session.commit(uuid=self.target)
-        session.push(self.target)
-        return {"FINISHED"}
-
+        try:
+            session.commit(uuid=self.target)
+            session.push(self.target)
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+            return {"CANCELED"}
 
 class ApplyArmatureOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
