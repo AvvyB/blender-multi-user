@@ -50,25 +50,29 @@ def load_node(node_data, node_tree):
     if node_tree_uuid:
         target_node.node_tree = get_datablock_from_uuid(node_tree_uuid, None)
 
-    inputs = node_data.get('inputs')
-    if inputs:
-        for idx, inpt in enumerate(inputs):
-            if hasattr(target_node.inputs[idx], "default_value"):
+    inputs_data = node_data.get('inputs')
+    if inputs_data:
+        inputs = target_node.inputs
+        for idx, inpt in enumerate(inputs_data):
+            if idx < len(inputs) and hasattr(inputs[idx], "default_value"):
                 try:
-                    target_node.inputs[idx].default_value = inpt["default_value"]
-                except:
-                    logging.error(f"Material input {inpt.keys()} parameter not supported, skipping")
+                    inputs[idx].default_value = inpt
+                except Exception as e:
+                    logging.warning(f"Node {target_node.name} input {inputs[idx].name} parameter not supported, skipping ({e})")
+            else:
+                logging.warning(f"Node {target_node.name} input length mismatch.")
 
-    outputs = node_data.get('outputs')
-    if outputs:
-        for idx, output in enumerate(outputs):
-            if hasattr(target_node.outputs[idx], "default_value"):
+    outputs_data = node_data.get('outputs')
+    if outputs_data:
+        outputs = target_node.outputs
+        for idx, output in enumerate(outputs_data):
+            if idx < len(outputs) and hasattr(outputs[idx], "default_value"):
                 try:
-                    target_node.outputs[idx].default_value = output["default_value"]
+                    outputs[idx].default_value = output
                 except:
-                    logging.error(f"Material output {output.keys()} parameter not supported, skipping")
-
-
+                    logging.warning(f"Node {target_node.name} output {outputs[idx].name} parameter not supported, skipping ({e})")
+            else:
+                logging.warning(f"Node {target_node.name} output length mismatch.")
 def load_links(links_data, node_tree):
     """ Load node_tree links from a list
 
@@ -149,21 +153,24 @@ def dump_node(node):
 
     dumped_node = node_dumper.dump(node)
 
-    if hasattr(node, 'inputs'):
-        dumped_node['inputs'] = []
+    dump_io_needed = (node.type != 'REROUTE')
 
+    if dump_io_needed:
         io_dumper = Dumper()
         io_dumper.depth = 2
         io_dumper.include_filter = ["default_value"]
 
-        for idx, inpt in enumerate(node.inputs):
-            if hasattr(inpt, 'default_value'):
-                dumped_node['inputs'].append(io_dumper.dump(inpt))
+        if hasattr(node, 'inputs'):
+            dumped_node['inputs'] = []
+            for idx, inpt in enumerate(node.inputs):
+                if hasattr(inpt, 'default_value'):
+                    dumped_node['inputs'].append(io_dumper.dump(inpt.default_value))
 
-        dumped_node['outputs'] = []
-        for idx, output in enumerate(node.outputs):
-            if hasattr(output, 'default_value'):
-                dumped_node['outputs'].append(io_dumper.dump(output))
+        if hasattr(node, 'outputs'):
+            dumped_node['outputs'] = []
+            for idx, output in enumerate(node.outputs):
+                if hasattr(output, 'default_value'):
+                    dumped_node['outputs'].append(io_dumper.dump(output.default_value))
 
     if hasattr(node, 'color_ramp'):
         ramp_dumper = Dumper()
@@ -195,7 +202,7 @@ def dump_node(node):
 
 def dump_shader_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
     """ Dump a shader node_tree to a dict including links and nodes
-    
+
         :arg node_tree: dumped shader node tree
         :type node_tree: bpy.types.ShaderNodeTree
         :return: dict
