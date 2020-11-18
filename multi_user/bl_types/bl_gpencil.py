@@ -38,6 +38,21 @@ STROKE_POINT = [
 
 ]
 
+STROKE = [
+    "aspect",
+    "display_mode",
+    "draw_cyclic",
+    "end_cap_mode",
+    "hardness",
+    "line_width",
+    "material_index",
+    "start_cap_mode",
+    "uv_rotation",
+    "uv_scale",
+    "uv_translation",
+    "vertex_color_fill",
+]
+
 if bpy.app.version[1] >= 83:
     STROKE_POINT.append('vertex_color')
 
@@ -88,12 +103,9 @@ def load_stroke(stroke_data, stroke):
     """
     assert(stroke and stroke_data)
 
-    loader = Loader()
-    loader.load(stroke, stroke_data)
-
     stroke.points.add(stroke_data["p_count"])
-
     np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
+
 
 
 def dump_frame(frame):
@@ -108,11 +120,11 @@ def dump_frame(frame):
 
     dumped_frame = dict()
     dumped_frame['frame_number'] = frame.frame_number
-    dumped_frame['strokes'] = []
-    
-    # TODO: took existing strokes in account
+    dumped_frame['strokes'] = np_dump_collection(frame.strokes, STROKE)
+    dumped_frame['strokes_points'] = []
+
     for stroke in frame.strokes:
-        dumped_frame['strokes'].append(dump_stroke(stroke))
+        dumped_frame['strokes_points'].append(dump_stroke(stroke))
     
     return dumped_frame
 
@@ -128,14 +140,11 @@ def load_frame(frame_data, frame):
 
     assert(frame and frame_data)
 
-    # frame.frame_number = frame_data['frame_number']
-
-    # TODO: took existing stroke in account
-
-    for stroke_data in frame_data['strokes']:
+    for stroke_data in frame_data['strokes_points']:
         target_stroke = frame.strokes.new()
         load_stroke(stroke_data, target_stroke)
 
+    np_load_collection(frame_data['strokes'], frame.strokes, STROKE)
 
 def dump_layer(layer):
     """ Dump a grease pencil layer
@@ -232,7 +241,7 @@ class BlGpencil(BlDatablock):
 
         loader = Loader()
         loader.load(target, data)
-        
+
         # TODO: reuse existing layer
         for layer in target.layers:
             target.layers.remove(layer)
@@ -248,8 +257,7 @@ class BlGpencil(BlDatablock):
                 #     target_layer.clear()
 
                 load_layer(layer_data, target_layer)
-        
-        
+
 
 
 
@@ -268,7 +276,7 @@ class BlGpencil(BlDatablock):
         data = dumper.dump(instance)
 
         data['layers'] = {}
-        
+
         for layer in instance.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
