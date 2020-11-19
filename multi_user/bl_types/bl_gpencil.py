@@ -192,6 +192,9 @@ def dump_layer(layer):
         # 'parent_bone',
         # 'matrix_inverse',
     ]
+    if layer.id_data.is_annotation:
+        dumper.include_filter.append('thickness')
+
     dumped_layer = dumper.dump(layer)
 
     dumped_layer['frames'] = []

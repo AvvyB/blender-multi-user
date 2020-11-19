@@ -41,6 +41,11 @@ from replication.constants import (FETCHED,
 from replication.interface import session
 from replication.exception import NonAuthorizedOperationError
 
+def is_annotating(context:bpy.types.Context):
+    """ Check if the annotate mode is enabled
+    """
+    return  bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
+
 class Delayable():
     """Delayable task interface
     """
@@ -129,6 +134,7 @@ class DynamicRightSelectTimer(Timer):
         self._last_selection = []
         self._user = None
         self._right_strategy = RP_COMMON
+        self._annotating = False
 
     def execute(self):
         settings = utils.get_preferences()
@@ -139,6 +145,29 @@ class DynamicRightSelectTimer(Timer):
                 self._user = session.online_users.get(settings.username)
 
             if self._user:
+                ctx = bpy.context
+                annotation_gp =  ctx.scene.grease_pencil 
+
+                # if an annotation exist and is tracked
+                if annotation_gp and annotation_gp.uuid:
+                    registered_gp = session.get(uuid=annotation_gp.uuid)
+                    if is_annotating(bpy.context):                    
+                        # try to get the right on it
+                        if registered_gp.owner == RP_COMMON:
+                            self._annotating = True
+                            logging.debug("Getting the right on the annotation GP")
+                            session.change_owner(
+                                    registered_gp.uuid,
+                                    settings.username,
+                                    ignore_warnings=True,
+                                    affect_dependencies=False)
+                    elif self._annotating: 
+                        session.change_owner(
+                                    registered_gp.uuid,
+                                    RP_COMMON,
+                                    ignore_warnings=True,
+                                    affect_dependencies=False)
+
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
                     bpy.data.window_managers['WinMan'].windows[0].view_layer
