@@ -25,7 +25,7 @@ from pathlib import Path
 import socket
 import re
 
-VERSION_EXPR = re.compile('\d+\.\d+\.\d+\w\d+')
+VERSION_EXPR = re.compile('\d+.\d+.\d+')
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 DEFAULT_CACHE_DIR = os.path.join(
