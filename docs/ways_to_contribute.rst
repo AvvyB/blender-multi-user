@@ -101,7 +101,8 @@ The following example suggests how to contribute a feature.
 
 .. Hint:: -u option sets up your locally created new branch to follow a remote branch which is now created with the same name on your remote repository.
 
-11. Finally, create a new Pull/Merge Request on Gitlab to merge the remote version of this new branch with commited updates, back into the upstream develop branch, finalising the integration of the new feature.
+11. Finally, create a new Pull/Merge Request on Gitlab to merge the remote version of this new branch with commited updates, back into the upstream 'develop' branch, finalising the integration of the new feature.
+    Make sure to set the target branch to 'develop' for features and 'master' for hotfixes. Also, include any milestones or labels, and assignees that may be relevant. By default, the Merge option to 'delete source branch when merge request is activated' will be checked.
 
 12. Thanks for contributing!
 
