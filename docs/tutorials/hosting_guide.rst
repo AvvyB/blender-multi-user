@@ -1,28 +1,30 @@
 .. _internet-guide:
 
-===================
-Hosting on internet
-===================
+=======================
+Hosting on the internet
+=======================
 
 .. warning::
-    Until now, those communications are not encrypted but are planned to be in a mid-term future (`Status <https://gitlab.com/slumber/multi-user/issues/62>`_).
+    Until now, those communications are not encrypted but are planned to be in a mid-term future (`status <https://gitlab.com/slumber/multi-user/issues/62>`_).
 
-This tutorial aims to guide you to host a collaborative Session on internet.
-Hosting a session can be done is several ways:
+This tutorial aims to guide you toward hosting a collaborative multi-user session on the internet.
+Hosting a session can be achieved in several ways:
 
 - :ref:`host-blender`: hosting a session directly from the blender add-on panel.
 - :ref:`host-dedicated`: hosting a session directly from the command line interface on a computer without blender.
+- :ref:`host-cloud`: hosting a session on a dedicated cloud server such as Google Cloud's free tier.
+
 
 .. _host-blender:
 
--------------
+--------------------
 From blender
--------------
+--------------------
 By default your router doesn't allow anyone to share you connection.
-In order grant server access to people from internet you have tow main option:
+In order grant the server access to people from internet you have two main option:
 
 * The :ref:`connection-sharing`: the easiest way.
-* The :ref:`port-forwarding`: this one is the most unsecure, if you have no networking knowledge, you should definitively go to :ref:`connection-sharing`.
+* The :ref:`port-forwarding`: this way is the most unsecure. If you have no networking knowledge, you should definitely follow :ref:`connection-sharing`.
 
 .. _connection-sharing:
 
@@ -30,7 +32,7 @@ Using a connection sharing solution
 -----------------------------------
 
 Many third party software like `ZEROTIER <https://www.zerotier.com/download/>`_ (Free) or `HAMACHI <https://vpn.net/>`_ (Free until 5 users) allow you to share your private network with other people.
-For the example I'm gonna use ZeroTier because its free and open source.
+For the example I'm gonna use ZeroTier because it's free and open source.
 
 1. Installation
 ^^^^^^^^^^^^^^^
@@ -47,7 +49,7 @@ To create a ZeroTier private network you need to register a ZeroTier account `on
 (click on **login** then register on the bottom)
 
 Once you account it activated, you can connect to `my.zerotier.com <https://my.zerotier.com/login>`_.
-Head up to the **Network** section(highlighted in red in the image below).
+Head up to the **Network** section (highlighted in red in the image below).
 
 .. figure:: img/hosting_guide_head_network.png
     :align: center
@@ -153,12 +155,12 @@ This is it for the ZeroTier network setup. Now everything should be setup to use
 Using port-forwarding
 ---------------------
 
-The port forwarding method consist to configure you Network route to allow internet trafic throught specific ports.
+The port forwarding method consists of configuring your network router to deny most traffic with a firewall, but to then allow particular internet traffic (like a multiuser connection) through the firewall on specified ports.
 
-In order to know which port are used by the add-on, check the :ref:`port-setup` section.
+In order to know which ports are used by the add-on, please check the :ref:`port-setup` section.
 To set up port forwarding for each port you can follow this `guide <https://www.wikihow.com/Set-Up-Port-Forwarding-on-a-Router>`_ for example.
 
-Once you have set up the network you can follow the :ref:`quickstart` guide to start using the multi-user add-on !
+Once you have set up the network you can follow the :ref:`quickstart` guide to begin using the multi-user add-on !
 
 .. _host-dedicated:
 
@@ -167,11 +169,10 @@ From the dedicated server
 --------------------------
 
 .. warning::
-    The dedicated server is developed to run directly on internet server (like VPS). You can also
-    run it at home for LAN but for internet hosting you need to follow the :ref:`port-forwarding` setup first.  
+    The dedicated server is developed to run directly on an internet server (like a VPS (Virtual Private Server)). You can also run it at home on a LAN but for internet hosting you need to follow the :ref:`port-forwarding` setup first. Please see :ref:`host-cloud` for a detailed walkthrough of cloud hosting using Google Cloud.
 
-The dedicated server allow you to host a session with simplicity from any location.
-It was developed to improve internet hosting performance.
+The dedicated server allows you to host a session with simplicity from any location.
+It was developed to improve internet hosting performance (for example poor latency).
 
 The dedicated server can be run in two ways:
 
@@ -192,29 +193,28 @@ You can run the dedicated server on any platform by following these steps:
 
     .. code-block:: bash
 
-        python -m pip install replication==0.0.21a15
+        python -m pip install replication==0.1.13
 
 4. Launch the server with:
 
     .. code-block:: bash
 
-        replication.serve
+        replication.server
 
 .. hint::
     You can also specify a custom **port** (-p), **timeout** (-t), **admin password** (-pwd), **log level (ERROR, WARNING, INFO or DEBUG)** (-l) and **log file** (-lf) with the following optional arguments
 
     .. code-block:: bash
 
-        replication.serve -p 5555 -pwd admin -t 1000 -l INFO -lf server.log
+        replication.server -p 5555 -pwd admin -t 5000 -l INFO -lf server.log
 
-Here, for example, a server is instantiated on port 5555, with password 'admin', a 1 second timeout, and logging enabled.
+Here, for example, a server is instantiated on port 5555, with password 'admin', a 5 second timeout, and logging enabled.
 
 As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
 
 
-
 .. hint::
-    Some commands are available to enable an administrator to manage the session. Check :ref:`dedicated-management` to learn more.
+    Some server commands are available to enable administrators to manage a multi-user session. Check :ref:`dedicated-management` to learn more.
 
 
 .. _docker:
@@ -231,18 +231,23 @@ Launching the dedicated server from a docker server is simple as running:
         -e port=5555 \
         -e log_level=DEBUG \
         -e password=admin \
-        -e timeout=1000 \
-        registry.gitlab.com/slumber/multi-user/multi-user-server:0.1.0
+        -e timeout=5000 \
+        registry.gitlab.com/slumber/multi-user/multi-user-server:0.2.0
 
-As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
+Please use the URL of the most recent container available in the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_. As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
 
-You can check your container is running, and find its ID with:
+You can check that your container is running, and find its ID and name with:
 
 .. code-block:: bash
 
     docker ps
 
-Logs for the server running in the docker container can be accessed by outputting the following to a log file:
+.. _docker-logs:
+
+Viewing logs in a docker container
+-----------------------------------
+
+Logs for the server running in a docker container can be accessed by outputting the following to a log file:
 
 .. code-block:: bash
 
@@ -250,6 +255,33 @@ Logs for the server running in the docker container can be accessed by outputtin
 
 .. Note:: If using WSL2 on Windows 10 (Windows Subsystem for Linux), it is preferable to run a dedicated server via regular command line approach (or the associated startup script) from within Windows - docker desktop for windows 10 usually uses the WSL2 backend where it is available.
 
+.. This may not be true. Need to write up how to locally start a docker container from WSL2
+
+First, you'll need to know your container ID, which you can find by running:
+
+.. code-block:: bash
+    docker ps
+
+If you're cloud-hosting with e.g. Google Cloud, your container will be the one associated with the `registry address <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ where your Docker image was located.
+
+e.g. registry.gitlab.com/slumber/multi-user/multi-user-server:0.2.0
+
+You can either ssh in to your server and then run 
+
+.. code-block:: bash
+    cat your-log-name.log
+
+or view the docker container logs with 
+
+.. code-block:: bash
+    docker logs your-container-name
+
+OR
+
+.. code-block:: bash
+    docker logs your-container-id
+
+Note, see these `notes <https://cloud.google.com/compute/docs/containers/deploying-containers?_ga=2.113663175.-1396941296.1606125558#viewing_container_logs>`_ for how to check server logs on Google Cloud.
 
 .. _serverstartscripts:
 
@@ -280,11 +312,28 @@ Dedicated server management
 
 Here is the list of available commands from the dedicated server:
 
-- ``help``: Show all commands.
+- ``help`` or ``?``: Show all commands.
 - ``exit`` or ``Ctrl+C`` : Stop the server.
 - ``kick username``: kick the provided user.
 - ``users``: list all online users.
 
+Also, see :ref:`how-to-manage` for more details on managing a server.
+
+.. _cloud_dockermanage:
+
+Managing a docker server from the command line
+----------------------------------------------
+If you want to be able to manage a server running within a docker container, open the terminal on the host machine (or SSH in, if you are using cloud hosting), and then run 
+
+.. code-block:: bash
+    docker ps
+    
+to find your container id, and then
+
+.. code-block:: bash
+    docker attach your-container-id
+    
+to attach to the STDOUT from the container. There, you can issue the server management commands detailed in :ref:`dedicated-management`. Type ``?`` and hit return/enter to see the available commands. Also, see :ref:`how-to-manage` for more details on managing a server.
 
 .. _port-setup:
 
@@ -292,14 +341,14 @@ Here is the list of available commands from the dedicated server:
 Port setup
 ----------
 
-The multi-user network architecture is based on a clients-server model. The communication protocol use four ports to communicate with client:
+The multi-user network architecture is based on a client-server model. The communication protocol uses four ports to communicate with clients:
 
-* Commands: command transmission (such as **snapshots**, **change_rights**, etc.) [given port]
+* Commands: command transmission (such as **snapshots**, **change_rights**, etc.) [user-nominated port]
 * Subscriber : pull data [Commands port + 1]
 * Publisher : push data [Commands port + 2]
 * TTL (time to leave) : used to ping each client [Commands port + 3]
 
-To know which ports will be used, you just have to read the port in your preference.
+To know which ports will be used, you just have to read the port in your preferences.
 
 .. figure:: img/hosting_guide_port.png
     :align: center
@@ -307,11 +356,309 @@ To know which ports will be used, you just have to read the port in your prefere
     :width: 200px
 
     Port in host settings
-In the picture below we have setup our port to **5555** so it will be:
 
-* Commands: 5555 (**5555**)
-* Subscriber: 5556 (**5555** +1)
-* Publisher: 5557 (**5555** +2)
-* TTL: 5558 (**5555** +3)
+In the picture below we have setup our port to **5555** so the four ports will be:
 
-Those four ports need to be accessible from the client otherwise it won't work at all !
+* Commands: **5555** (5555)
+* Subscriber: **5556** (5555 +1)
+* Publisher: **5557** (5555 +2)
+* TTL: **5558** (5555 +3)
+
+Those four ports need to be accessible from the client otherwise multi-user won't work at all !
+
+.. _host-cloud:
+
+-------------------------
+Cloud Hosting Walkthrough
+-------------------------
+
+The following is a walkthrough for how to set up a multi-user dedicated server instance on a cloud hosting provider - in this case, `Google Cloud <https://www.cloud.google.com>`_. Google Cloud is a powerful hosting service with a worldwide network of servers. It offers a free trial which provides free cloud hosting for 90 days, and then a free tier which runs indefinitely thereafter, so long as you stay within the `usage limits <https://cloud.google.com/free/docs/gcp-free-tier#free-tier-usage-limits>`_. ^^Thanks to community member @NotFood for the tip!
+
+Cloud hosting is a little more complicated to set up, but it can be valuable if you are trying to host a session with multiple users scattered about planet earth. This can resolve issues with data replication or slowdowns due to poor latency of some users (high ping). This guide may seem technical, but if you follow the steps, you should be able to succeed in hosting an internet server to co-create with other multi-user creators around the world.
+
+Setup Process
+-------------
+
+1. Sign Up for Google Cloud
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Let's start by activating an account with Google Cloud. Go to https://www.cloud.google.com and click 'Get Started For Free'
+
+.. figure:: img/hosting_guide_gcloud_1.jpg
+    :align: center
+    :width: 450px
+
+Google will ask you to login/signup, and to set up a billing account (Don't worry. It will not be charged unless you explicitly enable billing and then run over your `free credit allowance <https://cloud.google.com/free/docs/gcp-free-tier>`_). You will need to choose a billing country (relevant for `tax purposes <https://cloud.google.com/billing/docs/resources/vat-overview>`_). You will choose your server location at a later step.
+
+2. Enable Billing and Compute Engine API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+From here on, we will mostly stick to the instructions provided `here <https://cloud.google.com/compute/docs/quickstart-linux>`_. Nevertheless, the instructions for multi-user specifically are as follows.
+
+In order to set up a Virtual Machine (VM) to host your server, you will need to enable the billing account which was created during your signup process. From your `console <https://console.cloud.google.com/getting-started>`_, click on 'Go to Checklist' and then 'Create a Billing Account', following the prompts to choose the billing account that was created for you upon signup.
+
+.. figure:: img/hosting_guide_gcloud_2.jpg
+    :align: center
+    :width: 300px
+
+.. figure:: img/hosting_guide_gcloud_3.jpg
+    :align: center
+    :width: 300px
+
+.. figure:: img/hosting_guide_gcloud_4.jpg
+    :align: center
+    :width: 300px
+
+.. figure:: img/hosting_guide_gcloud_5.jpg
+    :align: center
+    :width: 300px
+
+.. figure:: img/hosting_guide_gcloud_6.jpg
+    :align: center
+    :width: 300px
+
+Now hit 'Set Account', and go back to your `console <https://console.cloud.google.com/getting-started>`_.
+
+Now enable the Compute Engine API. Click `here <https://console.cloud.google.com/apis/api/compute.googleapis.com/overview>`_ to enable.
+
+.. figure:: img/hosting_guide_gcloud_7.jpg
+    :align: center
+    :width: 450px
+
+3. Create a Linux Virtual Machine Instance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Continue following the `instructions <https://cloud.google.com/compute/docs/quickstart-linux#create_a_virtual_machine_instance>`_ to create a VM instance. However, once you've finished step 2 of 'Create a virtual machine instance', use the settings and steps for multi-user as follows.
+
+.. _server-location:
+
+3.1 Choose a Server Location
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The most important settings which you will need to choose for your specific case are the server Region and Zone. You must choose a location which will provide the best ping for all of your users.
+
+All you need to know is that you'll probably want to choose a location near to where most of your users are located. If your users are spread out, somewhere in the middle which distributes the ping evenly to all users is best.
+
+You can use `this map <https://cloud.google.com/about/locations/>`_ to make a rough guess of the best server location, if you know your users' locations.
+
+.. figure:: img/hosting_guide_gcloud_9.jpg
+    :align: center
+    :width: 450px
+
+A much better approach is to have your users run a ping test for Google Cloud's servers at https://www.gcping.com/
+
+Have your users open this webpage from their fastest browser, and press the play button. The play button turns to a stop icon while the ping test is running. When it is complete, the play button returns. You may need to refresh your browser to get this to work. You can replay the test to add more server locations to the scan, and stop when you are satisfied that the results are consistent.
+
+Now, gather your users' data, and work down each user's list from the top, until you find the first location which gives roughly the same ping for all users.
+
+In general, global (using load balancing) will provide the best results, but beyond that, the US Central servers e.g. IOWA generally turn out best for a globally distributed bunch of users.
+
+For the following example, the server which gave the most balanced, and lowest average ping between two users based in Europe and Australia was in Iowa. Salt Lake City would also be an excellent choice.
+
+.. figure:: img/hosting_guide_gcloud_10.jpg
+    :align: center
+    :width: 450px
+
+    Left - European User | Right - Australian User
+
+Now, input this server location in the 'Region' field for your instance, and leave the default zone which is then populated.
+
+.. Note:: You can read `here <https://cloud.google.com/solutions/best-practices-compute-engine-region-selection>`_ for a deeper understanding about how to choose a good server location.
+
+3.2 Configure the VM
+^^^^^^^^^^^^^^^^^^^^
+
+You can deploy the replication server to your VM in either of the ways mentioned at :ref:`host-dedicated`. That is, you can set it up :ref:`cmd-line` or :ref:`docker`. We will go through both options in this walkthrough. See :ref:`container_v_direct` for more details on how to choose. Deploying a container is the recommended approach.
+
+.. _cloud-container:
+
+Option 1 - Deploy a container
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are familiar with Docker, you'll appreciate that it makes life a little simpler for us. While configuring your instance, you can check **Deploy a container to this VM instance** and copy in the URL of the latest docker image available from the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ to the *Container image* field.
+
+.. figure:: img/hosting_guide_gcloud_8b.jpg
+    :align: center
+    :width: 450px
+    
+    Your configuration with Docker should look like this
+
+Make sure to choose the amount of memory you'd like your server to be able to handle (how much memory does your blender scene require?). In this example, I've chosen 8GB of RAM.
+
+Click on **Advanced container options** and turn on *Allocate a buffer for STDIN* and *Allocate a pseudo-TTY* just in case you want to run an interactive shell in your container.
+
+.. _cloud-optional-parameters:
+
+Optional server parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default Docker image essentially runs the equivalent of:
+
+    .. code-block:: bash
+
+        replication.server -pwd admin -p 5555 -t 5000 -l DEBUG -lf multiuser_server.log
+
+This means the server will be launched with 'admin' as the administrator password, run on ports 5555:5558, use a timeout of 5 seconds, verbose 'DEBUG' log level, and with log files written to 'multiuser_server.log'. See :ref:`cmd-line` for a description of optional parameters.
+
+.. Note:: If you'd like to configure different server options from the default docker configuration, you can insert your options here by expanding 'Advanced container options' 
+
+For example, I would like to launch my server with a different administrator password than the default, my own log filename, and a shorter 3-second (3000ms) timeout. I'll click *Add argument* under **Command arguments** and paste the following command with options into the "command arguments" field:
+
+    .. code-block:: bash
+        
+        python3 -m replication.server -pwd supersecretpassword -p 5555 -t 3000 -l DEBUG -lf logname.log
+
+Now, my configuration should look like this:
+
+.. figure:: img/hosting_guide_gcloud_8c.jpg
+    :align: center
+    :width: 450px
+
+The rest of the settings are now complete. Hit **Create** and your instance will go live. If you've taken this approach, you're already almost there! Skip to :ref:`cloud-firewall`.
+
+.. hint:: You can find further information on configuration options `here <https://cloud.google.com/compute/docs/containers/configuring-options-to-run-containers>`_. Also, see these `notes <https://cloud.google.com/compute/docs/containers/deploying-containers?_ga=2.113663175.-1396941296.1606125558#viewing_container_logs>`_ for other options when deploying your server inside a container, including how to access the server's logs.
+
+.. _cloud-direct:
+
+Option 2 - Over SSH
+^^^^^^^^^^^^^^^^^^^
+
+Otherwise, we can run the dedicated server ourselves from the command-line over SSH.
+
+While creating your instance, keep the default settings mentioned in the `guide <https://cloud.google.com/compute/docs/quickstart-linux#create_a_virtual_machine_instance>`_, however at step 4, choose Debian version 10. Also, there is no need to enable HTTP so skip step 6.
+
+.. figure:: img/hosting_guide_gcloud_8.jpg
+    :align: center
+    :width: 450px
+
+    Your configuration should look like this
+
+Make sure to choose the amount of memory you'd like your server to be able to handle (how much memory does your blender scene require?). In this example, I've chosen 4GB of RAM.
+
+Now, finally, click 'Create' to generate your Virtual Machine Instance.
+
+.. _cloud-firewall:
+
+4. Setting up Firewall and opening Ports
+----------------------------------------
+
+Now that your VM is instanced, you'll need to set up firewall rules, and open the ports required by multi-user. The documentation for VM firewalls on google cloud is `here <https://cloud.google.com/vpc/docs/using-firewalls#listing-rules-vm>`_.
+
+First, go to the dashboard showing your `VM instances <https://console.cloud.google.com/compute/instances>`_ and note the 'External IP' address for later. This is the address of your server. Then, click 'Set up Firewall Rules'.
+
+.. figure:: img/hosting_guide_gcloud_11.jpg
+    :align: center
+    :width: 450px
+
+    Note down your External IP
+
+Now you will need to create two rules. One to enable communication inbound to your server (ingress), and another to enable outbound communication from your server (egress). Click 'Create Firewall'
+
+.. figure:: img/hosting_guide_gcloud_12.jpg
+    :align: center
+    :width: 450px
+
+Now create a rule exactly as in the image below for the outbound communication (egress).
+
+.. figure:: img/hosting_guide_gcloud_13.jpg
+    :align: center
+    :width: 450px
+    
+    Egress
+
+.. Note:: If you set a different port number in :ref:`cloud-optional-parameters`, then use the ports indicated in :ref:`port-setup`
+
+And another rule exactly as in the image below for the inbound communication (ingress).
+
+.. figure:: img/hosting_guide_gcloud_14.jpg
+    :align: center
+    :width: 450px
+
+    Ingress
+
+Finally, your firewall configuration should look like this.
+
+.. figure:: img/hosting_guide_gcloud_15.jpg
+    :align: center
+    :width: 450px
+
+    Final Firewall Configuration
+
+
+5. Install Replication Server into Virtual Machine
+--------------------------------------------------
+
+.. Note:: Skip to :ref:`initialise-server` if you've opted to launch the server by deploying a container. Your server is already live!
+
+Now that we have set up our Virtual Machine instance, we can SSH into it, and install the Replication Server. Open the `VM Instances console <https://console.cloud.google.com/compute/instances>`_ once more, and SSH into your instance. It's easiest to use the browser terminal provided by Google Cloud (I had the best luck using the Google Chrome browser).
+
+.. figure:: img/hosting_guide_gcloud_16.jpg
+    :align: center
+    :width: 450px
+
+Now, a terminal window should pop up in a new browser window looking something like this:
+
+.. figure:: img/hosting_guide_gcloud_17.jpg
+    :align: center
+    :width: 450px
+
+Remember, you had set up the VM with Debian 10. This comes with Python 3.7.3 already installed. The only dependency missing is to set up pip3. So, run:
+
+    .. code-block:: bash
+        
+        sudo apt install python3-pip
+
+.. figure:: img/hosting_guide_gcloud_18.jpg
+    :align: center
+    :width: 450px
+
+And now lets install the latest version of replication:
+
+    .. code-block:: bash
+        
+        sudo pip3 install replication==0.1.13
+
+6. Launch Replication Server on VM Instance
+-------------------------------------------
+
+We're finally ready to launch the server. Simply run:
+
+    .. code-block:: bash
+        
+        python3 -m replication.server -p 5555 -pwd admin -t 5000 -l INFO -lf server.log
+
+See :ref:`cmd-line` for a description of optional parameters
+
+And your replication server is live! It should stay running in the terminal window until you close it. Copy the external IP that you noted down earlier, available `here <https://console.cloud.google.com/networking/addresses/list>`_ and now you can open Blender and connect to your server!
+
+.. _initialise-server:
+
+7. Initialise your Server in Blender
+------------------------------------
+
+Once in Blender, make sure your multi-user addon is updated to the latest version. Then, follow the instructions from :ref:`how-to-join` and connect as an admin user, using the password you launched the server with. Input your external IP, and make sure you're set to JOIN the server. Then, click CONNECT.
+
+.. figure:: img/hosting_guide_gcloud_19.jpg
+    :align: center
+    :width: 200px
+
+Now as the admin user, you can choose whether to initialise the server with a preloaded scene, or an empty scene
+
+.. figure:: img/hosting_guide_gcloud_20.jpg
+    :align: center
+    :width: 200px
+
+Press okay, and now your session is live!
+
+If you made it this far, congratulations! You can now go ahead and share the external IP address with your friends and co-creators and have fun with real-time collaboration in Blender!
+
+Hopefully, your cloud server setup has improved your group's overall ping readings, and you're in for a smooth and trouble-free co-creation session.
+
+.. Note:: If you should so desire, pay attention to your credit and follow the steps `here <https://cloud.google.com/compute/docs/quickstart-linux#clean-up>`_ to close your instance at your discretion.
+
+.. _container_v_direct:
+
+Should I deploy a Docker Container or launch a server from Linux VM command-line?
+------------------------------------------------------
+
+- Directly from Linux VM - This approach gives you control over your session more easily. However, your server may time out once your SSH link to the server is interrupted (for example, if the admin's computer goes to sleep).
+- Deploy a Docker Container - This is the recommended approach. This approach is better for leaving a session running without supervision. It can however be more complicated to manage. Use this approach if you'd like a consistent experience with other users, pulling from the most up-to-date docker image maintained by @swann in the multi-user container registry.

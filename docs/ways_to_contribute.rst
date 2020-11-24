@@ -77,6 +77,7 @@ The following example suggests how to contribute a feature.
     .. code-block:: bash
 
         git checkout -b feature/yourfeaturename
+
     ...where 'feature/' designates a feature branch, and 'yourfeaturename' is a name of your choosing
 
 9. Add and commit your changes, including a commit message:
