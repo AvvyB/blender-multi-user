@@ -8,4 +8,5 @@ Getting started
 
    install
    quickstart
+   troubleshooting
    glossary
