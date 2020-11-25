@@ -41,7 +41,6 @@ STROKE_POINT = [
 STROKE = [
     "aspect",
     "display_mode",
-    "draw_cyclic",
     "end_cap_mode",
     "hardness",
     "line_width",
@@ -52,6 +51,10 @@ STROKE = [
     "uv_translation",
     "vertex_color_fill",
 ]
+if bpy.app.version[1] >= 91:
+    STROKE.append('use_cyclic')
+else:
+    STROKE.append('draw_cyclic')
 
 if bpy.app.version[1] >= 83:
     STROKE_POINT.append('vertex_color')
