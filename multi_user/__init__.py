@@ -58,7 +58,12 @@ def register():
         level=logging.INFO)
 
     try:
-        environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
+        if bpy.app.version[1] >= 91:
+            python_binary_path = sys.executable
+        else:
+            python_binary_path = bpy.app.binary_path_python
+
+        environment.setup(DEPENDENCIES, python_binary_path)
 
         from . import presence
         from . import operators
