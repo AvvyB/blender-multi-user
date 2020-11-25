@@ -232,9 +232,9 @@ Launching the dedicated server from a docker server is simple as running:
         -e log_level=DEBUG \
         -e password=admin \
         -e timeout=5000 \
-        registry.gitlab.com/slumber/multi-user/multi-user-server:0.2.0
+        registry.gitlab.com/slumber/multi-user/multi-user-server:latest
 
-Please use the URL of the most recent container available in the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_. As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
+Please use the :latest tag, or otherwise use the URL of the most recent container available in the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_. As soon as the dedicated server is running, you can connect to it from blender by following :ref:`how-to-join`.
 
 You can check that your container is running, and find its ID and name with:
 
@@ -450,7 +450,13 @@ Have your users open this webpage from their fastest browser, and press the play
 
 Now, gather your users' data, and work down each user's list from the top, until you find the first location which gives roughly the same ping for all users.
 
-In general, global (using load balancing) will provide the best results, but beyond that, the US Central servers e.g. IOWA generally turn out best for a globally distributed bunch of users.
+In general, global (using load balancing) will provide the best results, but beyond that, the US Central servers e.g. IOWA generally turn out best for a globally distributed bunch of users. When in doubt, choose between the servers offered under the `free tier <https://cloud.google.com/free/docs/gcp-free-tier>`_
+
+- Oregon: *us-west1*
+    
+- Iowa: *us-central1*
+    
+- South Carolina: *us-east1*
 
 For the following example, the server which gave the most balanced, and lowest average ping between two users based in Europe and Australia was in Iowa. Salt Lake City would also be an excellent choice.
 
@@ -474,7 +480,7 @@ You can deploy the replication server to your VM in either of the ways mentioned
 Option 1 - Deploy a container
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are familiar with Docker, you'll appreciate that it makes life a little simpler for us. While configuring your instance, you can check **Deploy a container to this VM instance** and copy in the URL of the latest docker image available from the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ to the *Container image* field.
+If you are familiar with Docker, you'll appreciate that it makes life a little simpler for us. While configuring your instance, you can check **Deploy a container to this VM instance** and copy in the URL of the latest docker image available from the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ to the *Container image* field, or use the tag :latest
 
 .. figure:: img/hosting_guide_gcloud_8b.jpg
     :align: center
