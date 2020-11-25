@@ -73,6 +73,8 @@ def load_node(node_data, node_tree):
                     logging.warning(f"Node {target_node.name} output {outputs[idx].name} parameter not supported, skipping ({e})")
             else:
                 logging.warning(f"Node {target_node.name} output length mismatch.")
+
+
 def load_links(links_data, node_tree):
     """ Load node_tree links from a list
 
@@ -153,7 +155,7 @@ def dump_node(node):
 
     dumped_node = node_dumper.dump(node)
 
-    dump_io_needed = (node.type != 'REROUTE')
+    dump_io_needed = (node.type not in ['REROUTE','OUTPUT_MATERIAL'])
 
     if dump_io_needed:
         io_dumper = Dumper()
