@@ -21,6 +21,10 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 See the [documentation](https://multi-user.readthedocs.io/en/latest/) for details.
 
+## Troubleshooting
+
+See the [troubleshooting guide](https://multi-user.readthedocs.io/en/latest/getting_started/troubleshooting.html) for tips on the most common issues.
+
 ## Current development status
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
