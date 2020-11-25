@@ -88,7 +88,7 @@ Now let's connect everyone.
 3. Network authorization
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since your ZeroTier network is Private, you will need to authorize each new users
+Since your ZeroTier network is Private, you will need to authorize each new user
 to connect to it.
 For each user you want to add, do the following step:
 
@@ -106,7 +106,7 @@ For each user you want to add, do the following step:
     :align: center
     :width: 450px
 
-    Add the client to network authorized users
+    Add the client to network-authorized users
 
 4. Network connection
 ^^^^^^^^^^^^^^^^^^^^^
@@ -260,25 +260,27 @@ Logs for the server running in a docker container can be accessed by outputting 
 First, you'll need to know your container ID, which you can find by running:
 
 .. code-block:: bash
+
     docker ps
 
-If you're cloud-hosting with e.g. Google Cloud, your container will be the one associated with the `registry address <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ where your Docker image was located.
-
-e.g. registry.gitlab.com/slumber/multi-user/multi-user-server:0.2.0
+If you're cloud-hosting with e.g. Google Cloud, your container will be the one associated with the `registry address <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ where your Docker image was located. e.g. registry.gitlab.com/slumber/multi-user/multi-user-server:0.2.0
 
 You can either ssh in to your server and then run 
 
 .. code-block:: bash
+
     cat your-log-name.log
 
 or view the docker container logs with 
 
 .. code-block:: bash
+
     docker logs your-container-name
 
 OR
 
 .. code-block:: bash
+
     docker logs your-container-id
 
 Note, see these `notes <https://cloud.google.com/compute/docs/containers/deploying-containers?_ga=2.113663175.-1396941296.1606125558#viewing_container_logs>`_ for how to check server logs on Google Cloud.
@@ -312,25 +314,27 @@ Dedicated server management
 
 Here is the list of available commands from the dedicated server:
 
-- ``help`` or ``?``: Show all commands.
+- ``help`` or ``?``: Show all commands. Or, use ``help <command>`` to learn about another command
 - ``exit`` or ``Ctrl+C`` : Stop the server.
 - ``kick username``: kick the provided user.
 - ``users``: list all online users.
 
 Also, see :ref:`how-to-manage` for more details on managing a server.
 
-.. _cloud_dockermanage:
+.. _cloud-dockermanage:
 
 Managing a docker server from the command line
 ----------------------------------------------
 If you want to be able to manage a server running within a docker container, open the terminal on the host machine (or SSH in, if you are using cloud hosting), and then run 
 
 .. code-block:: bash
+
     docker ps
     
 to find your container id, and then
 
 .. code-block:: bash
+
     docker attach your-container-id
     
 to attach to the STDOUT from the container. There, you can issue the server management commands detailed in :ref:`dedicated-management`. Type ``?`` and hit return/enter to see the available commands. Also, see :ref:`how-to-manage` for more details on managing a server.
@@ -374,7 +378,7 @@ Cloud Hosting Walkthrough
 
 The following is a walkthrough for how to set up a multi-user dedicated server instance on a cloud hosting provider - in this case, `Google Cloud <https://www.cloud.google.com>`_. Google Cloud is a powerful hosting service with a worldwide network of servers. It offers a free trial which provides free cloud hosting for 90 days, and then a free tier which runs indefinitely thereafter, so long as you stay within the `usage limits <https://cloud.google.com/free/docs/gcp-free-tier#free-tier-usage-limits>`_. ^^Thanks to community member @NotFood for the tip!
 
-Cloud hosting is a little more complicated to set up, but it can be valuable if you are trying to host a session with multiple users scattered about planet earth. This can resolve issues with data replication or slowdowns due to poor latency of some users (high ping). This guide may seem technical, but if you follow the steps, you should be able to succeed in hosting an internet server to co-create with other multi-user creators around the world.
+Cloud hosting is a little more complicated to set up, but it can be valuable if you are trying to host a session with multiple friends scattered about planet earth. This can resolve issues with data replication or slowdowns due to poor latency of some users (high ping). This guide may seem technical, but if you follow the steps, you should be able to succeed in hosting an internet server to co-create with other multi-user creators around the world.
 
 Setup Process
 -------------
@@ -423,7 +427,7 @@ Now enable the Compute Engine API. Click `here <https://console.cloud.google.com
 
 .. figure:: img/hosting_guide_gcloud_7.jpg
     :align: center
-    :width: 450px
+    :width: 300px
 
 3. Create a Linux Virtual Machine Instance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -434,11 +438,11 @@ Continue following the `instructions <https://cloud.google.com/compute/docs/quic
 3.1 Choose a Server Location
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The most important settings which you will need to choose for your specific case are the server Region and Zone. You must choose a location which will provide the best ping for all of your users.
+The most important settings which you will need to choose for your specific case are the server Region and Zone. You must choose a location which will provide the best ping for all of your fellow creators.
 
-All you need to know is that you'll probably want to choose a location near to where most of your users are located. If your users are spread out, somewhere in the middle which distributes the ping evenly to all users is best.
+All you need to know is that you'll probably want to choose a location near to where most of your collaborators are located. If your friends are spread out, somewhere in the middle which distributes the ping evenly to all users is best.
 
-You can use `this map <https://cloud.google.com/about/locations/>`_ to make a rough guess of the best server location, if you know your users' locations.
+You can use `this map <https://cloud.google.com/about/locations/>`_ to make a rough guess of the best server location, if you know your friends' locations.
 
 .. figure:: img/hosting_guide_gcloud_9.jpg
     :align: center
@@ -446,11 +450,11 @@ You can use `this map <https://cloud.google.com/about/locations/>`_ to make a ro
 
 A much better approach is to have your users run a ping test for Google Cloud's servers at https://www.gcping.com/
 
-Have your users open this webpage from their fastest browser, and press the play button. The play button turns to a stop icon while the ping test is running. When it is complete, the play button returns. You may need to refresh your browser to get this to work. You can replay the test to add more server locations to the scan, and stop when you are satisfied that the results are consistent.
+Have your collaborators open this webpage from their fastest browser, and press the play button. The play button turns to a stop icon while the ping test is running. When it is complete, the play button returns. You may need to refresh your browser to get this to work. You can replay the test to add more server locations to the scan, and stop when you are satisfied that the results are consistent.
 
-Now, gather your users' data, and work down each user's list from the top, until you find the first location which gives roughly the same ping for all users.
+Now, gather your friends' data, and work down each user's list from the top, until you find the first location which gives roughly the same ping for all users.
 
-In general, global (using load balancing) will provide the best results, but beyond that, the US Central servers e.g. IOWA generally turn out best for a globally distributed bunch of users. When in doubt, choose between the servers offered under the `free tier <https://cloud.google.com/free/docs/gcp-free-tier>`_
+In general, global (using load balancing) will provide the best results, but beyond that, the US Central servers e.g. IOWA generally turn out best for a globally distributed bunch of creators. When in doubt, choose between the servers offered under the `free tier <https://cloud.google.com/free/docs/gcp-free-tier>`_
 
 - Oregon: *us-west1*
     
@@ -458,7 +462,7 @@ In general, global (using load balancing) will provide the best results, but bey
     
 - South Carolina: *us-east1*
 
-For the following example, the server which gave the most balanced, and lowest average ping between two users based in Europe and Australia was in Iowa. Salt Lake City would also be an excellent choice.
+For the following example, the server which gave the most balanced, and lowest average ping between two friends based in Europe and Australia was in Iowa. Salt Lake City would also be an excellent choice.
 
 .. figure:: img/hosting_guide_gcloud_10.jpg
     :align: center
@@ -480,7 +484,7 @@ You can deploy the replication server to your VM in either of the ways mentioned
 Option 1 - Deploy a container
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are familiar with Docker, you'll appreciate that it makes life a little simpler for us. While configuring your instance, you can check **Deploy a container to this VM instance** and copy in the URL of the latest docker image available from the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ to the *Container image* field, or use the tag :latest
+If you are familiar with Docker, you'll appreciate that it makes life a little simpler for us. While configuring your instance, you can check **Deploy a container to this VM instance** and copy in the URL of the latest docker image available from the `multi-user container registry <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ to the *Container image* field, or use the tag ``:latest``
 
 .. figure:: img/hosting_guide_gcloud_8b.jpg
     :align: center
@@ -488,7 +492,7 @@ If you are familiar with Docker, you'll appreciate that it makes life a little s
     
     Your configuration with Docker should look like this
 
-Make sure to choose the amount of memory you'd like your server to be able to handle (how much memory does your blender scene require?). In this example, I've chosen 8GB of RAM.
+Make sure to choose the amount of memory you'd like your server to be able to handle (how much memory does your blender scene require?). In this example, I've chosen 4GB of RAM.
 
 Click on **Advanced container options** and turn on *Allocate a buffer for STDIN* and *Allocate a pseudo-TTY* just in case you want to run an interactive shell in your container.
 
@@ -532,7 +536,7 @@ Otherwise, we can run the dedicated server ourselves from the command-line over 
 
 While creating your instance, keep the default settings mentioned in the `guide <https://cloud.google.com/compute/docs/quickstart-linux#create_a_virtual_machine_instance>`_, however at step 4, choose Debian version 10. Also, there is no need to enable HTTP so skip step 6.
 
-.. figure:: img/hosting_guide_gcloud_8.jpg
+.. figure:: img/hosting_guide_gcloud_8a.jpg
     :align: center
     :width: 450px
 
@@ -595,7 +599,7 @@ Finally, your firewall configuration should look like this.
 
 .. Note:: Skip to :ref:`initialise-server` if you've opted to launch the server by deploying a container. Your server is already live!
 
-Now that we have set up our Virtual Machine instance, we can SSH into it, and install the Replication Server. Open the `VM Instances console <https://console.cloud.google.com/compute/instances>`_ once more, and SSH into your instance. It's easiest to use the browser terminal provided by Google Cloud (I had the best luck using the Google Chrome browser).
+Now that we have set up our Virtual Machine instance, we can SSH into it, and install the Replication Server. Open the `VM Instances console <https://console.cloud.google.com/compute/instances>`_ once more, and SSH into your instance. It's easiest to use the browser terminal provided by Google Cloud (I had the best luck using the Google Chrome browser), but you can also see `here <https://cloud.google.com/compute/docs/instances/connecting-advanced#thirdpartytools>`_ for how to set up your instance for SSH access from your terminal.
 
 .. figure:: img/hosting_guide_gcloud_16.jpg
     :align: center
@@ -641,7 +645,7 @@ And your replication server is live! It should stay running in the terminal wind
 7. Initialise your Server in Blender
 ------------------------------------
 
-Once in Blender, make sure your multi-user addon is updated to the latest version. Then, follow the instructions from :ref:`how-to-join` and connect as an admin user, using the password you launched the server with. Input your external IP, and make sure you're set to JOIN the server. Then, click CONNECT.
+Once in Blender, make sure your multi-user addon is updated to the latest version. :ref:`update-version`. Then, follow the instructions from :ref:`how-to-join` and connect as an admin user, using the password you launched the server with. Input your external IP, and make sure you're set to JOIN the server. Then, click CONNECT.
 
 .. figure:: img/hosting_guide_gcloud_19.jpg
     :align: center
@@ -667,4 +671,4 @@ Should I deploy a Docker Container or launch a server from Linux VM command-line
 ------------------------------------------------------
 
 - Directly from Linux VM - This approach gives you control over your session more easily. However, your server may time out once your SSH link to the server is interrupted (for example, if the admin's computer goes to sleep).
-- Deploy a Docker Container - This is the recommended approach. This approach is better for leaving a session running without supervision. It can however be more complicated to manage. Use this approach if you'd like a consistent experience with other users, pulling from the most up-to-date docker image maintained by @swann in the multi-user container registry.
+- Deploy a Docker Container - This is the recommended approach. This approach is better for leaving a session running without supervision. It can however be more complicated to manage. Use this approach if you'd like a consistent experience with others in the multi-user community, pulling from the most up-to-date docker image maintained by @swann in the multi-user container registry.

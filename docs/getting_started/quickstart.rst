@@ -42,10 +42,10 @@ The **User Info** panel (See image below) allows you to customise your online id
    User info panel
 
 
-Let's fill those two fields:
+Let's fill in those two fields:
 
 - **name**: your online name.
-- **color**: a color used to represent you in other user's workspaces(see image below).
+- **color**: a color used to represent you in other users' workspaces (see image below).
 
 
 During online sessions, other users will see your selected object and camera highlighted in your profile color.
