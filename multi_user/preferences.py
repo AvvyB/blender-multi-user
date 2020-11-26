@@ -212,7 +212,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     depsgraph_update_rate: bpy.props.IntProperty(
         name='depsgraph update rate',
         description='Dependency graph uppdate rate (milliseconds)',
-        default=100
+        default=1000
     )
     clear_memory_filecache: bpy.props.BoolProperty(
         name="Clear memory filecache",
