@@ -53,8 +53,8 @@ def session_callback(name):
     """
     def func_wrapper(func):
         @session.register(name)
-        def add_background_task():
-            background_execution_queue.put(func)
+        def add_background_task(**kwargs):
+            background_execution_queue.put((func, kwargs))
         return add_background_task
     return func_wrapper
 
@@ -89,7 +89,7 @@ def initialize_session():
 
 
 @session_callback('on_exit')
-def on_connection_end():
+def on_connection_end(reason="none"):
     """Session connection finished handler 
     """
     global delayables, stop_modal_executor
@@ -113,8 +113,8 @@ def on_connection_end():
     for handler in logger.handlers:
         if isinstance(handler, logging.FileHandler):
             logger.removeHandler(handler)
-
-    bpy.ops.session.notify('INVOKE_DEFAULT', message="Disconnected from server")
+    if reason != "user":
+        bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ")
 
 
 # OPERATORS
@@ -704,7 +704,7 @@ class SessionNotifyOperator(bpy.types.Operator):
 
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_popup(self, width=200)
+        return context.window_manager.invoke_popup(self, width=300)
 
 
 classes = (
