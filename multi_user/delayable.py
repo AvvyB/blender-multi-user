@@ -358,6 +358,6 @@ class MainThreadExecutor(Timer):
 
     def execute(self):
         while not self.execution_queue.empty():
-            function = self.execution_queue.get()
+            function, kwargs = self.execution_queue.get()
             logging.debug(f"Executing {function.__name__}")
-            function()
+            function(**kwargs)

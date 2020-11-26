@@ -53,8 +53,8 @@ def session_callback(name):
     """
     def func_wrapper(func):
         @session.register(name)
-        def add_background_task():
-            background_execution_queue.put(func)
+        def add_background_task(**kwargs):
+            background_execution_queue.put((func, kwargs))
         return add_background_task
     return func_wrapper
 
@@ -89,7 +89,7 @@ def initialize_session():
 
 
 @session_callback('on_exit')
-def on_connection_end():
+def on_connection_end(reason="none"):
     """Session connection finished handler 
     """
     global delayables, stop_modal_executor
@@ -113,6 +113,8 @@ def on_connection_end():
     for handler in logger.handlers:
         if isinstance(handler, logging.FileHandler):
             logger.removeHandler(handler)
+    if reason != "user":
+        bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ")
 
 
 # OPERATORS
@@ -651,7 +653,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
         stop_modal_executor = False
 
 
-class ClearCache(bpy.types.Operator):
+class SessionClearCache(bpy.types.Operator):
     "Clear local session cache"
     bl_idname = "session.clear_cache"
     bl_label = "Modal Executor Operator"
@@ -679,6 +681,31 @@ class ClearCache(bpy.types.Operator):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
 
+class SessionNotifyOperator(bpy.types.Operator):
+    """Dialog only operator"""
+    bl_idname = "session.notify"
+    bl_label = "Notification"
+
+    message: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        title = layout.row()
+        title = title.label(text="Multi-user", icon='INFO')
+        message = layout.row()
+        message.label(text=self.message)
+
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=300)
+
 
 classes = (
     SessionStartOperator,
@@ -692,7 +719,8 @@ classes = (
     ApplyArmatureOperator,
     SessionKickOperator,
     SessionInitOperator,
-    ClearCache,
+    SessionClearCache,
+    SessionNotifyOperator,
 )
 
 
