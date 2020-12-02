@@ -43,6 +43,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | node_groups |   ❗    |                                Material only                                 |
 | metaball    |   ✔️    |                                                                              |
 | object      |   ✔️    |                                                                              |
+| textures    |   ❗    |                         Supported for modifiers only                         |
 | texts       |   ✔️    |                                                                              |
 | scene       |   ✔️    |                                                                              |
 | world       |   ✔️    |                                                                              |
