@@ -51,7 +51,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | compositing |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/46)         |
 | texts       |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/81)         |
 | nla         |   ❌    |                                                                              |
-| volumes     |   ❌    |                                                                              |
+| volumes     |   ✔️    |                                                                              |
 | particles   |   ❌    |        [On-going](https://gitlab.com/slumber/multi-user/-/issues/24)         |
 | speakers    |   ❗    |         [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)         |
 | vse         |   ❗    |                       Mask and Clip not supported yet                        |
