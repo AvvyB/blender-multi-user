@@ -44,7 +44,15 @@ class BlTexture(BlDatablock):
 
         dumper = Dumper()
         dumper.depth = 1
-        dumper.exclude_filter = []
+        dumper.exclude_filter = [
+            'tag',
+            'original',
+            'user',
+            'uuid',
+            'is_embedded_data',
+            'is_evaluated',
+            'name_full'
+        ]
 
         data = dumper.dump(instance)
         color_ramp = getattr(instance, 'color_ramp', None)
