@@ -63,6 +63,9 @@ def find_data_from_name(name=None):
         else:
             logging.warning(
                 "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+    elif bpy.app.version[1] >= 91 and name in bpy.data.volumes.keys():
+        # Only supported since 2.91 
+        instance = bpy.data.volumes[name]
     return instance
 
 

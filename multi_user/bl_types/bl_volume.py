@@ -18,26 +18,28 @@
 
 import bpy
 import mathutils
+from pathlib import Path
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
 
 
-class BlTexture(BlDatablock):
-    bl_id = "textures"
-    bl_class = bpy.types.Texture
+class BlVolume(BlDatablock):
+    bl_id = "volumes"
+    bl_class = bpy.types.Volume
     bl_delay_refresh = 1
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = False
-    bl_icon = 'TEXTURE'
+    bl_icon = 'VOLUME_DATA'
 
     def _load_implementation(self, data, target):
         loader = Loader()
         loader.load(target, data)
+        loader.load(target.display, data['display'])
 
     def _construct(self, data):
-        return bpy.data.textures.new(data["name"], data["type"])
+        return bpy.data.volumes.new(data["name"])
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -51,15 +53,13 @@ class BlTexture(BlDatablock):
             'uuid',
             'is_embedded_data',
             'is_evaluated',
-            'name_full'
+            'name_full',
+            'use_fake_user'
         ]
 
         data = dumper.dump(instance)
-        color_ramp = getattr(instance, 'color_ramp', None)
 
-        if color_ramp:
-            dumper.depth = 4
-            data['color_ramp'] = dumper.dump(color_ramp)
+        data['display'] = dumper.dump(instance.display)
 
         return data
 
@@ -67,10 +67,9 @@ class BlTexture(BlDatablock):
         # TODO: resolve material
         deps = []
 
-        image = getattr(self.instance,"image", None)
-
-        if image:
-            deps.append(image)
+        external_vdb = Path(bpy.path.abspath(self.instance.filepath))
+        if external_vdb.exists() and not external_vdb.is_dir():
+            deps.append(external_vdb)
 
         return deps
 
