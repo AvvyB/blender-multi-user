@@ -23,6 +23,7 @@ import queue
 import random
 import shutil
 import string
+import sys
 import time
 from operator import itemgetter
 from pathlib import Path
@@ -38,7 +39,7 @@ from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
 from . import bl_types, delayable, environment, ui, utils
-from .presence import (SessionStatusWidget, renderer, view3d_find)
+from .presence import SessionStatusWidget, renderer, view3d_find
 
 background_execution_queue = Queue()
 delayables = []
@@ -195,9 +196,14 @@ class SessionStartOperator(bpy.types.Operator):
                             timout=type_local_config.bl_delay_apply,
                             target_type=type_module_class))
 
+        if bpy.app.version[1] >= 91:
+            python_binary_path = sys.executable
+        else:
+            python_binary_path = bpy.app.binary_path_python
+
         session.configure(
             factory=bpy_factory,
-            python_path=bpy.app.binary_path_python,
+            python_path=python_binary_path,
             external_update_handling=use_extern_update)
 
         if settings.update_method == 'DEPSGRAPH':
