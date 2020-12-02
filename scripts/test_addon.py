@@ -13,7 +13,7 @@ def main():
     if len(sys.argv) > 2:
         blender_rev = sys.argv[2]
     else:
-        blender_rev = "2.90.0"
+        blender_rev = "2.91.0"
     
     try:
         exit_val = BAT.test_blender_addon(addon_path=addon, blender_revision=blender_rev)

@@ -35,7 +35,7 @@ def load_pose(target_bone, data):
 def find_data_from_name(name=None):
     instance = None
     if not name:
-            pass
+        pass
     elif name in bpy.data.meshes.keys():
         instance = bpy.data.meshes[name]
     elif name in bpy.data.lights.keys():
@@ -78,6 +78,19 @@ def _is_editmode(object: bpy.types.Object) -> bool:
             child_data.is_editmode)
 
 
+def find_textures_dependencies(collection):
+    """ Check collection
+    """
+    textures = []
+    for item in collection:
+        for attr in dir(item):
+            inst = getattr(item, attr)
+            if issubclass(type(inst), bpy.types.Texture) and inst is not None:
+                textures.append(inst)
+
+    return textures
+
+
 class BlObject(BlDatablock):
     bl_id = "objects"
     bl_class = bpy.types.Object
@@ -105,9 +118,9 @@ class BlObject(BlDatablock):
         data_id = data.get("data")
 
         object_data = get_datablock_from_uuid(
-            data_uuid, 
+            data_uuid,
             find_data_from_name(data_id),
-            ignore=['images']) #TODO: use resolve_from_id
+            ignore=['images'])  # TODO: use resolve_from_id
         instance = bpy.data.objects.new(object_name, object_data)
         instance.uuid = self.uuid
 
@@ -120,14 +133,15 @@ class BlObject(BlDatablock):
         data_id = data.get("data")
 
         if target.data and (target.data.name != data_id):
-            target.data = get_datablock_from_uuid(data_uuid, find_data_from_name(data_id), ignore=['images'])
+            target.data = get_datablock_from_uuid(
+                data_uuid, find_data_from_name(data_id), ignore=['images'])
 
         # vertex groups
         if 'vertex_groups' in data:
             target.vertex_groups.clear()
             for vg in data['vertex_groups']:
-                vertex_group=target.vertex_groups.new(name = vg['name'])
-                point_attr='vertices' if 'vertices' in vg else 'points'
+                vertex_group = target.vertex_groups.new(name=vg['name'])
+                point_attr = 'vertices' if 'vertices' in vg else 'points'
                 for vert in vg[point_attr]:
                     vertex_group.add(
                         [vert['index']], vert['weight'], 'REPLACE')
@@ -136,12 +150,12 @@ class BlObject(BlDatablock):
         if 'shape_keys' in data:
             target.shape_key_clear()
 
-            object_data=target.data
+            object_data = target.data
 
             # Create keys and load vertices coords
             for key_block in data['shape_keys']['key_blocks']:
-                key_data=data['shape_keys']['key_blocks'][key_block]
-                target.shape_key_add(name = key_block)
+                key_data = data['shape_keys']['key_blocks'][key_block]
+                target.shape_key_add(name=key_block)
 
                 loader.load(
                     target.data.shape_keys.key_blocks[key_block], key_data)
@@ -383,5 +397,8 @@ class BlObject(BlDatablock):
         if self.instance.instance_type == 'COLLECTION':
             # TODO: uuid based
             deps.append(self.instance.instance_collection)
+
+        if self.instance.modifiers:
+            deps.extend(find_textures_dependencies(self.instance.modifiers))
 
         return deps
