@@ -31,8 +31,21 @@ In order grant the server access to people from internet you have two main optio
 Using a connection sharing solution
 -----------------------------------
 
+You can either follow `Pierre Schiller's <https://www.youtube.com/c/activemotionpictures/featured>`_ excellent video tutorial or jump to the `text tutorial <zt-installation_>`_.
+
+.. raw:: html
+
+    <p>
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/xV4R5AukkVw" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </p>
+
+
+
+
 Many third party software like `ZEROTIER <https://www.zerotier.com/download/>`_ (Free) or `HAMACHI <https://vpn.net/>`_ (Free until 5 users) allow you to share your private network with other people.
 For the example I'm gonna use ZeroTier because it's free and open source.
+
+.. _zt-installation:
 
 1. Installation
 ^^^^^^^^^^^^^^^
