@@ -690,7 +690,8 @@ class SessionClearCache(bpy.types.Operator):
 class SessionNotifyOperator(bpy.types.Operator):
     """Dialog only operator"""
     bl_idname = "session.notify"
-    bl_label = "Notification"
+    bl_label = "Multi-user"
+    bl_description = "multiuser notification"
 
     message: bpy.props.StringProperty()
 
@@ -703,14 +704,11 @@ class SessionNotifyOperator(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        title = layout.row()
-        title = title.label(text="Multi-user", icon='INFO')
-        message = layout.row()
         message.label(text=self.message)
 
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_popup(self, width=300)
+        return context.window_manager.invoke_props_dialog(self)
 
 
 classes = (
