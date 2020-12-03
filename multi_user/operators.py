@@ -704,7 +704,7 @@ class SessionNotifyOperator(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        message.label(text=self.message)
+        layout.row().label(text=self.message)
 
 
     def invoke(self, context, event):
