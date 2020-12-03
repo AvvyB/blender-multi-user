@@ -271,12 +271,34 @@ class BlObject(BlDatablock):
             return data
 
         # MODIFIERS
-        if hasattr(instance, 'modifiers'):
+        modifiers = getattr(instance,'modifiers', None )
+        if modifiers:
             dumper.include_filter = None
             dumper.depth = 1
             data["modifiers"] = {}
-            for index, modifier in enumerate(instance.modifiers):
+            for index, modifier in enumerate(modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
+
+        gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
+
+        if gp_modifiers:
+            dumper.include_filter = None
+            dumper.depth = 1
+            gp_modifiers_data = data["grease_pencil_modifiers"] = {}
+
+            for index, modifier in enumerate(gp_modifiers):
+                gp_mod_data = gp_modifiers_data[modifier.name] = dict()
+                gp_mod_data.update(dumper.dump(modifier))
+
+                if hasattr(modifier, 'use_custom_curve') \
+                        and modifier.use_custom_curve:
+                    curve_dumper = Dumper()
+                    curve_dumper.depth = 5
+                    curve_dumper.include_filter = [
+                        'curves',
+                        'points',
+                        'location']
+                    gp_mod_data['curve'] = curve_dumper.dump(modifier.curve)
 
         # CONSTRAINTS
         if hasattr(instance, 'constraints'):

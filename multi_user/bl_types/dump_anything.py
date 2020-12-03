@@ -506,12 +506,14 @@ class Loader:
             T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
             T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
             T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"]),
+            T.GpencilModifier: (CONSTRUCTOR_NEW, ["name", "type"]),
             T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
         }
 
         destructors = {
             T.ColorRampElement: DESTRUCTOR_REMOVE,
             T.Modifier: DESTRUCTOR_CLEAR,
+            T.GpencilModifier: DESTRUCTOR_CLEAR,
             T.Constraint: CONSTRUCTOR_NEW,
         }
         element_type = element.bl_rna_property.fixed_type
@@ -574,6 +576,7 @@ class Loader:
                     dst_curve.points[int(point_idx)].location = pos
                 else:
                     dst_curve.points.new(pos[0], pos[1])
+        curves.update()
 
     def _load_pointer(self, instance, dump):
         rna_property_type = instance.bl_rna_property.fixed_type
