@@ -89,6 +89,7 @@ class BlCollection(BlDatablock):
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = True
+    bl_reload_parent = False
     
     def _construct(self, data):
         if self.is_library:

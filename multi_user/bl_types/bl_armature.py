@@ -33,6 +33,7 @@ class BlArmature(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'ARMATURE_DATA'
+    bl_reload_parent = False
     
     def _construct(self, data):
         return bpy.data.armatures.new(data["name"])

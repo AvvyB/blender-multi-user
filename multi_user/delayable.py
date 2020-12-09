@@ -41,10 +41,12 @@ from replication.constants import (FETCHED,
 from replication.interface import session
 from replication.exception import NonAuthorizedOperationError
 
-def is_annotating(context:bpy.types.Context):
+
+def is_annotating(context: bpy.types.Context):
     """ Check if the annotate mode is enabled
     """
-    return  bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
+    return bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
+
 
 class Delayable():
     """Delayable task interface
@@ -126,7 +128,14 @@ class ApplyTimer(Timer):
                         session.apply(node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
+                    else:
+                        if self._type.bl_reload_parent:
+                            parents = []
 
+                            for n in session.list():
+                                deps = session.get(uuid=n).dependencies
+                                if deps and node in deps:
+                                    session.apply(n, force=True)
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=.1):
@@ -146,27 +155,28 @@ class DynamicRightSelectTimer(Timer):
 
             if self._user:
                 ctx = bpy.context
-                annotation_gp =  ctx.scene.grease_pencil 
+                annotation_gp = ctx.scene.grease_pencil
 
                 # if an annotation exist and is tracked
                 if annotation_gp and annotation_gp.uuid:
                     registered_gp = session.get(uuid=annotation_gp.uuid)
-                    if is_annotating(bpy.context):                    
+                    if is_annotating(bpy.context):
                         # try to get the right on it
                         if registered_gp.owner == RP_COMMON:
                             self._annotating = True
-                            logging.debug("Getting the right on the annotation GP")
+                            logging.debug(
+                                "Getting the right on the annotation GP")
                             session.change_owner(
-                                    registered_gp.uuid,
-                                    settings.username,
-                                    ignore_warnings=True,
-                                    affect_dependencies=False)
-                    elif self._annotating: 
+                                registered_gp.uuid,
+                                settings.username,
+                                ignore_warnings=True,
+                                affect_dependencies=False)
+                    elif self._annotating:
                         session.change_owner(
-                                    registered_gp.uuid,
-                                    RP_COMMON,
-                                    ignore_warnings=True,
-                                    affect_dependencies=False)
+                            registered_gp.uuid,
+                            RP_COMMON,
+                            ignore_warnings=True,
+                            affect_dependencies=False)
 
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
@@ -193,7 +203,8 @@ class DynamicRightSelectTimer(Timer):
                                     ignore_warnings=True,
                                     affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
-                                logging.warning(f"Not authorized to change {node} owner")
+                                logging.warning(
+                                    f"Not authorized to change {node} owner")
 
                     # change new selection to our
                     for obj in obj_ours:
@@ -211,7 +222,8 @@ class DynamicRightSelectTimer(Timer):
                                     ignore_warnings=True,
                                     affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
-                                logging.warning(f"Not authorized to change {node} owner")
+                                logging.warning(
+                                    f"Not authorized to change {node} owner")
                         else:
                             return
 
@@ -237,7 +249,8 @@ class DynamicRightSelectTimer(Timer):
                                     ignore_warnings=True,
                                     affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
-                                logging.warning(f"Not authorized to change {key} owner")
+                                logging.warning(
+                                    f"Not authorized to change {key} owner")
 
             for obj in bpy.data.objects:
                 object_uuid = getattr(obj, 'uuid', None)
@@ -245,6 +258,7 @@ class DynamicRightSelectTimer(Timer):
                     is_selectable = not session.is_readonly(object_uuid)
                     if obj.hide_select != is_selectable:
                         obj.hide_select = is_selectable
+
 
 class ClientUpdate(Timer):
     def __init__(self, timout=.1):
