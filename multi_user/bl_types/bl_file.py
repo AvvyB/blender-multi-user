@@ -54,11 +54,12 @@ class BlFile(ReplicatedDatablock):
     bl_id = 'file'
     bl_name = "file"
     bl_class = Path
-    bl_delay_refresh = 0
+    bl_delay_refresh = 2
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'FILE'
+    bl_reload_parent = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -118,11 +119,7 @@ class BlFile(ReplicatedDatablock):
         """
         Writing the file
         """
-        # TODO: check for empty data
 
-        if target.exists() and not self.diff():
-            logging.info(f"{data['name']} already on the disk, skipping.")
-            return
         try:
             file = open(target, "wb")
             file.write(data['file'])
@@ -140,4 +137,4 @@ class BlFile(ReplicatedDatablock):
         else:
             memory_size = sys.getsizeof(self.data['file'])-33
             disk_size = self.instance.stat().st_size
-            return memory_size == disk_size
+            return memory_size != disk_size

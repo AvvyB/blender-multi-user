@@ -32,6 +32,7 @@ class BlVolume(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'VOLUME_DATA'
+    bl_reload_parent = False
 
     def _load_implementation(self, data, target):
         loader = Loader()

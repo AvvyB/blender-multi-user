@@ -111,7 +111,9 @@ class BlDatablock(ReplicatedDatablock):
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
         bl_check_common:    enable check even in common rights
+        bl_reload_parent:   reload parent
     """
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

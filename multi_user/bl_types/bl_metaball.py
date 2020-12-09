@@ -70,6 +70,7 @@ class BlMetaball(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'META_BALL'
+    bl_reload_parent = False
 
     def _construct(self, data):
         return bpy.data.metaballs.new(data["name"])

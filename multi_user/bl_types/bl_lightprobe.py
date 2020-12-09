@@ -32,6 +32,7 @@ class BlLightprobe(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'LIGHTPROBE_GRID'
+    bl_reload_parent = False
 
     def _construct(self, data):
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']

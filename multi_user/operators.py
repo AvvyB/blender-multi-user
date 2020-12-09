@@ -42,7 +42,7 @@ from . import bl_types, delayable, environment, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
 
 background_execution_queue = Queue()
-delayables = []
+deleyables = []
 stop_modal_executor = False
 
 
@@ -80,7 +80,7 @@ def initialize_session():
             node_ref.apply()
 
     # Step 4: Register blender timers
-    for d in delayables:
+    for d in deleyables:
         d.register()
 
     if settings.update_method == 'DEPSGRAPH':
@@ -93,15 +93,16 @@ def initialize_session():
 def on_connection_end(reason="none"):
     """Session connection finished handler 
     """
-    global delayables, stop_modal_executor
+    global deleyables, stop_modal_executor
     settings = utils.get_preferences()
 
     # Step 1: Unregister blender timers
-    for d in delayables:
+    for d in deleyables:
         try:
             d.unregister()
         except:
             continue
+    deleyables.clear()
 
     stop_modal_executor = True
 
@@ -131,7 +132,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global delayables
+        global deleyables
 
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
@@ -139,7 +140,7 @@ class SessionStartOperator(bpy.types.Operator):
         admin_pass = runtime_settings.password
         use_extern_update = settings.update_method == 'DEPSGRAPH'
         users.clear()
-        delayables.clear()
+        deleyables.clear()
 
         logger = logging.getLogger()
         if len(logger.handlers) == 1:
@@ -191,7 +192,7 @@ class SessionStartOperator(bpy.types.Operator):
 
             if settings.update_method == 'DEFAULT':
                 if type_local_config.bl_delay_apply > 0:
-                    delayables.append(
+                    deleyables.append(
                         delayable.ApplyTimer(
                             timout=type_local_config.bl_delay_apply,
                             target_type=type_module_class))
@@ -207,7 +208,7 @@ class SessionStartOperator(bpy.types.Operator):
             external_update_handling=use_extern_update)
 
         if settings.update_method == 'DEPSGRAPH':
-            delayables.append(delayable.ApplyTimer(
+            deleyables.append(delayable.ApplyTimer(
                 settings.depsgraph_update_rate/1000))
 
         # Host a session
@@ -258,8 +259,8 @@ class SessionStartOperator(bpy.types.Operator):
                 logging.error(str(e))
 
         # Background client updates service
-        delayables.append(delayable.ClientUpdate())
-        delayables.append(delayable.DynamicRightSelectTimer())
+        deleyables.append(delayable.ClientUpdate())
+        deleyables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
         session_user_sync = delayable.SessionUserSync()
@@ -270,9 +271,9 @@ class SessionStartOperator(bpy.types.Operator):
         session_user_sync.register()
         session_background_executor.register()
 
-        delayables.append(session_background_executor)
-        delayables.append(session_update)
-        delayables.append(session_user_sync)
+        deleyables.append(session_background_executor)
+        deleyables.append(session_update)
+        deleyables.append(session_user_sync)
 
         
 
@@ -332,7 +333,7 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global delayables, stop_modal_executor
+        global deleyables, stop_modal_executor
 
         if session:
             try:
@@ -359,7 +360,7 @@ class SessionKickOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global delayables, stop_modal_executor
+        global deleyables, stop_modal_executor
         assert(session)
 
         try:

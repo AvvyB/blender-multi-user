@@ -34,6 +34,7 @@ class BlWorld(BlDatablock):
     bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'WORLD_DATA'
+    bl_reload_parent = False
 
     def _construct(self, data):
         return bpy.data.worlds.new(data["name"])

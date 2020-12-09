@@ -51,11 +51,12 @@ format_to_ext = {
 class BlImage(BlDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
-    bl_delay_refresh = 1
+    bl_delay_refresh = 2
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'IMAGE_DATA'
+    bl_reload_parent = False
 
     def _construct(self, data):
         return bpy.data.images.new(
@@ -71,7 +72,6 @@ class BlImage(BlDatablock):
         target.source = 'FILE'
         target.filepath_raw = get_filepath(data['filename'])
         target.colorspace_settings.name = data["colorspace_settings"]["name"]
-       
 
     def _dump(self, instance=None):
         assert(instance)
@@ -96,6 +96,9 @@ class BlImage(BlDatablock):
         return data
 
     def diff(self):
+        if self.instance.is_dirty:
+            self.instance.save()
+
         if self.instance and (self.instance.name != self.data['name']):
             return True
         else:
@@ -103,21 +106,21 @@ class BlImage(BlDatablock):
 
     def _resolve_deps_implementation(self):
         deps = []
+
+        if self.instance.packed_file:
+            filename = Path(bpy.path.abspath(self.instance.filepath)).name
+            self.instance.filepath_raw = get_filepath(filename)
+            self.instance.save()
+            # An image can't be unpacked to the modified path
+            # TODO: make a bug report
+            self.instance.unpack(method="REMOVE")
+
+        elif self.instance.source == "GENERATED":
+            filename = f"{self.instance.name}.png"
+            self.instance.filepath = get_filepath(filename)
+            self.instance.save()
+
         if self.instance.filepath:
-
-            if self.instance.packed_file:
-                filename = Path(bpy.path.abspath(self.instance.filepath)).name
-                self.instance.filepath_raw = get_filepath(filename)
-                self.instance.save()
-                # An image can't be unpacked to the modified path
-                # TODO: make a bug report
-                self.instance.unpack(method="REMOVE")
-
-            elif self.instance.source == "GENERATED":
-                filename = f"{self.instance.name}.png"
-                self.instance.filepath = get_filepath(filename)
-                self.instance.save()
-
             deps.append(Path(bpy.path.abspath(self.instance.filepath)))
 
         return deps

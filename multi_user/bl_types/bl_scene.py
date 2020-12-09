@@ -278,6 +278,7 @@ class BlScene(BlDatablock):
     bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'SCENE_DATA'
+    bl_reload_parent = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

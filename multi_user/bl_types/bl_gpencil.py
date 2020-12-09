@@ -235,6 +235,7 @@ class BlGpencil(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'GREASEPENCIL'
+    bl_reload_parent = False
 
     def _construct(self, data):
         return bpy.data.grease_pencils.new(data["name"])

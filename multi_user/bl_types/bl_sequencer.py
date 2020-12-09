@@ -130,6 +130,7 @@ class BlSequencer(BlDatablock):
     bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'SEQUENCE'
+    bl_reload_parent = False
 
     def _construct(self, data):
         # Get the scene
