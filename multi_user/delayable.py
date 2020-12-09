@@ -28,6 +28,7 @@ from .presence import (renderer,
                        generate_user_camera,
                        get_view_matrix,
                        refresh_sidebar_view)
+from . import  operators
 from replication.constants import (FETCHED,
                                    UP,
                                    RP_COMMON,
@@ -47,13 +48,9 @@ def is_annotating(context: bpy.types.Context):
     """
     return bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
 
-
 class Delayable():
     """Delayable task interface
     """
-
-    def __init__(self):
-        self.is_registered = False
 
     def register(self):
         raise NotImplementedError
@@ -74,25 +71,30 @@ class Timer(Delayable):
     def __init__(self, duration=1):
         super().__init__()
         self._timeout = duration
-        self._running = True
+        self.is_running = False
 
     def register(self):
         """Register the timer into the blender timer system
         """
 
-        if not self.is_registered:
+        if not self.is_running:
             bpy.app.timers.register(self.main)
-            self.is_registered = True
+            self.is_running = True
             logging.debug(f"Register {self.__class__.__name__}")
         else:
             logging.debug(
                 f"Timer {self.__class__.__name__} already registered")
 
     def main(self):
-        self.execute()
-
-        if self._running:
-            return self._timeout
+        try:
+            self.execute()
+        except Exception as e:
+            logging.error(e)
+            self.unregister()
+            session.disconnect()
+        else:    
+            if self.is_running:
+                return self._timeout
 
     def execute(self):
         """Main timer loop
@@ -105,7 +107,7 @@ class Timer(Delayable):
         if bpy.app.timers.is_registered(self.main):
             bpy.app.timers.unregister(self.main)
 
-        self._running = False
+        self.is_running = False
 
 
 class ApplyTimer(Timer):
@@ -142,7 +144,6 @@ class DynamicRightSelectTimer(Timer):
         super().__init__(timout)
         self._last_selection = []
         self._user = None
-        self._right_strategy = RP_COMMON
         self._annotating = False
 
     def execute(self):
@@ -237,7 +238,7 @@ class DynamicRightSelectTimer(Timer):
                     logging.debug("Update selection")
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
-                    if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
+                    if len(current_selection) == 0 :
                         owned_keys = session.list(
                             filter_owner=settings.username)
                         for key in owned_keys:
