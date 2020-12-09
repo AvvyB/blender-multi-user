@@ -51,7 +51,7 @@ format_to_ext = {
 class BlImage(BlDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
-    bl_delay_refresh = 1
+    bl_delay_refresh = 2
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = False
@@ -96,6 +96,9 @@ class BlImage(BlDatablock):
         return data
 
     def diff(self):
+        if self.instance.is_dirty:
+            self.instance.save()
+
         if self.instance and (self.instance.name != self.data['name']):
             return True
         else:
