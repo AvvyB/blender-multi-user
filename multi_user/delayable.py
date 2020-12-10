@@ -109,6 +109,46 @@ class Timer(Delayable):
 
         self.is_running = False
 
+class SessionRecordGraphTimer(Timer):
+    def __init__(self, timout=60, filepath=None):
+        self._filepath = filepath
+        super().__init__(timout)
+
+
+    def execute(self):
+        import networkx as nx
+        import pickle
+        import copy
+        from time import gmtime, strftime
+        from pathlib import Path
+
+        # Replication graph 
+        nodes_ids = session.list()
+        #TODO: add dump graph to replication
+
+        nodes =[]
+        for n in nodes_ids:
+            nd = session.get(uuid=n)
+            nodes.append((
+                n,
+                {
+                    'owner': nd.owner,
+                    'str_type': nd.str_type,
+                    'data': nd.data,
+                    'dependencies': nd.dependencies,
+                }
+            ))
+
+        db = dict()
+        db['nodes'] = nodes
+        db['users'] = copy.copy(session.online_users)
+
+        time = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
+        filepath = Path(self._filepath)
+        filepath = filepath.with_name(f"{filepath.stem}_{time}{filepath.suffix}")
+        with open(filepath, "wb") as f:
+            logging.info(f"Writing db snapshot to {filepath}")
+            pickle.dump(db, f, protocol=4)
 
 class ApplyTimer(Timer):
     def __init__(self, timout=1, target_type=None):

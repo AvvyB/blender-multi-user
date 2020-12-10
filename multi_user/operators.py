@@ -721,47 +721,16 @@ class SessionRecordGraphOperator(bpy.types.Operator, ExportHelper):
     # ExportHelper mixin class uses this
     filename_ext = ".db"
 
+    def execute(self, context):
+        recorder = delayable.SessionRecordGraphTimer(filepath=self.filepath)
+        recorder.register()
+
+        deleyables.append(recorder)
+        return {'FINISHED'}
+
     @classmethod
     def poll(cls, context):
         return session.state['STATE'] == STATE_ACTIVE
-
-    def execute(self, context):
-        import networkx as nx
-        import pickle
-        import copy
-
-        # Replication graph 
-        nodes_ids = session.list()
-        #TODO: add dump graph to replication
-
-        nodes =[]
-        for n in nodes_ids:
-            nd = session.get(uuid=n)
-            nodes.append((
-                n,
-                {
-                    'owner': nd.owner,
-                    'str_type': nd.str_type,
-                    'data': nd.data,
-                    'dependencies': nd.dependencies,
-                }
-            ))
-
-        G = nx.DiGraph()
-        G.add_nodes_from(nodes)
-
-        for n, nd in nodes:
-            relations = [(n,d) for d in nd['dependencies']]
-            G.add_edges_from(relations)
-
-        
-        # Users
-        G.graph['users'] = copy.copy(session.online_users)
-
-        with open(self.filepath, "wb") as f:
-            pickle.dump(G, f, protocol=4)
-
-        return {'FINISHED'}
 
 
 classes = (
