@@ -550,6 +550,7 @@ class SESSION_PT_repository(bpy.types.Panel):
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
+        self.layout.operator('session.export',text="", icon="EXPORT")
 
     def draw(self, context):
         layout = self.layout
