@@ -25,9 +25,11 @@ import shutil
 import string
 import sys
 import time
+from datetime import datetime
 from operator import itemgetter
 from pathlib import Path
 from queue import Queue
+import gzip
 
 import bpy
 import mathutils
@@ -712,6 +714,43 @@ class SessionNotifyOperator(bpy.types.Operator):
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
+
+
+def dump_db(filepath):
+    import networkx as nx
+    import pickle
+    import copy
+    from time import gmtime, strftime
+    from pathlib import Path
+
+    # Replication graph 
+    nodes_ids = session.list()
+    #TODO: add dump graph to replication
+
+    nodes =[]
+    for n in nodes_ids:
+        nd = session.get(uuid=n)
+        nodes.append((
+            n,
+            {
+                'owner': nd.owner,
+                'str_type': nd.str_type,
+                'data': nd.data,
+                'dependencies': nd.dependencies,
+            }
+        ))
+
+    db = dict()
+    db['nodes'] = nodes
+    db['users'] = copy.copy(session.online_users)
+
+    stime = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+    
+    filepath = Path(filepath)
+    filepath = filepath.with_name(f"{filepath.stem}_{stime}{filepath.suffix}")
+    with gzip.open(filepath, "wb") as f:
+        logging.info(f"Writing db snapshot to {filepath}")
+        pickle.dump(db, f, protocol=4)
 
 
 class SessionRecordGraphOperator(bpy.types.Operator, ExportHelper):
