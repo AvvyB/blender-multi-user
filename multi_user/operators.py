@@ -17,6 +17,8 @@
 
 
 import asyncio
+import copy
+import gzip
 import logging
 import os
 import queue
@@ -29,15 +31,20 @@ from datetime import datetime
 from operator import itemgetter
 from pathlib import Path
 from queue import Queue
-import gzip
+from time import gmtime, strftime
+
+try:
+    import _pickle as pickle
+except ImportError:
+    import pickle
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-from bpy_extras.io_utils import ExportHelper
-
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
-                                   STATE_INITIAL, STATE_SYNCING, UP)
+                                   STATE_INITIAL, STATE_SYNCING, UP,
+                                   COMMITED)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
@@ -717,12 +724,6 @@ class SessionNotifyOperator(bpy.types.Operator):
 
 
 def dump_db(filepath):
-    import networkx as nx
-    import pickle
-    import copy
-    from time import gmtime, strftime
-    from pathlib import Path
-
     # Replication graph 
     nodes_ids = session.list()
     #TODO: add dump graph to replication
@@ -771,6 +772,84 @@ class SessionRecordGraphOperator(bpy.types.Operator, ExportHelper):
     def poll(cls, context):
         return session.state['STATE'] == STATE_ACTIVE
 
+class SessionLoadGraphOperator(bpy.types.Operator, ImportHelper):
+    bl_idname = "session.load"
+    bl_label = "SessionLoadGraph"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    # ExportHelper mixin class uses this
+    filename_ext = ".db"
+
+    def execute(self, context):
+        from replication.graph import ReplicationGraph
+        # TODO: add filechecks
+
+        try:
+            f = gzip.open(self.filepath, "rb")
+            db = pickle.load(f)
+        except OSError as e:
+            f = open(self.filepath, "rb")
+            db = pickle.load(f)
+        
+        if db:
+            logging.info(f"Reading {self.filepath}")
+            nodes = db.get("nodes")
+
+            logging.info(f"{len(nodes)} Nodes to load")
+
+            
+
+            # init the factory with supported types
+            bpy_factory = ReplicatedDataFactory()
+            for type in bl_types.types_to_register():
+                type_module = getattr(bl_types, type)
+                name = [e.capitalize() for e in type.split('_')[1:]]
+                type_impl_name = 'Bl'+''.join(name)
+                type_module_class = getattr(type_module, type_impl_name)
+
+
+                bpy_factory.register_type(
+                    type_module_class.bl_class,
+                    type_module_class)
+            
+            graph = ReplicationGraph()
+
+            for node, node_data in nodes:
+                node_type = node_data.get('str_type')
+
+                impl = bpy_factory.get_implementation_from_net(node_type)
+
+                if impl:
+                    logging.info(f"Loading  {node}")
+                    instance = impl(owner=node_data['owner'],
+                                    uuid=node,
+                                    dependencies=node_data['dependencies'],
+                                    data=node_data['data'])
+                    instance.store(graph)
+                    instance.state = FETCHED
+            
+            logging.info("Graph succefully loaded")
+
+            utils.clean_scene()
+
+            # Step 1: Construct nodes
+            for node in graph.list_ordered():
+                graph[node].resolve()
+
+            # Step 2: Load nodes
+            for node in graph.list_ordered():
+                graph[node].apply()
+
+
+        return {'FINISHED'}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+def menu_func_import(self, context):
+    self.layout.operator(SessionLoadGraphOperator.bl_idname, text='Multi-user database (.db)')
+
 
 classes = (
     SessionStartOperator,
@@ -787,6 +866,7 @@ classes = (
     SessionClearCache,
     SessionNotifyOperator,
     SessionRecordGraphOperator,
+    SessionLoadGraphOperator,
 )
 
 
