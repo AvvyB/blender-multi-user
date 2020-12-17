@@ -5,7 +5,7 @@ Installation
 .. hint::
     The process is the same for linux, mac and windows.
 
-1. Download latest `release <https://gitlab.com/slumber/multi-user/-/jobs/artifacts/master/download?job=build>`_ or `develop (unstable !) <https://gitlab.com/slumber/multi-user/-/jobs/artifacts/develop/download?job=build>`_ build.
+1. Download `LATEST build <https://gitlab.com/slumber/multi-user/-/jobs/artifacts/develop/download?job=build>`_ or `STABLE build <https://gitlab.com/slumber/multi-user/-/jobs/artifacts/master/download?job=build>`_.
 2. Run blender as administrator (to allow python dependencies auto-installation).
 3. Install **multi-user.zip** from your addon preferences.
 
