@@ -848,7 +848,7 @@ class SessionLoadGraphOperator(bpy.types.Operator, ImportHelper):
         return True
 
 def menu_func_import(self, context):
-    self.layout.operator(SessionLoadGraphOperator.bl_idname, text='Multi-user database (.db)')
+    self.layout.operator(SessionLoadGraphOperator.bl_idname, text='Multi-user session snapshot (.db)')
 
 
 classes = (
@@ -935,7 +935,7 @@ def depsgraph_evaluation(scene):
 def register():
     from bpy.utils import register_class
 
-    for cls in classes:
+    for cls in classes: 
         register_class(cls)
 
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
