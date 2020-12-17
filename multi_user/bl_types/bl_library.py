@@ -31,6 +31,7 @@ class BlLibrary(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'LIBRARY_DATA_DIRECT'
+    bl_reload_parent = False
 
     def _construct(self, data):
         with bpy.data.libraries.load(filepath=data["filepath"], link=True) as (sourceData, targetData):

@@ -71,6 +71,15 @@ def load_collection_childrens(dumped_childrens, collection):
         if child_collection.uuid not in dumped_childrens:
             collection.children.unlink(child_collection)
 
+def resolve_collection_dependencies(collection):
+    deps = []
+
+    for child in collection.children:
+        deps.append(child)
+    for object in collection.objects:
+        deps.append(object)
+
+    return deps
 
 class BlCollection(BlDatablock):
     bl_id = "collections"
@@ -80,6 +89,7 @@ class BlCollection(BlDatablock):
     bl_delay_apply = 1
     bl_automatic_push = True
     bl_check_common = True
+    bl_reload_parent = False
     
     def _construct(self, data):
         if self.is_library:
@@ -124,11 +134,4 @@ class BlCollection(BlDatablock):
         return data
 
     def _resolve_deps_implementation(self):
-        deps = []
-
-        for child in self.instance.children:
-            deps.append(child)
-        for object in self.instance.objects:
-            deps.append(object)
-
-        return deps
+        return resolve_collection_dependencies(self.instance)

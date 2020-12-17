@@ -19,10 +19,10 @@ import sys
 
 project = 'multi-user'
 copyright = '2020, Swann Martinez'
-author = 'Swann Martinez'
+author = 'Swann Martinez, with contributions from Poochy'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.2.0'
 
 
 # -- General configuration ---------------------------------------------------

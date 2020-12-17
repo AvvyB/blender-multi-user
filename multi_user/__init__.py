@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 1, 1),
+    "version": (0, 2, 0),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -44,7 +44,7 @@ from . import environment
 
 
 DEPENDENCIES = {
-    ("replication", '0.1.3'),
+    ("replication", '0.1.17'),
 }
 
 
@@ -58,7 +58,12 @@ def register():
         level=logging.INFO)
 
     try:
-        environment.setup(DEPENDENCIES, bpy.app.binary_path_python)
+        if bpy.app.version[1] >= 91:
+            python_binary_path = sys.executable
+        else:
+            python_binary_path = bpy.app.binary_path_python
+
+        environment.setup(DEPENDENCIES, python_binary_path)
 
         from . import presence
         from . import operators

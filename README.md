@@ -21,6 +21,10 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 See the [documentation](https://multi-user.readthedocs.io/en/latest/) for details.
 
+## Troubleshooting
+
+See the [troubleshooting guide](https://multi-user.readthedocs.io/en/latest/getting_started/troubleshooting.html) for tips on the most common issues.
+
 ## Current development status
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
@@ -36,8 +40,10 @@ Currently, not all data-block are supported for replication over the wire. The f
 | image       |   ✔️    |                                                                              |
 | mesh        |   ✔️    |                                                                              |
 | material    |   ✔️    |                                                                              |
+| node_groups |   ❗    |                                Material only                                 |
 | metaball    |   ✔️    |                                                                              |
 | object      |   ✔️    |                                                                              |
+| textures    |   ❗    |                         Supported for modifiers only                         |
 | texts       |   ✔️    |                                                                              |
 | scene       |   ✔️    |                                                                              |
 | world       |   ✔️    |                                                                              |
@@ -45,10 +51,10 @@ Currently, not all data-block are supported for replication over the wire. The f
 | compositing |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/46)         |
 | texts       |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/81)         |
 | nla         |   ❌    |                                                                              |
-| volumes     |   ❌    |                                                                              |
+| volumes     |   ✔️    |                                                                              |
 | particles   |   ❌    |        [On-going](https://gitlab.com/slumber/multi-user/-/issues/24)         |
 | speakers    |   ❗    |         [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)         |
-| vse         |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)         |
+| vse         |   ❗    |                       Mask and Clip not supported yet                        |
 | physics     |   ❌    |         [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)         |
 | libraries   |   ❗    |                                   Partial                                    |
 

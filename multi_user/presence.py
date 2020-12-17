@@ -35,7 +35,7 @@ from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
                                    STATE_SYNCING, STATE_WAITING)
 from replication.interface import session
 
-from .utils import find_from_attr, get_state_str
+from .utils import find_from_attr, get_state_str, get_preferences
 
 # Helper functions
 
@@ -300,41 +300,38 @@ class UserSelectionWidget(Widget):
             ob = find_from_attr("uuid", select_ob, bpy.data.objects)
             if not ob:
                 return
-            
-            position = None
 
-            if ob.type == 'EMPTY':
-                # TODO: Child case
-                # Collection instance case
-                indices = (
-                    (0, 1), (1, 2), (2, 3), (0, 3),
-                    (4, 5), (5, 6), (6, 7), (4, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7))
-                if ob.instance_collection:
-                    for obj in ob.instance_collection.objects:
-                        if obj.type == 'MESH' and  hasattr(obj, 'bound_box'):
-                            positions = get_bb_coords_from_obj(obj, instance=ob)
-                            break
+            vertex_pos = bbox_from_obj(ob, 1.0)
+            vertex_indices = ((0, 1), (0, 2), (1, 3), (2, 3),
+                              (4, 5), (4, 6), (5, 7), (6, 7),
+                              (0, 4), (1, 5), (2, 6), (3, 7))
+
+            if ob.instance_collection:
+                for obj in ob.instance_collection.objects:
+                    if obj.type == 'MESH' and  hasattr(obj, 'bound_box'):
+                        vertex_pos = get_bb_coords_from_obj(obj, instance=ob)
+                        break
+            elif ob.type == 'EMPTY':
+                vertex_pos = bbox_from_obj(ob, ob.empty_display_size)
+            elif ob.type == 'LIGHT':
+                vertex_pos = bbox_from_obj(ob, ob.data.shadow_soft_size)
+            elif ob.type == 'LIGHT_PROBE':
+                vertex_pos = bbox_from_obj(ob, ob.data.influence_distance)
+            elif ob.type == 'CAMERA':
+                vertex_pos = bbox_from_obj(ob, ob.data.display_size)
             elif hasattr(ob, 'bound_box'):
-                indices = (
+                vertex_indices = (
                     (0, 1), (1, 2), (2, 3), (0, 3),
                     (4, 5), (5, 6), (6, 7), (4, 7),
                     (0, 4), (1, 5), (2, 6), (3, 7))
-                positions = get_bb_coords_from_obj(ob)
-            if positions is None:
-                indices = (
-                    (0, 1), (0, 2), (1, 3), (2, 3),
-                    (4, 5), (4, 6), (5, 7), (6, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7))
-
-                positions = bbox_from_obj(ob, ob.scale.x)
+                vertex_pos = get_bb_coords_from_obj(ob)
 
             shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
             batch = batch_for_shader(
                 shader,
                 'LINES',
-                {"pos": positions},
-                indices=indices)
+                {"pos": vertex_pos},
+                indices=vertex_indices)
 
             shader.bind()
             shader.uniform_float("color", self.data.get('color'))
@@ -387,6 +384,9 @@ class UserNameWidget(Widget):
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
 
+    def __init__(self):
+        self.preferences = get_preferences()
+
     @property
     def settings(self):
         return getattr(bpy.context.window_manager, 'session', None)
@@ -396,6 +396,8 @@ class SessionStatusWidget(Widget):
             self.settings.enable_presence
 
     def draw(self):
+        text_scale = self.preferences.presence_hud_scale
+        ui_scale = bpy.context.preferences.view.ui_scale
         color = [1, 1, 0, 1]
         state = session.state.get('STATE')
         state_str = f"{get_state_str(state)}"
@@ -404,9 +406,11 @@ class SessionStatusWidget(Widget):
             color = [0, 1, 0, 1]
         elif state == STATE_INITIAL:
             color = [1, 0, 0, 1]
+        hpos = (self.preferences.presence_hud_hpos*bpy.context.area.width)/100
+        vpos = (self.preferences.presence_hud_vpos*bpy.context.area.height)/100
 
-        blf.position(0, 10, 20, 0)
-        blf.size(0, 16, 45)
+        blf.position(0, hpos, vpos, 0)
+        blf.size(0, int(text_scale*ui_scale), 72)
         blf.color(0, color[0], color[1], color[2], color[3])
         blf.draw(0,  state_str)
 

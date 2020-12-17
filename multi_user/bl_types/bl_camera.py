@@ -31,6 +31,7 @@ class BlCamera(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'CAMERA_DATA'
+    bl_reload_parent = False
 
     def _construct(self, data):
         return bpy.data.cameras.new(data["name"])
@@ -48,12 +49,15 @@ class BlCamera(BlDatablock):
 
         background_images = data.get('background_images')
 
+        target.background_images.clear()
+        
         if background_images:
-            target.background_images.clear()
             for img_name, img_data in background_images.items():
-                target_img = target.background_images.new()
-                target_img.image = bpy.data.images[img_name]
-                loader.load(target_img, img_data)
+                img_id = img_data.get('image')
+                if img_id:
+                    target_img = target.background_images.new()
+                    target_img.image = bpy.data.images[img_id]
+                    loader.load(target_img, img_data)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)

@@ -35,6 +35,7 @@ class BlSound(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'SOUND'
+    bl_reload_parent = False
 
     def _construct(self, data):
         filename = data.get('filename')

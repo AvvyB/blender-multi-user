@@ -15,6 +15,7 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+import bpy
 
 __all__ = [
     'bl_object',
@@ -37,8 +38,14 @@ __all__ = [
     'bl_speaker',
     'bl_font',
     'bl_sound',
-    'bl_file'
+    'bl_file',
+    'bl_sequencer',
+    'bl_node_group',
+    'bl_texture',
 ]  # Order here defines execution order
+
+if bpy.app.version[1] >= 91:
+    __all__.append('bl_volume')
 
 from . import *
 from replication.data import ReplicatedDataFactory

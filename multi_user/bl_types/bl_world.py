@@ -21,10 +21,8 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from .bl_material import (load_links,
-                          load_node,
-                          dump_node,
-                          dump_links,
+from .bl_material import (load_shader_node_tree,
+                          dump_shader_node_tree,
                           get_node_tree_dependencies)
 
 
@@ -36,6 +34,7 @@ class BlWorld(BlDatablock):
     bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'WORLD_DATA'
+    bl_reload_parent = False
 
     def _construct(self, data):
         return bpy.data.worlds.new(data["name"])
@@ -48,15 +47,7 @@ class BlWorld(BlDatablock):
             if target.node_tree is None:
                 target.use_nodes = True
 
-            target.node_tree.nodes.clear()
-
-            for node in data["node_tree"]["nodes"]:
-                load_node(data["node_tree"]["nodes"][node], target.node_tree)
-
-            # Load nodes links
-            target.node_tree.links.clear()
-
-            load_links(data["node_tree"]["links"], target.node_tree)
+            load_shader_node_tree(data['node_tree'], target.node_tree)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -70,15 +61,7 @@ class BlWorld(BlDatablock):
         ]
         data = world_dumper.dump(instance)
         if instance.use_nodes:
-            data['node_tree'] = {}
-            nodes = {}
-
-            for node in instance.node_tree.nodes:
-                nodes[node.name] = dump_node(node)
-
-            data["node_tree"]['nodes'] = nodes
-
-            data["node_tree"]['links'] = dump_links(instance.node_tree.links)
+            data['node_tree'] = dump_shader_node_tree(instance.node_tree)
 
         return data
 

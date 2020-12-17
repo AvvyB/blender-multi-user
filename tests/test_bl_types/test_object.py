@@ -23,7 +23,14 @@ MOFIFIERS_TYPES = [
     'CORRECTIVE_SMOOTH', 'LAPLACIANSMOOTH', 'SURFACE_DEFORM',
     'WARP', 'WAVE', 'CLOTH', 'COLLISION', 'DYNAMIC_PAINT',
     'EXPLODE', 'FLUID', 'OCEAN', 'PARTICLE_INSTANCE',
-    'SOFT_BODY', 'SURFACE'] 
+    'SOFT_BODY', 'SURFACE']
+
+GP_MODIFIERS_TYPE = [
+    'GP_ARRAY', 'GP_BUILD', 'GP_MIRROR', 'GP_MULTIPLY',
+    'GP_SIMPLIFY', 'GP_SUBDIV', 'GP_ARMATURE',
+    'GP_HOOK', 'GP_LATTICE', 'GP_NOISE', 'GP_OFFSET',
+    'GP_SMOOTH', 'GP_THICK', 'GP_TIME', 'GP_COLOR',
+    'GP_OPACITY', 'GP_TEXTURE', 'GP_TINT']
 
 CONSTRAINTS_TYPES = [
     'CAMERA_SOLVER', 'FOLLOW_TRACK', 'OBJECT_SOLVER', 'COPY_LOCATION',
@@ -33,17 +40,21 @@ CONSTRAINTS_TYPES = [
     'LOCKED_TRACK', 'STRETCH_TO', 'TRACK_TO', 'ACTION',
     'ARMATURE', 'CHILD_OF', 'FLOOR', 'FOLLOW_PATH', 'PIVOT', 'SHRINKWRAP']
 
-#temporary disabled 'SPLINE_IK' until its fixed
+# temporary disabled 'SPLINE_IK' until its fixed
+
 
 def test_object(clear_blend):
     bpy.ops.mesh.primitive_cube_add(
         enter_editmode=False, align='WORLD', location=(0, 0, 0))
 
     datablock = bpy.data.objects[0]
-    
+
     # Add modifiers
     for mod_type in MOFIFIERS_TYPES:
-        datablock.modifiers.new(mod_type,mod_type)
+        datablock.modifiers.new(mod_type, mod_type)
+
+    for mod_type in GP_MODIFIERS_TYPE:
+        datablock.grease_pencil_modifiers.new(mod_type,mod_type)
 
     # Add constraints
     for const_type in CONSTRAINTS_TYPES:
@@ -53,7 +64,6 @@ def test_object(clear_blend):
     datablock.vertex_groups.new(name='vg1')
     datablock.shape_key_add(name='shape')
     datablock.shape_key_add(name='shape2')
-
 
     implementation = BlObject()
     expected = implementation._dump(datablock)

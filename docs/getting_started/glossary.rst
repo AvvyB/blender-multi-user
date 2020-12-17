@@ -9,14 +9,14 @@ Glossary
    
    administrator
 
-      *A session administrator can manage users (kick) and have a write access on
-      each datablock. He could also init a dedicated server repository.*
+      *A session administrator can manage users (kick) and hold write access on
+      each datablock. They can also init a dedicated server repository.*
 
    .. _session-status:
 
    session status
 
-      *Located in the title of the multi-user panel, the session status show 
+      *Located in the title of the multi-user panel, the session status shows 
       you the connection state.*
 
       .. figure:: img/quickstart_session_status.png
@@ -24,7 +24,7 @@ Glossary
 
          Session status in panel title bar
 
-      All possible state are listed here with their meaning:*
+      All possible connection states are listed here with their meaning:*
 
       +--------------------+---------------------------------------------------------------------------------------------+
       | State              | Description                                                                                 |
@@ -33,7 +33,7 @@ Glossary
       +--------------------+---------------------------------------------------------------------------------------------+
       | FETCHING           | Dowloading snapshot from the server                                                         |
       +--------------------+---------------------------------------------------------------------------------------------+
-      | AUTHENTIFICATION   | Initial server authentication                                                               |
+      | AUTHENTICATION     | Initial server authentication                                                               |
       +--------------------+---------------------------------------------------------------------------------------------+
       | ONLINE             | Connected to the session                                                                    |
       +--------------------+---------------------------------------------------------------------------------------------+
@@ -55,5 +55,5 @@ Glossary
    
    common right
 
-      When a data block is under common right, it is available for everyone to modification.
-      The rights will be given to the user that select it first. 
+      When a data block is under common right, it is available to everyone for modification.
+      The rights will be given to the user that selects it first. 

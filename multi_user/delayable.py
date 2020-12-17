@@ -28,6 +28,7 @@ from .presence import (renderer,
                        generate_user_camera,
                        get_view_matrix,
                        refresh_sidebar_view)
+from . import  operators
 from replication.constants import (FETCHED,
                                    UP,
                                    RP_COMMON,
@@ -36,18 +37,20 @@ from replication.constants import (FETCHED,
                                    STATE_ACTIVE,
                                    STATE_SYNCING,
                                    STATE_LOBBY,
-                                   STATE_SRV_SYNC,
-                                   REPARENT)
+                                   STATE_SRV_SYNC)
 
 from replication.interface import session
 from replication.exception import NonAuthorizedOperationError
 
+
+def is_annotating(context: bpy.types.Context):
+    """ Check if the annotate mode is enabled
+    """
+    return bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
+
 class Delayable():
     """Delayable task interface
     """
-
-    def __init__(self):
-        self.is_registered = False
 
     def register(self):
         raise NotImplementedError
@@ -68,25 +71,30 @@ class Timer(Delayable):
     def __init__(self, duration=1):
         super().__init__()
         self._timeout = duration
-        self._running = True
+        self.is_running = False
 
     def register(self):
         """Register the timer into the blender timer system
         """
 
-        if not self.is_registered:
+        if not self.is_running:
             bpy.app.timers.register(self.main)
-            self.is_registered = True
+            self.is_running = True
             logging.debug(f"Register {self.__class__.__name__}")
         else:
             logging.debug(
                 f"Timer {self.__class__.__name__} already registered")
 
     def main(self):
-        self.execute()
-
-        if self._running:
-            return self._timeout
+        try:
+            self.execute()
+        except Exception as e:
+            logging.error(e)
+            self.unregister()
+            session.disconnect()
+        else:    
+            if self.is_running:
+                return self._timeout
 
     def execute(self):
         """Main timer loop
@@ -99,7 +107,7 @@ class Timer(Delayable):
         if bpy.app.timers.is_registered(self.main):
             bpy.app.timers.unregister(self.main)
 
-        self._running = False
+        self.is_running = False
 
 
 class ApplyTimer(Timer):
@@ -122,23 +130,21 @@ class ApplyTimer(Timer):
                         session.apply(node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
-                elif node_ref.state == REPARENT:
-                    # Reload the node
-                    node_ref.remove_instance()
-                    node_ref.resolve()
-                    session.apply(node)
-                    for parent in session._graph.find_parents(node):
-                        logging.info(f"Applying parent {parent}")
-                        session.apply(parent, force=True)
-                    node_ref.state = UP
+                    else:
+                        if self._type.bl_reload_parent:
+                            parents = []
 
+                            for n in session.list():
+                                deps = session.get(uuid=n).dependencies
+                                if deps and node in deps:
+                                    session.apply(n, force=True)
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timout=.1):
         super().__init__(timout)
         self._last_selection = []
         self._user = None
-        self._right_strategy = RP_COMMON
+        self._annotating = False
 
     def execute(self):
         settings = utils.get_preferences()
@@ -149,6 +155,30 @@ class DynamicRightSelectTimer(Timer):
                 self._user = session.online_users.get(settings.username)
 
             if self._user:
+                ctx = bpy.context
+                annotation_gp = ctx.scene.grease_pencil
+
+                # if an annotation exist and is tracked
+                if annotation_gp and annotation_gp.uuid:
+                    registered_gp = session.get(uuid=annotation_gp.uuid)
+                    if is_annotating(bpy.context):
+                        # try to get the right on it
+                        if registered_gp.owner == RP_COMMON:
+                            self._annotating = True
+                            logging.debug(
+                                "Getting the right on the annotation GP")
+                            session.change_owner(
+                                registered_gp.uuid,
+                                settings.username,
+                                ignore_warnings=True,
+                                affect_dependencies=False)
+                    elif self._annotating:
+                        session.change_owner(
+                            registered_gp.uuid,
+                            RP_COMMON,
+                            ignore_warnings=True,
+                            affect_dependencies=False)
+
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
                     bpy.data.window_managers['WinMan'].windows[0].view_layer
@@ -171,9 +201,11 @@ class DynamicRightSelectTimer(Timer):
                                 session.change_owner(
                                     node.uuid,
                                     RP_COMMON,
-                                    recursive=recursive)
+                                    ignore_warnings=True,
+                                    affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
-                                logging.warning(f"Not authorized to change {node} owner")
+                                logging.warning(
+                                    f"Not authorized to change {node} owner")
 
                     # change new selection to our
                     for obj in obj_ours:
@@ -188,9 +220,11 @@ class DynamicRightSelectTimer(Timer):
                                 session.change_owner(
                                     node.uuid,
                                     settings.username,
-                                    recursive=recursive)
+                                    ignore_warnings=True,
+                                    affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
-                                logging.warning(f"Not authorized to change {node} owner")
+                                logging.warning(
+                                    f"Not authorized to change {node} owner")
                         else:
                             return
 
@@ -204,7 +238,7 @@ class DynamicRightSelectTimer(Timer):
                     logging.debug("Update selection")
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
-                    if len(current_selection) == 0 and self._right_strategy == RP_COMMON:
+                    if len(current_selection) == 0 :
                         owned_keys = session.list(
                             filter_owner=settings.username)
                         for key in owned_keys:
@@ -213,9 +247,11 @@ class DynamicRightSelectTimer(Timer):
                                 session.change_owner(
                                     key,
                                     RP_COMMON,
-                                    recursive=recursive)
+                                    ignore_warnings=True,
+                                    affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
-                                logging.warning(f"Not authorized to change {key} owner")
+                                logging.warning(
+                                    f"Not authorized to change {key} owner")
 
             for obj in bpy.data.objects:
                 object_uuid = getattr(obj, 'uuid', None)
@@ -223,6 +259,7 @@ class DynamicRightSelectTimer(Timer):
                     is_selectable = not session.is_readonly(object_uuid)
                     if obj.hide_select != is_selectable:
                         obj.hide_select = is_selectable
+
 
 class ClientUpdate(Timer):
     def __init__(self, timout=.1):
@@ -336,6 +373,6 @@ class MainThreadExecutor(Timer):
 
     def execute(self):
         while not self.execution_queue.empty():
-            function = self.execution_queue.get()
+            function, kwargs = self.execution_queue.get()
             logging.debug(f"Executing {function.__name__}")
-            function()
+            function(**kwargs)

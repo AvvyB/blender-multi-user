@@ -25,7 +25,7 @@ from pathlib import Path
 import socket
 import re
 
-VERSION_EXPR = re.compile('\d+\.\d+\.\d+\w\d+')
+VERSION_EXPR = re.compile('\d+.\d+.\d+')
 
 THIRD_PARTY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 DEFAULT_CACHE_DIR = os.path.join(
@@ -61,6 +61,9 @@ def install_package(name, version):
         env = os.environ.copy()
         del env["PIP_REQUIRE_VIRTUALENV"]
     subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"], env=env)
+
+    if name in sys.modules:
+        del sys.modules[name]
 
 def check_package_version(name, required_version):
     logging.info(f"Checking {name} version...")

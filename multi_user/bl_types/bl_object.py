@@ -24,7 +24,6 @@ from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 from .dump_anything import Dumper, Loader
-from replication.exception import ReparentException
 
 
 def load_pose(target_bone, data):
@@ -36,7 +35,7 @@ def load_pose(target_bone, data):
 def find_data_from_name(name=None):
     instance = None
     if not name:
-            pass
+        pass
     elif name in bpy.data.meshes.keys():
         instance = bpy.data.meshes[name]
     elif name in bpy.data.lights.keys():
@@ -64,6 +63,9 @@ def find_data_from_name(name=None):
         else:
             logging.warning(
                 "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+    elif bpy.app.version[1] >= 91 and name in bpy.data.volumes.keys():
+        # Only supported since 2.91 
+        instance = bpy.data.volumes[name]
     return instance
 
 
@@ -79,6 +81,19 @@ def _is_editmode(object: bpy.types.Object) -> bool:
             child_data.is_editmode)
 
 
+def find_textures_dependencies(collection):
+    """ Check collection
+    """
+    textures = []
+    for item in collection:
+        for attr in dir(item):
+            inst = getattr(item, attr)
+            if issubclass(type(inst), bpy.types.Texture) and inst is not None:
+                textures.append(inst)
+
+    return textures
+
+
 class BlObject(BlDatablock):
     bl_id = "objects"
     bl_class = bpy.types.Object
@@ -87,6 +102,7 @@ class BlObject(BlDatablock):
     bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'OBJECT_DATA'
+    bl_reload_parent = False
 
     def _construct(self, data):
         instance = None
@@ -106,9 +122,9 @@ class BlObject(BlDatablock):
         data_id = data.get("data")
 
         object_data = get_datablock_from_uuid(
-            data_uuid, 
+            data_uuid,
             find_data_from_name(data_id),
-            ignore=['images']) #TODO: use resolve_from_id
+            ignore=['images'])  # TODO: use resolve_from_id
         instance = bpy.data.objects.new(object_name, object_data)
         instance.uuid = self.uuid
 
@@ -120,17 +136,16 @@ class BlObject(BlDatablock):
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
 
-        if target.type != data['type']:
-            raise ReparentException()
-        elif target.data and (target.data.name != data_id):
-            target.data = get_datablock_from_uuid(data_uuid, find_data_from_name(data_id), ignore=['images'])
+        if target.data and (target.data.name != data_id):
+            target.data = get_datablock_from_uuid(
+                data_uuid, find_data_from_name(data_id), ignore=['images'])
 
         # vertex groups
         if 'vertex_groups' in data:
             target.vertex_groups.clear()
             for vg in data['vertex_groups']:
-                vertex_group=target.vertex_groups.new(name = vg['name'])
-                point_attr='vertices' if 'vertices' in vg else 'points'
+                vertex_group = target.vertex_groups.new(name=vg['name'])
+                point_attr = 'vertices' if 'vertices' in vg else 'points'
                 for vert in vg[point_attr]:
                     vertex_group.add(
                         [vert['index']], vert['weight'], 'REPLACE')
@@ -139,12 +154,12 @@ class BlObject(BlDatablock):
         if 'shape_keys' in data:
             target.shape_key_clear()
 
-            object_data=target.data
+            object_data = target.data
 
             # Create keys and load vertices coords
             for key_block in data['shape_keys']['key_blocks']:
-                key_data=data['shape_keys']['key_blocks'][key_block]
-                target.shape_key_add(name = key_block)
+                key_data = data['shape_keys']['key_blocks'][key_block]
+                target.shape_key_add(name=key_block)
 
                 loader.load(
                     target.data.shape_keys.key_blocks[key_block], key_data)
@@ -191,10 +206,10 @@ class BlObject(BlDatablock):
                     target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
 
         # TODO: find another way...
-        if target.type == 'EMPTY':
+        if target.empty_display_type == "IMAGE":
             img_uuid = data.get('data_uuid')
             if target.data is None and img_uuid:
-                target.data = get_datablock_from_uuid(img_uuid, None)#bpy.data.images.get(img_key, None)
+                target.data = get_datablock_from_uuid(img_uuid, None)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -257,12 +272,34 @@ class BlObject(BlDatablock):
             return data
 
         # MODIFIERS
-        if hasattr(instance, 'modifiers'):
+        modifiers = getattr(instance,'modifiers', None )
+        if modifiers:
             dumper.include_filter = None
             dumper.depth = 1
             data["modifiers"] = {}
-            for index, modifier in enumerate(instance.modifiers):
+            for index, modifier in enumerate(modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
+
+        gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
+
+        if gp_modifiers:
+            dumper.include_filter = None
+            dumper.depth = 1
+            gp_modifiers_data = data["grease_pencil_modifiers"] = {}
+
+            for index, modifier in enumerate(gp_modifiers):
+                gp_mod_data = gp_modifiers_data[modifier.name] = dict()
+                gp_mod_data.update(dumper.dump(modifier))
+
+                if hasattr(modifier, 'use_custom_curve') \
+                        and modifier.use_custom_curve:
+                    curve_dumper = Dumper()
+                    curve_dumper.depth = 5
+                    curve_dumper.include_filter = [
+                        'curves',
+                        'points',
+                        'location']
+                    gp_mod_data['curve'] = curve_dumper.dump(modifier.curve)
 
         # CONSTRAINTS
         if hasattr(instance, 'constraints'):
@@ -386,5 +423,8 @@ class BlObject(BlDatablock):
         if self.instance.instance_type == 'COLLECTION':
             # TODO: uuid based
             deps.append(self.instance.instance_collection)
+
+        if self.instance.modifiers:
+            deps.extend(find_textures_dependencies(self.instance.modifiers))
 
         return deps

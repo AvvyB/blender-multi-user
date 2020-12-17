@@ -21,7 +21,7 @@ from collections.abc import Iterable
 
 import bpy
 import mathutils
-from replication.constants import DIFF_BINARY, UP
+from replication.constants import DIFF_BINARY, DIFF_JSON, UP
 from replication.data import ReplicatedDatablock
 
 from .. import utils
@@ -92,7 +92,6 @@ def load_driver(target_datablock, src_driver):
 def get_datablock_from_uuid(uuid, default, ignore=[]):
     if not uuid:
         return default
-
     for category in dir(bpy.data):
         root = getattr(bpy.data, category)
         if isinstance(root, Iterable) and category not in ignore:
@@ -112,7 +111,9 @@ class BlDatablock(ReplicatedDatablock):
         bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
         bl_check_common:    enable check even in common rights
+        bl_reload_parent:   reload parent
     """
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -123,12 +124,15 @@ class BlDatablock(ReplicatedDatablock):
         # TODO: use is_library_indirect
         self.is_library = (instance and hasattr(instance, 'library') and
                            instance.library) or \
-            (self.data and 'library' in self.data)
+            (hasattr(self,'data') and self.data and 'library' in self.data)
 
         if instance and hasattr(instance, 'uuid'):
             instance.uuid = self.uuid
 
-        self.diff_method = DIFF_BINARY
+        if logging.getLogger().level == logging.DEBUG:
+            self.diff_method = DIFF_JSON
+        else:
+            self.diff_method = DIFF_BINARY
 
     def resolve(self):
         datablock_ref = None
@@ -217,7 +221,7 @@ class BlDatablock(ReplicatedDatablock):
         if not self.is_library:
             dependencies.extend(self._resolve_deps_implementation())
 
-        logging.debug(f"{self.instance.name} dependencies: {dependencies}")
+        logging.debug(f"{self.instance} dependencies: {dependencies}")
         return dependencies
 
     def _resolve_deps_implementation(self):

@@ -86,7 +86,6 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
         row = layout.row()
         runtime_settings = context.window_manager.session
         settings = get_preferences()
@@ -104,11 +103,11 @@ class SESSION_PT_settings(bpy.types.Panel):
                 info_msg = None
 
                 if current_state in [STATE_ACTIVE]:
-                    row = row.split(factor=0.3)
+                    row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
                     row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
                     row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
                     row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='OBJECT_DATAMODE')
-                
+
                 row= layout.row()
 
                 if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
@@ -448,9 +447,17 @@ class SESSION_PT_presence(bpy.types.Panel):
         layout = self.layout
 
         settings = context.window_manager.session
+        pref = get_preferences()
         layout.active = settings.enable_presence
         col = layout.column()
         col.prop(settings, "presence_show_session_status")
+        row = col.column()
+        row.active = settings.presence_show_session_status
+        row.prop(pref, "presence_hud_scale", expand=True)
+        row = col.column(align=True)
+        row.active = settings.presence_show_session_status
+        row.prop(pref, "presence_hud_hpos", expand=True)
+        row.prop(pref, "presence_hud_vpos", expand=True)
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
         row = layout.column()
@@ -622,7 +629,7 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         col.prop(settings, "presence_show_session_status")
         col.prop(settings, "presence_show_selected")
         col.prop(settings, "presence_show_user")
-        
+
         row = layout.column()
         row.active = settings.presence_show_user
         row.prop(settings, "presence_show_far_user")

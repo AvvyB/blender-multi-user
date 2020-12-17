@@ -49,6 +49,7 @@ Documentation is organized into the following sections:
     getting_started/install
     getting_started/quickstart
     getting_started/glossary
+    getting_started/troubleshooting
 
 .. toctree::
    :maxdepth: 1

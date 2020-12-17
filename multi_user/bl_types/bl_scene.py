@@ -16,15 +16,18 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import logging
+
 import bpy
 import mathutils
-
-from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
-from .bl_collection import dump_collection_children, dump_collection_objects, load_collection_childrens, load_collection_objects
-from replication.constants import (DIFF_JSON, MODIFIED)
 from deepdiff import DeepDiff
-import logging
+from replication.constants import DIFF_JSON, MODIFIED
+
+from .bl_collection import (dump_collection_children, dump_collection_objects,
+                            load_collection_childrens, load_collection_objects,
+                            resolve_collection_dependencies)
+from .bl_datablock import BlDatablock
+from .dump_anything import Dumper, Loader
 
 RENDER_SETTINGS = [
     'dither_intensity',
@@ -261,6 +264,12 @@ VIEW_SETTINGS = [
     'black_level'
 ]
 
+
+
+
+
+
+
 class BlScene(BlDatablock):
     bl_id = "scenes"
     bl_class = bpy.types.Scene
@@ -269,6 +278,7 @@ class BlScene(BlDatablock):
     bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'SCENE_DATA'
+    bl_reload_parent = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -310,7 +320,7 @@ class BlScene(BlDatablock):
             if 'view_settings' in data.keys():
                 loader.load(target.view_settings, data['view_settings'])
                 if target.view_settings.use_curve_mapping and \
-                    'curve_mapping' in data['view_settings']:
+                        'curve_mapping' in data['view_settings']:
                     # TODO: change this ugly fix
                     target.view_settings.curve_mapping.white_level = data[
                         'view_settings']['curve_mapping']['white_level']
@@ -320,8 +330,8 @@ class BlScene(BlDatablock):
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
-        data = {}
 
+        # Metadata
         scene_dumper = Dumper()
         scene_dumper.depth = 1
         scene_dumper.include_filter = [
@@ -336,11 +346,9 @@ class BlScene(BlDatablock):
         if self.preferences.sync_flags.sync_active_camera:
             scene_dumper.include_filter.append('camera')
 
-        data = scene_dumper.dump(instance)
+        data.update(scene_dumper.dump(instance))
 
-        scene_dumper.depth = 3
-
-        scene_dumper.include_filter = ['children', 'objects', 'name']
+        # Master collection
         data['collection'] = {}
         data['collection']['children'] = dump_collection_children(
             instance.collection)
@@ -350,6 +358,7 @@ class BlScene(BlDatablock):
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
 
+        # Render settings
         if self.preferences.sync_flags.sync_render_settings:
             scene_dumper.include_filter = RENDER_SETTINGS
 
@@ -377,18 +386,18 @@ class BlScene(BlDatablock):
                 data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(
                     instance.view_settings.curve_mapping.curves)
 
+        if instance.sequence_editor:
+            data['has_sequence'] = True
+        else:
+            data['has_sequence'] = False
+
         return data
 
     def _resolve_deps_implementation(self):
         deps = []
 
-        # child collections
-        for child in self.instance.collection.children:
-            deps.append(child)
-
-        # childs objects
-        for object in self.instance.collection.objects:
-            deps.append(object)
+        # Master Collection
+        deps.extend(resolve_collection_dependencies(self.instance.collection))
 
         # world
         if self.instance.world:
@@ -397,6 +406,11 @@ class BlScene(BlDatablock):
         # annotations
         if self.instance.grease_pencil:
             deps.append(self.instance.grease_pencil)
+
+        # Sequences
+        #     deps.extend(list(self.instance.sequence_editor.sequences_all))
+        if self.instance.sequence_editor:
+            deps.append(self.instance.sequence_editor)
 
         return deps
 

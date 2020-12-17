@@ -23,6 +23,7 @@ import queue
 import random
 import shutil
 import string
+import sys
 import time
 from operator import itemgetter
 from pathlib import Path
@@ -38,10 +39,10 @@ from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
 from . import bl_types, delayable, environment, ui, utils
-from .presence import (SessionStatusWidget, renderer, view3d_find)
+from .presence import SessionStatusWidget, renderer, view3d_find
 
 background_execution_queue = Queue()
-delayables = []
+deleyables = []
 stop_modal_executor = False
 
 
@@ -53,8 +54,8 @@ def session_callback(name):
     """
     def func_wrapper(func):
         @session.register(name)
-        def add_background_task():
-            background_execution_queue.put(func)
+        def add_background_task(**kwargs):
+            background_execution_queue.put((func, kwargs))
         return add_background_task
     return func_wrapper
 
@@ -79,7 +80,7 @@ def initialize_session():
             node_ref.apply()
 
     # Step 4: Register blender timers
-    for d in delayables:
+    for d in deleyables:
         d.register()
 
     if settings.update_method == 'DEPSGRAPH':
@@ -89,18 +90,19 @@ def initialize_session():
 
 
 @session_callback('on_exit')
-def on_connection_end():
+def on_connection_end(reason="none"):
     """Session connection finished handler 
     """
-    global delayables, stop_modal_executor
+    global deleyables, stop_modal_executor
     settings = utils.get_preferences()
 
     # Step 1: Unregister blender timers
-    for d in delayables:
+    for d in deleyables:
         try:
             d.unregister()
         except:
             continue
+    deleyables.clear()
 
     stop_modal_executor = True
 
@@ -113,6 +115,8 @@ def on_connection_end():
     for handler in logger.handlers:
         if isinstance(handler, logging.FileHandler):
             logger.removeHandler(handler)
+    if reason != "user":
+        bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ")
 
 
 # OPERATORS
@@ -128,7 +132,7 @@ class SessionStartOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global delayables
+        global deleyables
 
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
@@ -136,7 +140,7 @@ class SessionStartOperator(bpy.types.Operator):
         admin_pass = runtime_settings.password
         use_extern_update = settings.update_method == 'DEPSGRAPH'
         users.clear()
-        delayables.clear()
+        deleyables.clear()
 
         logger = logging.getLogger()
         if len(logger.handlers) == 1:
@@ -166,7 +170,8 @@ class SessionStartOperator(bpy.types.Operator):
         # init the factory with supported types
         for type in bl_types.types_to_register():
             type_module = getattr(bl_types, type)
-            type_impl_name = f"Bl{type.split('_')[1].capitalize()}"
+            name = [e.capitalize() for e in type.split('_')[1:]]
+            type_impl_name = 'Bl'+''.join(name)
             type_module_class = getattr(type_module, type_impl_name)
 
             supported_bl_types.append(type_module_class.bl_id)
@@ -187,18 +192,23 @@ class SessionStartOperator(bpy.types.Operator):
 
             if settings.update_method == 'DEFAULT':
                 if type_local_config.bl_delay_apply > 0:
-                    delayables.append(
+                    deleyables.append(
                         delayable.ApplyTimer(
                             timout=type_local_config.bl_delay_apply,
                             target_type=type_module_class))
 
+        if bpy.app.version[1] >= 91:
+            python_binary_path = sys.executable
+        else:
+            python_binary_path = bpy.app.binary_path_python
+
         session.configure(
             factory=bpy_factory,
-            python_path=bpy.app.binary_path_python,
+            python_path=python_binary_path,
             external_update_handling=use_extern_update)
 
         if settings.update_method == 'DEPSGRAPH':
-            delayables.append(delayable.ApplyTimer(
+            deleyables.append(delayable.ApplyTimer(
                 settings.depsgraph_update_rate/1000))
 
         # Host a session
@@ -226,7 +236,8 @@ class SessionStartOperator(bpy.types.Operator):
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logging.error(f"Error: {e}")
-
+                import traceback
+                traceback.print_exc()
         # Join a session
         else:
             if not runtime_settings.admin:
@@ -248,8 +259,8 @@ class SessionStartOperator(bpy.types.Operator):
                 logging.error(str(e))
 
         # Background client updates service
-        delayables.append(delayable.ClientUpdate())
-        delayables.append(delayable.DynamicRightSelectTimer())
+        deleyables.append(delayable.ClientUpdate())
+        deleyables.append(delayable.DynamicRightSelectTimer())
 
         session_update = delayable.SessionStatusUpdate()
         session_user_sync = delayable.SessionUserSync()
@@ -260,9 +271,9 @@ class SessionStartOperator(bpy.types.Operator):
         session_user_sync.register()
         session_background_executor.register()
 
-        delayables.append(session_background_executor)
-        delayables.append(session_update)
-        delayables.append(session_user_sync)
+        deleyables.append(session_background_executor)
+        deleyables.append(session_update)
+        deleyables.append(session_user_sync)
 
         
 
@@ -322,7 +333,7 @@ class SessionStopOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global delayables, stop_modal_executor
+        global deleyables, stop_modal_executor
 
         if session:
             try:
@@ -349,7 +360,7 @@ class SessionKickOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        global delayables, stop_modal_executor
+        global deleyables, stop_modal_executor
         assert(session)
 
         try:
@@ -426,7 +437,8 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         if session:
             session.change_owner(self.key,
                                  runtime_settings.clients,
-                                 recursive=self.recursive)
+                                 ignore_warnings=True,
+                                 affect_dependencies=self.recursive)
 
         return {"FINISHED"}
 
@@ -573,9 +585,13 @@ class SessionApply(bpy.types.Operator):
 
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
-        session.apply(self.target,
-                      force=True,
-                      force_dependencies=self.reset_dependencies)
+        try:
+            session.apply(self.target,
+                        force=True,
+                        force_dependencies=self.reset_dependencies)
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+            return {"CANCELED"}    
 
         return {"FINISHED"}
 
@@ -593,11 +609,13 @@ class SessionCommit(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        # session.get(uuid=target).diff()
-        session.commit(uuid=self.target)
-        session.push(self.target)
-        return {"FINISHED"}
-
+        try:
+            session.commit(uuid=self.target)
+            session.push(self.target)
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+            return {"CANCELED"}
 
 class ApplyArmatureOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
@@ -642,7 +660,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
         stop_modal_executor = False
 
 
-class ClearCache(bpy.types.Operator):
+class SessionClearCache(bpy.types.Operator):
     "Clear local session cache"
     bl_idname = "session.clear_cache"
     bl_label = "Modal Executor Operator"
@@ -670,6 +688,29 @@ class ClearCache(bpy.types.Operator):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
 
+class SessionNotifyOperator(bpy.types.Operator):
+    """Dialog only operator"""
+    bl_idname = "session.notify"
+    bl_label = "Multi-user"
+    bl_description = "multiuser notification"
+
+    message: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.row().label(text=self.message)
+
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
 
 classes = (
     SessionStartOperator,
@@ -683,7 +724,8 @@ classes = (
     ApplyArmatureOperator,
     SessionKickOperator,
     SessionInitOperator,
-    ClearCache,
+    SessionClearCache,
+    SessionNotifyOperator,
 )
 
 
@@ -737,7 +779,7 @@ def depsgraph_evaluation(scene):
                 if node and node.owner in [session.id, RP_COMMON] and node.state == UP:
                     # Avoid slow geometry update
                     if 'EDIT' in context.mode and \
-                            not settings.sync_during_editmode:
+                            not settings.sync_flags.sync_during_editmode:
                         break
 
                     session.stash(node.uuid)

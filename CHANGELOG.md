@@ -125,3 +125,36 @@ All notable changes to this project will be documented in this file.
 - Packed image save error
 - Material replication
 - UI spelling errors (@brybalicious)
+
+
+## [0.2.0] - 2020-12-17
+
+### Added
+
+- Documentation `Troubleshouting` section (@brybalicious)
+- Documentation `Update` section (@brybalicious)
+- Documentation `Cloud Hosting Walkthrough` (@brybalicious)
+- Support DNS name
+- Sync annotations
+- Sync volume objects
+- Sync material node_goups 
+- Sync VSE
+- Sync grease pencil modifiers
+- Sync textures (modifier only)
+- Session status widget
+- Disconnection popup 
+- Popup with disconnection reason 
+
+
+### Changed
+
+- Improved GPencil performances
+
+### Fixed
+
+- Texture paint update
+- Various documentation fixes section (@brybalicious)
+- Empty and Light object selection highlights
+- Material renaming
+- Default material nodes input parameters
+- blender 2.91 python api compatibility
