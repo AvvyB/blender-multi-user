@@ -127,7 +127,7 @@ All notable changes to this project will be documented in this file.
 - UI spelling errors (@brybalicious)
 
 
-## [0.2.0] - 2020-12-06
+## [0.2.0] - 2020-12-17
 
 ### Added
 
@@ -143,6 +143,7 @@ All notable changes to this project will be documented in this file.
 - Sync textures (modifier only)
 - Session status widget
 - Disconnection popup 
+- Popup with disconnection reason 
 
 
 ### Changed
@@ -151,6 +152,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Texture paint update
+- Various documentation fixes section (@brybalicious)
 - Empty and Light object selection highlights
 - Material renaming
 - Default material nodes input parameters
