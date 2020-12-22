@@ -761,6 +761,12 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
     # ExportHelper mixin class uses this
     filename_ext = ".db"
 
+    filter_glob: bpy.props.StringProperty(
+        default="*.db",
+        options={'HIDDEN'},
+        maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
+
     enable_autosave: bpy.props.BoolProperty(
         name="Auto-save",
         description="Enable session auto-save",
@@ -804,14 +810,20 @@ class SessionStopAutoSaveOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class SessionLoadGraphOperator(bpy.types.Operator, ImportHelper):
+class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     bl_idname = "session.load"
-    bl_label = "SessionLoadGraph"
+    bl_label = "Load session save"
     bl_description = "Load a Multi-user session save"
     bl_options = {'REGISTER', 'UNDO'}
 
     # ExportHelper mixin class uses this
     filename_ext = ".db"
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.db",
+        options={'HIDDEN'},
+        maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
 
     def execute(self, context):
         from replication.graph import ReplicationGraph
@@ -882,7 +894,7 @@ class SessionLoadGraphOperator(bpy.types.Operator, ImportHelper):
         return True
 
 def menu_func_import(self, context):
-    self.layout.operator(SessionLoadGraphOperator.bl_idname, text='Multi-user session snapshot (.db)')
+    self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
 
 
 classes = (
@@ -900,7 +912,7 @@ classes = (
     SessionClearCache,
     SessionNotifyOperator,
     SessionSaveBackupOperator,
-    SessionLoadGraphOperator,
+    SessionLoadSaveOperator,
     SessionStopAutoSaveOperator,
 )
 
