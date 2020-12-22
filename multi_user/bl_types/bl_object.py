@@ -175,7 +175,8 @@ class BlObject(BlDatablock):
         # Load transformation data
         loader.load(target, data)
 
-        loader.load(target.display, data['display'])
+        if 'display' in data:
+            loader.load(target.display, data['display'])
 
         # Pose
         if 'pose' in data:
