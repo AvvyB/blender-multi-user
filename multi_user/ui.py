@@ -29,6 +29,7 @@ from replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_LAUNCHING_SERVICES)
 from replication import __version__
 from replication.interface import session
+from .timers import registry
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -550,7 +551,6 @@ class SESSION_PT_repository(bpy.types.Panel):
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
-        self.layout.operator('session.export',text="", icon="EXPORT")
 
     def draw(self, context):
         layout = self.layout
@@ -564,6 +564,13 @@ class SESSION_PT_repository(bpy.types.Panel):
         row = layout.row()
 
         if session.state['STATE'] == STATE_ACTIVE:
+            if 'SessionBackupTimer' in registry:
+                row.alert = True
+                row.operator('session.cancel_autosave', icon="CANCEL")
+                row.alert = False
+            else:
+                row.operator('session.save', icon="FILE_TICK")
+
             flow = layout.grid_flow(
                 row_major=True,
                 columns=0,

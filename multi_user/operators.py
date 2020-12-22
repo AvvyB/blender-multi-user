@@ -42,20 +42,19 @@ import bpy
 import mathutils
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
-from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
-                                   STATE_INITIAL, STATE_SYNCING, UP,
-                                   COMMITED)
+from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
+                                   STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
-from . import bl_types, delayable, environment, ui, utils
+from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
+from .timers import registry
 
 background_execution_queue = Queue()
 deleyables = []
 stop_modal_executor = False
-
 
 def session_callback(name):
     """ Session callback wrapper
@@ -204,8 +203,8 @@ class SessionStartOperator(bpy.types.Operator):
             if settings.update_method == 'DEFAULT':
                 if type_local_config.bl_delay_apply > 0:
                     deleyables.append(
-                        delayable.ApplyTimer(
-                            timout=type_local_config.bl_delay_apply,
+                        timers.ApplyTimer(
+                            timeout=type_local_config.bl_delay_apply,
                             target_type=type_module_class))
 
         if bpy.app.version[1] >= 91:
@@ -219,7 +218,7 @@ class SessionStartOperator(bpy.types.Operator):
             external_update_handling=use_extern_update)
 
         if settings.update_method == 'DEPSGRAPH':
-            deleyables.append(delayable.ApplyTimer(
+            deleyables.append(timers.ApplyTimer(
                 settings.depsgraph_update_rate/1000))
 
         # Host a session
@@ -270,12 +269,12 @@ class SessionStartOperator(bpy.types.Operator):
                 logging.error(str(e))
 
         # Background client updates service
-        deleyables.append(delayable.ClientUpdate())
-        deleyables.append(delayable.DynamicRightSelectTimer())
+        deleyables.append(timers.ClientUpdate())
+        deleyables.append(timers.DynamicRightSelectTimer())
 
-        session_update = delayable.SessionStatusUpdate()
-        session_user_sync = delayable.SessionUserSync()
-        session_background_executor = delayable.MainThreadExecutor(
+        session_update = timers.SessionStatusUpdate()
+        session_user_sync = timers.SessionUserSync()
+        session_background_executor = timers.MainThreadExecutor(
             execution_queue=background_execution_queue)
 
         session_update.register()
@@ -750,31 +749,65 @@ def dump_db(filepath):
     filepath = Path(filepath)
     filepath = filepath.with_name(f"{filepath.stem}_{stime}{filepath.suffix}")
     with gzip.open(filepath, "wb") as f:
-        logging.info(f"Writing db snapshot to {filepath}")
+        logging.info(f"Writing session snapshot to {filepath}")
         pickle.dump(db, f, protocol=4)
 
 
-class SessionRecordGraphOperator(bpy.types.Operator, ExportHelper):
-    bl_idname = "session.export"
-    bl_label = "SessionRecordGraph"
+class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
+    bl_idname = "session.save"
+    bl_label = "Save session"
+    bl_description = "Save a snapshot of the collaborative session"
 
     # ExportHelper mixin class uses this
     filename_ext = ".db"
 
-    def execute(self, context):
-        recorder = delayable.SessionRecordGraphTimer(filepath=self.filepath)
-        recorder.register()
+    enable_autosave: bpy.props.BoolProperty(
+        name="Auto-save",
+        description="Enable session auto-save",
+        default=True,
+    )
+    save_interval: bpy.props.FloatProperty(
+        name="Auto save interval",
+        description="auto-save interval (seconds)",
+        default=10,
+    )
 
-        deleyables.append(recorder)
+    def execute(self, context):
+        if self.enable_autosave:
+            recorder = timers.SessionBackupTimer(
+                filepath=self.filepath,
+                timeout=self.save_interval)
+            recorder.register()
+            deleyables.append(recorder)
+        else:
+            dump_db(self.filepath)
+
         return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
         return session.state['STATE'] == STATE_ACTIVE
 
+class SessionStopAutoSaveOperator(bpy.types.Operator):
+    bl_idname = "session.cancel_autosave"
+    bl_label = "Cancel auto-save"
+    bl_description = "Cancel session auto-save"
+
+    @classmethod
+    def poll(cls, context):
+        return (session.state['STATE'] == STATE_ACTIVE and 'SessionBackupTimer' in registry)
+
+    def execute(self, context):
+        autosave_timer = registry.get('SessionBackupTimer')
+        autosave_timer.unregister()
+
+        return {'FINISHED'}
+
+
 class SessionLoadGraphOperator(bpy.types.Operator, ImportHelper):
     bl_idname = "session.load"
     bl_label = "SessionLoadGraph"
+    bl_description = "Load a Multi-user session save"
     bl_options = {'REGISTER', 'UNDO'}
 
     # ExportHelper mixin class uses this
@@ -782,6 +815,7 @@ class SessionLoadGraphOperator(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         from replication.graph import ReplicationGraph
+
         # TODO: add filechecks
 
         try:
@@ -865,8 +899,9 @@ classes = (
     SessionInitOperator,
     SessionClearCache,
     SessionNotifyOperator,
-    SessionRecordGraphOperator,
+    SessionSaveBackupOperator,
     SessionLoadGraphOperator,
+    SessionStopAutoSaveOperator,
 )
 
 
