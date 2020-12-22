@@ -755,7 +755,7 @@ def dump_db(filepath):
 
 class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
     bl_idname = "session.save"
-    bl_label = "Save session"
+    bl_label = "Save session data"
     bl_description = "Save a snapshot of the collaborative session"
 
     # ExportHelper mixin class uses this
