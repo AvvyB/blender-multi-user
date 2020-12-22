@@ -16,68 +16,48 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import logging
+import sys
 
 import bpy
-
-from . import utils
-from .presence import (renderer,
-                       UserFrustumWidget,
-                       UserNameWidget,
-                       UserSelectionWidget,
-                       refresh_3d_view,
-                       generate_user_camera,
-                       get_view_matrix,
-                       refresh_sidebar_view)
-from . import  operators
-from replication.constants import (FETCHED,
-                                   UP,
-                                   RP_COMMON,
-                                   STATE_INITIAL,
-                                   STATE_QUITTING,
-                                   STATE_ACTIVE,
-                                   STATE_SYNCING,
-                                   STATE_LOBBY,
-                                   STATE_SRV_SYNC)
-
-from replication.interface import session
+from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
+                                   STATE_INITIAL, STATE_LOBBY, STATE_QUITTING,
+                                   STATE_SRV_SYNC, STATE_SYNCING, UP)
 from replication.exception import NonAuthorizedOperationError
+from replication.interface import session
 
+from . import operators, utils
+from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
+                       generate_user_camera, get_view_matrix, refresh_3d_view,
+                       refresh_sidebar_view, renderer)
+
+this = sys.modules[__name__]
+
+# Registered timers
+this.registry = dict()
 
 def is_annotating(context: bpy.types.Context):
     """ Check if the annotate mode is enabled
     """
     return bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
 
-class Delayable():
-    """Delayable task interface
-    """
 
-    def register(self):
-        raise NotImplementedError
-
-    def execute(self):
-        raise NotImplementedError
-
-    def unregister(self):
-        raise NotImplementedError
-
-
-class Timer(Delayable):
+class Timer(object):
     """Timer binder interface for blender
 
     Run a bpy.app.Timer in the background looping at the given rate
     """
 
-    def __init__(self, duration=1):
-        super().__init__()
-        self._timeout = duration
+    def __init__(self, timeout=10, id=None):
+        self._timeout = timeout
         self.is_running = False
+        self.id =  id if id else self.__class__.__name__
 
     def register(self):
         """Register the timer into the blender timer system
         """
 
         if not self.is_running:
+            this.registry[self.id] = self 
             bpy.app.timers.register(self.main)
             self.is_running = True
             logging.debug(f"Register {self.__class__.__name__}")
@@ -105,15 +85,26 @@ class Timer(Delayable):
         """Unnegister the timer of the blender timer system
         """
         if bpy.app.timers.is_registered(self.main):
+            logging.info(f"Unregistering {self.id}")
             bpy.app.timers.unregister(self.main)
-
+        
+        del this.registry[self.id]
         self.is_running = False
 
+class SessionBackupTimer(Timer):
+    def __init__(self, timeout=10, filepath=None):
+        self._filepath = filepath
+        super().__init__(timeout)
+
+
+    def execute(self):
+        operators.dump_db(self._filepath)
 
 class ApplyTimer(Timer):
-    def __init__(self, timout=1, target_type=None):
+    def __init__(self, timeout=1, target_type=None):
         self._type = target_type
-        super().__init__(timout)
+        super().__init__(timeout)
+        self.id = target_type.__name__
 
     def execute(self):
         if session and session.state['STATE'] == STATE_ACTIVE:
@@ -140,8 +131,8 @@ class ApplyTimer(Timer):
                                     session.apply(n, force=True)
 
 class DynamicRightSelectTimer(Timer):
-    def __init__(self, timout=.1):
-        super().__init__(timout)
+    def __init__(self, timeout=.1):
+        super().__init__(timeout)
         self._last_selection = []
         self._user = None
         self._annotating = False
@@ -262,8 +253,8 @@ class DynamicRightSelectTimer(Timer):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timout=.1):
-        super().__init__(timout)
+    def __init__(self, timeout=.1):
+        super().__init__(timeout)
         self.handle_quit = False
         self.users_metadata = {}
 
@@ -325,16 +316,16 @@ class ClientUpdate(Timer):
 
 
 class SessionStatusUpdate(Timer):
-    def __init__(self, timout=1):
-        super().__init__(timout)
+    def __init__(self, timeout=1):
+        super().__init__(timeout)
 
     def execute(self):
         refresh_sidebar_view()
 
 
 class SessionUserSync(Timer):
-    def __init__(self, timout=1):
-        super().__init__(timout)
+    def __init__(self, timeout=1):
+        super().__init__(timeout)
         self.settings = utils.get_preferences()
 
     def execute(self):
@@ -367,8 +358,8 @@ class SessionUserSync(Timer):
 
 
 class MainThreadExecutor(Timer):
-    def __init__(self, timout=1, execution_queue=None):
-        super().__init__(timout)
+    def __init__(self, timeout=1, execution_queue=None):
+        super().__init__(timeout)
         self.execution_queue = execution_queue
 
     def execute(self):

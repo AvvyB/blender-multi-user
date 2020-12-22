@@ -17,6 +17,8 @@
 
 
 import asyncio
+import copy
+import gzip
 import logging
 import os
 import queue
@@ -25,26 +27,34 @@ import shutil
 import string
 import sys
 import time
+from datetime import datetime
 from operator import itemgetter
 from pathlib import Path
 from queue import Queue
+from time import gmtime, strftime
+
+try:
+    import _pickle as pickle
+except ImportError:
+    import pickle
 
 import bpy
 import mathutils
 from bpy.app.handlers import persistent
-from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
 from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 
-from . import bl_types, delayable, environment, ui, utils
+from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
+from .timers import registry
 
 background_execution_queue = Queue()
 deleyables = []
 stop_modal_executor = False
-
 
 def session_callback(name):
     """ Session callback wrapper
@@ -193,8 +203,8 @@ class SessionStartOperator(bpy.types.Operator):
             if settings.update_method == 'DEFAULT':
                 if type_local_config.bl_delay_apply > 0:
                     deleyables.append(
-                        delayable.ApplyTimer(
-                            timout=type_local_config.bl_delay_apply,
+                        timers.ApplyTimer(
+                            timeout=type_local_config.bl_delay_apply,
                             target_type=type_module_class))
 
         if bpy.app.version[1] >= 91:
@@ -208,7 +218,7 @@ class SessionStartOperator(bpy.types.Operator):
             external_update_handling=use_extern_update)
 
         if settings.update_method == 'DEPSGRAPH':
-            deleyables.append(delayable.ApplyTimer(
+            deleyables.append(timers.ApplyTimer(
                 settings.depsgraph_update_rate/1000))
 
         # Host a session
@@ -259,12 +269,12 @@ class SessionStartOperator(bpy.types.Operator):
                 logging.error(str(e))
 
         # Background client updates service
-        deleyables.append(delayable.ClientUpdate())
-        deleyables.append(delayable.DynamicRightSelectTimer())
+        deleyables.append(timers.ClientUpdate())
+        deleyables.append(timers.DynamicRightSelectTimer())
 
-        session_update = delayable.SessionStatusUpdate()
-        session_user_sync = delayable.SessionUserSync()
-        session_background_executor = delayable.MainThreadExecutor(
+        session_update = timers.SessionStatusUpdate()
+        session_user_sync = timers.SessionUserSync()
+        session_background_executor = timers.MainThreadExecutor(
             execution_queue=background_execution_queue)
 
         session_update.register()
@@ -712,6 +722,181 @@ class SessionNotifyOperator(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
+def dump_db(filepath):
+    # Replication graph 
+    nodes_ids = session.list()
+    #TODO: add dump graph to replication
+
+    nodes =[]
+    for n in nodes_ids:
+        nd = session.get(uuid=n)
+        nodes.append((
+            n,
+            {
+                'owner': nd.owner,
+                'str_type': nd.str_type,
+                'data': nd.data,
+                'dependencies': nd.dependencies,
+            }
+        ))
+
+    db = dict()
+    db['nodes'] = nodes
+    db['users'] = copy.copy(session.online_users)
+
+    stime = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+    
+    filepath = Path(filepath)
+    filepath = filepath.with_name(f"{filepath.stem}_{stime}{filepath.suffix}")
+    with gzip.open(filepath, "wb") as f:
+        logging.info(f"Writing session snapshot to {filepath}")
+        pickle.dump(db, f, protocol=4)
+
+
+class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
+    bl_idname = "session.save"
+    bl_label = "Save session data"
+    bl_description = "Save a snapshot of the collaborative session"
+
+    # ExportHelper mixin class uses this
+    filename_ext = ".db"
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.db",
+        options={'HIDDEN'},
+        maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
+
+    enable_autosave: bpy.props.BoolProperty(
+        name="Auto-save",
+        description="Enable session auto-save",
+        default=True,
+    )
+    save_interval: bpy.props.FloatProperty(
+        name="Auto save interval",
+        description="auto-save interval (seconds)",
+        default=10,
+    )
+
+    def execute(self, context):
+        if self.enable_autosave:
+            recorder = timers.SessionBackupTimer(
+                filepath=self.filepath,
+                timeout=self.save_interval)
+            recorder.register()
+            deleyables.append(recorder)
+        else:
+            dump_db(self.filepath)
+
+        return {'FINISHED'}
+
+    @classmethod
+    def poll(cls, context):
+        return session.state['STATE'] == STATE_ACTIVE
+
+class SessionStopAutoSaveOperator(bpy.types.Operator):
+    bl_idname = "session.cancel_autosave"
+    bl_label = "Cancel auto-save"
+    bl_description = "Cancel session auto-save"
+
+    @classmethod
+    def poll(cls, context):
+        return (session.state['STATE'] == STATE_ACTIVE and 'SessionBackupTimer' in registry)
+
+    def execute(self, context):
+        autosave_timer = registry.get('SessionBackupTimer')
+        autosave_timer.unregister()
+
+        return {'FINISHED'}
+
+
+class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
+    bl_idname = "session.load"
+    bl_label = "Load session save"
+    bl_description = "Load a Multi-user session save"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    # ExportHelper mixin class uses this
+    filename_ext = ".db"
+
+    filter_glob: bpy.props.StringProperty(
+        default="*.db",
+        options={'HIDDEN'},
+        maxlen=255,  # Max internal buffer length, longer would be clamped.
+    )
+
+    def execute(self, context):
+        from replication.graph import ReplicationGraph
+
+        # TODO: add filechecks
+
+        try:
+            f = gzip.open(self.filepath, "rb")
+            db = pickle.load(f)
+        except OSError as e:
+            f = open(self.filepath, "rb")
+            db = pickle.load(f)
+        
+        if db:
+            logging.info(f"Reading {self.filepath}")
+            nodes = db.get("nodes")
+
+            logging.info(f"{len(nodes)} Nodes to load")
+
+            
+
+            # init the factory with supported types
+            bpy_factory = ReplicatedDataFactory()
+            for type in bl_types.types_to_register():
+                type_module = getattr(bl_types, type)
+                name = [e.capitalize() for e in type.split('_')[1:]]
+                type_impl_name = 'Bl'+''.join(name)
+                type_module_class = getattr(type_module, type_impl_name)
+
+
+                bpy_factory.register_type(
+                    type_module_class.bl_class,
+                    type_module_class)
+            
+            graph = ReplicationGraph()
+
+            for node, node_data in nodes:
+                node_type = node_data.get('str_type')
+
+                impl = bpy_factory.get_implementation_from_net(node_type)
+
+                if impl:
+                    logging.info(f"Loading  {node}")
+                    instance = impl(owner=node_data['owner'],
+                                    uuid=node,
+                                    dependencies=node_data['dependencies'],
+                                    data=node_data['data'])
+                    instance.store(graph)
+                    instance.state = FETCHED
+            
+            logging.info("Graph succefully loaded")
+
+            utils.clean_scene()
+
+            # Step 1: Construct nodes
+            for node in graph.list_ordered():
+                graph[node].resolve()
+
+            # Step 2: Load nodes
+            for node in graph.list_ordered():
+                graph[node].apply()
+
+
+        return {'FINISHED'}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+def menu_func_import(self, context):
+    self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
+
+
 classes = (
     SessionStartOperator,
     SessionStopOperator,
@@ -726,6 +911,9 @@ classes = (
     SessionInitOperator,
     SessionClearCache,
     SessionNotifyOperator,
+    SessionSaveBackupOperator,
+    SessionLoadSaveOperator,
+    SessionStopAutoSaveOperator,
 )
 
 
@@ -794,7 +982,7 @@ def depsgraph_evaluation(scene):
 def register():
     from bpy.utils import register_class
 
-    for cls in classes:
+    for cls in classes: 
         register_class(cls)
 
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
