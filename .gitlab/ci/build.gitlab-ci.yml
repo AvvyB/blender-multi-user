@@ -11,3 +11,4 @@ build:
     refs:
         - master
         - develop
+        - 132-fix-undo-edit-last-operation-redo-handling-2

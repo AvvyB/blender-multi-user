@@ -147,8 +147,12 @@ class BlDatablock(ReplicatedDatablock):
                     name = self.data.get('name')
                     logging.debug(f"Constructing {name}")
                     datablock_ref = self._construct(data=self.data)
-                    for i in range(bpy.context.preferences.edit.undo_steps+1):
-                        bpy.ops.ed.undo_push(message="Multiuser history flush")
+
+                    try:
+                        for i in range(bpy.context.preferences.edit.undo_steps+1):
+                            bpy.ops.ed.undo_push(message="Multiuser history flush")
+                    except RuntimeError:
+                        logging.error("Fail to overwrite history")
 
         if datablock_ref is not None:
             setattr(datablock_ref, 'uuid', self.uuid)
