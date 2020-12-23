@@ -98,6 +98,10 @@ def initialize_session():
 
     bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
+    # Step 0: Clearing history
+    for i in range(bpy.context.preferences.edit.undo_steps+1):
+        bpy.ops.ed.undo_push(message="Multiuser history flush")
+
 
 @session_callback('on_exit')
 def on_connection_end(reason="none"):
@@ -926,8 +930,14 @@ def sanitize_deps_graph(dummy):
 
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
+        session.lock_operations()
+
         for node_key in session.list():
-            session.get(node_key).resolve()
+            node = session.get(node_key)
+            node.resolve(construct=False)
+
+        session.unlock_operations()
+
 
 
 @persistent
@@ -978,12 +988,27 @@ def depsgraph_evaluation(scene):
             #     # New items !
             #     logger.error("UPDATE: ADD")
 
+@persistent
+def unlock(dummy):
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        session.unlock_operations()
+
+@persistent
+def lock(dummy):
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        session.lock_operations()
+
 
 def register():
     from bpy.utils import register_class
 
     for cls in classes: 
         register_class(cls)
+
+    bpy.app.handlers.undo_post.append(unlock)
+    bpy.app.handlers.undo_pre.append(lock)
+    bpy.app.handlers.redo_pre.append(unlock)
+    bpy.app.handlers.redo_post.append(lock)
 
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
@@ -1000,6 +1025,10 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
+    bpy.app.handlers.undo_post.remove(unlock)
+    bpy.app.handlers.undo_pre.remove(lock)
+    bpy.app.handlers.redo_pre.remove(unlock)
+    bpy.app.handlers.redo_post.remove(lock)
     bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 

@@ -134,7 +134,7 @@ class BlDatablock(ReplicatedDatablock):
         else:
             self.diff_method = DIFF_BINARY
 
-    def resolve(self):
+    def resolve(self, construct = True):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
@@ -143,14 +143,20 @@ class BlDatablock(ReplicatedDatablock):
             try:
                 datablock_ref = datablock_root[self.data['name']]
             except Exception:
-                name = self.data.get('name')
-                logging.debug(f"Constructing {name}")
-                datablock_ref = self._construct(data=self.data)
+                if construct:
+                    name = self.data.get('name')
+                    logging.debug(f"Constructing {name}")
+                    datablock_ref = self._construct(data=self.data)
+                    for i in range(bpy.context.preferences.edit.undo_steps+1):
+                        bpy.ops.ed.undo_push(message="Multiuser history flush")
 
-            if datablock_ref:
-                setattr(datablock_ref, 'uuid', self.uuid)
-
-        self.instance = datablock_ref
+        if datablock_ref is not None:
+            setattr(datablock_ref, 'uuid', self.uuid)
+            self.instance = datablock_ref
+            return True
+        else:
+            return False
+        
 
     def remove_instance(self):
         """

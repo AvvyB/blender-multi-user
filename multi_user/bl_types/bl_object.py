@@ -274,10 +274,11 @@ class BlObject(BlDatablock):
 
         # MODIFIERS
         modifiers = getattr(instance,'modifiers', None )
+        data["modifiers"] = {}
         if modifiers:
             dumper.include_filter = None
             dumper.depth = 1
-            data["modifiers"] = {}
+
             for index, modifier in enumerate(modifiers):
                 data["modifiers"][modifier.name] = dumper.dump(modifier)
 

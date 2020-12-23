@@ -104,7 +104,7 @@ class ApplyTimer(Timer):
     def __init__(self, timeout=1, target_type=None):
         self._type = target_type
         super().__init__(timeout)
-        self.id = target_type.__name__
+        self.id = target_type.__name__ if target_type else "ApplyTimer"
 
     def execute(self):
         if session and session.state['STATE'] == STATE_ACTIVE:
