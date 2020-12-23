@@ -114,6 +114,10 @@ class BlCollection(BlDatablock):
         # Link childrens
         load_collection_childrens(data['children'], target)
 
+        # FIXME: Find a better way after the replication big refacotoring
+        # Keep other user from deleting collection object by flushing their history
+        utils.flush_history()
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 

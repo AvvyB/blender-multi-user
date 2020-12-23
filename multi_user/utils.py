@@ -65,6 +65,15 @@ def get_datablock_users(datablock):
     return users
 
 
+def flush_history():
+    try:
+        logging.info("Flushing history")
+        for i in range(bpy.context.preferences.edit.undo_steps+1):
+            bpy.ops.ed.undo_push(message="Multiuser history flush")
+    except RuntimeError:
+        logging.error("Fail to overwrite history")
+
+
 def get_state_str(state):
     state_str = 'UNKOWN'
     if state == STATE_WAITING:

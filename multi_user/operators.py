@@ -99,8 +99,7 @@ def initialize_session():
     bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
     # Step 0: Clearing history
-    for i in range(bpy.context.preferences.edit.undo_steps+1):
-        bpy.ops.ed.undo_push(message="Multiuser history flush")
+    utils.flush_history()
 
 
 @session_callback('on_exit')

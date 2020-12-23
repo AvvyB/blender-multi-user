@@ -28,6 +28,7 @@ from .bl_collection import (dump_collection_children, dump_collection_objects,
                             resolve_collection_dependencies)
 from .bl_datablock import BlDatablock
 from .dump_anything import Dumper, Loader
+from ..utils import flush_history
 
 RENDER_SETTINGS = [
     'dither_intensity',
@@ -327,6 +328,10 @@ class BlScene(BlDatablock):
                     target.view_settings.curve_mapping.black_level = data[
                         'view_settings']['curve_mapping']['black_level']
                     target.view_settings.curve_mapping.update()
+
+        # FIXME: Find a better way after the replication big refacotoring
+        # Keep other user from deleting collection object by flushing their history
+        flush_history()
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
