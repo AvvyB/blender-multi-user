@@ -514,7 +514,7 @@ class Loader:
             T.ColorRampElement: DESTRUCTOR_REMOVE,
             T.Modifier: DESTRUCTOR_CLEAR,
             T.GpencilModifier: DESTRUCTOR_CLEAR,
-            T.Constraint: CONSTRUCTOR_NEW,
+            T.Constraint: DESTRUCTOR_REMOVE,
         }
         element_type = element.bl_rna_property.fixed_type
 
@@ -529,7 +529,13 @@ class Loader:
         if destructor:
             if destructor == DESTRUCTOR_REMOVE:
                 collection = element.read()
-                for i in range(len(collection)-1):
+                elems_to_remove = len(collection)
+
+                # Color ramp doesn't allow to remove all elements
+                if type(element_type) == T.ColorRampElement:
+                    elems_to_remove -= 1
+
+                for i in range(elems_to_remove):
                     collection.remove(collection[0])
             else:
                 getattr(element.read(), DESTRUCTOR_CLEAR)()
