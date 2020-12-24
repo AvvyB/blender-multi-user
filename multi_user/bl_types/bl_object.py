@@ -304,6 +304,7 @@ class BlObject(BlDatablock):
 
         # CONSTRAINTS
         if hasattr(instance, 'constraints'):
+            dumper.include_filter = None
             dumper.depth = 3
             data["constraints"] = dumper.dump(instance.constraints)
 
