@@ -71,7 +71,7 @@ class BlFile(ReplicatedDatablock):
         self.preferences = utils.get_preferences()
         self.diff_method = DIFF_BINARY
 
-    def resolve(self):
+    def resolve(self, construct = True):
         if self.data:
             self.instance = Path(get_filepath(self.data['name']))
 

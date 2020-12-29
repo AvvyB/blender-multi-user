@@ -143,10 +143,10 @@ class BlSequencer(BlDatablock):
 
         return scene.sequence_editor
 
-    def resolve(self):
+    def resolve(self, construct = True):
         scene = bpy.data.scenes.get(self.data['name'], None)
         if scene:
-            if scene.sequence_editor is None:
+            if scene.sequence_editor is None and construct:
                 self.instance = self._construct(self.data)
             else:
                 self.instance = scene.sequence_editor
