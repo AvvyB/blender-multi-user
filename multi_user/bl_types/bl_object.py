@@ -23,8 +23,18 @@ import mathutils
 from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
-from .dump_anything import Dumper, Loader
+from .dump_anything import (
+    Dumper,
+    Loader,
+    np_load_collection,
+    np_dump_collection)
 
+
+SKIN_DATA = [
+    'radius',
+    'use_loose',
+    'use_root'
+]
 
 def load_pose(target_bone, data):
     target_bone.rotation_mode = data['rotation_mode']
@@ -64,7 +74,7 @@ def find_data_from_name(name=None):
             logging.warning(
                 "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
     elif bpy.app.version[1] >= 91 and name in bpy.data.volumes.keys():
-        # Only supported since 2.91 
+        # Only supported since 2.91
         instance = bpy.data.volumes[name]
     return instance
 
@@ -150,11 +160,11 @@ class BlObject(BlDatablock):
                     vertex_group.add(
                         [vert['index']], vert['weight'], 'REPLACE')
 
+        object_data = target.data
+
         # SHAPE KEYS
         if 'shape_keys' in data:
             target.shape_key_clear()
-
-            object_data = target.data
 
             # Create keys and load vertices coords
             for key_block in data['shape_keys']['key_blocks']:
@@ -211,6 +221,15 @@ class BlObject(BlDatablock):
             img_uuid = data.get('data_uuid')
             if target.data is None and img_uuid:
                 target.data = get_datablock_from_uuid(img_uuid, None)
+
+        if hasattr(object_data, 'skin_vertices') \
+                and object_data.skin_vertices\
+                and 'skin_vertices' in data:
+            for index, skin_data in enumerate(object_data.skin_vertices):
+                np_load_collection(
+                    data['skin_vertices'][index],
+                    skin_data.data,
+                    SKIN_DATA)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -273,14 +292,14 @@ class BlObject(BlDatablock):
             return data
 
         # MODIFIERS
-        modifiers = getattr(instance,'modifiers', None )
-        data["modifiers"] = {}
-        if modifiers:
-            dumper.include_filter = None
-            dumper.depth = 1
-
-            for index, modifier in enumerate(modifiers):
-                data["modifiers"][modifier.name] = dumper.dump(modifier)
+        if hasattr(instance, 'modifiers'):
+            data["modifiers"] = {}
+            modifiers = getattr(instance, 'modifiers', None)
+            if modifiers:
+                dumper.include_filter = None
+                dumper.depth = 1
+                for index, modifier in enumerate(modifiers):
+                    data["modifiers"][modifier.name] = dumper.dump(modifier)
 
         gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
 
@@ -305,6 +324,7 @@ class BlObject(BlDatablock):
 
         # CONSTRAINTS
         if hasattr(instance, 'constraints'):
+            dumper.include_filter = None
             dumper.depth = 3
             data["constraints"] = dumper.dump(instance.constraints)
 
@@ -407,6 +427,12 @@ class BlObject(BlDatablock):
                 key_blocks[key.name] = dumper.dump(key)
                 key_blocks[key.name]['relative_key'] = key.relative_key.name
             data['shape_keys']['key_blocks'] = key_blocks
+
+        if hasattr(object_data, 'skin_vertices') and object_data.skin_vertices:
+            skin_vertices = list()
+            for skin_data in object_data.skin_vertices:
+                skin_vertices.append(np_dump_collection(skin_data.data, SKIN_DATA))
+            data['skin_vertices'] = skin_vertices
 
         return data
 

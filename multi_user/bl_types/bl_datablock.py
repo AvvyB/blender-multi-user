@@ -56,7 +56,7 @@ def load_driver(target_datablock, src_driver):
     loader = Loader()
     drivers = target_datablock.animation_data.drivers
     src_driver_data = src_driver['driver']
-    new_driver = drivers.new(src_driver['data_path'])
+    new_driver = drivers.new(src_driver['data_path'], index=src_driver['array_index'])
 
     # Settings
     new_driver.driver.type = src_driver_data['type']
