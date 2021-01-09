@@ -137,16 +137,19 @@ class BlDatablock(ReplicatedDatablock):
     def resolve(self, construct = True):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
-        datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
+
+        try:
+            datablock_ref = datablock_root[self.data['name']]
+        except Exception:
+            pass
 
         if not datablock_ref:
-            try:
-                datablock_ref = datablock_root[self.data['name']]
-            except Exception:
-                if construct:
-                    name = self.data.get('name')
-                    logging.debug(f"Constructing {name}")
-                    datablock_ref = self._construct(data=self.data)
+            datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
+
+            if construct and not datablock_ref:
+                name = self.data.get('name')
+                logging.debug(f"Constructing {name}")
+                datablock_ref = self._construct(data=self.data)
 
         if datablock_ref is not None:
             setattr(datablock_ref, 'uuid', self.uuid)
