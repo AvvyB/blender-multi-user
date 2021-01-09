@@ -45,7 +45,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
-from replication.exception import NonAuthorizedOperationError
+from replication.exception import NonAuthorizedOperationError, ContextError
 from replication.interface import session
 
 from . import bl_types, environment, timers, ui, utils
@@ -93,8 +93,7 @@ def initialize_session():
     for d in deleyables:
         d.register()
 
-    if settings.update_method == 'DEPSGRAPH':
-        bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
     bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
@@ -119,9 +118,7 @@ def on_connection_end(reason="none"):
 
     stop_modal_executor = True
 
-    if settings.update_method == 'DEPSGRAPH':
-        bpy.app.handlers.depsgraph_update_post.remove(
-            depsgraph_evaluation)
+    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
     # Step 3: remove file handled
     logger = logging.getLogger()
@@ -151,7 +148,7 @@ class SessionStartOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = runtime_settings.password
-        use_extern_update = settings.update_method == 'DEPSGRAPH'
+
         users.clear()
         deleyables.clear()
 
@@ -203,12 +200,11 @@ class SessionStartOperator(bpy.types.Operator):
                 automatic=type_local_config.auto_push,
                 check_common=type_module_class.bl_check_common)
 
-            if settings.update_method == 'DEFAULT':
-                if type_local_config.bl_delay_apply > 0:
-                    deleyables.append(
-                        timers.ApplyTimer(
-                            timeout=type_local_config.bl_delay_apply,
-                            target_type=type_module_class))
+            if type_local_config.bl_delay_apply > 0:
+                deleyables.append(
+                    timers.ApplyTimer(
+                        timeout=type_local_config.bl_delay_apply,
+                        target_type=type_module_class))
 
         if bpy.app.version[1] >= 91:
             python_binary_path = sys.executable
@@ -218,11 +214,7 @@ class SessionStartOperator(bpy.types.Operator):
         session.configure(
             factory=bpy_factory,
             python_path=python_binary_path,
-            external_update_handling=use_extern_update)
-
-        if settings.update_method == 'DEPSGRAPH':
-            deleyables.append(timers.ApplyTimer(
-                settings.depsgraph_update_rate/1000))
+            external_update_handling=True)
 
         # Host a session
         if self.host:
@@ -929,13 +921,14 @@ def sanitize_deps_graph(dummy):
 
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
-        session.lock_operations()
-
+        # pass
+        # session.lock_operations()
+        start = utils.current_milli_time()
         for node_key in session.list():
             node = session.get(node_key)
             node.resolve(construct=False)
-
-        session.unlock_operations()
+        logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms")
+        # session.unlock_operations()
 
 
 
@@ -979,7 +972,19 @@ def depsgraph_evaluation(scene):
                             not settings.sync_flags.sync_during_editmode:
                         break
 
-                    session.stash(node.uuid)
+                    # session.stash(node.uuid)
+                    if node.has_changed():
+                        try:
+                            session.commit(node.uuid)
+                            session.push(node.uuid)
+                        except ReferenceError:
+                            logging.debug(f"Reference error {node.uuid}")
+                            if not node.is_valid():
+                                session.remove(node.uuid)
+                        except ContextError as e:
+                            logging.debug(e) 
+                        except Exception as e:
+                            logging.error(e)
                 else:
                     # Distant update
                     continue
