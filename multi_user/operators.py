@@ -53,6 +53,8 @@ from .presence import SessionStatusWidget, renderer, view3d_find
 from .timers import registry
 
 background_execution_queue = Queue()
+stagging = list()
+
 deleyables = []
 stop_modal_executor = False
 
@@ -79,13 +81,13 @@ def initialize_session():
 
     # Step 1: Constrect nodes
     for node in session._graph.list_ordered():
-        node_ref = session.get(node)
+        node_ref = session.get(uuid=node)
         if node_ref.state == FETCHED:
             node_ref.resolve()
 
     # Step 2: Load nodes
     for node in session._graph.list_ordered():
-        node_ref = session.get(node)
+        node_ref = session.get(uuid=node)
         if node_ref.state == FETCHED:
             node_ref.apply()
 
@@ -118,7 +120,8 @@ def on_connection_end(reason="none"):
 
     stop_modal_executor = True
 
-    bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
+    if depsgraph_evaluation in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
     # Step 3: remove file handled
     logger = logging.getLogger()
@@ -266,7 +269,7 @@ class SessionStartOperator(bpy.types.Operator):
         # Background client updates service
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
-
+        deleyables.append(timers.PushTimer(queue=stagging))
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
@@ -921,14 +924,11 @@ def sanitize_deps_graph(dummy):
 
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
-        # pass
-        # session.lock_operations()
         start = utils.current_milli_time()
         for node_key in session.list():
             node = session.get(node_key)
             node.resolve(construct=False)
         logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms")
-        # session.unlock_operations()
 
 
 
@@ -960,31 +960,21 @@ def depsgraph_evaluation(scene):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
-                node = session.get(update.id.uuid)
+                node = session.get(uuid=update.id.uuid)
 
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update (go deeper ?)
-                if node and node.owner in [session.id, RP_COMMON] and node.state == UP:
-                    # Avoid slow geometry update
-                    if 'EDIT' in context.mode and \
-                            not settings.sync_flags.sync_during_editmode:
-                        break
+                if node and node.owner in [session.id, RP_COMMON]:
+                    if node.state == UP:
+                        # Avoid slow geometry update
+                        if 'EDIT' in context.mode and \
+                                not settings.sync_flags.sync_during_editmode:
+                            break
 
-                    # session.stash(node.uuid)
-                    if node.has_changed():
-                        try:
-                            session.commit(node.uuid)
-                            session.push(node.uuid)
-                        except ReferenceError:
-                            logging.debug(f"Reference error {node.uuid}")
-                            if not node.is_valid():
-                                session.remove(node.uuid)
-                        except ContextError as e:
-                            logging.debug(e) 
-                        except Exception as e:
-                            logging.error(e)
+                        if node.uuid not in stagging:
+                            stagging.append(node.uuid)
                 else:
                     # Distant update
                     continue
@@ -992,27 +982,12 @@ def depsgraph_evaluation(scene):
             #     # New items !
             #     logger.error("UPDATE: ADD")
 
-@persistent
-def unlock(dummy):
-    if session and session.state['STATE'] == STATE_ACTIVE:
-        session.unlock_operations()
-
-@persistent
-def lock(dummy):
-    if session and session.state['STATE'] == STATE_ACTIVE:
-        session.lock_operations()
-
 
 def register():
     from bpy.utils import register_class
 
     for cls in classes: 
         register_class(cls)
-
-    bpy.app.handlers.undo_post.append(unlock)
-    bpy.app.handlers.undo_pre.append(lock)
-    bpy.app.handlers.redo_pre.append(unlock)
-    bpy.app.handlers.redo_post.append(lock)
 
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
@@ -1029,10 +1004,6 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    bpy.app.handlers.undo_post.remove(unlock)
-    bpy.app.handlers.undo_pre.remove(lock)
-    bpy.app.handlers.redo_pre.remove(unlock)
-    bpy.app.handlers.redo_post.remove(lock)
     bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
 
