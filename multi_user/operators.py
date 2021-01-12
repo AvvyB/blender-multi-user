@@ -985,6 +985,7 @@ def depsgraph_evaluation(scene):
             #     # New items !
             #     logger.error("UPDATE: ADD")
 
+@persistent
 def clear_staging(dummy):
     stagging.clear()
 
