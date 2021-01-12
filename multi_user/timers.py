@@ -138,13 +138,13 @@ class PushTimer(Timer):
 
     def execute(self):
         while self.q_push:
-            node_id =  self.q_push.pop()
-            
-            node = session.get(uuid=node_id)
+            node = session.get(uuid= self.q_push.pop())
+            start = utils.current_milli_time()
+
             if node.has_changed():
                 try:
                     session.commit(node.uuid)
-                    session.push(node.uuid)
+                    session.push(node.uuid, check_data=False)
                 except ReferenceError:
                     logging.debug(f"Reference error {node.uuid}")
                     if not node.is_valid():
