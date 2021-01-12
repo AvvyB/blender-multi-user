@@ -54,7 +54,7 @@ from .timers import registry
 
 background_execution_queue = Queue()
 stagging = list()
-
+locking = False
 deleyables = []
 stop_modal_executor = False
 
@@ -269,7 +269,10 @@ class SessionStartOperator(bpy.types.Operator):
         # Background client updates service
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
-        deleyables.append(timers.PushTimer(queue=stagging))
+        deleyables.append(timers.PushTimer(
+            queue=stagging,
+            timeout=settings.depsgraph_update_rate
+            ))
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
@@ -982,12 +985,17 @@ def depsgraph_evaluation(scene):
             #     # New items !
             #     logger.error("UPDATE: ADD")
 
+def clear_staging(dummy):
+    stagging.clear()
 
 def register():
     from bpy.utils import register_class
 
     for cls in classes: 
         register_class(cls)
+
+    bpy.app.handlers.undo_pre.append(clear_staging)
+    bpy.app.handlers.redo_pre.append(clear_staging)
 
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
@@ -1003,6 +1011,9 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+
+    bpy.app.handlers.undo_pre.remove(clear_staging)
+    bpy.app.handlers.redo_pre.remove(clear_staging)
 
     bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)

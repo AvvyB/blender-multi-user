@@ -139,7 +139,6 @@ class PushTimer(Timer):
     def execute(self):
         while self.q_push:
             node = session.get(uuid= self.q_push.pop())
-            start = utils.current_milli_time()
 
             if node.has_changed():
                 try:
@@ -154,7 +153,7 @@ class PushTimer(Timer):
                 except Exception as e:
                     logging.error(e)
             else:
-                logging.info("Skipping updatem no changes")
+                logging.debug("Skipping update no changes")
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):

@@ -200,10 +200,10 @@ class SessionPrefs(bpy.types.AddonPreferences):
         default=1000
     )
     # Replication update settings
-    depsgraph_update_rate: bpy.props.IntProperty(
-        name='depsgraph update rate',
-        description='Dependency graph uppdate rate (milliseconds)',
-        default=1000
+    depsgraph_update_rate: bpy.props.FloatProperty(
+        name='depsgraph update rate (s)',
+        description='Dependency graph uppdate rate (s)',
+        default=1
     )
     clear_memory_filecache: bpy.props.BoolProperty(
         name="Clear memory filecache",
