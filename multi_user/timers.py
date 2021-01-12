@@ -22,7 +22,7 @@ import bpy
 from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_LOBBY, STATE_QUITTING,
                                    STATE_SRV_SYNC, STATE_SYNCING, UP)
-from replication.exception import NonAuthorizedOperationError
+from replication.exception import NonAuthorizedOperationError, ContextError
 from replication.interface import session
 
 from . import operators, utils
@@ -129,6 +129,31 @@ class ApplyTimer(Timer):
                                 deps = session.get(uuid=n).dependencies
                                 if deps and node in deps:
                                     session.apply(n, force=True)
+
+class PushTimer(Timer):
+    def __init__(self, timeout=1, queue=None):
+        super().__init__(timeout)
+        self.id = "PushTimer"
+        self.q_push = queue
+
+    def execute(self):
+        while self.q_push:
+            node = session.get(uuid= self.q_push.pop())
+
+            if node.has_changed():
+                try:
+                    session.commit(node.uuid)
+                    session.push(node.uuid, check_data=False)
+                except ReferenceError:
+                    logging.debug(f"Reference error {node.uuid}")
+                    if not node.is_valid():
+                        session.remove(node.uuid)
+                except ContextError as e:
+                    logging.debug(e) 
+                except Exception as e:
+                    logging.error(e)
+            else:
+                logging.debug("Skipping update no changes")
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
