@@ -174,6 +174,9 @@ class DynamicRightSelectTimer(Timer):
                 ctx = bpy.context
                 annotation_gp = ctx.scene.grease_pencil
 
+                if annotation_gp and not annotation_gp.uuid:
+                    ctx.scene.update_tag()
+
                 # if an annotation exist and is tracked
                 if annotation_gp and annotation_gp.uuid:
                     registered_gp = session.get(uuid=annotation_gp.uuid)
@@ -188,6 +191,13 @@ class DynamicRightSelectTimer(Timer):
                                 settings.username,
                                 ignore_warnings=True,
                                 affect_dependencies=False)
+                        
+                        if registered_gp.owner == settings.username:
+                            gp_node = session.get(uuid=annotation_gp.uuid)
+                            if gp_node.has_changed():
+                                session.commit(gp_node.uuid)
+                                session.push(gp_node.uuid, check_data=False)
+
                     elif self._annotating:
                         session.change_owner(
                             registered_gp.uuid,
