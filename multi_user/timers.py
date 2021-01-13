@@ -152,6 +152,7 @@ class PushTimer(Timer):
                 logging.debug(e) 
             except Exception as e:
                 logging.error(e)
+
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
         super().__init__(timeout)

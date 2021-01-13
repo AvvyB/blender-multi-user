@@ -274,10 +274,10 @@ class SessionStartOperator(bpy.types.Operator):
         # Background client updates service
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
-        deleyables.append(timers.PushTimer(
-            queue=stagging,
-            timeout=settings.depsgraph_update_rate
-            ))
+        # deleyables.append(timers.PushTimer(
+        #     queue=stagging,
+        #     timeout=settings.depsgraph_update_rate
+        #     ))
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
@@ -980,8 +980,18 @@ def depsgraph_evaluation(scene):
                                 not settings.sync_flags.sync_during_editmode:
                             break
 
-                        if node.uuid not in stagging:
-                            stagging.append(node.uuid)
+                        try:
+                            if node.has_changed():
+                                session.commit(node.uuid)
+                                session.push(node.uuid, check_data=False)
+                        except ReferenceError:
+                            logging.debug(f"Reference error {node.uuid}")
+                            if not node.is_valid():
+                                session.remove(node.uuid)
+                        except ContextError as e:
+                            logging.debug(e) 
+                        except Exception as e:
+                            logging.error(e)
                 else:
                     continue
 
