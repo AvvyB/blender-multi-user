@@ -79,8 +79,8 @@ class BlFile(ReplicatedDatablock):
                 logging.debug("File don't exist, loading it.")
                 self._load(self.data, self.instance)
 
-    def push(self, socket, identity=None):
-        super().push(socket, identity=None)
+    def push(self, socket, identity=None, check_data=False):
+        super().push(socket, identity=None, check_data=False)
         
         if self.preferences.clear_memory_filecache:
                 del self.data['file']
