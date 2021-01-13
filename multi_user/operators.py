@@ -76,21 +76,25 @@ def session_callback(name):
 def initialize_session():
     """Session connection init hander 
     """
+    logging.info("Intializing the scene")
     settings = utils.get_preferences()
     runtime_settings = bpy.context.window_manager.session
 
+    logging.info("Constructing nodes")
     # Step 1: Constrect nodes
     for node in session._graph.list_ordered():
         node_ref = session.get(uuid=node)
         if node_ref.state == FETCHED:
             node_ref.resolve()
 
+    logging.info("Loading nodes")
     # Step 2: Load nodes
     for node in session._graph.list_ordered():
         node_ref = session.get(uuid=node)
         if node_ref.state == FETCHED:
             node_ref.apply()
 
+    logging.info("Registering timers")
     # Step 4: Register blender timers
     for d in deleyables:
         d.register()
@@ -964,14 +968,6 @@ def depsgraph_evaluation(scene):
             if update.id.uuid:
                 # Retrieve local version
                 node = session.get(uuid=update.id.uuid)
-
-                # Check if the update needs to be replicated else ignore it
-                if update.is_updated_transform \
-                    or update.is_updated_shading \
-                    or update.is_updated_geometry \
-                    or isinstance(update.id,bpy.types.Collection):
-                else:
-                    continue
 
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the

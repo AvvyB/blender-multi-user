@@ -140,21 +140,18 @@ class PushTimer(Timer):
         while self.q_push:
             node = session.get(uuid= self.q_push.pop())
 
-            if node.has_changed():
-                try:
+            try:
+                if node.has_changed():
                     session.commit(node.uuid)
                     session.push(node.uuid, check_data=False)
-                except ReferenceError:
-                    logging.debug(f"Reference error {node.uuid}")
-                    if not node.is_valid():
-                        session.remove(node.uuid)
-                except ContextError as e:
-                    logging.debug(e) 
-                except Exception as e:
-                    logging.error(e)
-            else:
-                logging.debug("Skipping update no changes")
-
+            except ReferenceError:
+                logging.debug(f"Reference error {node.uuid}")
+                if not node.is_valid():
+                    session.remove(node.uuid)
+            except ContextError as e:
+                logging.debug(e) 
+            except Exception as e:
+                logging.error(e)
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
         super().__init__(timeout)
