@@ -95,12 +95,13 @@ def initialize_session():
     for d in deleyables:
         d.register()
 
-    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
-
     bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
-    # Step 0: Clearing history
+    # Step 5: Clearing history
     utils.flush_history()
+
+    # Step 6: Launch deps graph update handling
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
 
 @session_callback('on_exit')
@@ -958,17 +959,24 @@ def depsgraph_evaluation(scene):
         settings = utils.get_preferences()
 
         # NOTE: maybe we don't need to check each update but only the first
-
         for update in reversed(dependency_updates):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
                 node = session.get(uuid=update.id.uuid)
 
+                # Check if the update needs to be replicated else ignore it
+                if update.is_updated_transform \
+                    or update.is_updated_shading \
+                    or update.is_updated_geometry \
+                    or isinstance(update.id,bpy.types.Collection):
+                else:
+                    continue
+
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
-                #   - if its to someone else, ignore the update (go deeper ?)
+                #   - if its to someone else, ignore the update
                 if node and node.owner in [session.id, RP_COMMON]:
                     if node.state == UP:
                         # Avoid slow geometry update
@@ -979,11 +987,7 @@ def depsgraph_evaluation(scene):
                         if node.uuid not in stagging:
                             stagging.append(node.uuid)
                 else:
-                    # Distant update
                     continue
-            # else:
-            #     # New items !
-            #     logger.error("UPDATE: ADD")
 
 @persistent
 def clear_staging(dummy):
