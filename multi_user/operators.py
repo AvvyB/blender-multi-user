@@ -53,8 +53,6 @@ from .presence import SessionStatusWidget, renderer, view3d_find
 from .timers import registry
 
 background_execution_queue = Queue()
-stagging = list()
-locking = False
 deleyables = []
 stop_modal_executor = False
 
@@ -995,9 +993,6 @@ def depsgraph_evaluation(scene):
                 else:
                     continue
 
-@persistent
-def clear_staging(dummy):
-    stagging.clear()
 
 def register():
     from bpy.utils import register_class
@@ -1005,8 +1000,6 @@ def register():
     for cls in classes: 
         register_class(cls)
 
-    bpy.app.handlers.undo_pre.append(clear_staging)
-    bpy.app.handlers.redo_pre.append(clear_staging)
 
     bpy.app.handlers.undo_post.append(sanitize_deps_graph)
     bpy.app.handlers.redo_post.append(sanitize_deps_graph)
@@ -1022,9 +1015,6 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-
-    bpy.app.handlers.undo_pre.remove(clear_staging)
-    bpy.app.handlers.redo_pre.remove(clear_staging)
 
     bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
     bpy.app.handlers.redo_post.remove(sanitize_deps_graph)

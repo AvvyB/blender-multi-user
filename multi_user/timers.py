@@ -130,28 +130,6 @@ class ApplyTimer(Timer):
                                 if deps and node in deps:
                                     session.apply(n, force=True)
 
-class PushTimer(Timer):
-    def __init__(self, timeout=1, queue=None):
-        super().__init__(timeout)
-        self.id = "PushTimer"
-        self.q_push = queue
-
-    def execute(self):
-        while self.q_push:
-            node = session.get(uuid= self.q_push.pop())
-
-            try:
-                if node.has_changed():
-                    session.commit(node.uuid)
-                    session.push(node.uuid, check_data=False)
-            except ReferenceError:
-                logging.debug(f"Reference error {node.uuid}")
-                if not node.is_valid():
-                    session.remove(node.uuid)
-            except ContextError as e:
-                logging.debug(e) 
-            except Exception as e:
-                logging.error(e)
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
