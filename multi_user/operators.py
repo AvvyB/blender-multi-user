@@ -702,6 +702,33 @@ class SessionClearCache(bpy.types.Operator):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
 
+class SessionPurgeOperator(bpy.types.Operator):
+    "Remove node with lost references"
+    bl_idname = "session.purge"
+    bl_label = "Purge session data"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        cache_dir = utils.get_preferences().cache_directory
+        try:
+            sanitize_deps_graph(None)
+
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to remove local cache ? ")
+
+
 class SessionNotifyOperator(bpy.types.Operator):
     """Dialog only operator"""
     bl_idname = "session.notify"
@@ -918,6 +945,7 @@ classes = (
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
     SessionStopAutoSaveOperator,
+    SessionPurgeOperator,
 )
 
 
@@ -931,9 +959,15 @@ def sanitize_deps_graph(dummy):
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
         start = utils.current_milli_time()
+        items_to_remove = []
         for node_key in session.list():
             node = session.get(node_key)
-            node.resolve(construct=False)
+            if not node.resolve(construct=False):
+                try:
+                    session.remove(node.uuid)
+                except NonAuthorizedOperationError:
+                    continue          
+
         logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms")
 
 
@@ -966,7 +1000,7 @@ def depsgraph_evaluation(scene):
             if update.id.uuid:
                 # Retrieve local version
                 node = session.get(uuid=update.id.uuid)
-
+                
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
@@ -980,6 +1014,7 @@ def depsgraph_evaluation(scene):
 
                         try:
                             if node.has_changed():
+                                logging.info(len(session.list()))
                                 session.commit(node.uuid)
                                 session.push(node.uuid, check_data=False)
                         except ReferenceError:
