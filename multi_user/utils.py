@@ -67,7 +67,7 @@ def get_datablock_users(datablock):
 
 def flush_history():
     try:
-        logging.info("Flushing history")
+        logging.debug("Flushing history")
         for i in range(bpy.context.preferences.edit.undo_steps+1):
             bpy.ops.ed.undo_push(message="Multiuser history flush")
     except RuntimeError:
