@@ -126,7 +126,7 @@ class BlMesh(BlDatablock):
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
-        if instance.is_editmode and not self.preferences.sync_flags.sync_during_editmode:
+        if (instance.is_editmode or bpy.context.mode == "SCULPT") and not self.preferences.sync_flags.sync_during_editmode:
             raise ContextError("Mesh is in edit mode")
         mesh = instance
 
