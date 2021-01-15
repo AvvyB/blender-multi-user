@@ -376,29 +376,32 @@ class BlObject(BlDatablock):
 
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
-            points_attr = 'vertices' if isinstance(
-                instance.data, bpy.types.Mesh) else 'points'
-            vg_data = []
-            for vg in instance.vertex_groups:
-                vg_idx = vg.index
-                dumped_vg = {}
-                dumped_vg['name'] = vg.name
+            if  isinstance( instance.data, bpy.types.GreasePencil):
+                logging.warning("Grease pencil vertex groups are not supported yet. More info: https://gitlab.com/slumber/multi-user/-/issues/161")
+            else:
+                points_attr = 'vertices' if isinstance(
+                    instance.data, bpy.types.Mesh) else 'points'
+                vg_data = []
+                for vg in instance.vertex_groups:
+                    vg_idx = vg.index
+                    dumped_vg = {}
+                    dumped_vg['name'] = vg.name
 
-                vertices = []
+                    vertices = []
 
-                for i, v in enumerate(getattr(instance.data, points_attr)):
-                    for vg in v.groups:
-                        if vg.group == vg_idx:
-                            vertices.append({
-                                'index': i,
-                                'weight': vg.weight
-                            })
+                    for i, v in enumerate(getattr(instance.data, points_attr)):
+                        for vg in v.groups:
+                            if vg.group == vg_idx:
+                                vertices.append({
+                                    'index': i,
+                                    'weight': vg.weight
+                                })
 
-                dumped_vg['vertices'] = vertices
+                    dumped_vg['vertices'] = vertices
 
-                vg_data.append(dumped_vg)
+                    vg_data.append(dumped_vg)
 
-            data['vertex_groups'] = vg_data
+                data['vertex_groups'] = vg_data
 
         #  SHAPE KEYS
         object_data = instance.data
