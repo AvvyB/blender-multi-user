@@ -712,10 +712,8 @@ class SessionPurgeOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        cache_dir = utils.get_preferences().cache_directory
         try:
             sanitize_deps_graph(None)
-
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
@@ -959,17 +957,18 @@ def sanitize_deps_graph(dummy):
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
         start = utils.current_milli_time()
-        items_to_remove = []
+        rm_cpt = 0
         for node_key in session.list():
             node = session.get(node_key)
             if not node.resolve(construct=False):
                 try:
                     session.remove(node.uuid)
+                    rm_cpt+=1
                 except NonAuthorizedOperationError:
                     continue          
 
         logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms")
-
+        logging.info(f"Removed {rm_cpt} nodes")
 
 
 @persistent
@@ -1014,7 +1013,6 @@ def depsgraph_evaluation(scene):
 
                         try:
                             if node.has_changed():
-                                logging.info(len(session.list()))
                                 session.commit(node.uuid)
                                 session.push(node.uuid, check_data=False)
                         except ReferenceError:
