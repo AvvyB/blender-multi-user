@@ -1025,8 +1025,15 @@ def depsgraph_evaluation(scene):
                             logging.error(e)
                 else:
                     continue
-
-
+            # A new scene is created 
+            elif isinstance(update.id, bpy.types.Scene):
+                ref = session.get(reference=update.id)
+                if ref:
+                    ref.resolve()
+                else:
+                    scn_uuid = session.add(update.id)
+                    session.commit(scn_uuid)
+                    session.push(scn_uuid, check_data=False)
 def register():
     from bpy.utils import register_class
 
