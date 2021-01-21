@@ -231,6 +231,10 @@ class BlObject(BlDatablock):
                     skin_data.data,
                     SKIN_DATA)
 
+        if hasattr(target, 'cycles_visibility') \
+            and 'cycles_visibility' in data:
+            loader.load(target.cycles_visibility, data['cycles_visibility'])
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
@@ -431,11 +435,24 @@ class BlObject(BlDatablock):
                 key_blocks[key.name]['relative_key'] = key.relative_key.name
             data['shape_keys']['key_blocks'] = key_blocks
 
+        #  SKIN VERTICES
         if hasattr(object_data, 'skin_vertices') and object_data.skin_vertices:
             skin_vertices = list()
             for skin_data in object_data.skin_vertices:
                 skin_vertices.append(np_dump_collection(skin_data.data, SKIN_DATA))
             data['skin_vertices'] = skin_vertices
+
+        # CYCLE SETTINGS
+        if hasattr(instance, 'cycles_visibility'):
+            dumper.include_filter = [
+                'camera',
+                'diffuse',
+                'glossy',
+                'transmission',
+                'scatter',
+                'shadow',
+            ]
+            data['cycles_visibility'] = dumper.dump(instance.cycles_visibility)
 
         return data
 
