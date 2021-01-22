@@ -281,13 +281,9 @@ class BlScene(BlDatablock):
     bl_icon = 'SCENE_DATA'
     bl_reload_parent = False
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.diff_method = DIFF_JSON
-
     def _construct(self, data):
         instance = bpy.data.scenes.new(data["name"])
+        instance.uuid = self.uuid
         return instance
 
     def _load_implementation(self, data, target):
