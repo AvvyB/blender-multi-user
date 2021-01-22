@@ -960,16 +960,13 @@ def sanitize_deps_graph(dummy):
         rm_cpt = 0
         for node_key in session.list():
             node = session.get(node_key)
-            if not node.resolve(construct=False):
+            if node is None or not node.resolve(construct=False):
                 try:
                     session.remove(node.uuid)
                     rm_cpt+=1
                 except NonAuthorizedOperationError:
                     continue          
-
-        logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms")
-        logging.info(f"Removed {rm_cpt} nodes")
-
+        logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms, Removed {rm_cpt} nodes")
 
 @persistent
 def load_pre_handler(dummy):
