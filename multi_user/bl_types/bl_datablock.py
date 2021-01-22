@@ -129,11 +129,6 @@ class BlDatablock(ReplicatedDatablock):
         if instance and hasattr(instance, 'uuid'):
             instance.uuid = self.uuid
 
-        if logging.getLogger().level == logging.DEBUG:
-            self.diff_method = DIFF_JSON
-        else:
-            self.diff_method = DIFF_BINARY
-
     def resolve(self, construct = True):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)

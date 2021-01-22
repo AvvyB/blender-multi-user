@@ -69,7 +69,6 @@ class BlFile(ReplicatedDatablock):
             raise FileNotFoundError(str(self.instance))
    
         self.preferences = utils.get_preferences()
-        self.diff_method = DIFF_BINARY
 
     def resolve(self, construct = True):
         if self.data:
