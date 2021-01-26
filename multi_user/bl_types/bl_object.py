@@ -235,9 +235,6 @@ class BlObject(BlDatablock):
             and 'cycles_visibility' in data:
             loader.load(target.cycles_visibility, data['cycles_visibility'])
 
-        if 'parent' in data:
-            target.parent = bpy.data.objects[data['parent']]
-
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
