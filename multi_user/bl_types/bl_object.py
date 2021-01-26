@@ -251,7 +251,6 @@ class BlObject(BlDatablock):
             "rotation_mode",
             "parent",
             "data",
-            "children",
             "library",
             "empty_display_type",
             "empty_display_size",
@@ -370,13 +369,6 @@ class BlObject(BlDatablock):
                 bone_groups[group.name] = dumper.dump(group)
             data['pose']['bone_groups'] = bone_groups
 
-        # CHILDS
-        if len(instance.children) > 0:
-            childs = []
-            for child in instance.children:
-                childs.append(child.name)
-
-            data["children"] = childs
 
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
@@ -459,8 +451,8 @@ class BlObject(BlDatablock):
         # Avoid Empty case
         if self.instance.data:
             deps.append(self.instance.data)
-        if len(self.instance.children) > 0:
-            deps.extend(list(self.instance.children))
+        if self.instance.parent :
+            deps.append(self.instance.parent)
 
         if self.is_library:
             deps.append(self.instance.library)
