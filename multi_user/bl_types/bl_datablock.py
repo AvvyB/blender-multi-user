@@ -203,6 +203,9 @@ class BlDatablock(ReplicatedDatablock):
 
             if 'action' in data['animation_data']:
                 target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
+        # Remove existing animation data if there is not more to load
+        elif hasattr(target, 'animation_data') and target.animation_data:
+            target.animation_data_clear()
 
         if self.is_library:
             return
