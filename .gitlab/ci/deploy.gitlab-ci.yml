@@ -15,7 +15,7 @@ deploy:
     - docker build --build-arg replication_version=${RP_VERSION}  --build-arg version={VERSION} -t registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} ./scripts/docker_server
     - echo "Pushing to gitlab registry ${VERSION}"
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker tag registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} registry.gitlab.com/slumber/multi-user/multi-user-server${CI_COMMIT_REF_NAME}
+    - docker tag registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} registry.gitlab.com/slumber/multi-user/multi-user-server:${CI_COMMIT_REF_NAME}
     - docker push registry.gitlab.com/slumber/multi-user/multi-user-server
 
   only:
