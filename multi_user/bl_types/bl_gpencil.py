@@ -204,7 +204,7 @@ def dump_layer(layer):
 
     for frame in layer.frames:
         dumped_layer['frames'].append(dump_frame(frame))
-    
+
     return dumped_layer
 
 
@@ -287,6 +287,8 @@ class BlGpencil(BlDatablock):
         for layer in instance.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
+        data["active_layers"] = instance.layers.active.info
+        data["eval_frame"] = bpy.context.scene.frame_current
         return data
 
     def _resolve_deps_implementation(self):
@@ -296,3 +298,17 @@ class BlGpencil(BlDatablock):
             deps.append(material)
 
         return deps
+
+    def layer_changed(self):
+        return self.instance.layers.active.info != self.data["active_layers"]
+
+    def frame_changed(self):
+        return  bpy.context.scene.frame_current != self.data["eval_frame"]
+
+    def diff(self):
+        if self.layer_changed() \
+                or self.frame_changed() \
+                or bpy.context.mode == 'OBJECT':
+            return super().diff()
+        else:
+            return False
