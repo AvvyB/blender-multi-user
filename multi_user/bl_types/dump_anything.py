@@ -465,6 +465,7 @@ class Loader:
         self.type_subset = self.match_subset_all
         self.occlude_read_only = False
         self.order = ['*']
+        self.exclure_filter = []
 
     def load(self, dst_data, src_dumped_data):
         self._load_any(
@@ -475,7 +476,8 @@ class Loader:
 
     def _load_any(self, any, dump):
         for filter_function, load_function in self.type_subset:
-            if filter_function(any):
+            if filter_function(any) and \
+                any.sub_element_name not in self.exclure_filter:
                 load_function(any, dump)
                 return
 
