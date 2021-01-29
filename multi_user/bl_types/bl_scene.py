@@ -24,7 +24,7 @@ import mathutils
 from deepdiff import DeepDiff
 from replication.constants import DIFF_JSON, MODIFIED
 
-from ..utils import flush_history, current_milli_time
+from ..utils import flush_history
 from .bl_collection import (dump_collection_children, dump_collection_objects,
                             load_collection_childrens, load_collection_objects,
                             resolve_collection_dependencies)
@@ -310,7 +310,6 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
         :arg sequence_editor: root sequence editor
         :type sequence_editor: bpy.types.SequenceEditor
     """
-    start = current_milli_time()
     strip_type = sequence_data.get('type')
     strip_name = sequence_data.get('name')
     strip_channel = sequence_data.get('channel')
@@ -362,10 +361,10 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
                                                         **seq)
 
     loader = Loader()
+    # TODO: Support filepath updates 
     loader.exclure_filter = ['filepath', 'sound', 'filenames','fps']
     loader.load(sequence, sequence_data)
     sequence.select = False
-    logging.info(f"loading {strip_name} took {current_milli_time()-start} ms")
 
 
 class BlScene(BlDatablock):
@@ -430,12 +429,15 @@ class BlScene(BlDatablock):
             # Create sequencer data
             target.sequence_editor_create()
             vse = target.sequence_editor
+
+            # Clear removed sequences
             for seq in vse.sequences_all:
                 if seq.name not in sequences:
                     vse.sequences.remove(seq)
-                    
+            # Load existing sequences
             for seq_name, seq_data in sequences.items():
                 load_sequence(seq_data, vse)
+        # If the sequence is no longer used, clear it
         elif target.sequence_editor and not sequences:
             target.sequence_editor_clear()
 
