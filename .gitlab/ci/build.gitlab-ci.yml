@@ -7,8 +7,3 @@ build:
     name: multi_user
     paths: 
      - multi_user
-  only:
-    refs:
-        - master
-        - develop
-        - 132-fix-undo-edit-last-operation-redo-handling-2
