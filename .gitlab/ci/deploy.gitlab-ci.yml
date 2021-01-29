@@ -17,9 +17,3 @@ deploy:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker tag registry.gitlab.com/slumber/multi-user/multi-user-server:${VERSION} registry.gitlab.com/slumber/multi-user/multi-user-server:${CI_COMMIT_REF_NAME}
     - docker push registry.gitlab.com/slumber/multi-user/multi-user-server
-
-  only:
-    refs:
-        - master
-        - develop
-        - 132-fix-undo-edit-last-operation-redo-handling-2
