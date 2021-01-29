@@ -308,7 +308,8 @@ class BlGpencil(BlDatablock):
     def diff(self):
         if self.layer_changed() \
                 or self.frame_changed() \
-                or bpy.context.mode == 'OBJECT':
+                or bpy.context.mode == 'OBJECT' \
+                or self.preferences.sync_flags.sync_during_editmode:
             return super().diff()
         else:
             return False
