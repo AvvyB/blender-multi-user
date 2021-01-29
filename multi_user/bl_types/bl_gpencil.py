@@ -226,7 +226,6 @@ def load_layer(layer_data, layer):
         load_frame(frame_data, target_frame)
 
 
-
 class BlGpencil(BlDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
@@ -265,6 +264,7 @@ class BlGpencil(BlDatablock):
 
                 load_layer(layer_data, target_layer)
 
+            target.layers.update()
 
 
 
