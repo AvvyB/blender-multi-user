@@ -409,6 +409,9 @@ class BlMaterial(BlDatablock):
                 'fill_style',
                 'gradient_type',
                 # 'fill_image',
+                'use_stroke_holdout',
+                'use_overlap_strokes',
+                'use_fill_holdout',
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         elif instance.use_nodes:
