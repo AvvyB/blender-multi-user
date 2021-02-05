@@ -109,7 +109,9 @@ def load_stroke(stroke_data, stroke):
     stroke.points.add(stroke_data["p_count"])
     np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
 
-
+    # HACK: Temporary fix to trigger a BKE_gpencil_stroke_geometry_update to 
+    # fix fill issues
+    stroke.uv_scale = stroke_data["uv_scale"]
 
 def dump_frame(frame):
     """ Dump a grease pencil frame to a dict
