@@ -165,9 +165,10 @@ class SessionStartOperator(bpy.types.Operator):
                 datefmt='%H:%M:%S'
             )
 
+            start_time = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
             log_directory = os.path.join(
                 settings.cache_directory,
-                "multiuser_client.log")
+                f"multiuser_{start_time}.log")
 
             os.makedirs(settings.cache_directory, exist_ok=True)
 
