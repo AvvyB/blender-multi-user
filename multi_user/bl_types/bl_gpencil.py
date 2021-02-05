@@ -109,7 +109,9 @@ def load_stroke(stroke_data, stroke):
     stroke.points.add(stroke_data["p_count"])
     np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
 
-
+    # HACK: Temporary fix to trigger a BKE_gpencil_stroke_geometry_update to 
+    # fix fill issues
+    stroke.uv_scale = stroke_data["uv_scale"]
 
 def dump_frame(frame):
     """ Dump a grease pencil frame to a dict
@@ -204,7 +206,7 @@ def dump_layer(layer):
 
     for frame in layer.frames:
         dumped_layer['frames'].append(dump_frame(frame))
-    
+
     return dumped_layer
 
 
@@ -224,7 +226,6 @@ def load_layer(layer_data, layer):
         target_frame = layer.frames.new(frame_data['frame_number'])
 
         load_frame(frame_data, target_frame)
-
 
 
 class BlGpencil(BlDatablock):
@@ -265,6 +266,7 @@ class BlGpencil(BlDatablock):
 
                 load_layer(layer_data, target_layer)
 
+            target.layers.update()
 
 
 
@@ -287,6 +289,8 @@ class BlGpencil(BlDatablock):
         for layer in instance.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
+        data["active_layers"] = instance.layers.active.info
+        data["eval_frame"] = bpy.context.scene.frame_current
         return data
 
     def _resolve_deps_implementation(self):
@@ -296,3 +300,18 @@ class BlGpencil(BlDatablock):
             deps.append(material)
 
         return deps
+
+    def layer_changed(self):
+        return self.instance.layers.active.info != self.data["active_layers"]
+
+    def frame_changed(self):
+        return  bpy.context.scene.frame_current != self.data["eval_frame"]
+
+    def diff(self):
+        if self.layer_changed() \
+                or self.frame_changed() \
+                or bpy.context.mode == 'OBJECT' \
+                or self.preferences.sync_flags.sync_during_editmode:
+            return super().diff()
+        else:
+            return False
