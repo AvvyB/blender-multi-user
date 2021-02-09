@@ -78,19 +78,23 @@ def initialize_session():
     settings = utils.get_preferences()
     runtime_settings = bpy.context.window_manager.session
 
-    logging.info("Constructing nodes")
     # Step 1: Constrect nodes
+    logging.info("Constructing nodes")
     for node in session._graph.list_ordered():
         node_ref = session.get(uuid=node)
-        if node_ref.state == FETCHED:
+        if node_ref and node_ref.state == FETCHED:
             node_ref.resolve()
-
-    logging.info("Loading nodes")
+        else:
+            logging.error(f"Can't construct node {node}")
+    
     # Step 2: Load nodes
+    logging.info("Loading nodes")
     for node in session._graph.list_ordered():
         node_ref = session.get(uuid=node)
-        if node_ref.state == FETCHED:
+        if node_ref and node_ref.state == FETCHED:
             node_ref.apply()
+        else:
+            logging.error(f"Can't load node {node}")
 
     logging.info("Registering timers")
     # Step 4: Register blender timers
