@@ -27,6 +27,7 @@ from .dump_anything import (Dumper, Loader,
                             np_load_collection,
                             np_dump_collection)
 from .bl_datablock import get_datablock_from_uuid
+from .bl_material import dump_materials_slots, load_materials_slots
 
 SPLINE_BEZIER_POINT = [
     # "handle_left_type",
@@ -173,18 +174,9 @@ class BlCurve(BlDatablock):
             loader.load(new_spline, spline)
 
             # MATERIAL SLOTS
-            target.materials.clear()
-            for mat_uuid, mat_name in data["material_list"]:
-                mat_ref = None
-                if mat_uuid is not None:
-                    mat_ref = get_datablock_from_uuid(mat_uuid, None)
-                else:
-                    mat_ref = bpy.data.materials.get(mat_name, None)
-
-                if mat_ref is None:
-                    raise Exception("Material doesn't exist")
-
-                target.materials.append(mat_ref)
+            src_materials = data.get('materials', None)
+            if src_materials:
+                load_materials_slots(src_materials, target.materials)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -229,8 +221,7 @@ class BlCurve(BlDatablock):
         elif isinstance(instance, T.Curve):
             data['type'] = 'CURVE'
 
-        data['material_list'] = [(m.uuid, m.name)
-                                  for m in instance.materials if m]
+        data['materials'] = dump_materials_slots(instance.materials)
 
         return data
 

@@ -26,6 +26,7 @@ from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dum
 from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from .bl_material import dump_materials_slots, load_materials_slots
 
 VERTICE = ['co']
 
@@ -69,19 +70,9 @@ class BlMesh(BlDatablock):
             loader.load(target, data)
 
             # MATERIAL SLOTS
-            target.materials.clear()
-
-            for mat_uuid, mat_name in data["material_list"]:
-                mat_ref = None
-                if mat_uuid is not None:
-                    mat_ref = get_datablock_from_uuid(mat_uuid, None)
-                else:
-                    mat_ref = bpy.data.materials.get(mat_name, None)
-
-                if mat_ref is None:
-                    raise Exception("Material doesn't exist")
-
-                target.materials.append(mat_ref)
+            src_materials = data.get('materials', None)
+            if src_materials:
+                load_materials_slots(src_materials, target.materials)
 
             # CLEAR GEOMETRY
             if target.vertices:
@@ -172,9 +163,8 @@ class BlMesh(BlDatablock):
                 data['vertex_colors'][color_map.name] = {}
                 data['vertex_colors'][color_map.name]['data'] = np_dump_collection_primitive(color_map.data, 'color')
 
-        # Fix material index
-        data['material_list'] = [(m.uuid, m.name) for m in instance.materials if m]
-
+        # Materials
+        data['materials'] = dump_materials_slots(instance.materials)
         return data
 
     def _resolve_deps_implementation(self):

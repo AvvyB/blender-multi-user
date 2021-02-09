@@ -29,7 +29,7 @@ from .bl_datablock import BlDatablock, get_datablock_from_uuid
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 
 
-def load_node(node_data, node_tree):
+def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
 
         :arg node_data: dumped node data
@@ -70,9 +70,11 @@ def load_node(node_data, node_tree):
                 try:
                     outputs[idx].default_value = output
                 except:
-                    logging.warning(f"Node {target_node.name} output {outputs[idx].name} parameter not supported, skipping ({e})")
+                    logging.warning(
+                        f"Node {target_node.name} output {outputs[idx].name} parameter not supported, skipping ({e})")
             else:
-                logging.warning(f"Node {target_node.name} output length mismatch.")
+                logging.warning(
+                    f"Node {target_node.name} output length mismatch.")
 
 
 def load_links(links_data, node_tree):
@@ -117,7 +119,7 @@ def dump_links(links):
     return links_data
 
 
-def dump_node(node):
+def dump_node(node: bpy.types.ShaderNode) -> dict:
     """ Dump a single node to a dict
 
         :arg node: target node
@@ -155,7 +157,7 @@ def dump_node(node):
 
     dumped_node = node_dumper.dump(node)
 
-    dump_io_needed = (node.type not in ['REROUTE','OUTPUT_MATERIAL'])
+    dump_io_needed = (node.type not in ['REROUTE', 'OUTPUT_MATERIAL'])
 
     if dump_io_needed:
         io_dumper = Dumper()
@@ -166,13 +168,15 @@ def dump_node(node):
             dumped_node['inputs'] = []
             for idx, inpt in enumerate(node.inputs):
                 if hasattr(inpt, 'default_value'):
-                    dumped_node['inputs'].append(io_dumper.dump(inpt.default_value))
+                    dumped_node['inputs'].append(
+                        io_dumper.dump(inpt.default_value))
 
         if hasattr(node, 'outputs'):
             dumped_node['outputs'] = []
             for idx, output in enumerate(node.outputs):
                 if hasattr(output, 'default_value'):
-                    dumped_node['outputs'].append(io_dumper.dump(output.default_value))
+                    dumped_node['outputs'].append(
+                        io_dumper.dump(output.default_value))
 
     if hasattr(node, 'color_ramp'):
         ramp_dumper = Dumper()
@@ -223,7 +227,7 @@ def dump_shader_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
     return node_tree_data
 
 
-def dump_node_tree_sockets(sockets: bpy.types.Collection)->dict:
+def dump_node_tree_sockets(sockets: bpy.types.Collection) -> dict:
     """ dump sockets of a shader_node_tree
 
         :arg target_node_tree: target node_tree
@@ -244,6 +248,7 @@ def dump_node_tree_sockets(sockets: bpy.types.Collection)->dict:
 
     return sockets_data
 
+
 def load_node_tree_sockets(sockets: bpy.types.Collection,
                            sockets_data: dict):
     """ load sockets of a shader_node_tree
@@ -263,7 +268,7 @@ def load_node_tree_sockets(sockets: bpy.types.Collection,
     # Check for new sockets
     for idx, socket_data in enumerate(sockets_data):
         try:
-            checked_socket = sockets[idx]   
+            checked_socket = sockets[idx]
             if checked_socket.name != socket_data[0]:
                 checked_socket.name = socket_data[0]
         except Exception:
@@ -271,7 +276,7 @@ def load_node_tree_sockets(sockets: bpy.types.Collection,
             s['uuid'] = socket_data[2]
 
 
-def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.ShaderNodeTree)->dict:
+def load_shader_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeTree) -> dict:
     """Load a shader node_tree from dumped data
 
         :arg node_tree_data: dumped node data
@@ -291,7 +296,7 @@ def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.Shader
 
     if 'outputs' in node_tree_data:
         socket_collection = getattr(target_node_tree,  'outputs')
-        load_node_tree_sockets(socket_collection,node_tree_data['outputs'])
+        load_node_tree_sockets(socket_collection, node_tree_data['outputs'])
 
     # Load nodes
     for node in node_tree_data["nodes"]:
@@ -305,8 +310,11 @@ def load_shader_node_tree(node_tree_data:dict, target_node_tree:bpy.types.Shader
 
 
 def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
-    has_image = lambda node : (node.type in ['TEX_IMAGE', 'TEX_ENVIRONMENT'] and node.image)
-    has_node_group = lambda node : (hasattr(node,'node_tree') and node.node_tree)
+    def has_image(node): return (
+        node.type in ['TEX_IMAGE', 'TEX_ENVIRONMENT'] and node.image)
+
+    def has_node_group(node): return (
+        hasattr(node, 'node_tree') and node.node_tree)
 
     deps = []
 
@@ -317,6 +325,40 @@ def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
             deps.append(node.node_tree)
 
     return deps
+
+
+def dump_materials_slots(materials: bpy.types.bpy_prop_collection) -> list:
+    """ Dump material slots collection
+
+        :arg materials: material slots collection to dump
+        :type materials: bpy.types.bpy_prop_collection
+        :return: list of tuples (mat_uuid, mat_name)
+    """
+    return [(m.uuid, m.name) for m in materials if m]
+
+
+def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_collection):
+    """ Load material slots
+
+        :arg src_materials: dumped material collection (ex: object.materials)
+        :type src_materials: list of tuples (uuid, name) 
+        :arg dst_materials: target material collection pointer
+        :type dst_materials: bpy.types.bpy_prop_collection
+    """
+    # MATERIAL SLOTS
+    dst_materials.clear()
+
+    for mat_uuid, mat_name in src_materials:
+        mat_ref = None
+        if mat_uuid is not None:
+            mat_ref = get_datablock_from_uuid(mat_uuid, None)
+        else:
+            mat_ref = bpy.data.materials.get(mat_name, None)
+
+        if mat_ref is None:
+            raise Exception(f"Material {mat_name} doesn't exist")
+
+        dst_materials.append(mat_ref)
 
 
 class BlMaterial(BlDatablock):

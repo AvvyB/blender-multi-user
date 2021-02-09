@@ -22,7 +22,7 @@ from pathlib import Path
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
-
+from .bl_material import dump_materials_slots, load_materials_slots
 
 class BlVolume(BlDatablock):
     bl_id = "volumes"
@@ -40,19 +40,9 @@ class BlVolume(BlDatablock):
         loader.load(target.display, data['display'])
 
         # MATERIAL SLOTS
-        target.materials.clear()
-
-        for mat_uuid, mat_name in data["material_list"]:
-            mat_ref = None
-            if mat_uuid is not None:
-                mat_ref = get_datablock_from_uuid(mat_uuid, None)
-            else:
-                mat_ref = bpy.data.materials.get(mat_name, None)
-
-            if mat_ref is None:
-                raise Exception("Material doesn't exist")
-
-            target.materials.append(mat_ref)
+        src_materials = data.get('materials', None)
+        if src_materials:
+            load_materials_slots(src_materials, target.materials)
 
     def _construct(self, data):
         return bpy.data.volumes.new(data["name"])
@@ -78,7 +68,7 @@ class BlVolume(BlDatablock):
         data['display'] = dumper.dump(instance.display)
 
          # Fix material index
-        data['material_list'] = [(m.uuid, m.name) for m in instance.materials if m]
+        data['materials'] = dump_materials_slots(instance.materials)
 
         return data
 
