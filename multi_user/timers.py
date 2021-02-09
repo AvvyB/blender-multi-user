@@ -98,7 +98,7 @@ class SessionBackupTimer(Timer):
 
 
     def execute(self):
-        operators.dump_db(self._filepath)
+        session.save(self._filepath)
 
 class ApplyTimer(Timer):
     def __init__(self, timeout=1, target_type=None):

@@ -82,19 +82,20 @@ def initialize_session():
     logging.info("Constructing nodes")
     for node in session._graph.list_ordered():
         node_ref = session.get(uuid=node)
-        if node_ref and node_ref.state == FETCHED:
-            node_ref.resolve()
-        else:
+        if node_ref is None:
             logging.error(f"Can't construct node {node}")
+        elif node_ref.state == FETCHED:
+            node_ref.resolve()
     
     # Step 2: Load nodes
     logging.info("Loading nodes")
     for node in session._graph.list_ordered():
         node_ref = session.get(uuid=node)
-        if node_ref and node_ref.state == FETCHED:
-            node_ref.apply()
-        else:
+
+        if node_ref is None:
             logging.error(f"Can't load node {node}")
+        elif node_ref.state == FETCHED:
+            node_ref.apply()
 
     logging.info("Registering timers")
     # Step 4: Register blender timers
@@ -718,7 +719,7 @@ class SessionPurgeOperator(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            sanitize_deps_graph(None)
+            sanitize_deps_graph(remove_nodes=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
@@ -756,37 +757,6 @@ class SessionNotifyOperator(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-def dump_db(filepath):
-    # Replication graph 
-    nodes_ids = session.list()
-    #TODO: add dump graph to replication
-
-    nodes =[]
-    for n in nodes_ids:
-        nd = session.get(uuid=n)
-        nodes.append((
-            n,
-            {
-                'owner': nd.owner,
-                'str_type': nd.str_type,
-                'data': nd.data,
-                'dependencies': nd.dependencies,
-            }
-        ))
-
-    db = dict()
-    db['nodes'] = nodes
-    db['users'] = copy.copy(session.online_users)
-
-    stime = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
-    
-    filepath = Path(filepath)
-    filepath = filepath.with_name(f"{filepath.stem}_{stime}{filepath.suffix}")
-    with gzip.open(filepath, "wb") as f:
-        logging.info(f"Writing session snapshot to {filepath}")
-        pickle.dump(db, f, protocol=4)
-
-
 class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
     bl_idname = "session.save"
     bl_label = "Save session data"
@@ -820,7 +790,7 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
             recorder.register()
             deleyables.append(recorder)
         else:
-            dump_db(self.filepath)
+            session.save(self.filepath)
 
         return {'FINISHED'}
 
@@ -952,26 +922,34 @@ classes = (
 )
 
 
+def sanitize_deps_graph(remove_nodes: bool = False):
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        start = utils.current_milli_time()
+        rm_cpt = 0
+        for node_key in session.list():
+            node = session.get(node_key)
+            if node is None \
+                    or (node.state == UP and not node.resolve(construct=False)):
+                if remove_nodes:
+                    try:
+                        session.remove(node.uuid, remove_dependencies=False)
+                        logging.info(f"Removing {node.uuid}")
+                        rm_cpt += 1
+                    except NonAuthorizedOperationError:
+                        continue
+        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms")
+
+
 @persistent
-def sanitize_deps_graph(dummy):
-    """sanitize deps graph
+def resolve_deps_graph(dummy):
+    """Resolve deps graph
 
     Temporary solution to resolve each node pointers after a Undo.
     A future solution should be to avoid storing dataclock reference...
 
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
-        start = utils.current_milli_time()
-        rm_cpt = 0
-        for node_key in session.list():
-            node = session.get(node_key)
-            if node is None or not node.resolve(construct=False):
-                try:
-                    session.remove(node.uuid)
-                    rm_cpt+=1
-                except NonAuthorizedOperationError:
-                    continue          
-        logging.debug(f"Sanitize took { utils.current_milli_time()-start}ms, Removed {rm_cpt} nodes")
+        sanitize_deps_graph(remove_nodes=True)
 
 @persistent
 def load_pre_handler(dummy):
@@ -1043,8 +1021,8 @@ def register():
         register_class(cls)
 
 
-    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
+    bpy.app.handlers.undo_post.append(resolve_deps_graph)
+    bpy.app.handlers.redo_post.append(resolve_deps_graph)
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
@@ -1058,8 +1036,8 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
+    bpy.app.handlers.undo_post.remove(resolve_deps_graph)
+    bpy.app.handlers.redo_post.remove(resolve_deps_graph)
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)
