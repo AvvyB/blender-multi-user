@@ -208,15 +208,9 @@ class SessionStartOperator(bpy.types.Operator):
             bpy_factory.register_type(
                 type_module_class.bl_class,
                 type_module_class,
-                timer=type_local_config.bl_delay_refresh*1000,
-                automatic=type_local_config.auto_push,
                 check_common=type_module_class.bl_check_common)
 
-            if type_local_config.bl_delay_apply > 0:
-                deleyables.append(
-                    timers.ApplyTimer(
-                        timeout=type_local_config.bl_delay_apply,
-                        target_type=type_module_class))
+            deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
 
         if bpy.app.version[1] >= 91:
             python_binary_path = sys.executable
@@ -921,8 +915,18 @@ classes = (
     SessionPurgeOperator,
 )
 
+def update_external_dependencies():
+    nodes_ids = session.list(filter=bl_types.bl_file.BlFile)
+    for node_id in nodes_ids:
+        node = session.get(node_id)
+        if node and node.owner in [session.id, RP_COMMON] \
+                and node.has_changed():
+            session.commit(node_id)
+            session.push(node_id, check_data=False)
 
 def sanitize_deps_graph(remove_nodes: bool = False):
+    """ Cleanup the replication graph
+    """
     if session and session.state['STATE'] == STATE_ACTIVE:
         start = utils.current_milli_time()
         rm_cpt = 0
@@ -972,6 +976,8 @@ def depsgraph_evaluation(scene):
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
         settings = utils.get_preferences()
+
+        update_external_dependencies()
 
         # NOTE: maybe we don't need to check each update but only the first
         for update in reversed(dependency_updates):
