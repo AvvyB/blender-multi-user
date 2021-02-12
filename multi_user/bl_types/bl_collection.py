@@ -85,9 +85,6 @@ class BlCollection(BlDatablock):
     bl_id = "collections"
     bl_icon = 'FILE_FOLDER'
     bl_class = bpy.types.Collection
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = True
     bl_reload_parent = False
     
@@ -113,6 +110,10 @@ class BlCollection(BlDatablock):
 
         # Link childrens
         load_collection_childrens(data['children'], target)
+
+        # FIXME: Find a better way after the replication big refacotoring
+        # Keep other user from deleting collection object by flushing their history
+        utils.flush_history()
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)

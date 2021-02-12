@@ -45,7 +45,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import ReplicatedDataFactory
-from replication.exception import NonAuthorizedOperationError
+from replication.exception import NonAuthorizedOperationError, ContextError
 from replication.interface import session
 
 from . import bl_types, environment, timers, ui, utils
@@ -74,29 +74,41 @@ def session_callback(name):
 def initialize_session():
     """Session connection init hander 
     """
+    logging.info("Intializing the scene")
     settings = utils.get_preferences()
     runtime_settings = bpy.context.window_manager.session
 
     # Step 1: Constrect nodes
+    logging.info("Constructing nodes")
     for node in session._graph.list_ordered():
-        node_ref = session.get(node)
-        if node_ref.state == FETCHED:
+        node_ref = session.get(uuid=node)
+        if node_ref is None:
+            logging.error(f"Can't construct node {node}")
+        elif node_ref.state == FETCHED:
             node_ref.resolve()
-
+    
     # Step 2: Load nodes
+    logging.info("Loading nodes")
     for node in session._graph.list_ordered():
-        node_ref = session.get(node)
-        if node_ref.state == FETCHED:
+        node_ref = session.get(uuid=node)
+
+        if node_ref is None:
+            logging.error(f"Can't load node {node}")
+        elif node_ref.state == FETCHED:
             node_ref.apply()
 
+    logging.info("Registering timers")
     # Step 4: Register blender timers
     for d in deleyables:
         d.register()
 
-    if settings.update_method == 'DEPSGRAPH':
-        bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
-
     bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
+
+    # Step 5: Clearing history
+    utils.flush_history()
+
+    # Step 6: Launch deps graph update handling
+    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
 
 
 @session_callback('on_exit')
@@ -116,9 +128,8 @@ def on_connection_end(reason="none"):
 
     stop_modal_executor = True
 
-    if settings.update_method == 'DEPSGRAPH':
-        bpy.app.handlers.depsgraph_update_post.remove(
-            depsgraph_evaluation)
+    if depsgraph_evaluation in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
 
     # Step 3: remove file handled
     logger = logging.getLogger()
@@ -148,7 +159,7 @@ class SessionStartOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = runtime_settings.password
-        use_extern_update = settings.update_method == 'DEPSGRAPH'
+
         users.clear()
         deleyables.clear()
 
@@ -159,9 +170,10 @@ class SessionStartOperator(bpy.types.Operator):
                 datefmt='%H:%M:%S'
             )
 
+            start_time = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
             log_directory = os.path.join(
                 settings.cache_directory,
-                "multiuser_client.log")
+                f"multiuser_{start_time}.log")
 
             os.makedirs(settings.cache_directory, exist_ok=True)
 
@@ -196,16 +208,9 @@ class SessionStartOperator(bpy.types.Operator):
             bpy_factory.register_type(
                 type_module_class.bl_class,
                 type_module_class,
-                timer=type_local_config.bl_delay_refresh*1000,
-                automatic=type_local_config.auto_push,
                 check_common=type_module_class.bl_check_common)
 
-            if settings.update_method == 'DEFAULT':
-                if type_local_config.bl_delay_apply > 0:
-                    deleyables.append(
-                        timers.ApplyTimer(
-                            timeout=type_local_config.bl_delay_apply,
-                            target_type=type_module_class))
+            deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
 
         if bpy.app.version[1] >= 91:
             python_binary_path = sys.executable
@@ -215,11 +220,7 @@ class SessionStartOperator(bpy.types.Operator):
         session.configure(
             factory=bpy_factory,
             python_path=python_binary_path,
-            external_update_handling=use_extern_update)
-
-        if settings.update_method == 'DEPSGRAPH':
-            deleyables.append(timers.ApplyTimer(
-                settings.depsgraph_update_rate/1000))
+            external_update_handling=True)
 
         # Host a session
         if self.host:
@@ -271,7 +272,10 @@ class SessionStartOperator(bpy.types.Operator):
         # Background client updates service
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
-
+        # deleyables.append(timers.PushTimer(
+        #     queue=stagging,
+        #     timeout=settings.depsgraph_update_rate
+        #     ))
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
@@ -698,6 +702,31 @@ class SessionClearCache(bpy.types.Operator):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
 
+class SessionPurgeOperator(bpy.types.Operator):
+    "Remove node with lost references"
+    bl_idname = "session.purge"
+    bl_label = "Purge session data"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        try:
+            sanitize_deps_graph(remove_nodes=True)
+        except Exception as e:
+            self.report({'ERROR'}, repr(e))
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        row = self.layout
+        row.label(text=f" Do you really want to remove local cache ? ")
+
+
 class SessionNotifyOperator(bpy.types.Operator):
     """Dialog only operator"""
     bl_idname = "session.notify"
@@ -720,37 +749,6 @@ class SessionNotifyOperator(bpy.types.Operator):
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
-
-
-def dump_db(filepath):
-    # Replication graph 
-    nodes_ids = session.list()
-    #TODO: add dump graph to replication
-
-    nodes =[]
-    for n in nodes_ids:
-        nd = session.get(uuid=n)
-        nodes.append((
-            n,
-            {
-                'owner': nd.owner,
-                'str_type': nd.str_type,
-                'data': nd.data,
-                'dependencies': nd.dependencies,
-            }
-        ))
-
-    db = dict()
-    db['nodes'] = nodes
-    db['users'] = copy.copy(session.online_users)
-
-    stime = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
-    
-    filepath = Path(filepath)
-    filepath = filepath.with_name(f"{filepath.stem}_{stime}{filepath.suffix}")
-    with gzip.open(filepath, "wb") as f:
-        logging.info(f"Writing session snapshot to {filepath}")
-        pickle.dump(db, f, protocol=4)
 
 
 class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
@@ -786,7 +784,7 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
             recorder.register()
             deleyables.append(recorder)
         else:
-            dump_db(self.filepath)
+            session.save(self.filepath)
 
         return {'FINISHED'}
 
@@ -914,21 +912,48 @@ classes = (
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
     SessionStopAutoSaveOperator,
+    SessionPurgeOperator,
 )
+
+def update_external_dependencies():
+    nodes_ids = session.list(filter=bl_types.bl_file.BlFile)
+    for node_id in nodes_ids:
+        node = session.get(node_id)
+        if node and node.owner in [session.id, RP_COMMON] \
+                and node.has_changed():
+            session.commit(node_id)
+            session.push(node_id, check_data=False)
+
+def sanitize_deps_graph(remove_nodes: bool = False):
+    """ Cleanup the replication graph
+    """
+    if session and session.state['STATE'] == STATE_ACTIVE:
+        start = utils.current_milli_time()
+        rm_cpt = 0
+        for node_key in session.list():
+            node = session.get(node_key)
+            if node is None \
+                    or (node.state == UP and not node.resolve(construct=False)):
+                if remove_nodes:
+                    try:
+                        session.remove(node.uuid, remove_dependencies=False)
+                        logging.info(f"Removing {node.uuid}")
+                        rm_cpt += 1
+                    except NonAuthorizedOperationError:
+                        continue
+        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms")
 
 
 @persistent
-def sanitize_deps_graph(dummy):
-    """sanitize deps graph
+def resolve_deps_graph(dummy):
+    """Resolve deps graph
 
     Temporary solution to resolve each node pointers after a Undo.
     A future solution should be to avoid storing dataclock reference...
 
     """
     if session and session.state['STATE'] == STATE_ACTIVE:
-        for node_key in session.list():
-            session.get(node_key).resolve()
-
+        sanitize_deps_graph(remove_nodes=True)
 
 @persistent
 def load_pre_handler(dummy):
@@ -952,41 +977,58 @@ def depsgraph_evaluation(scene):
         dependency_updates = [u for u in blender_depsgraph.updates]
         settings = utils.get_preferences()
 
-        # NOTE: maybe we don't need to check each update but only the first
+        update_external_dependencies()
 
+        # NOTE: maybe we don't need to check each update but only the first
         for update in reversed(dependency_updates):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
-                node = session.get(update.id.uuid)
-
+                node = session.get(uuid=update.id.uuid)
+                
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
-                #   - if its to someone else, ignore the update (go deeper ?)
-                if node and node.owner in [session.id, RP_COMMON] and node.state == UP:
-                    # Avoid slow geometry update
-                    if 'EDIT' in context.mode and \
-                            not settings.sync_flags.sync_during_editmode:
-                        break
+                #   - if its to someone else, ignore the update
+                if node and node.owner in [session.id, RP_COMMON]:
+                    if node.state == UP:
+                        # Avoid slow geometry update
+                        if 'EDIT' in context.mode and \
+                                not settings.sync_flags.sync_during_editmode:
+                            break
 
-                    session.stash(node.uuid)
+                        try:
+                            if node.has_changed():
+                                session.commit(node.uuid)
+                                session.push(node.uuid, check_data=False)
+                        except ReferenceError:
+                            logging.debug(f"Reference error {node.uuid}")
+                            if not node.is_valid():
+                                session.remove(node.uuid)
+                        except ContextError as e:
+                            logging.debug(e) 
+                        except Exception as e:
+                            logging.error(e)
                 else:
-                    # Distant update
                     continue
-            # else:
-            #     # New items !
-            #     logger.error("UPDATE: ADD")
-
-
+            # A new scene is created 
+            elif isinstance(update.id, bpy.types.Scene):
+                ref = session.get(reference=update.id)
+                if ref:
+                    ref.resolve()
+                else:
+                    scn_uuid = session.add(update.id)
+                    session.commit(scn_uuid)
+                    session.push(scn_uuid, check_data=False)
 def register():
     from bpy.utils import register_class
 
     for cls in classes: 
         register_class(cls)
 
-    bpy.app.handlers.undo_post.append(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.append(sanitize_deps_graph)
+
+    bpy.app.handlers.undo_post.append(resolve_deps_graph)
+    bpy.app.handlers.redo_post.append(resolve_deps_graph)
 
     bpy.app.handlers.load_pre.append(load_pre_handler)
     bpy.app.handlers.frame_change_pre.append(update_client_frame)
@@ -1000,8 +1042,8 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
 
-    bpy.app.handlers.undo_post.remove(sanitize_deps_graph)
-    bpy.app.handlers.redo_post.remove(sanitize_deps_graph)
+    bpy.app.handlers.undo_post.remove(resolve_deps_graph)
+    bpy.app.handlers.redo_post.remove(resolve_deps_graph)
 
     bpy.app.handlers.load_pre.remove(load_pre_handler)
     bpy.app.handlers.frame_change_pre.remove(update_client_frame)

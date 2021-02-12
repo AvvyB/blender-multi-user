@@ -269,7 +269,6 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         if settings.sidebar_advanced_rep_expanded:
             replication_section_row = replication_section.row()
 
-            replication_section_row.label(text="Sync flags", icon='COLLECTION_NEW')
             replication_section_row = replication_section.row()
             replication_section_row.prop(settings.sync_flags, "sync_render_settings")
             replication_section_row = replication_section.row()
@@ -282,34 +281,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
                 warning = replication_section_row.box()
                 warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
                 replication_section_row = replication_section.row()
+            replication_section_row.prop(settings, "depsgraph_update_rate", text="Apply delay")
 
-            replication_section_row.label(text="Update method", icon='RECOVER_LAST')
-            replication_section_row = replication_section.row()
-            replication_section_row.prop(settings, "update_method", expand=True)
-            replication_section_row = replication_section.row()
-            replication_timers = replication_section_row.box()
-            replication_timers.label(text="Replication timers", icon='TIME')
-            if settings.update_method == "DEFAULT":
-                replication_timers = replication_timers.row()
-                # Replication frequencies
-                flow = replication_timers.grid_flow(
-                    row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-                line = flow.row(align=True)
-                line.label(text=" ")
-                line.separator()
-                line.label(text="refresh (sec)")
-                line.label(text="apply (sec)")
-
-                for item in settings.supported_datablocks:
-                    line = flow.row(align=True)
-                    line.prop(item, "auto_push", text="", icon=item.icon)
-                    line.separator()
-                    line.prop(item, "bl_delay_refresh", text="")
-                    line.prop(item, "bl_delay_apply", text="")
-            else:
-                replication_timers = replication_timers.row()
-                replication_timers.label(text="Update rate (ms):")
-                replication_timers.prop(settings, "depsgraph_update_rate", text="")
         
         cache_section = layout.row().box()
         cache_section.prop(

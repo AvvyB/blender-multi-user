@@ -106,9 +106,6 @@ class BlDatablock(ReplicatedDatablock):
 
         bl_id :             blender internal storage identifier
         bl_class :          blender internal type
-        bl_delay_refresh :  refresh rate in second for observers
-        bl_delay_apply :    refresh rate in sec for apply
-        bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
         bl_check_common:    enable check even in common rights
         bl_reload_parent:   reload parent
@@ -129,28 +126,30 @@ class BlDatablock(ReplicatedDatablock):
         if instance and hasattr(instance, 'uuid'):
             instance.uuid = self.uuid
 
-        if logging.getLogger().level == logging.DEBUG:
-            self.diff_method = DIFF_JSON
-        else:
-            self.diff_method = DIFF_BINARY
-
-    def resolve(self):
+    def resolve(self, construct = True):
         datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
-        datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
+
+        try:
+            datablock_ref = datablock_root[self.data['name']]
+        except Exception:
+            pass
 
         if not datablock_ref:
-            try:
-                datablock_ref = datablock_root[self.data['name']]
-            except Exception:
+            datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
+
+            if construct and not datablock_ref:
                 name = self.data.get('name')
                 logging.debug(f"Constructing {name}")
                 datablock_ref = self._construct(data=self.data)
 
-            if datablock_ref:
-                setattr(datablock_ref, 'uuid', self.uuid)
-
-        self.instance = datablock_ref
+        if datablock_ref is not None:
+            setattr(datablock_ref, 'uuid', self.uuid)
+            self.instance = datablock_ref
+            return True
+        else:
+            return False
+        
 
     def remove_instance(self):
         """
