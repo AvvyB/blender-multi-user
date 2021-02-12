@@ -281,7 +281,7 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
                 warning = replication_section_row.box()
                 warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
                 replication_section_row = replication_section.row()
-            replication_section_row.prop(settings, "depsgraph_update_rate")
+            replication_section_row.prop(settings, "depsgraph_update_rate", text="Apply delay")
 
         
         cache_section = layout.row().box()

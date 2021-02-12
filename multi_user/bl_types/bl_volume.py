@@ -27,9 +27,6 @@ from .bl_material import dump_materials_slots, load_materials_slots
 class BlVolume(BlDatablock):
     bl_id = "volumes"
     bl_class = bpy.types.Volume
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'VOLUME_DATA'
     bl_reload_parent = False

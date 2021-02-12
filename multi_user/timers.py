@@ -101,17 +101,9 @@ class SessionBackupTimer(Timer):
         session.save(self._filepath)
 
 class ApplyTimer(Timer):
-    def __init__(self, timeout=1, target_type=None):
-        self._type = target_type
-        super().__init__(timeout)
-        self.id = target_type.__name__ if target_type else "ApplyTimer"
-
     def execute(self):
         if session and session.state['STATE'] == STATE_ACTIVE:
-            if self._type:
-                nodes = session.list(filter=self._type)
-            else:
-                nodes = session.list()
+            nodes = session.list()
 
             for node in nodes:
                 node_ref = session.get(uuid=node)
@@ -122,13 +114,10 @@ class ApplyTimer(Timer):
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
                     else:
-                        if self._type.bl_reload_parent:
-                            parents = []
-
-                            for n in session.list():
-                                deps = session.get(uuid=n).dependencies
-                                if deps and node in deps:
-                                    session.apply(n, force=True)
+                        if node_ref.bl_reload_parent:
+                            for parent in session._graph.find_parents(node):
+                                logging.debug("Refresh parent {node}")
+                                session.apply(parent, force=True)
 
 
 class DynamicRightSelectTimer(Timer):

@@ -364,9 +364,6 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
 class BlMaterial(BlDatablock):
     bl_id = "materials"
     bl_class = bpy.types.Material
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'MATERIAL_DATA'
     bl_reload_parent = False

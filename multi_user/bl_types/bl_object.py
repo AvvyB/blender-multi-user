@@ -107,9 +107,6 @@ def find_textures_dependencies(collection):
 class BlObject(BlDatablock):
     bl_id = "objects"
     bl_class = bpy.types.Object
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'OBJECT_DATA'
     bl_reload_parent = False

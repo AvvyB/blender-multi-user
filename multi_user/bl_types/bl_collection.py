@@ -85,9 +85,6 @@ class BlCollection(BlDatablock):
     bl_id = "collections"
     bl_icon = 'FILE_FOLDER'
     bl_class = bpy.types.Collection
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = True
     bl_reload_parent = False
     

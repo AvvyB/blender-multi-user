@@ -28,9 +28,6 @@ from .bl_material import (dump_shader_node_tree,
 class BlNodeGroup(BlDatablock):
     bl_id = "node_groups"
     bl_class = bpy.types.ShaderNodeTree
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'NODETREE'
     bl_reload_parent = False

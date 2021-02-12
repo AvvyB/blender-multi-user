@@ -51,9 +51,6 @@ format_to_ext = {
 class BlImage(BlDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
-    bl_delay_refresh = 2
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'IMAGE_DATA'
     bl_reload_parent = False

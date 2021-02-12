@@ -370,9 +370,6 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
 class BlScene(BlDatablock):
     bl_id = "scenes"
     bl_class = bpy.types.Scene
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = True
     bl_icon = 'SCENE_DATA'
     bl_reload_parent = False

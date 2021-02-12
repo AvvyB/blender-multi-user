@@ -106,9 +106,6 @@ class BlDatablock(ReplicatedDatablock):
 
         bl_id :             blender internal storage identifier
         bl_class :          blender internal type
-        bl_delay_refresh :  refresh rate in second for observers
-        bl_delay_apply :    refresh rate in sec for apply
-        bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
         bl_check_common:    enable check even in common rights
         bl_reload_parent:   reload parent
