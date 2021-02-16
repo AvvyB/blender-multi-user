@@ -34,6 +34,8 @@ EDGE = [
     'vertices',
     'crease',
     'bevel_weight',
+    'use_seam',
+    'use_edge_sharp',
 ]
 LOOP = [
     'vertex_index',
