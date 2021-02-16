@@ -54,7 +54,7 @@ class BlMesh(BlDatablock):
     bl_class = bpy.types.Mesh
     bl_check_common = False
     bl_icon = 'MESH_DATA'
-    bl_reload_parent = False
+    bl_reload_parent = True
 
     def _construct(self, data):
         instance = bpy.data.meshes.new(data["name"])

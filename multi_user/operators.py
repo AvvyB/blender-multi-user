@@ -600,9 +600,14 @@ class SessionApply(bpy.types.Operator):
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
         try:
+            node_ref = session.get(uuid=self.target)
             session.apply(self.target,
                         force=True,
                         force_dependencies=self.reset_dependencies)
+            if node_ref.bl_reload_parent:
+                for parent in session._graph.find_parents(self.target):
+                    logging.debug(f"Refresh parent {parent}")
+                    session.apply(parent, force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
             return {"CANCELED"}    
