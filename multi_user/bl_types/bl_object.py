@@ -104,6 +104,50 @@ def find_textures_dependencies(collection):
     return textures
 
 
+def dump_vertex_groups(src_object: bpy.types.Object) -> dict:
+    """ Dump object's vertex groups
+
+        :param target_object: dump vertex groups of this object
+        :type  target_object: bpy.types.Object
+    """
+    if isinstance(src_object.data, bpy.types.GreasePencil):
+        logging.warning(
+            "Grease pencil vertex groups are not supported yet. More info: https://gitlab.com/slumber/multi-user/-/issues/161")
+    else:
+        points_attr = 'vertices' if isinstance(
+            src_object.data, bpy.types.Mesh) else 'points'
+        dumped_vertex_groups = {}
+
+        # Vertex group metadata
+        for vg in src_object.vertex_groups:
+            dumped_vertex_groups[vg.index] = {
+                'name': vg.name,
+                'vertices': []
+            }
+
+        # Vertex group assignation
+        for vert in getattr(src_object.data, points_attr):
+            for vg in vert.groups:
+                vertices = dumped_vertex_groups.get(vg.group)['vertices']
+                vertices.append((vert.index, vg.weight))
+
+    return dumped_vertex_groups
+
+
+def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Object):
+    """ Load object vertex groups
+
+        :param dumped_vertex_groups: vertex_groups to load
+        :type dumped_vertex_groups: dict
+        :param target_object: object to load the vertex groups into
+        :type  target_object: bpy.types.Object
+    """
+    target_object.vertex_groups.clear()
+    for vg in dumped_vertex_groups.values():
+        vertex_group = target_object.vertex_groups.new(name=vg['name'])
+        for index, weight in vg['vertices']:
+            vertex_group.add([index], weight, 'REPLACE')
+
 class BlObject(BlDatablock):
     bl_id = "objects"
     bl_class = bpy.types.Object
@@ -152,14 +196,9 @@ class BlObject(BlDatablock):
                 data_uuid, find_data_from_name(data_id), ignore=['images'])
 
         # vertex groups
-        if 'vertex_groups' in data:
-            target.vertex_groups.clear()
-            for vg in data['vertex_groups']:
-                vertex_group = target.vertex_groups.new(name=vg['name'])
-                point_attr = 'vertices' if 'vertices' in vg else 'points'
-                for vert in vg[point_attr]:
-                    vertex_group.add(
-                        [vert['index']], vert['weight'], 'REPLACE')
+        vertex_groups = data.get('vertex_groups', None)
+        if vertex_groups:
+            load_vertex_groups(vertex_groups, target)
 
         object_data = target.data
 
@@ -373,32 +412,7 @@ class BlObject(BlDatablock):
 
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
-            if  isinstance( instance.data, bpy.types.GreasePencil):
-                logging.warning("Grease pencil vertex groups are not supported yet. More info: https://gitlab.com/slumber/multi-user/-/issues/161")
-            else:
-                points_attr = 'vertices' if isinstance(
-                    instance.data, bpy.types.Mesh) else 'points'
-                vg_data = []
-                for vg in instance.vertex_groups:
-                    vg_idx = vg.index
-                    dumped_vg = {}
-                    dumped_vg['name'] = vg.name
-
-                    vertices = []
-
-                    for i, v in enumerate(getattr(instance.data, points_attr)):
-                        for vg in v.groups:
-                            if vg.group == vg_idx:
-                                vertices.append({
-                                    'index': i,
-                                    'weight': vg.weight
-                                })
-
-                    dumped_vg['vertices'] = vertices
-
-                    vg_data.append(dumped_vg)
-
-                data['vertex_groups'] = vg_data
+            data['vertex_groups'] = dump_vertex_groups(instance)
 
         #  SHAPE KEYS
         object_data = instance.data
