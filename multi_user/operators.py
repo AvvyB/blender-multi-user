@@ -997,11 +997,6 @@ def depsgraph_evaluation(scene):
                 #   - if its to someone else, ignore the update
                 if node and node.owner in [session.id, RP_COMMON]:
                     if node.state == UP:
-                        # Avoid slow geometry update
-                        if 'EDIT' in context.mode and \
-                                not settings.sync_flags.sync_during_editmode:
-                            break
-
                         try:
                             if node.has_changed():
                                 session.commit(node.uuid)
