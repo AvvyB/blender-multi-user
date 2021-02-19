@@ -174,3 +174,10 @@ class BlMesh(BlDatablock):
                 deps.append(material)
 
         return deps
+
+    def diff(self):
+        if 'EDIT' in bpy.context.mode \
+                and not self.preferences.sync_flags.sync_during_editmode:
+            return False
+        else:
+            return super().diff()
