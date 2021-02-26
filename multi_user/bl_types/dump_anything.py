@@ -596,6 +596,8 @@ class Loader:
             instance.write(bpy.data.textures.get(dump))
         elif isinstance(rna_property_type, T.ColorRamp):
             self._load_default(instance, dump)
+        elif isinstance(rna_property_type, T.NodeTree):
+            instance.write(bpy.data.node_groups.get(dump))
         elif isinstance(rna_property_type, T.Object):
             instance.write(bpy.data.objects.get(dump))
         elif isinstance(rna_property_type, T.Mesh):

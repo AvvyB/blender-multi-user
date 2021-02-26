@@ -91,18 +91,25 @@ def _is_editmode(object: bpy.types.Object) -> bool:
             child_data.is_editmode)
 
 
-def find_textures_dependencies(collection):
+def find_textures_dependencies(modifiers):
     """ Check collection
     """
     textures = []
-    for item in collection:
-        for attr in dir(item):
-            inst = getattr(item, attr)
-            if issubclass(type(inst), bpy.types.Texture) and inst is not None:
-                textures.append(inst)
+    for mod in modifiers:
+        modifier_attributes = [getattr(mod, attr_name) for attr_name in  mod.bl_rna.properties.keys()]
+        for attr in modifier_attributes:
+            if issubclass(type(attr), bpy.types.Texture) and attr is not None:
+                textures.append(attr)
 
     return textures
 
+def find_geometry_nodes_groups(collection):
+    nodes_groups = []
+    for item in collection:
+        if item.type == 'NODES' and item.node_group:
+            nodes_groups.append(item.node_group)
+
+    return nodes_groups
 
 def dump_vertex_groups(src_object: bpy.types.Object) -> dict:
     """ Dump object's vertex groups
@@ -481,5 +488,6 @@ class BlObject(BlDatablock):
 
         if self.instance.modifiers:
             deps.extend(find_textures_dependencies(self.instance.modifiers))
+            deps.extend(find_geometry_nodes_groups(self.instance.modifiers))
 
         return deps

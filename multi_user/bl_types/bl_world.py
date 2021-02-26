@@ -21,8 +21,8 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock
-from .bl_material import (load_shader_node_tree,
-                          dump_shader_node_tree,
+from .bl_material import (load_node_tree,
+                          dump_node_tree,
                           get_node_tree_dependencies)
 
 
@@ -44,7 +44,7 @@ class BlWorld(BlDatablock):
             if target.node_tree is None:
                 target.use_nodes = True
 
-            load_shader_node_tree(data['node_tree'], target.node_tree)
+            load_node_tree(data['node_tree'], target.node_tree)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -58,7 +58,7 @@ class BlWorld(BlDatablock):
         ]
         data = world_dumper.dump(instance)
         if instance.use_nodes:
-            data['node_tree'] = dump_shader_node_tree(instance.node_tree)
+            data['node_tree'] = dump_node_tree(instance.node_tree)
 
         return data
 

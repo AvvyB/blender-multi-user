@@ -21,13 +21,13 @@ import mathutils
 
 from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from .bl_datablock import BlDatablock
-from .bl_material import (dump_shader_node_tree,
-                          load_shader_node_tree,
+from .bl_material import (dump_node_tree,
+                          load_node_tree,
                           get_node_tree_dependencies)
 
 class BlNodeGroup(BlDatablock):
     bl_id = "node_groups"
-    bl_class = bpy.types.ShaderNodeTree
+    bl_class = bpy.types.NodeTree
     bl_check_common = False
     bl_icon = 'NODETREE'
     bl_reload_parent = False
@@ -36,10 +36,10 @@ class BlNodeGroup(BlDatablock):
         return bpy.data.node_groups.new(data["name"], data["type"])
 
     def _load_implementation(self, data, target):
-        load_shader_node_tree(data, target)
+        load_node_tree(data, target)
 
     def _dump_implementation(self, data, instance=None):
-        return dump_shader_node_tree(instance)
+        return dump_node_tree(instance)
 
     def _resolve_deps_implementation(self):
         return get_node_tree_dependencies(self.instance)
