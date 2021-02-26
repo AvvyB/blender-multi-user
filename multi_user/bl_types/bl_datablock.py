@@ -127,16 +127,14 @@ class BlDatablock(ReplicatedDatablock):
             instance.uuid = self.uuid
 
     def resolve(self, construct = True):
-        datablock_ref = None
         datablock_root = getattr(bpy.data, self.bl_id)
-
-        try:
-            datablock_ref = datablock_root[self.data['name']]
-        except Exception:
-            pass
+        datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
         if not datablock_ref:
-            datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
+            try:
+                datablock_ref = datablock_root[self.data['name']]
+            except Exception:
+                pass
 
             if construct and not datablock_ref:
                 name = self.data.get('name')

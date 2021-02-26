@@ -27,7 +27,7 @@ from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
-
+IGNORED_SOCKETS = ['GEOMETRY']
 
 def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
@@ -52,7 +52,8 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
 
     inputs_data = node_data.get('inputs')
     if inputs_data:
-        inputs = target_node.inputs
+        inputs = [i for i in target_node.inputs if i.type not in IGNORED_SOCKETS]
+
         for idx, inpt in enumerate(inputs_data):
             if idx < len(inputs) and hasattr(inputs[idx], "default_value"):
                 try:
@@ -64,12 +65,12 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
 
     outputs_data = node_data.get('outputs')
     if outputs_data:
-        outputs = target_node.outputs
+        outputs = [o for o in target_node.outputs if o.type not in IGNORED_SOCKETS]
         for idx, output in enumerate(outputs_data):
             if idx < len(outputs) and hasattr(outputs[idx], "default_value"):
                 try:
                     outputs[idx].default_value = output
-                except:
+                except Exception as e:
                     logging.warning(
                         f"Node {target_node.name} output {outputs[idx].name} parameter not supported, skipping ({e})")
             else:
@@ -206,7 +207,7 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
     return dumped_node
 
 
-def dump_shader_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
+def dump_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
     """ Dump a shader node_tree to a dict including links and nodes
 
         :arg node_tree: dumped shader node tree
@@ -276,7 +277,7 @@ def load_node_tree_sockets(sockets: bpy.types.Collection,
             s['uuid'] = socket_data[2]
 
 
-def load_shader_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeTree) -> dict:
+def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeTree) -> dict:
     """Load a shader node_tree from dumped data
 
         :arg node_tree_data: dumped node data
@@ -387,7 +388,7 @@ class BlMaterial(BlDatablock):
             if target.node_tree is None:
                 target.use_nodes = True
 
-            load_shader_node_tree(data['node_tree'], target.node_tree)
+            load_node_tree(data['node_tree'], target.node_tree)
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -454,7 +455,7 @@ class BlMaterial(BlDatablock):
             ]
             data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
         elif instance.use_nodes:
-            data['node_tree'] = dump_shader_node_tree(instance.node_tree)
+            data['node_tree'] = dump_node_tree(instance.node_tree)
 
         return data
 
