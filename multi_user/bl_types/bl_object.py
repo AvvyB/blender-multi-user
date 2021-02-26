@@ -37,19 +37,25 @@ SKIN_DATA = [
     'use_root'
 ]
 
-def get_number(e):
+def get_input_index(e):
     return int(re.findall('[0-9]+', e)[0])
 
-def dump_modifier_geometry_node_inputs(modifier):
+
+def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
+    """ Dump geometry node modifier input properties
+
+        :arg modifier: geometry node modifier to dump
+        :type modifier: bpy.type.Modifier
+    """
     inputs_name = [p for p in dir(modifier) if "Input_" in p]
-    inputs_name.sort(key=get_number)
+    inputs_name.sort(key=get_input_index)
     dumped_inputs = []
     for inputs_index, input_name in enumerate(inputs_name):
         input_value = modifier[input_name]
         dumped_input = None
         if isinstance(input_value, bpy.types.ID):
             dumped_input = input_value.uuid
-        elif type(input_value) in  [int, str, float]:
+        elif type(input_value) in [int, str, float]:
             dumped_input = input_value
         elif hasattr(input_value, 'to_list'):
             dumped_input = input_value.to_list()
@@ -57,21 +63,29 @@ def dump_modifier_geometry_node_inputs(modifier):
 
     return dumped_inputs
 
-def load_modifier_geometry_node_inputs(dumped_modifier, target_modifier):
+
+def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: bpy.types.Modifier):
+    """ Load geometry node modifier inputs
+
+        :arg dumped_modifier: source dumped modifier to load
+        :type dumped_modifier: dict
+        :arg target_modifier: target geometry node modifier
+        :type target_modifier: bpy.type.Modifier
+    """
+
     inputs_name = [p for p in dir(target_modifier) if "Input_" in p]
-    inputs_name.sort(key=get_number)
-    logging.info(inputs_name)
+    inputs_name.sort(key=get_input_index)
     for input_index, input_name in enumerate(inputs_name):
         dumped_value = dumped_modifier['inputs'][input_index]
         input_value = target_modifier[input_name]
-        logging.info(input_name)
-        if type(input_value) in  [int, str, float]:
+        if type(input_value) in [int, str, float]:
             input_value = dumped_value
         elif hasattr(input_value, 'to_list'):
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
         else:
-            target_modifier[input_name] = get_datablock_from_uuid(dumped_value, None) 
+            target_modifier[input_name] = get_datablock_from_uuid(
+                dumped_value, None)
 
 
 def load_pose(target_bone, data):
@@ -129,21 +143,33 @@ def _is_editmode(object: bpy.types.Object) -> bool:
             child_data.is_editmode)
 
 
-def find_textures_dependencies(modifiers):
-    """ Check collection
+def find_textures_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.Texture]:
+    """ Find textures lying in a modifier stack
+
+        :arg modifiers: modifiers collection
+        :type modifiers: bpy.types.bpy_prop_collection
+        :return: list of bpy.types.Texture pointers
     """
     textures = []
     for mod in modifiers:
-        modifier_attributes = [getattr(mod, attr_name) for attr_name in  mod.bl_rna.properties.keys()]
+        modifier_attributes = [getattr(mod, attr_name)
+                               for attr_name in mod.bl_rna.properties.keys()]
         for attr in modifier_attributes:
             if issubclass(type(attr), bpy.types.Texture) and attr is not None:
                 textures.append(attr)
 
     return textures
 
-def find_geometry_nodes_groups(collection):
+
+def find_geometry_nodes(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.NodeTree]:
+    """ Find geometry nodes group from a modifier stack
+
+        :arg modifiers: modifiers collection
+        :type modifiers: bpy.types.bpy_prop_collection
+        :return: list of bpy.types.NodeTree pointers
+    """
     nodes_groups = []
-    for item in collection:
+    for item in modifiers:
         if item.type == 'NODES' and item.node_group:
             nodes_groups.append(item.node_group)
 
@@ -320,6 +346,7 @@ class BlObject(BlDatablock):
             and 'cycles_visibility' in data:
             loader.load(target.cycles_visibility, data['cycles_visibility'])
 
+        # TODO: handle geometry nodes input from dump_anything
         if hasattr(target, 'modifiers'):
             nodes_modifiers = [mod for mod in target.modifiers if mod.type == 'NODES']
             for modifier in nodes_modifiers:
@@ -534,6 +561,6 @@ class BlObject(BlDatablock):
 
         if self.instance.modifiers:
             deps.extend(find_textures_dependencies(self.instance.modifiers))
-            deps.extend(find_geometry_nodes_groups(self.instance.modifiers))
+            deps.extend(find_geometry_nodes(self.instance.modifiers))
 
         return deps
