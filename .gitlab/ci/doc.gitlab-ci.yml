@@ -1,6 +1,6 @@
 pages:
-  needs: ["deploy"]
   stage: doc
+  needs: ["deploy"]
   image: python:3.7-alpine
   script:
   - pip install -U sphinx sphinx_rtd_theme
