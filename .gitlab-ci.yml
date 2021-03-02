@@ -1,10 +1,13 @@
 stages:
   - test
   - build
+  - doc
   - deploy
+
 
 
 include:
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/build.gitlab-ci.yml
   - local: .gitlab/ci/deploy.gitlab-ci.yml
+  - local: .gitlab/ci/doc.gitlab-ci.yml
