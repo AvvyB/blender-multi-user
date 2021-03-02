@@ -1,8 +1,8 @@
 stages:
   - test
   - build
-  - doc
   - deploy
+  - doc
 
 
 
