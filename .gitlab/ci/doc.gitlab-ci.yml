@@ -1,7 +1,7 @@
 pages:
   stage: doc
   needs: ["deploy"]
-  image: python:3.7-alpine
+  image: python
   script:
   - pip install -U sphinx sphinx_rtd_theme sphinx-material
   - sphinx-build -b html ./docs public
