@@ -1,6 +1,6 @@
 deploy:
   stage: deploy
-  needs: ["test"]
+  needs: ["build"]
   image: slumber/docker-python  
   variables:
     DOCKER_DRIVER: overlay2
