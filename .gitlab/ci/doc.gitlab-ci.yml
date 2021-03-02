@@ -1,5 +1,5 @@
 pages:
-  needs: ["build","deploy"]
+  needs: ["deploy"]
   stage: doc
   image: python:3.7-alpine
   script:
