@@ -3,7 +3,7 @@ pages:
   needs: ["deploy"]
   image: python:3.7-alpine
   script:
-  - pip install -U sphinx sphinx_rtd_theme
+  - pip install -U sphinx sphinx_rtd_theme sphinx-material
   - sphinx-build -b html ./docs public
   artifacts:
     paths:
