@@ -8,5 +8,9 @@ pages:
   artifacts:
     paths:
     - public
+  only:
+    refs:
+    - master
+    - develop
 
 
