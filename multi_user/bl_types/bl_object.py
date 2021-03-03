@@ -557,8 +557,6 @@ class BlObject(BlDatablock):
         # Avoid Empty case
         if self.instance.data:
             deps.append(self.instance.data)
-        if self.instance.parent :
-            deps.append(self.instance.parent)
 
         if self.is_library:
             deps.append(self.instance.library)
