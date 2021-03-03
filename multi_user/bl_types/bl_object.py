@@ -296,8 +296,13 @@ class BlObject(BlDatablock):
         # Load transformation data
         loader.load(target, data)
 
+        #  Object display fields
         if 'display' in data:
             loader.load(target.display, data['display'])
+
+        #  Parent
+        if 'parent' not in data and target.parent:
+            target.parent = None
 
         # Pose
         if 'pose' in data:
@@ -367,6 +372,9 @@ class BlObject(BlDatablock):
             "name",
             "rotation_mode",
             "parent",
+            "parent_type",
+            "track_axis",
+            "up_axis",
             "data",
             "library",
             "empty_display_type",
