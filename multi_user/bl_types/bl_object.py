@@ -296,8 +296,19 @@ class BlObject(BlDatablock):
         # Load transformation data
         loader.load(target, data)
 
+        #  Object display fields
         if 'display' in data:
             loader.load(target.display, data['display'])
+
+        #  Parenting
+        parent_id = data.get('parent_id')
+        if parent_id:
+            parent = bpy.data.objects[parent_id]
+            # Avoid reloading
+            if target.parent != parent and parent is not None:
+                target.parent = parent
+        elif target.parent:
+            target.parent = None
 
         # Pose
         if 'pose' in data:
@@ -366,7 +377,6 @@ class BlObject(BlDatablock):
         dumper.include_filter = [
             "name",
             "rotation_mode",
-            "parent",
             "data",
             "library",
             "empty_display_type",
@@ -410,6 +420,10 @@ class BlObject(BlDatablock):
         data['data_uuid'] = getattr(instance.data, 'uuid', None)
         if self.is_library:
             return data
+
+        # PARENTING
+        if instance.parent:
+            data['parent_id'] = instance.parent.name 
 
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
@@ -549,11 +563,12 @@ class BlObject(BlDatablock):
         # Avoid Empty case
         if self.instance.data:
             deps.append(self.instance.data)
-        if self.instance.parent :
-            deps.append(self.instance.parent)
 
         if self.is_library:
             deps.append(self.instance.library)
+
+        if self.instance.parent :
+            deps.append(self.instance.parent)
 
         if self.instance.instance_type == 'COLLECTION':
             # TODO: uuid based
