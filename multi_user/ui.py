@@ -71,9 +71,9 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw_header(self, context):
         layout = self.layout
-        if session and session.state['STATE'] != STATE_INITIAL:
+        if session and session.state != STATE_INITIAL:
             cli_state = session.state
-            state =  session.state.get('STATE')
+            state =  session.state
             connection_icon = "KEYTYPE_MOVING_HOLD_VEC"
 
             if state == STATE_ACTIVE:
@@ -81,7 +81,7 @@ class SESSION_PT_settings(bpy.types.Panel):
             else:
                 connection_icon = 'PROP_CON'
 
-            layout.label(text=f"Session - {get_state_str(cli_state['STATE'])}", icon=connection_icon)
+            layout.label(text=f"Session - {get_state_str(cli_state)}", icon=connection_icon)
         else:
             layout.label(text=f"Session - v{__version__}",icon="PROP_OFF")
 
@@ -94,13 +94,13 @@ class SESSION_PT_settings(bpy.types.Panel):
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
             if not session \
-               or (session and session.state['STATE'] == STATE_INITIAL):
+               or (session and session.state == STATE_INITIAL):
                 pass
             else:
-                cli_state = session.state                
+                progress = session.state_progress           
                 row = layout.row()
 
-                current_state = cli_state['STATE']
+                current_state = session.state
                 info_msg = None
 
                 if current_state in [STATE_ACTIVE]:
@@ -124,8 +124,8 @@ class SESSION_PT_settings(bpy.types.Panel):
                 if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
                     info_box = row.box()
                     info_box.row().label(text=printProgressBar(
-                        cli_state['CURRENT'],
-                        cli_state['TOTAL'],
+                        progress['current'],
+                        progress['total'],
                         length=16
                     ))
 
@@ -141,7 +141,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] == 0)
+            or (session and session.state == 0)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='URL')
@@ -199,7 +199,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] == 0)
+            or (session and session.state == 0)
     
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -230,7 +230,7 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] == 0)
+            or (session and session.state == 0)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='PREFERENCES')
@@ -322,7 +322,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return session and session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
+        return session and session.state in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -353,7 +353,7 @@ class SESSION_PT_user(bpy.types.Panel):
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
-            if  session.state['STATE'] == STATE_ACTIVE:
+            if  session.state == STATE_ACTIVE:
                 
                 user_operations.alert = context.window_manager.session.time_snap_running
                 user_operations.operator(
@@ -411,7 +411,7 @@ class SESSION_PT_presence(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] in [STATE_INITIAL, STATE_ACTIVE])
+            or (session and session.state in [STATE_INITIAL, STATE_ACTIVE])
 
     def draw_header(self, context):
         self.layout.prop(context.window_manager.session,
@@ -519,8 +519,8 @@ class SESSION_PT_repository(bpy.types.Panel):
                 admin = usr['admin']
         return hasattr(context.window_manager, 'session') and \
             session and \
-            (session.state['STATE'] == STATE_ACTIVE or \
-            session.state['STATE'] == STATE_LOBBY and admin)
+            (session.state == STATE_ACTIVE or \
+            session.state == STATE_LOBBY and admin)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -536,7 +536,7 @@ class SESSION_PT_repository(bpy.types.Panel):
 
         row = layout.row()
 
-        if session.state['STATE'] == STATE_ACTIVE:
+        if session.state == STATE_ACTIVE:
             if 'SessionBackupTimer' in registry:
                 row.alert = True
                 row.operator('session.cancel_autosave', icon="CANCEL")
@@ -579,7 +579,7 @@ class SESSION_PT_repository(bpy.types.Panel):
             else:
                 row.label(text="Empty")
 
-        elif session.state['STATE'] == STATE_LOBBY and usr and usr['admin']:
+        elif session.state == STATE_LOBBY and usr and usr['admin']:
             row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
         else:
             row.label(text="Waiting to start")

@@ -399,7 +399,7 @@ class SessionStatusWidget(Widget):
         text_scale = self.preferences.presence_hud_scale
         ui_scale = bpy.context.preferences.view.ui_scale
         color = [1, 1, 0, 1]
-        state = session.state.get('STATE')
+        state = session.state
         state_str = f"{get_state_str(state)}"
 
         if state == STATE_ACTIVE:

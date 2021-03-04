@@ -44,9 +44,10 @@ from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
-from replication.data import ReplicatedDataFactory
+from replication.data import DataTranslationProtocol
+from replication.repository import Repository
 from replication.exception import NonAuthorizedOperationError, ContextError
-from replication.interface import session
+from replication.interface import session, add
 
 from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
@@ -186,7 +187,7 @@ class SessionStartOperator(bpy.types.Operator):
 
                 handler.setFormatter(formatter)
 
-        bpy_factory = ReplicatedDataFactory()
+        bpy_protocol = DataTranslationProtocol()
         supported_bl_types = []
 
         # init the factory with supported types
@@ -205,7 +206,7 @@ class SessionStartOperator(bpy.types.Operator):
 
             type_local_config = settings.supported_datablocks[type_impl_name]
 
-            bpy_factory.register_type(
+            bpy_protocol.register_type(
                 type_module_class.bl_class,
                 type_module_class,
                 check_common=type_module_class.bl_check_common)
@@ -217,10 +218,7 @@ class SessionStartOperator(bpy.types.Operator):
         else:
             python_binary_path = bpy.app.binary_path_python
 
-        session.configure(
-            factory=bpy_factory,
-            python_path=python_binary_path,
-            external_update_handling=True)
+        repo = Repository(data_protocol=bpy_protocol)
 
         # Host a session
         if self.host:
@@ -231,13 +229,14 @@ class SessionStartOperator(bpy.types.Operator):
             runtime_settings.internet_ip = environment.get_ip()
 
             try:
+                # Init repository
                 for scene in bpy.data.scenes:
-                    session.add(scene)
+                    add(repo, scene)
 
                 session.host(
+                    repository= repo,
                     id=settings.username,
                     port=settings.port,
-                    ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,
                     password=admin_pass,
                     cache_directory=settings.cache_directory,
@@ -258,10 +257,10 @@ class SessionStartOperator(bpy.types.Operator):
 
             try:
                 session.connect(
+                    repository= repo,
                     id=settings.username,
                     address=settings.ip,
                     port=settings.port,
-                    ipc_port=settings.ipc_port,
                     timeout=settings.connection_timeout,
                     password=admin_pass
                 )
@@ -272,15 +271,13 @@ class SessionStartOperator(bpy.types.Operator):
         # Background client updates service
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
-        # deleyables.append(timers.PushTimer(
-        #     queue=stagging,
-        #     timeout=settings.depsgraph_update_rate
-        #     ))
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
             execution_queue=background_execution_queue)
+        session_listen = timers.SessionListenTimer()
 
+        session_listen.register()
         session_update.register()
         session_user_sync.register()
         session_background_executor.register()
@@ -288,7 +285,7 @@ class SessionStartOperator(bpy.types.Operator):
         deleyables.append(session_background_executor)
         deleyables.append(session_update)
         deleyables.append(session_user_sync)
-
+        deleyables.append(session_listen)
         
 
         self.report(
@@ -650,7 +647,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            if session and session.state['STATE'] == STATE_ACTIVE:
+            if session and session.state == STATE_ACTIVE:
                 nodes = session.list(filter=bl_types.bl_armature.BlArmature)
 
                 for node in nodes:
@@ -795,7 +792,7 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
 
     @classmethod
     def poll(cls, context):
-        return session.state['STATE'] == STATE_ACTIVE
+        return session.state == STATE_ACTIVE
 
 class SessionStopAutoSaveOperator(bpy.types.Operator):
     bl_idname = "session.cancel_autosave"
@@ -804,7 +801,7 @@ class SessionStopAutoSaveOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return (session.state['STATE'] == STATE_ACTIVE and 'SessionBackupTimer' in registry)
+        return (session.state == STATE_ACTIVE and 'SessionBackupTimer' in registry)
 
     def execute(self, context):
         autosave_timer = registry.get('SessionBackupTimer')
@@ -829,7 +826,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     )
 
     def execute(self, context):
-        from replication.graph import ReplicationGraph
+        from replication.repository import Repository
 
         # TODO: add filechecks
 
@@ -849,7 +846,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
             
 
             # init the factory with supported types
-            bpy_factory = ReplicatedDataFactory()
+            bpy_protocol = DataTranslationProtocol()
             for type in bl_types.types_to_register():
                 type_module = getattr(bl_types, type)
                 name = [e.capitalize() for e in type.split('_')[1:]]
@@ -857,16 +854,16 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
                 type_module_class = getattr(type_module, type_impl_name)
 
 
-                bpy_factory.register_type(
+                bpy_protocol.register_type(
                     type_module_class.bl_class,
                     type_module_class)
             
-            graph = ReplicationGraph()
+            graph = Repository()
 
             for node, node_data in nodes:
                 node_type = node_data.get('str_type')
 
-                impl = bpy_factory.get_implementation_from_net(node_type)
+                impl = bpy_protocol.get_implementation_from_net(node_type)
 
                 if impl:
                     logging.info(f"Loading  {node}")
@@ -932,7 +929,7 @@ def update_external_dependencies():
 def sanitize_deps_graph(remove_nodes: bool = False):
     """ Cleanup the replication graph
     """
-    if session and session.state['STATE'] == STATE_ACTIVE:
+    if session and session.state == STATE_ACTIVE:
         start = utils.current_milli_time()
         rm_cpt = 0
         for node_key in session.list():
@@ -957,18 +954,18 @@ def resolve_deps_graph(dummy):
     A future solution should be to avoid storing dataclock reference...
 
     """
-    if session and session.state['STATE'] == STATE_ACTIVE:
+    if session and session.state == STATE_ACTIVE:
         sanitize_deps_graph(remove_nodes=True)
 
 @persistent
 def load_pre_handler(dummy):
-    if session and session.state['STATE'] in [STATE_ACTIVE, STATE_SYNCING]:
+    if session and session.state in [STATE_ACTIVE, STATE_SYNCING]:
         bpy.ops.session.stop()
 
 
 @persistent
 def update_client_frame(scene):
-    if session and session.state['STATE'] == STATE_ACTIVE:
+    if session and session.state == STATE_ACTIVE:
         session.update_user_metadata({
             'frame_current': scene.frame_current
         })
@@ -976,7 +973,7 @@ def update_client_frame(scene):
 
 @persistent
 def depsgraph_evaluation(scene):
-    if session and session.state['STATE'] == STATE_ACTIVE:
+    if session and session.state == STATE_ACTIVE:
         context = bpy.context
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
@@ -1035,7 +1032,7 @@ def register():
 
 
 def unregister():
-    if session and session.state['STATE'] == STATE_ACTIVE:
+    if session and session.state == STATE_ACTIVE:
         session.disconnect()
 
     from bpy.utils import unregister_class

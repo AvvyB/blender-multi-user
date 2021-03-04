@@ -23,7 +23,7 @@ from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_LOBBY, STATE_QUITTING,
                                    STATE_SRV_SYNC, STATE_SYNCING, UP)
 from replication.exception import NonAuthorizedOperationError, ContextError
-from replication.interface import session
+from replication.interface import session, add
 
 from . import operators, utils
 from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
@@ -71,7 +71,7 @@ class Timer(object):
         except Exception as e:
             logging.error(e)
             self.unregister()
-            session.disconnect()
+            session.disconnect(reason=f"Error during timer {self.id} execution")
         else:    
             if self.is_running:
                 return self._timeout
@@ -100,9 +100,13 @@ class SessionBackupTimer(Timer):
     def execute(self):
         session.save(self._filepath)
 
+class SessionListenTimer(Timer):
+    def execute(self):
+        session.listen()
+
 class ApplyTimer(Timer):
     def execute(self):
-        if session and session.state['STATE'] == STATE_ACTIVE:
+        if session and session.state == STATE_ACTIVE:
             nodes = session.list()
 
             for node in nodes:
@@ -130,7 +134,7 @@ class DynamicRightSelectTimer(Timer):
     def execute(self):
         settings = utils.get_preferences()
 
-        if session and session.state['STATE'] == STATE_ACTIVE:
+        if session and session.state == STATE_ACTIVE:
             # Find user
             if self._user is None:
                 self._user = session.online_users.get(settings.username)
@@ -262,7 +266,7 @@ class ClientUpdate(Timer):
         settings = utils.get_preferences()
 
         if session and renderer:
-            if session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]:
+            if session.state in [STATE_ACTIVE, STATE_LOBBY]:
                 local_user = session.online_users.get(
                     settings.username)
 
