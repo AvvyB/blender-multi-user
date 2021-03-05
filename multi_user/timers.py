@@ -119,7 +119,7 @@ class ApplyTimer(Timer):
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
                     else:
                         if node_ref.bl_reload_parent:
-                            for parent in session._graph.find_parents(node):
+                            for parent in session._repository.find_parents(node):
                                 logging.debug("Refresh parent {node}")
                                 session.apply(parent, force=True)
 

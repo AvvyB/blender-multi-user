@@ -81,7 +81,7 @@ def initialize_session():
 
     # Step 1: Constrect nodes
     logging.info("Constructing nodes")
-    for node in session._graph.list_ordered():
+    for node in session._repository.list_ordered():
         node_ref = session.get(uuid=node)
         if node_ref is None:
             logging.error(f"Can't construct node {node}")
@@ -90,7 +90,7 @@ def initialize_session():
     
     # Step 2: Load nodes
     logging.info("Loading nodes")
-    for node in session._graph.list_ordered():
+    for node in session._repository.list_ordered():
         node_ref = session.get(uuid=node)
 
         if node_ref is None:
@@ -275,7 +275,7 @@ class SessionStartOperator(bpy.types.Operator):
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
             execution_queue=background_execution_queue)
-        session_listen = timers.SessionListenTimer()
+        session_listen = timers.SessionListenTimer(timeout=0.001)
 
         session_listen.register()
         session_update.register()
@@ -602,7 +602,7 @@ class SessionApply(bpy.types.Operator):
                         force=True,
                         force_dependencies=self.reset_dependencies)
             if node_ref.bl_reload_parent:
-                for parent in session._graph.find_parents(self.target):
+                for parent in session._repository.find_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
                     session.apply(parent, force=True)
         except Exception as e:
