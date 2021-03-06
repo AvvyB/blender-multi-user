@@ -348,7 +348,7 @@ class SessionStopOperator(bpy.types.Operator):
 
         if session:
             try:
-                session.disconnect()
+                session.disconnect(reason='user')
 
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
