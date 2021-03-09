@@ -45,9 +45,10 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
 from replication.data import DataTranslationProtocol
+from replication.exception import ContextError, NonAuthorizedOperationError
+from replication.interface import session
+from replication.porcelain import add
 from replication.repository import Repository
-from replication.exception import NonAuthorizedOperationError, ContextError
-from replication.interface import session, add
 
 from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
