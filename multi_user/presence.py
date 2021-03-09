@@ -30,7 +30,7 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
-                                   STATE_INITIAL, STATE_LAUNCHING_SERVICES,
+                                   STATE_INITIAL, CONNECTING,
                                    STATE_LOBBY, STATE_QUITTING, STATE_SRV_SYNC,
                                    STATE_SYNCING, STATE_WAITING)
 from replication.interface import session

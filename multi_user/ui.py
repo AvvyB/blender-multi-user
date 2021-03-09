@@ -26,7 +26,7 @@ from replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
                                                      STATE_WAITING, STATE_QUITTING,
                                                      STATE_LOBBY,
-                                                     STATE_LAUNCHING_SERVICES)
+                                                     CONNECTING)
 from replication import __version__
 from replication.interface import session
 from .timers import registry
@@ -441,7 +441,7 @@ class SESSION_PT_presence(bpy.types.Panel):
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
-    item = session.get(uuid=property_uuid)
+    item = session.repository.get_node(property_uuid)
 
     area_msg = parent.row(align=True)
 
@@ -568,7 +568,7 @@ class SESSION_PT_repository(bpy.types.Panel):
                 filter_owner=settings.username) if runtime_settings.filter_owned else session.list()
 
             client_keys = [key for key in key_to_filter
-                           if session.get(uuid=key).str_type
+                           if session.repository.get_node(key).str_type
                            in types_filter]
 
             if client_keys:

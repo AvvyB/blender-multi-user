@@ -23,7 +23,8 @@ from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_LOBBY, STATE_QUITTING,
                                    STATE_SRV_SYNC, STATE_SYNCING, UP)
 from replication.exception import NonAuthorizedOperationError, ContextError
-from replication.interface import session, add
+from replication.interface import session
+from replication.porcelain import apply, add
 
 from . import operators, utils
 from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
@@ -110,18 +111,18 @@ class ApplyTimer(Timer):
             nodes = session.list()
 
             for node in nodes:
-                node_ref = session.get(uuid=node)
+                node_ref = session.repository.get_node(node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        session.apply(node)
+                        apply(session.repository, node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}: {e}")
                     else:
                         if node_ref.bl_reload_parent:
-                            for parent in session._repository.find_parents(node):
+                            for parent in session.repository.find_parents(node):
                                 logging.debug("Refresh parent {node}")
-                                session.apply(parent, force=True)
+                                apply(session.repository, parent, force=True)
 
 
 class DynamicRightSelectTimer(Timer):
@@ -148,7 +149,7 @@ class DynamicRightSelectTimer(Timer):
 
                 # if an annotation exist and is tracked
                 if annotation_gp and annotation_gp.uuid:
-                    registered_gp = session.get(uuid=annotation_gp.uuid)
+                    registered_gp = session.repository.get_node(annotation_gp.uuid)
                     if is_annotating(bpy.context):
                         # try to get the right on it
                         if registered_gp.owner == RP_COMMON:
@@ -162,7 +163,7 @@ class DynamicRightSelectTimer(Timer):
                                 affect_dependencies=False)
                         
                         if registered_gp.owner == settings.username:
-                            gp_node = session.get(uuid=annotation_gp.uuid)
+                            gp_node = session.repository.get_node(annotation_gp.uuid)
                             if gp_node.has_changed():
                                 session.commit(gp_node.uuid)
                                 session.push(gp_node.uuid, check_data=False)
@@ -186,7 +187,7 @@ class DynamicRightSelectTimer(Timer):
 
                     # change old selection right to common
                     for obj in obj_common:
-                        node = session.get(uuid=obj)
+                        node = session.repository.get_node(obj)
 
                         if node and (node.owner == settings.username or node.owner == RP_COMMON):
                             recursive = True
@@ -204,7 +205,7 @@ class DynamicRightSelectTimer(Timer):
 
                     # change new selection to our
                     for obj in obj_ours:
-                        node = session.get(uuid=obj)
+                        node = session.repository.get_node(obj)
 
                         if node and node.owner == RP_COMMON:
                             recursive = True
@@ -237,7 +238,7 @@ class DynamicRightSelectTimer(Timer):
                         owned_keys = session.list(
                             filter_owner=settings.username)
                         for key in owned_keys:
-                            node = session.get(uuid=key)
+                            node = session.repository.get_node(key)
                             try:
                                 session.change_owner(
                                     key,

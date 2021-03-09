@@ -47,7 +47,7 @@ from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
 from replication.data import DataTranslationProtocol
 from replication.exception import ContextError, NonAuthorizedOperationError
 from replication.interface import session
-from replication.porcelain import add
+from replication.porcelain import add, apply
 from replication.repository import Repository
 
 from . import bl_types, environment, timers, ui, utils
@@ -82,8 +82,8 @@ def initialize_session():
 
     # Step 1: Constrect nodes
     logging.info("Constructing nodes")
-    for node in session._repository.list_ordered():
-        node_ref = session.get(uuid=node)
+    for node in session.repository.list_ordered():
+        node_ref = session.repository.get_node(node)
         if node_ref is None:
             logging.error(f"Can't construct node {node}")
         elif node_ref.state == FETCHED:
@@ -91,8 +91,8 @@ def initialize_session():
     
     # Step 2: Load nodes
     logging.info("Loading nodes")
-    for node in session._repository.list_ordered():
-        node_ref = session.get(uuid=node)
+    for node in session.repository.list_ordered():
+        node_ref = session.repository.get_node(node)
 
         if node_ref is None:
             logging.error(f"Can't load node {node}")
@@ -598,14 +598,17 @@ class SessionApply(bpy.types.Operator):
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
         try:
-            node_ref = session.get(uuid=self.target)
-            session.apply(self.target,
-                        force=True,
-                        force_dependencies=self.reset_dependencies)
+            node_ref = session.repository.get_node(self.target)
+            apply(session.repository,
+                  self.target,
+                  force=True,
+                  force_dependencies=self.reset_dependencies)
             if node_ref.bl_reload_parent:
-                for parent in session._repository.find_parents(self.target):
+                for parent in session.repository.find_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
-                    session.apply(parent, force=True)
+                    apply(session.repository,
+                          parent,
+                          force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
             return {"CANCELED"}    
@@ -652,11 +655,11 @@ class ApplyArmatureOperator(bpy.types.Operator):
                 nodes = session.list(filter=bl_types.bl_armature.BlArmature)
 
                 for node in nodes:
-                    node_ref = session.get(uuid=node)
+                    node_ref = session.repository.get_node(node)
 
                     if node_ref.state == FETCHED:
                         try:
-                            session.apply(node)
+                            apply(session.repository, node)
                         except Exception as e:
                             logging.error("Fail to apply armature: {e}")
 
@@ -921,7 +924,7 @@ classes = (
 def update_external_dependencies():
     nodes_ids = session.list(filter=bl_types.bl_file.BlFile)
     for node_id in nodes_ids:
-        node = session.get(node_id)
+        node = session.repository.get_node(node_id)
         if node and node.owner in [session.id, RP_COMMON] \
                 and node.has_changed():
             session.commit(node_id)
@@ -934,7 +937,7 @@ def sanitize_deps_graph(remove_nodes: bool = False):
         start = utils.current_milli_time()
         rm_cpt = 0
         for node_key in session.list():
-            node = session.get(node_key)
+            node = session.repository.get_node(node_key)
             if node is None \
                     or (node.state == UP and not node.resolve(construct=False)):
                 if remove_nodes:
@@ -987,7 +990,7 @@ def depsgraph_evaluation(scene):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
-                node = session.get(uuid=update.id.uuid)
+                node = session.repository.get_node(update.id.uuid)
                 
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
@@ -1011,7 +1014,7 @@ def depsgraph_evaluation(scene):
                     continue
             # A new scene is created 
             elif isinstance(update.id, bpy.types.Scene):
-                ref = session.get(reference=update.id)
+                ref = session.repository.get_node_by_datablock(update.id)
                 if ref:
                     ref.resolve()
                 else:
