@@ -327,7 +327,7 @@ class SessionInitOperator(bpy.types.Operator):
             utils.clean_scene()
 
         for scene in bpy.data.scenes:
-            session.add(scene)
+            add(session.repository, scene)
 
         session.init()
 
@@ -875,7 +875,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
                                     uuid=node,
                                     dependencies=node_data['dependencies'],
                                     data=node_data['data'])
-                    instance.store(graph)
+                    graph.do_commit(instance)
                     instance.state = FETCHED
             
             logging.info("Graph succefully loaded")
@@ -1018,7 +1018,7 @@ def depsgraph_evaluation(scene):
                 if ref:
                     ref.resolve()
                 else:
-                    scn_uuid = session.add(update.id)
+                    scn_uuid = add(session.repository, update.id)
                     session.commit(scn_uuid)
                     session.push(scn_uuid, check_data=False)
 def register():
