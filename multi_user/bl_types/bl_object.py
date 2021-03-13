@@ -363,6 +363,12 @@ class BlObject(BlDatablock):
             for modifier in nodes_modifiers:
                 load_modifier_geometry_node_inputs(data['modifiers'][modifier.name], modifier)
 
+        transform = data.get('transforms', None)
+        if transform:
+            target.matrix_parent_inverse = mathutils.Matrix(transform['matrix_parent_inverse'])
+            target.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
+            target.matrix_local = mathutils.Matrix(transform['matrix_local'])
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
@@ -391,8 +397,6 @@ class BlObject(BlDatablock):
             "color",
             "instance_collection",
             "instance_type",
-            "location",
-            "scale",
             'lock_location',
             'lock_rotation',
             'lock_scale',
@@ -406,12 +410,16 @@ class BlObject(BlDatablock):
             'show_all_edges',
             'show_texture_space',
             'show_in_front',
-            'type',
-            'rotation_quaternion' if instance.rotation_mode == 'QUATERNION' else 'rotation_euler',
+            'type'
         ]
 
         data = dumper.dump(instance)
 
+        dumper.include_filter = [
+            'matrix_parent_inverse',
+            'matrix_local',
+            'matrix_basis']
+        data['transforms'] = dumper.dump(instance)
         dumper.include_filter = [
             'show_shadows',
         ]
