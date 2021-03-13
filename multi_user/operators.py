@@ -995,7 +995,7 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update
-                if node and node.owner in [session.id, RP_COMMON]:
+                if node and (node.owner == session.id or node.bl_check_common):
                     if node.state == UP:
                         try:
                             if node.has_changed():
