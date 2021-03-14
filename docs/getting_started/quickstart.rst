@@ -374,15 +374,6 @@ Network
 
    Advanced network settings
 
-**IPC Port** is the port used for Inter Process Communication. This port is used 
-by the multi-user subprocesses to communicate with each other. If different instances
-of multi-user are using the same IPC port, this will create conflict !
-
-.. note::
-   You only need to modify this setting if you need to launch multiple clients from the same
-   computer (or if you try to host and join from the same computer). To resolve this, you simply need to enter a different
-   **IPC port** for each blender instance.
-
 **Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
 You should only increase it if you have a bad connection.
 

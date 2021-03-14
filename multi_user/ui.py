@@ -252,9 +252,6 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         
         if settings.sidebar_advanced_net_expanded:
             net_section_row = net_section.row()
-            net_section_row.label(text="IPC Port:")
-            net_section_row.prop(settings, "ipc_port", text="")
-            net_section_row = net_section.row()
             net_section_row.label(text="Timeout (ms):")
             net_section_row.prop(settings, "connection_timeout", text="")
 

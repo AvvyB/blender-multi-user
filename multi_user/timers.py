@@ -121,7 +121,7 @@ class ApplyTimer(Timer):
                         traceback.print_exc()
                     else:
                         if node_ref.bl_reload_parent:
-                            for parent in session.repository.find_parents(node):
+                            for parent in session.repository.get_parents(node):
                                 logging.debug("Refresh parent {node}")
                                 apply(session.repository, parent, force=True)
 

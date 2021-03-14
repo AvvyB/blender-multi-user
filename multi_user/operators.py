@@ -32,6 +32,7 @@ from operator import itemgetter
 from pathlib import Path
 from queue import Queue
 from time import gmtime, strftime
+import traceback
 
 try:
     import _pickle as pickle
@@ -247,7 +248,6 @@ class SessionStartOperator(bpy.types.Operator):
             except Exception as e:
                 self.report({'ERROR'}, repr(e))
                 logging.error(f"Error: {e}")
-                import traceback
                 traceback.print_exc()
         # Join a session
         else:
@@ -604,14 +604,16 @@ class SessionApply(bpy.types.Operator):
                   force=True,
                   force_dependencies=self.reset_dependencies)
             if node_ref.bl_reload_parent:
-                for parent in session.repository.find_parents(self.target):
+                for parent in session.repository.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
+
                     apply(session.repository,
-                          parent,
+                          parent.uuid,
                           force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
-            return {"CANCELED"}    
+            traceback.print_exc()
+            return {"CANCELLED"}    
 
         return {"FINISHED"}
 
