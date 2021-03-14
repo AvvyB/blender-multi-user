@@ -123,7 +123,9 @@ class ApplyTimer(Timer):
                         if node_ref.bl_reload_parent:
                             for parent in session.repository.get_parents(node):
                                 logging.debug("Refresh parent {node}")
-                                apply(session.repository, parent, force=True)
+                                apply(session.repository,
+                                      parent.uuid,
+                                      force=True)
 
 
 class DynamicRightSelectTimer(Timer):
