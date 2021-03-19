@@ -155,6 +155,7 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
             'color',
             'position',
             'interpolation',
+            'hue_interpolation',
             'color_mode'
         ]
         dumped_node['color_ramp'] = ramp_dumper.dump(node.color_ramp)
