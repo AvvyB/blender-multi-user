@@ -79,7 +79,7 @@ def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: b
         dumped_value = dumped_modifier['inputs'][input_index]
         input_value = target_modifier[input_name]
         if type(input_value) in [int, str, float]:
-            input_value = dumped_value
+            target_modifier[input_name] = dumped_value
         elif hasattr(input_value, 'to_list'):
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
