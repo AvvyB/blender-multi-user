@@ -55,7 +55,9 @@ def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
         dumped_input = None
         if isinstance(input_value, bpy.types.ID):
             dumped_input = input_value.uuid
-        elif type(input_value) in [int, str, float]:
+        elif isinstance(input_value, float):
+            logging.warning("Float parameter not supported in blender 2.92, skipping it")
+        elif isinstance(input_value,(int, str)):
             dumped_input = input_value
         elif hasattr(input_value, 'to_list'):
             dumped_input = input_value.to_list()
@@ -78,7 +80,9 @@ def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: b
     for input_index, input_name in enumerate(inputs_name):
         dumped_value = dumped_modifier['inputs'][input_index]
         input_value = target_modifier[input_name]
-        if type(input_value) in [int, str, float]:
+        if isinstance(input_value, float):
+            logging.warning("Float parameter not supported in blender 2.92, skipping it")
+        elif isinstance(input_value,(int, str)):
             target_modifier[input_name] = dumped_value
         elif hasattr(input_value, 'to_list'):
             for index in range(len(input_value)):

@@ -365,10 +365,7 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
         if mat_uuid is not None:
             mat_ref = get_datablock_from_uuid(mat_uuid, None)
         else:
-            mat_ref = bpy.data.materials.get(mat_name, None)
-
-        if mat_ref is None:
-            raise Exception(f"Material {mat_name} doesn't exist")
+            mat_ref = bpy.data.materials[mat_name]
 
         dst_materials.append(mat_ref)
 
