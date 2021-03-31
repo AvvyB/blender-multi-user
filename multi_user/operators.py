@@ -210,8 +210,6 @@ class SessionStartOperator(bpy.types.Operator):
                 type_module_class,
                 check_common=type_module_class.bl_check_common)
 
-            deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
-
         if bpy.app.version[1] >= 91:
             python_binary_path = sys.executable
         else:
@@ -272,6 +270,7 @@ class SessionStartOperator(bpy.types.Operator):
         # Background client updates service
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
+        deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
         # deleyables.append(timers.PushTimer(
         #     queue=stagging,
         #     timeout=settings.depsgraph_update_rate
