@@ -182,10 +182,10 @@ def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -
     for mod in modifiers:
         if mod.type == 'NODES' and mod.node_group:
             dependencies.append(mod.node_group)
-            for inpt in get_node_group_inputs(mod.node_group):
-                parameter = mod.get(inpt.identifier)
-                if parameter and isinstance(parameter, bpy.types.ID):
-                    dependencies.append(parameter)
+            # for inpt in get_node_group_inputs(mod.node_group):
+            #     parameter = mod.get(inpt.identifier)
+            #     if parameter and isinstance(parameter, bpy.types.ID):
+            #         dependencies.append(parameter)
     logging.info(dependencies)
     return dependencies
 

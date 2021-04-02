@@ -123,6 +123,9 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
 
     dumped_node = node_dumper.dump(node)
 
+    if node.parent:
+        dumped_node['parent'] = node.parent.name
+
     dump_io_needed = (node.type not in ['REROUTE', 'OUTPUT_MATERIAL'])
 
     if dump_io_needed:
@@ -318,6 +321,12 @@ def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeT
     for node in node_tree_data["nodes"]:
         load_node(node_tree_data["nodes"][node], target_node_tree)
 
+    for node_id, node_data in node_tree_data["nodes"].items():
+        target_node = target_node_tree.nodes[node_id]
+        if 'parent' in node_data:
+            target_node.parent =  target_node_tree.nodes[node_data['parent']]
+        else:
+            target_node.parent = None
     # TODO: load only required nodes links
     # Load nodes links
     target_node_tree.links.clear()
