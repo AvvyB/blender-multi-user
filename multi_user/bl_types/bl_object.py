@@ -23,6 +23,7 @@ import mathutils
 from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from .bl_material import IGNORED_SOCKETS
 from .dump_anything import (
     Dumper,
     Loader,
@@ -43,10 +44,15 @@ else:
     logging.warning("Geometry node Float parameter not supported in \
                     blender 2.92.")
 
-
-def get_input_index(e):
-    return int(re.findall('[0-9]+', e)[0])
-
+def get_node_group_inputs(node_group):
+    inputs = []
+    for inpt in node_group.inputs:
+        if inpt.type in IGNORED_SOCKETS:
+            continue
+        else:
+            inputs.append(inpt)
+    return inputs
+    # return [inpt.identifer for inpt in node_group.inputs if  inpt.type not in IGNORED_SOCKETS]
 
 def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
     """ Dump geometry node modifier input properties
@@ -54,11 +60,10 @@ def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
         :arg modifier: geometry node modifier to dump
         :type modifier: bpy.type.Modifier
     """
-    inputs_name = [p for p in dir(modifier) if "Input_" in p]
-    inputs_name.sort(key=get_input_index)
     dumped_inputs = []
-    for inputs_index, input_name in enumerate(inputs_name):
-        input_value = modifier[input_name]
+    for inpt in get_node_group_inputs(modifier.node_group):
+        input_value = modifier[inpt.identifier]
+
         dumped_input = None
         if isinstance(input_value, bpy.types.ID):
             dumped_input = input_value.uuid
@@ -80,18 +85,16 @@ def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: b
         :type target_modifier: bpy.type.Modifier
     """
 
-    inputs_name = [p for p in dir(target_modifier) if "Input_" in p]
-    inputs_name.sort(key=get_input_index)
-    for input_index, input_name in enumerate(inputs_name):
+    for input_index, inpt in enumerate(get_node_group_inputs(target_modifier.node_group)):
         dumped_value = dumped_modifier['inputs'][input_index]
-        input_value = target_modifier[input_name]
+        input_value = target_modifier[inpt.identifier]
         if isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
-            target_modifier[input_name] = dumped_value
+            target_modifier[inpt.identifier] = dumped_value
         elif hasattr(input_value, 'to_list'):
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
-        elif input_value and isinstance(input_value, bpy.types.ID):
-            target_modifier[input_name] = get_datablock_from_uuid(
+        elif inpt.type in ['COLLECTION', 'OBJECT']:
+            target_modifier[inpt.identifier] = get_datablock_from_uuid(
                 dumped_value, None)
 
 
@@ -168,19 +171,23 @@ def find_textures_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy
     return textures
 
 
-def find_geometry_nodes(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.NodeTree]:
-    """ Find geometry nodes group from a modifier stack
+def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.NodeTree]:
+    """ Find geometry nodes dependencies from a modifier stack
 
         :arg modifiers: modifiers collection
         :type modifiers: bpy.types.bpy_prop_collection
         :return: list of bpy.types.NodeTree pointers
     """
-    nodes_groups = []
-    for item in modifiers:
-        if item.type == 'NODES' and item.node_group:
-            nodes_groups.append(item.node_group)
-
-    return nodes_groups
+    dependencies = []
+    for mod in modifiers:
+        if mod.type == 'NODES' and mod.node_group:
+            dependencies.append(mod.node_group)
+            for inpt in get_node_group_inputs(mod.node_group):
+                parameter = mod.get(inpt.identifier)
+                if parameter and isinstance(parameter, bpy.types.ID):
+                    dependencies.append(parameter)
+    logging.info(dependencies)
+    return dependencies
 
 
 def dump_vertex_groups(src_object: bpy.types.Object) -> dict:
@@ -597,6 +604,6 @@ class BlObject(BlDatablock):
 
         if self.instance.modifiers:
             deps.extend(find_textures_dependencies(self.instance.modifiers))
-            deps.extend(find_geometry_nodes(self.instance.modifiers))
+            deps.extend(find_geometry_nodes_dependencies(self.instance.modifiers))
 
         return deps
