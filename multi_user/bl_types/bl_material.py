@@ -322,8 +322,10 @@ def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeT
         load_node(node_tree_data["nodes"][node], target_node_tree)
 
     for node_id, node_data in node_tree_data["nodes"].items():
-        target_node = target_node_tree.nodes[node_id]
-        if 'parent' in node_data:
+        target_node = target_node_tree.nodes.get(node_id, None)
+        if target_node is None:
+            continue
+        elif 'parent' in node_data:
             target_node.parent =  target_node_tree.nodes[node_data['parent']]
         else:
             target_node.parent = None
