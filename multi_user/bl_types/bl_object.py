@@ -30,12 +30,19 @@ from .dump_anything import (
     np_dump_collection)
 
 
-
 SKIN_DATA = [
     'radius',
     'use_loose',
     'use_root'
 ]
+
+if bpy.app.version[1] >= 93:
+    SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
+else:
+    SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str)
+    logging.warning("Geometry node Float parameter not supported in \
+                    blender 2.92.")
+
 
 def get_input_index(e):
     return int(re.findall('[0-9]+', e)[0])
@@ -55,9 +62,7 @@ def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
         dumped_input = None
         if isinstance(input_value, bpy.types.ID):
             dumped_input = input_value.uuid
-        elif isinstance(input_value, float):
-            logging.warning("Float parameter not supported in blender 2.92, skipping it")
-        elif isinstance(input_value,(int, str)):
+        elif isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
             dumped_input = input_value
         elif hasattr(input_value, 'to_list'):
             dumped_input = input_value.to_list()
@@ -80,14 +85,12 @@ def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: b
     for input_index, input_name in enumerate(inputs_name):
         dumped_value = dumped_modifier['inputs'][input_index]
         input_value = target_modifier[input_name]
-        if isinstance(input_value, float):
-            logging.warning("Float parameter not supported in blender 2.92, skipping it")
-        elif isinstance(input_value,(int, str)):
+        if isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
             target_modifier[input_name] = dumped_value
         elif hasattr(input_value, 'to_list'):
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
-        else:
+        elif input_value and isinstance(input_value, bpy.types.ID):
             target_modifier[input_name] = get_datablock_from_uuid(
                 dumped_value, None)
 
@@ -179,6 +182,7 @@ def find_geometry_nodes(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.
 
     return nodes_groups
 
+
 def dump_vertex_groups(src_object: bpy.types.Object) -> dict:
     """ Dump object's vertex groups
 
@@ -222,6 +226,7 @@ def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Obje
         vertex_group = target_object.vertex_groups.new(name=vg['name'])
         for index, weight in vg['vertices']:
             vertex_group.add([index], weight, 'REPLACE')
+
 
 class BlObject(BlDatablock):
     bl_id = "objects"
@@ -358,18 +363,21 @@ class BlObject(BlDatablock):
                     SKIN_DATA)
 
         if hasattr(target, 'cycles_visibility') \
-            and 'cycles_visibility' in data:
+                and 'cycles_visibility' in data:
             loader.load(target.cycles_visibility, data['cycles_visibility'])
 
         # TODO: handle geometry nodes input from dump_anything
         if hasattr(target, 'modifiers'):
-            nodes_modifiers = [mod for mod in target.modifiers if mod.type == 'NODES']
+            nodes_modifiers = [
+                mod for mod in target.modifiers if mod.type == 'NODES']
             for modifier in nodes_modifiers:
-                load_modifier_geometry_node_inputs(data['modifiers'][modifier.name], modifier)
+                load_modifier_geometry_node_inputs(
+                    data['modifiers'][modifier.name], modifier)
 
         transform = data.get('transforms', None)
         if transform:
-            target.matrix_parent_inverse = mathutils.Matrix(transform['matrix_parent_inverse'])
+            target.matrix_parent_inverse = mathutils.Matrix(
+                transform['matrix_parent_inverse'])
             target.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
             target.matrix_local = mathutils.Matrix(transform['matrix_local'])
 
@@ -435,7 +443,7 @@ class BlObject(BlDatablock):
 
         # PARENTING
         if instance.parent:
-            data['parent_id'] = instance.parent.name 
+            data['parent_id'] = instance.parent.name
 
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
@@ -448,7 +456,8 @@ class BlObject(BlDatablock):
                     data["modifiers"][modifier.name] = dumper.dump(modifier)
                     # hack to dump geometry nodes inputs
                     if modifier.type == 'NODES':
-                        dumped_inputs = dump_modifier_geometry_node_inputs(modifier)
+                        dumped_inputs = dump_modifier_geometry_node_inputs(
+                            modifier)
                         data["modifiers"][modifier.name]['inputs'] = dumped_inputs
         gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
 
@@ -515,7 +524,6 @@ class BlObject(BlDatablock):
                 bone_groups[group.name] = dumper.dump(group)
             data['pose']['bone_groups'] = bone_groups
 
-
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
             data['vertex_groups'] = dump_vertex_groups(instance)
@@ -552,7 +560,8 @@ class BlObject(BlDatablock):
         if hasattr(object_data, 'skin_vertices') and object_data.skin_vertices:
             skin_vertices = list()
             for skin_data in object_data.skin_vertices:
-                skin_vertices.append(np_dump_collection(skin_data.data, SKIN_DATA))
+                skin_vertices.append(
+                    np_dump_collection(skin_data.data, SKIN_DATA))
             data['skin_vertices'] = skin_vertices
 
         # CYCLE SETTINGS
@@ -579,7 +588,7 @@ class BlObject(BlDatablock):
         if self.is_library:
             deps.append(self.instance.library)
 
-        if self.instance.parent :
+        if self.instance.parent:
             deps.append(self.instance.parent)
 
         if self.instance.instance_type == 'COLLECTION':
