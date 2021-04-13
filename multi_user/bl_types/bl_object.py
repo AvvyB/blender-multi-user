@@ -317,9 +317,9 @@ class BlObject(BlDatablock):
             loader.load(target.display, data['display'])
 
         #  Parenting
-        parent_id = data.get('parent_id')
+        parent_id = data.get('parent_uid')
         if parent_id:
-            parent = bpy.data.objects[parent_id]
+            parent = get_datablock_from_uuid(parent_id[0], bpy.data.objects[parent_id[1]])
             # Avoid reloading
             if target.parent != parent and parent is not None:
                 target.parent = parent
@@ -450,7 +450,7 @@ class BlObject(BlDatablock):
 
         # PARENTING
         if instance.parent:
-            data['parent_id'] = instance.parent.name
+            data['parent_uid'] = (instance.parent.uuid, instance.parent.name)
 
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
