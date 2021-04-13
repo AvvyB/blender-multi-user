@@ -381,6 +381,17 @@ class BlObject(BlDatablock):
                 load_modifier_geometry_node_inputs(
                     data['modifiers'][modifier.name], modifier)
 
+            particles_modifiers = [
+                mod for mod in target.modifiers if mod.type == 'PARTICLE_SYSTEM']
+
+            for mod in particles_modifiers:
+                loader.load(mod.particle_system, data['modifiers'][mod.name]['particle_system'])
+                # default_settings =  mod.particle_system.settings
+                # mod.particle_system.settings = get_datablock_from_uuid(data['modifiers'][mod.name]['particle_system']['settings'], None)
+
+                # Hack to remove the default generated particle settings
+                # bpy.data.particles.remove(default_settings)
+
         transform = data.get('transforms', None)
         if transform:
             target.matrix_parent_inverse = mathutils.Matrix(
@@ -460,12 +471,18 @@ class BlObject(BlDatablock):
                 dumper.include_filter = None
                 dumper.depth = 1
                 for index, modifier in enumerate(modifiers):
-                    data["modifiers"][modifier.name] = dumper.dump(modifier)
+                    dumped_modifier = dumper.dump(modifier)
                     # hack to dump geometry nodes inputs
                     if modifier.type == 'NODES':
                         dumped_inputs = dump_modifier_geometry_node_inputs(
                             modifier)
-                        data["modifiers"][modifier.name]['inputs'] = dumped_inputs
+                        dumped_modifier['inputs'] = dumped_inputs
+
+                    if modifier.type == 'PARTICLE_SYSTEM':
+                        dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
+
+                    data["modifiers"][modifier.name] = dumped_modifier
+
         gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
 
         if gp_modifiers:
@@ -486,6 +503,7 @@ class BlObject(BlDatablock):
                         'points',
                         'location']
                     gp_mod_data['curve'] = curve_dumper.dump(modifier.curve)
+
 
         # CONSTRAINTS
         if hasattr(instance, 'constraints'):
@@ -591,6 +609,10 @@ class BlObject(BlDatablock):
         # Avoid Empty case
         if self.instance.data:
             deps.append(self.instance.data)
+
+        # Particle systems
+        for particle_slot in self.instance.particle_systems:
+            deps.append(bpy.data.particles[particle_slot.name])
 
         if self.is_library:
             deps.append(self.instance.library)
