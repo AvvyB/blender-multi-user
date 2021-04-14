@@ -29,6 +29,13 @@ def load_texture_slots(dumped_slots: list, target_slots: bpy.types.bpy_prop_coll
             slot_uuid, slot_name
         )
 
+IGNORED_ATTR = [
+    "is_embedded_data",
+    "is_evaluated",
+    "is_fluid",
+    "is_library_indirect",
+    "users"
+]
 
 class BlParticle(BlDatablock):
     bl_id = "particles"
@@ -62,6 +69,7 @@ class BlParticle(BlDatablock):
 
         dumper = dump_anything.Dumper()
         dumper.depth = 1
+        dumper.exclude_filter = IGNORED_ATTR
         data = dumper.dump(instance)
 
         # Particle effectors

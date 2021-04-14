@@ -479,6 +479,11 @@ class BlObject(BlDatablock):
                         dumped_modifier['inputs'] = dumped_inputs
 
                     if modifier.type == 'PARTICLE_SYSTEM':
+                        dumper.exclude_filter = [
+                            "is_edited",
+                            "is_editable",
+                            "is_global_hair"
+                        ]
                         dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
 
                     data["modifiers"][modifier.name] = dumped_modifier
