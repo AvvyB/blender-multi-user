@@ -240,7 +240,7 @@ def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -
             #     parameter = mod.get(inpt.identifier)
             #     if parameter and isinstance(parameter, bpy.types.ID):
             #         dependencies.append(parameter)
-    logging.info(dependencies)
+
     return dependencies
 
 
@@ -439,18 +439,16 @@ class BlObject(BlDatablock):
                 mod for mod in target.modifiers if mod.type == 'PARTICLE_SYSTEM']
 
             for mod in particles_modifiers:
-                default =  mod.particle_system.settings.name
+                default =  mod.particle_system.settings
                 dumped_particles = data['modifiers'][mod.name]['particle_system']
                 loader.load(mod.particle_system, dumped_particles)
 
                 settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
                 if settings:
                     mod.particle_system.settings = settings
-
-            # Hack to remove the default generated particle settings
-            for settings in bpy.data.particles:
-                if settings.users == 0:
-                    bpy.data.particles.remove(settings)
+                    # Hack to remove the default generated particle settings
+                    if not default.uuid:
+                        bpy.data.particles.remove(default)
 
             phys_modifiers = [
                 mod for mod in target.modifiers if mod.type in ['SOFT_BODY', 'CLOTH']]
