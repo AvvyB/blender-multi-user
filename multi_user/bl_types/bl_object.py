@@ -69,7 +69,7 @@ def dump_physics(target: bpy.types.Object)->dict:
         physics_data['collision'] = dumper.dump(target.collision)
 
     # Field (field)
-    if target.field and target.field.type != "None":
+    if target.field and target.field.type != "NONE":
         physics_data['field'] = dumper.dump(target.field)
 
     # Rigid Body (rigid_body)
@@ -538,6 +538,7 @@ class BlObject(BlDatablock):
             if modifiers:
                 dumper.include_filter = None
                 dumper.depth = 1
+                dumper.exclude_filter = ['is_active']
                 for index, modifier in enumerate(modifiers):
                     dumped_modifier = dumper.dump(modifier)
                     # hack to dump geometry nodes inputs
