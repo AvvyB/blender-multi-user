@@ -54,6 +54,93 @@ def get_node_group_inputs(node_group):
     return inputs
     # return [inpt.identifer for inpt in node_group.inputs if  inpt.type not in IGNORED_SOCKETS]
 
+def get_rigid_body_scenes(target: bpy.types.Object)->[str]:
+    """ Find the list of scene using the rigid body
+    """
+    scenes = []
+    for scene in bpy.data.scenes:
+        if scene.rigidbody_world:
+            for obj in scene.rigidbody_world.collection.objects:
+                if obj == target:
+                    scenes.append((scene.name, scene.rigidbody_world.collection.name))
+                    break
+    return scenes
+
+def dump_physics(target: bpy.types.Object)->dict:
+    """ 
+        Dump all physics settings from a given object excluding modifier 
+        related physics settings (such as softbody, cloth, dynapaint and fluid) 
+    """
+    dumper = Dumper()
+    dumper.depth = 1
+    physics_data = {}
+
+    # Collisions (collision)
+    if target.collision and target.collision.use:
+        physics_data['collision'] = dumper.dump(target.collision)
+
+    # Field (field)
+    if target.field and target.field.type != "None":
+        physics_data['field'] = dumper.dump(target.field)
+
+    # Rigid Body (rigid_body)
+    if target.rigid_body:
+        logging.warning("Rigid body not synced yet. ")
+    #     physics_data['rigid_body_scenes'] = get_rigid_body_scenes(target)
+    #     physics_data['rigid_body'] = dumper.dump(target.rigid_body)
+
+    # Rigid Body constraint (rigid_body_constraint)
+    if target.rigid_body_constraint:
+        logging.warning("Rigid body constraints not synced yet. ")
+        # physics_data['rigid_body_constraint'] = dumper.dump(target.rigid_body_constraint)
+
+    return physics_data
+
+def load_physics(dumped_settings: dict, target: bpy.types.Object):
+    """  Load all physics settings from a given object excluding modifier 
+        related physics settings (such as softbody, cloth, dynapaint and fluid) 
+    """
+    loader = Loader()
+
+    if 'collision' in dumped_settings:
+        loader.load(target.collision, dumped_settings['collision'])
+
+    if 'field' in dumped_settings:
+        loader.load(target.field, dumped_settings['field'])
+
+    # if 'rigid_body' in dumped_settings:
+    #     # ugly fix to link the rigid body to the scene
+    #     for scene, physics_collection in dumped_settings['rigid_body_scenes']:
+    #         scene = bpy.data.scenes[scene]
+    #         phys_collection = bpy.data.collections.get(physics_collection)
+
+    #         # Create the scene physics settings
+    #         if not scene.rigidbody_world:
+    #             ctx_override = {'scene': scene}
+    #             bpy.ops.rigidbody.world_add(ctx_override)
+
+    #         if not phys_collection:
+    #             phys_collection = bpy.data.collections.new(physics_collection)
+
+    #         if not scene.rigidbody_world.collection \
+    #             or  scene.rigidbody_world.collection != phys_collection :
+    #             scene.rigidbody_world.collection = phys_collection
+
+    #         if target.name not in phys_collection.objects:
+    #             phys_collection.objects.link(target)
+
+    #     loader.load(target.rigid_body, dumped_settings['rigid_body'])
+    # elif target.rigid_body:
+    #     scenes = get_rigid_body_scenes(target)
+    #     for scene, collection in scenes:
+    #         phys_collection = bpy.data.collections.get(collection)
+    #         if phys_collection and target.name in phys_collection.objects:
+    #             phys_collection.objects.unlink(target)
+
+    # if 'rigid_body_constraint' in dumped_settings:
+    #     loader.load(target.rigid_body_constraint, dumped_settings['rigid_body_constraint'])
+
+    
 def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
     """ Dump geometry node modifier input properties
 
@@ -399,6 +486,9 @@ class BlObject(BlDatablock):
             target.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
             target.matrix_local = mathutils.Matrix(transform['matrix_local'])
 
+        # PHYSICS
+        load_physics(data, target)
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
@@ -605,6 +695,9 @@ class BlObject(BlDatablock):
                 'shadow',
             ]
             data['cycles_visibility'] = dumper.dump(instance.cycles_visibility)
+
+        # PHYSICS
+        data.update(dump_physics(instance))
 
         return data
 
