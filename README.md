@@ -29,35 +29,35 @@ See the [troubleshooting guide](https://slumber.gitlab.io/multi-user/getting_sta
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
 
-| Name           | Status | Comment                                                                      |
-| -------------- | :----: | :--------------------------------------------------------------------------: |
-| action         | ✔️   |                                                                              |
-| armature       | ❗     | Not stable                                                                   |
-| camera         | ✔️   |                                                                              |
-| collection     | ✔️   |                                                                              |
-| curve          | ❗     | Nurbs surfaces not supported                                                 |
-| gpencil        | ✔️   | [Airbrush not supported](https://gitlab.com/slumber/multi-user/-/issues/123) |
-| image          | ✔️   |                                                                              |
-| mesh           | ✔️   |                                                                              |
-| material       | ✔️   |                                                                              |
-| node_groups    | ❗     | Material only                                                                |
-| geometry nodes | ✔️   |                                                                              |
-| metaball       | ✔️   |                                                                              |
-| object         | ✔️   |                                                                              |
-| textures       | ❗     | Supported for modifiers/materials only                                       |
-| texts          | ✔️   |                                                                              |
-| scene          | ✔️   |                                                                              |
-| world          | ✔️   |                                                                              |
-| lightprobes    | ✔️   |                                                                              |
-| compositing    | ❌     | [Planned](https://gitlab.com/slumber/multi-user/-/issues/46)                 |
-| texts          | ❌     | [Planned](https://gitlab.com/slumber/multi-user/-/issues/81)                 |
-| nla            | ❌     |                                                                              |
-| volumes        | ✔️   |                                                                              |
-| particles      | ❌     | [On-going](https://gitlab.com/slumber/multi-user/-/issues/24)                |
-| speakers       | ❗     | [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)                 |
-| vse            | ❗     | Mask and Clip not supported yet                                              |
-| physics        | ❌     | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45)                 |
-| libraries      | ❗     | Partial                                                                      |
+| Name           | Status |                           Comment                            |
+| -------------- | :----: | :----------------------------------------------------------: |
+| action         |   ✔️    |                                                              |
+| armature       |   ❗    |                          Not stable                          |
+| camera         |   ✔️    |                                                              |
+| collection     |   ✔️    |                                                              |
+| curve          |   ❗    |                 Nurbs surfaces not supported                 |
+| gpencil        |   ✔️    |                                                              |
+| image          |   ✔️    |                                                              |
+| mesh           |   ✔️    |                                                              |
+| material       |   ✔️    |                                                              |
+| node_groups    |   ❗    |                   Material & Geometry only                   |
+| geometry nodes |   ✔️    |                                                              |
+| metaball       |   ✔️    |                                                              |
+| object         |   ✔️    |                                                              |
+| textures       |   ❗    |       Supported for modifiers/materials/geo nodes only       |
+| texts          |   ✔️    |                                                              |
+| scene          |   ✔️    |                                                              |
+| world          |   ✔️    |                                                              |
+| lightprobes    |   ✔️    |                                                              |
+| compositing    |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/46) |
+| texts          |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/81) |
+| nla            |   ❌    |                                                              |
+| volumes        |   ✔️    |                                                              |
+| particles      |   ❗    |                   The cache isn't syncing.                   |
+| speakers       |   ❗    | [Partial](https://gitlab.com/slumber/multi-user/-/issues/65) |
+| vse            |   ❗    |               Mask and Clip not supported yet                |
+| physics        |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45) |
+| libraries      |   ❗    |                           Partial                            |
 
 
 
@@ -70,7 +70,7 @@ I'm working on it.
 
 | Dependencies | Version | Needed |
 | ------------ | :-----: | -----: |
-| Replication  | latest  | yes    |
+| Replication  | latest  |    yes |
 
 
 

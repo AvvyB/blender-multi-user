@@ -439,12 +439,24 @@ class BlObject(BlDatablock):
                 mod for mod in target.modifiers if mod.type == 'PARTICLE_SYSTEM']
 
             for mod in particles_modifiers:
-                loader.load(mod.particle_system, data['modifiers'][mod.name]['particle_system'])
-                # default_settings =  mod.particle_system.settings
-                # mod.particle_system.settings = get_datablock_from_uuid(data['modifiers'][mod.name]['particle_system']['settings'], None)
+                default =  mod.particle_system.settings.name
+                dumped_particles = data['modifiers'][mod.name]['particle_system']
+                loader.load(mod.particle_system, dumped_particles)
 
-                # Hack to remove the default generated particle settings
-                # bpy.data.particles.remove(default_settings)
+                settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
+                if settings:
+                    mod.particle_system.settings = settings
+
+            # Hack to remove the default generated particle settings
+            for settings in bpy.data.particles:
+                if settings.users == 0:
+                    bpy.data.particles.remove(settings)
+
+            phys_modifiers = [
+                mod for mod in target.modifiers if mod.type in ['SOFT_BODY', 'CLOTH']]
+            
+            for mod in phys_modifiers:
+                loader.load(mod.settings, data['modifiers'][mod.name]['settings'])
 
         # PHYSICS
         load_physics(data, target)
@@ -456,7 +468,6 @@ class BlObject(BlDatablock):
             target.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
             target.matrix_local = mathutils.Matrix(transform['matrix_local'])
 
-        
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -537,13 +548,17 @@ class BlObject(BlDatablock):
                             modifier)
                         dumped_modifier['inputs'] = dumped_inputs
 
-                    if modifier.type == 'PARTICLE_SYSTEM':
+                    elif modifier.type == 'PARTICLE_SYSTEM':
                         dumper.exclude_filter = [
                             "is_edited",
                             "is_editable",
                             "is_global_hair"
                         ]
                         dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
+                        dumped_modifier['particle_system']['settings_uuid'] = modifier.particle_system.settings.uuid
+
+                    elif modifier.type in ['SOFT_BODY', 'CLOTH']:
+                        dumped_modifier['settings'] = dumper.dump(modifier.settings)
 
                     data["modifiers"][modifier.name] = dumped_modifier
 
@@ -679,7 +694,7 @@ class BlObject(BlDatablock):
 
         # Particle systems
         for particle_slot in self.instance.particle_systems:
-            deps.append(bpy.data.particles[particle_slot.name])
+            deps.append(particle_slot.settings)
 
         if self.is_library:
             deps.append(self.instance.library)

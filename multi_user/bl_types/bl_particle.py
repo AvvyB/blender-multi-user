@@ -45,7 +45,9 @@ class BlParticle(BlDatablock):
     bl_reload_parent = False
 
     def _construct(self, data):
-        return bpy.data.particles.new(data["name"])
+        instance = bpy.data.particles.new(data["name"])
+        instance.uuid = self.uuid
+        return instance
 
     def _load_implementation(self, data, target):
         dump_anything.load(target, data)
