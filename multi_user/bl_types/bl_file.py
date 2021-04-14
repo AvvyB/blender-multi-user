@@ -54,9 +54,6 @@ class BlFile(ReplicatedDatablock):
     bl_id = 'file'
     bl_name = "file"
     bl_class = Path
-    bl_delay_refresh = 2
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'FILE'
     bl_reload_parent = True
@@ -69,18 +66,20 @@ class BlFile(ReplicatedDatablock):
             raise FileNotFoundError(str(self.instance))
    
         self.preferences = utils.get_preferences()
-        self.diff_method = DIFF_BINARY
 
-    def resolve(self):
-        if self.data:
-            self.instance = Path(get_filepath(self.data['name']))
+    def resolve(self, construct = True):
+        self.instance = Path(get_filepath(self.data['name']))
+        
+        file_exists = self.instance.exists()
+        if not file_exists:
+            logging.debug("File don't exist, loading it.")
+            self._load(self.data, self.instance)
+        
+        return file_exists
 
-            if not self.instance.exists():
-                logging.debug("File don't exist, loading it.")
-                self._load(self.data, self.instance)
 
-    def push(self, socket, identity=None):
-        super().push(socket, identity=None)
+    def push(self, socket, identity=None, check_data=False):
+        super().push(socket, identity=None, check_data=False)
         
         if self.preferences.clear_memory_filecache:
                 del self.data['file']

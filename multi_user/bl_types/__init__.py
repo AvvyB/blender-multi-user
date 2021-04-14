@@ -39,9 +39,10 @@ __all__ = [
     'bl_font',
     'bl_sound',
     'bl_file',
-    'bl_sequencer',
+    # 'bl_sequencer',
     'bl_node_group',
     'bl_texture',
+    "bl_particle",
 ]  # Order here defines execution order
 
 if bpy.app.version[1] >= 91:

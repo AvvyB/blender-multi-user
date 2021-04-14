@@ -26,9 +26,6 @@ from .bl_datablock import BlDatablock
 class BlSpeaker(BlDatablock):
     bl_id = "speakers"
     bl_class = bpy.types.Speaker
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'SPEAKER'
     bl_reload_parent = False

@@ -292,7 +292,7 @@ a connected user or be under :ref:`common-right<**COMMON**>` rights.
 
 The Repository panel (see image below) allows you to monitor, change datablock states and rights manually.
 
-.. figure:: img/quickstart_properties.png
+.. figure:: img/quickstart_save_session_data.png
    :align: center
 
    Repository panel
@@ -318,6 +318,40 @@ Here is a quick list of available actions:
 +---------------------------------------+-------------------+------------------------------------------------------------------------------------+
 | .. image:: img/quickstart_remove.png  |  **Delete**       | Remove the data-block from network replication                                     |
 +---------------------------------------+-------------------+------------------------------------------------------------------------------------+
+
+Save session data 
+-----------------
+
+.. danger::
+   This is an experimental feature, until the stable release it is highly recommended to use regular .blend save.
+
+The save session data allows you to create a backup of the session data.
+
+When you hit the **save session data** button, the following popup dialog will appear.
+It allows you to choose the destination folder and if you want to run an auto-save.
+
+.. figure:: img/quickstart_save_session_data_dialog.png
+   :align: center
+
+   Save session data dialog.
+
+If you enabled the auto-save option, you can cancel it from the **Cancel auto-save** button.
+
+.. figure:: img/quickstart_save_session_data_cancel.png
+   :align: center
+
+   Cancel session autosave.
+
+
+To import session data backups, use the following **Multiuser session snapshot** import dialog
+
+.. figure:: img/quickstart_import_session_data.png
+   :align: center
+
+   Import session data dialog.
+
+.. note::
+   It is not yet possible to start a session directly from a backup.
 
 .. _advanced:
 

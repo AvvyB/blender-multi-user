@@ -258,33 +258,55 @@ You can check that your container is running, and find its ID and name with:
 .. _docker-logs:
 
 Viewing logs in a docker container
------------------------------------
+----------------------------------
 
-Logs for the server running in a docker container can be accessed by outputting the following to a log file:
-
-.. code-block:: bash
-
-    docker log your-container-id >& dockerserver.log
-
-.. Note:: If using WSL2 on Windows 10 (Windows Subsystem for Linux), it is preferable to run a dedicated server via regular command line approach (or the associated startup script) from within Windows - docker desktop for windows 10 usually uses the WSL2 backend where it is available.
-
-.. This may not be true. Need to write up how to locally start a docker container from WSL2
-
-First, you'll need to know your container ID, which you can find by running:
+Logs for the server running in a docker container can be accessed by outputting the container logs to a log file. First, you'll need to know your container ID, which you can find by running:
 
 .. code-block:: bash
 
     docker ps
 
-If you're cloud-hosting with e.g. Google Cloud, your container will be the one associated with the `registry address <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ where your Docker image was located. e.g. registry.gitlab.com/slumber/multi-user/multi-user-server:0.2.0
-
-You can either ssh in to your server and then run 
+Then, output the container logs to a file:
 
 .. code-block:: bash
 
-    cat your-log-name.log
+    docker logs your-container-id >& dockerserver.log
 
-or view the docker container logs with 
+.. Note:: If using WSL2 on Windows 10 (Windows Subsystem for Linux), it is preferable to run a dedicated server via regular command line approach (or the associated startup script) from within Windows - docker desktop for windows 10 usually uses the WSL2 backend where it is available.
+
+.. This may not be true. Need to write up how to locally start a docker container from WSL2
+
+
+Downloading logs from a docker container on a cloud-hosted server
+-----------------------------------------------------------------
+
+If you'd like to pull the log files from a cloud-hosted server to submit to a developer for review, a simple process using SSH and SCP is as follows:
+
+First SSH into your instance. You can either open the `VM Instances console <https://console.cloud.google.com/compute/instances>`_ and use the browser terminal provided by Google Cloud (I had the best luck using the Google Chrome browser)... or you can see `here <https://cloud.google.com/compute/docs/instances/connecting-advanced#thirdpartytools>`_ for how to set up your instance for SSH access from your local terminal.
+
+If using SSH from your terminal, first generate SSH keys (setting their access permissions to e.g. chmod 400 level whereby only the user has permissions) and submit the public key to the cloud-hosted VM instance, storing the private key on your local machine.
+Then, SSH into your cloud server from your local terminal, with the following command:
+
+.. code-block:: bash
+
+    ssh -i PATH_TO_PRIVATE_KEY USERNAME@EXTERNAL_IP_ADDRESS
+
+Use the private key which corresponds to the public key you uploaded, and the username associated with that key (visible in the Google Cloud console for your VM Instance). Use the external IP address for the server, available from the `VM Instances console <https://console.cloud.google.com/compute/instances>`_
+e.g.
+
+.. code-block:: bash
+
+    ssh -i ~/.ssh/id_rsa user@xxx.xxx.xxx.xxx
+
+Once you've connected to the server's secure shell, you can generate a log file from the docker container running the replication server. First, you'll need to know your container ID, which you can find by running:
+
+.. code-block:: bash
+
+    docker ps
+
+If you're cloud-hosting with e.g. Google Cloud, your container will be the one associated with the `registry address <https://gitlab.com/slumber/multi-user/container_registry/1174180>`_ where your Docker image was located. e.g. registry.gitlab.com/slumber/multi-user/multi-user-server:latest
+
+To view the docker container logs, run:
 
 .. code-block:: bash
 
@@ -296,7 +318,29 @@ OR
 
     docker logs your-container-id
 
-Note, see these `notes <https://cloud.google.com/compute/docs/containers/deploying-containers?_ga=2.113663175.-1396941296.1606125558#viewing_container_logs>`_ for how to check server logs on Google Cloud.
+To save the output to a file, run:
+
+.. code-block:: bash
+
+    docker logs your-container-id >& dockerserver.log
+
+Now that the server logs are available in a file, we can disconnect from the secure shell (SSH), and then copy the file to the local machine using SCP. In your local terminal, execute the following:
+
+.. code-block:: bash
+
+    scp -i PATH_TO_PRIVATE_KEY USERNAME@EXTERNAL_IP_ADDRESS:"dockerserver.log" LOCAL_PATH_TO_COPY_FILE_TO
+
+e.g.
+
+.. code-block:: bash
+
+    scp -i ~/.ssh/id_rsa user@xxx.xxx.xxx.xxx:"dockerserver.log" .
+
+This copies the file dockerserver.log generated in the previous step to the current directory on the local machine. From there, you can send it to the multi-user maintainers for review.
+
+
+.. Note:: See these `notes <https://cloud.google.com/compute/docs/containers/deploying-containers?_ga=2.113663175.-1396941296.1606125558#viewing_container_logs>`_ for how to check server logs on Google Cloud using other tools.
+
 
 .. _serverstartscripts:
 

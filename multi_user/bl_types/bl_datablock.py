@@ -56,7 +56,7 @@ def load_driver(target_datablock, src_driver):
     loader = Loader()
     drivers = target_datablock.animation_data.drivers
     src_driver_data = src_driver['driver']
-    new_driver = drivers.new(src_driver['data_path'])
+    new_driver = drivers.new(src_driver['data_path'], index=src_driver['array_index'])
 
     # Settings
     new_driver.driver.type = src_driver_data['type']
@@ -106,9 +106,6 @@ class BlDatablock(ReplicatedDatablock):
 
         bl_id :             blender internal storage identifier
         bl_class :          blender internal type
-        bl_delay_refresh :  refresh rate in second for observers
-        bl_delay_apply :    refresh rate in sec for apply
-        bl_automatic_push : boolean
         bl_icon :           type icon (blender icon name) 
         bl_check_common:    enable check even in common rights
         bl_reload_parent:   reload parent
@@ -129,13 +126,7 @@ class BlDatablock(ReplicatedDatablock):
         if instance and hasattr(instance, 'uuid'):
             instance.uuid = self.uuid
 
-        if logging.getLogger().level == logging.DEBUG:
-            self.diff_method = DIFF_JSON
-        else:
-            self.diff_method = DIFF_BINARY
-
-    def resolve(self):
-        datablock_ref = None
+    def resolve(self, construct = True):
         datablock_root = getattr(bpy.data, self.bl_id)
         datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
 
@@ -143,14 +134,20 @@ class BlDatablock(ReplicatedDatablock):
             try:
                 datablock_ref = datablock_root[self.data['name']]
             except Exception:
+                pass
+
+            if construct and not datablock_ref:
                 name = self.data.get('name')
                 logging.debug(f"Constructing {name}")
                 datablock_ref = self._construct(data=self.data)
 
-            if datablock_ref:
-                setattr(datablock_ref, 'uuid', self.uuid)
-
-        self.instance = datablock_ref
+        if datablock_ref is not None:
+            setattr(datablock_ref, 'uuid', self.uuid)
+            self.instance = datablock_ref
+            return True
+        else:
+            return False
+        
 
     def remove_instance(self):
         """
@@ -203,6 +200,9 @@ class BlDatablock(ReplicatedDatablock):
 
             if 'action' in data['animation_data']:
                 target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
+        # Remove existing animation data if there is not more to load
+        elif hasattr(target, 'animation_data') and target.animation_data:
+            target.animation_data_clear()
 
         if self.is_library:
             return

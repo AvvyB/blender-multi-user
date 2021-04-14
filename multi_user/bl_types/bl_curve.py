@@ -24,9 +24,10 @@ import logging
 from .. import utils
 from .bl_datablock import BlDatablock
 from .dump_anything import (Dumper, Loader,
-                                  np_load_collection,
-                                  np_dump_collection)
-
+                            np_load_collection,
+                            np_dump_collection)
+from .bl_datablock import get_datablock_from_uuid
+from .bl_material import dump_materials_slots, load_materials_slots
 
 SPLINE_BEZIER_POINT = [
     # "handle_left_type",
@@ -68,8 +69,6 @@ CURVE_METADATA = [
     'font_bold',
     'font_bold_italic',
     'font_italic',
-    'make_local',
-    'materials',
     'name',
     'offset',
     'offset_x',
@@ -79,7 +78,6 @@ CURVE_METADATA = [
     'override_create',
     'override_library',
     'path_duration',
-    'preview',
     'render_resolution_u',
     'render_resolution_v',
     'resolution_u',
@@ -113,8 +111,6 @@ CURVE_METADATA = [
 ]
 
 
-
-
 SPLINE_METADATA = [
     'hide',
     'material_index',
@@ -141,9 +137,6 @@ SPLINE_METADATA = [
 class BlCurve(BlDatablock):
     bl_id = "curves"
     bl_class = bpy.types.Curve
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'CURVE_DATA'
     bl_reload_parent = False
@@ -160,29 +153,28 @@ class BlCurve(BlDatablock):
         # load splines
         for spline in data['splines'].values():
             new_spline = target.splines.new(spline['type'])
-            
 
             # Load curve geometry data
             if new_spline.type == 'BEZIER':
-                bezier_points = new_spline.bezier_points 
+                bezier_points = new_spline.bezier_points
                 bezier_points.add(spline['bezier_points_count'])
-                np_load_collection(spline['bezier_points'], bezier_points, SPLINE_BEZIER_POINT)
-            
-            if new_spline.type == 'POLY':
-                points = new_spline.points 
+                np_load_collection(
+                    spline['bezier_points'],
+                    bezier_points,
+                    SPLINE_BEZIER_POINT)
+
+            if new_spline.type in ['POLY', 'NURBS']:
+                points = new_spline.points
                 points.add(spline['points_count'])
                 np_load_collection(spline['points'], points, SPLINE_POINT)
-            # Not working for now...
-            # See https://blender.stackexchange.com/questions/7020/create-nurbs-surface-with-python
-            if new_spline.type == 'NURBS':
-                logging.error("NURBS not supported.")
-            #     new_spline.points.add(len(data['splines'][spline]["points"])-1)
-            #     for point_index in data['splines'][spline]["points"]:
-            #         loader.load(
-            #             new_spline.points[point_index], data['splines'][spline]["points"][point_index])
 
             loader.load(new_spline, spline)
-    
+
+            # MATERIAL SLOTS
+            src_materials = data.get('materials', None)
+            if src_materials:
+                load_materials_slots(src_materials, target.materials)
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
         dumper = Dumper()
@@ -210,12 +202,13 @@ class BlCurve(BlDatablock):
             dumper.include_filter = SPLINE_METADATA
             spline_data = dumper.dump(spline)
 
-            if spline.type == 'POLY':
-                spline_data['points_count'] = len(spline.points)-1
-                spline_data['points'] = np_dump_collection(spline.points, SPLINE_POINT)
+            spline_data['points_count'] = len(spline.points)-1
+            spline_data['points'] = np_dump_collection(
+                spline.points, SPLINE_POINT)
 
             spline_data['bezier_points_count'] = len(spline.bezier_points)-1
-            spline_data['bezier_points'] = np_dump_collection(spline.bezier_points, SPLINE_BEZIER_POINT)
+            spline_data['bezier_points'] = np_dump_collection(
+                spline.bezier_points, SPLINE_BEZIER_POINT)
             data['splines'][index] = spline_data
 
         if isinstance(instance, T.SurfaceCurve):
@@ -224,6 +217,9 @@ class BlCurve(BlDatablock):
             data['type'] = 'FONT'
         elif isinstance(instance, T.Curve):
             data['type'] = 'CURVE'
+
+        data['materials'] = dump_materials_slots(instance.materials)
+
         return data
 
     def _resolve_deps_implementation(self):
@@ -237,5 +233,16 @@ class BlCurve(BlDatablock):
                 curve.font_bold,
                 curve.font_bold_italic,
                 curve.font_italic])
-    
+
+        for material in self.instance.materials:
+            if material:
+                deps.append(material)
+
         return deps
+
+    def diff(self):
+        if 'EDIT' in bpy.context.mode \
+                and not self.preferences.sync_flags.sync_during_editmode:
+            return False
+        else:
+            return super().diff()

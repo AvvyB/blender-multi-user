@@ -26,6 +26,7 @@ from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dum
 from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from .bl_material import dump_materials_slots, load_materials_slots
 
 VERTICE = ['co']
 
@@ -33,6 +34,8 @@ EDGE = [
     'vertices',
     'crease',
     'bevel_weight',
+    'use_seam',
+    'use_edge_sharp',
 ]
 LOOP = [
     'vertex_index',
@@ -49,12 +52,9 @@ POLYGON = [
 class BlMesh(BlDatablock):
     bl_id = "meshes"
     bl_class = bpy.types.Mesh
-    bl_delay_refresh = 2
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'MESH_DATA'
-    bl_reload_parent = False
+    bl_reload_parent = True
 
     def _construct(self, data):
         instance = bpy.data.meshes.new(data["name"])
@@ -69,19 +69,9 @@ class BlMesh(BlDatablock):
             loader.load(target, data)
 
             # MATERIAL SLOTS
-            target.materials.clear()
-
-            for mat_uuid, mat_name in data["material_list"]:
-                mat_ref = None
-                if mat_uuid is not None:
-                    mat_ref = get_datablock_from_uuid(mat_uuid, None)
-                else:
-                    mat_ref = bpy.data.materials.get(mat_name, None)
-
-                if mat_ref is None:
-                    raise Exception("Material doesn't exist")
-
-                target.materials.append(mat_ref)
+            src_materials = data.get('materials', None)
+            if src_materials:
+                load_materials_slots(src_materials, target.materials)
 
             # CLEAR GEOMETRY
             if target.vertices:
@@ -126,7 +116,7 @@ class BlMesh(BlDatablock):
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
-        if instance.is_editmode and not self.preferences.sync_flags.sync_during_editmode:
+        if (instance.is_editmode or bpy.context.mode == "SCULPT") and not self.preferences.sync_flags.sync_during_editmode:
             raise ContextError("Mesh is in edit mode")
         mesh = instance
 
@@ -172,9 +162,8 @@ class BlMesh(BlDatablock):
                 data['vertex_colors'][color_map.name] = {}
                 data['vertex_colors'][color_map.name]['data'] = np_dump_collection_primitive(color_map.data, 'color')
 
-        # Fix material index
-        data['material_list'] = [(m.uuid, m.name) for m in instance.materials if m]
-
+        # Materials
+        data['materials'] = dump_materials_slots(instance.materials)
         return data
 
     def _resolve_deps_implementation(self):
@@ -185,3 +174,10 @@ class BlMesh(BlDatablock):
                 deps.append(material)
 
         return deps
+
+    def diff(self):
+        if 'EDIT' in bpy.context.mode \
+                and not self.preferences.sync_flags.sync_during_editmode:
+            return False
+        else:
+            return super().diff()

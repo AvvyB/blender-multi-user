@@ -158,3 +158,32 @@ All notable changes to this project will be documented in this file.
 - Material renaming
 - Default material nodes input parameters
 - blender 2.91 python api compatibility
+
+## [0.3.0] - 2021-04-14
+
+### Added
+
+- Curve material support
+- Cycle visibility settings
+- Session save/load  operator 
+- Add new scene support
+- Physic initial support
+- Geometry node initial support
+- Blender 2.93 compatibility
+### Changed
+
+- Host documentation on Gitlab Page
+- Event driven update (from the blender deps graph)
+
+### Fixed
+
+- Vertex group assignation
+- Parent relation can't be removed
+- Separate object
+- Delete animation
+- Sync missing holdout option for grease pencil material
+- Sync missing `skin_vertices`  
+- Exception access violation during Undo/Redo
+- Sync missing armature bone Roll
+- Sync missing driver data_path
+- Constraint replication

@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 2, 0),
+    "version": (0, 3, 0),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -44,7 +44,7 @@ from . import environment
 
 
 DEPENDENCIES = {
-    ("replication", '0.1.17'),
+    ("replication", '0.1.26'),
 }
 
 
@@ -89,6 +89,8 @@ def register():
         type=preferences.SessionUser
     )
     bpy.types.WindowManager.user_index = bpy.props.IntProperty()
+    bpy.types.TOPBAR_MT_file_import.append(operators.menu_func_import)
+
 
 def unregister():
     from . import presence
@@ -96,6 +98,8 @@ def unregister():
     from . import ui
     from . import preferences
     from . import addon_updater_ops
+
+    bpy.types.TOPBAR_MT_file_import.remove(operators.menu_func_import)
 
     presence.unregister()
     addon_updater_ops.unregister()

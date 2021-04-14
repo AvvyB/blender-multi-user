@@ -97,8 +97,6 @@ def get_log_level(self):
 class ReplicatedDatablock(bpy.types.PropertyGroup):
     type_name: bpy.props.StringProperty()
     bl_name: bpy.props.StringProperty()
-    bl_delay_refresh: bpy.props.FloatProperty()
-    bl_delay_apply: bpy.props.FloatProperty()
     use_as_filter: bpy.props.BoolProperty(default=True)
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
@@ -197,22 +195,13 @@ class SessionPrefs(bpy.types.AddonPreferences):
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
         description='connection timeout before disconnection',
-        default=1000
-    )
-    update_method: bpy.props.EnumProperty(
-        name='update method',
-        description='replication update method',
-        items=[
-            ('DEFAULT', "Default", "Default: Use threads to monitor databloc changes"),
-            ('DEPSGRAPH', "Depsgraph",
-             "Experimental: Use the blender dependency graph to trigger updates"),
-        ],
+        default=5000
     )
     # Replication update settings
-    depsgraph_update_rate: bpy.props.IntProperty(
-        name='depsgraph update rate',
-        description='Dependency graph uppdate rate (milliseconds)',
-        default=1000
+    depsgraph_update_rate: bpy.props.FloatProperty(
+        name='depsgraph update rate (s)',
+        description='Dependency graph uppdate rate (s)',
+        default=1
     )
     clear_memory_filecache: bpy.props.BoolProperty(
         name="Clear memory filecache",
@@ -280,11 +269,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
     conf_session_hosting_expanded: bpy.props.BoolProperty(
         name="Rights",
         description="Rights",
-        default=False
-    )
-    conf_session_timing_expanded: bpy.props.BoolProperty(
-        name="timings",
-        description="timings",
         default=False
     )
     conf_session_cache_expanded: bpy.props.BoolProperty(
@@ -390,28 +374,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
-                row = box.row()
-                row.label(text="Update method:")
-                row.prop(self, "update_method", text="")
 
-                table = box.box()
-                table.row().prop(
-                    self, "conf_session_timing_expanded", text="Refresh rates",
-                    icon=get_expanded_icon(self.conf_session_timing_expanded),
-                    emboss=False)
-
-                if self.conf_session_timing_expanded:
-                    line = table.row()
-                    line.label(text=" ")
-                    line.separator()
-                    line.label(text="refresh (sec)")
-                    line.label(text="apply (sec)")
-
-                    for item in self.supported_datablocks:
-                        line = table.row(align=True)
-                        line.label(text="", icon=item.icon)
-                        line.prop(item, "bl_delay_refresh", text="")
-                        line.prop(item, "bl_delay_apply", text="")
             # HOST SETTINGS
             box = grid.box()
             box.prop(
@@ -467,11 +430,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
             type_module_class = getattr(type_module, type_impl_name)
             new_db.name = type_impl_name
             new_db.type_name = type_impl_name
-            new_db.bl_delay_refresh = type_module_class.bl_delay_refresh
-            new_db.bl_delay_apply = type_module_class.bl_delay_apply
             new_db.use_as_filter = True
             new_db.icon = type_module_class.bl_icon
-            new_db.auto_push = type_module_class.bl_automatic_push
             new_db.bl_name = type_module_class.bl_id
 
 

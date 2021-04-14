@@ -465,6 +465,7 @@ class Loader:
         self.type_subset = self.match_subset_all
         self.occlude_read_only = False
         self.order = ['*']
+        self.exclure_filter = []
 
     def load(self, dst_data, src_dumped_data):
         self._load_any(
@@ -475,7 +476,8 @@ class Loader:
 
     def _load_any(self, any, dump):
         for filter_function, load_function in self.type_subset:
-            if filter_function(any):
+            if filter_function(any) and \
+                any.sub_element_name not in self.exclure_filter:
                 load_function(any, dump)
                 return
 
@@ -514,7 +516,7 @@ class Loader:
             T.ColorRampElement: DESTRUCTOR_REMOVE,
             T.Modifier: DESTRUCTOR_CLEAR,
             T.GpencilModifier: DESTRUCTOR_CLEAR,
-            T.Constraint: CONSTRUCTOR_NEW,
+            T.Constraint: DESTRUCTOR_REMOVE,
         }
         element_type = element.bl_rna_property.fixed_type
 
@@ -529,7 +531,13 @@ class Loader:
         if destructor:
             if destructor == DESTRUCTOR_REMOVE:
                 collection = element.read()
-                for i in range(len(collection)-1):
+                elems_to_remove = len(collection)
+
+                # Color ramp doesn't allow to remove all elements
+                if type(element_type) == T.ColorRampElement:
+                    elems_to_remove -= 1
+
+                for i in range(elems_to_remove):
                     collection.remove(collection[0])
             else:
                 getattr(element.read(), DESTRUCTOR_CLEAR)()
@@ -588,6 +596,8 @@ class Loader:
             instance.write(bpy.data.textures.get(dump))
         elif isinstance(rna_property_type, T.ColorRamp):
             self._load_default(instance, dump)
+        elif isinstance(rna_property_type, T.NodeTree):
+            instance.write(bpy.data.node_groups.get(dump))
         elif isinstance(rna_property_type, T.Object):
             instance.write(bpy.data.objects.get(dump))
         elif isinstance(rna_property_type, T.Mesh):
@@ -600,6 +610,8 @@ class Loader:
             instance.write(bpy.data.fonts.get(dump))
         elif isinstance(rna_property_type, T.Sound):
             instance.write(bpy.data.sounds.get(dump))
+        # elif isinstance(rna_property_type, T.ParticleSettings):
+        #     instance.write(bpy.data.particles.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))

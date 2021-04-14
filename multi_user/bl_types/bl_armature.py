@@ -25,16 +25,23 @@ from .. import presence, operators, utils
 from .bl_datablock import BlDatablock
 
 
+def get_roll(bone: bpy.types.Bone) -> float:
+    """ Compute the actuall roll of a pose bone
+
+        :arg pose_bone: target pose bone
+        :type pose_bone: bpy.types.PoseBone
+        :return: float
+    """
+    return bone.AxisRollFromMatrix(bone.matrix_local.to_3x3())[1]
+
+
 class BlArmature(BlDatablock):
     bl_id = "armatures"
     bl_class = bpy.types.Armature
-    bl_delay_refresh = 1
-    bl_delay_apply = 0
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'ARMATURE_DATA'
     bl_reload_parent = False
-    
+
     def _construct(self, data):
         return bpy.data.armatures.new(data["name"])
 
@@ -44,8 +51,8 @@ class BlArmature(BlDatablock):
             'uuid',
             data['user'],
             bpy.data.objects
-            )
-        
+        )
+
         if parent_object is None:
             parent_object = bpy.data.objects.new(
                 data['user_name'], target)
@@ -94,16 +101,16 @@ class BlArmature(BlDatablock):
             new_bone.head = bone_data['head_local']
             new_bone.tail_radius = bone_data['tail_radius']
             new_bone.head_radius = bone_data['head_radius']
-            # new_bone.roll =  bone_data['roll']
-
+            new_bone.roll =  bone_data['roll']
+            
             if 'parent' in bone_data:
                 new_bone.parent = target.edit_bones[data['bones']
-                                                          [bone]['parent']]
+                                                    [bone]['parent']]
                 new_bone.use_connect = bone_data['use_connect']
 
             loader = Loader()
             loader.load(new_bone, bone_data)
-            
+
         if bpy.context.mode != 'OBJECT':
             bpy.ops.object.mode_set(mode='OBJECT')
         bpy.context.view_layer.objects.active = current_active_object
@@ -127,8 +134,6 @@ class BlArmature(BlDatablock):
             'parent',
             'name',
             'layers',
-            # 'roll',
-
         ]
         data = dumper.dump(instance)
 
@@ -136,6 +141,7 @@ class BlArmature(BlDatablock):
             if bone.parent:
                 data['bones'][bone.name]['parent'] = bone.parent.name
         # get the parent Object
+        # TODO: Use id_data instead
         object_users = utils.get_datablock_users(instance)[0]
         data['user'] = object_users.uuid
         data['user_name'] = object_users.name
@@ -146,6 +152,8 @@ class BlArmature(BlDatablock):
             item.name for item in container_users if isinstance(item, bpy.types.Collection)]
         data['user_scene'] = [
             item.name for item in container_users if isinstance(item, bpy.types.Scene)]
+
+        for bone in instance.bones:
+            data['bones'][bone.name]['roll'] = get_roll(bone)
+
         return data
-
-

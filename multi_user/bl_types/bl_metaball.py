@@ -65,9 +65,6 @@ def load_metaball_elements(elements_data, elements):
 class BlMetaball(BlDatablock):
     bl_id = "metaballs"
     bl_class = bpy.types.MetaBall
-    bl_delay_refresh = 1
-    bl_delay_apply = 1
-    bl_automatic_push = True
     bl_check_common = False
     bl_icon = 'META_BALL'
     bl_reload_parent = False
