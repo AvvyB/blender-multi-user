@@ -289,6 +289,79 @@ def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Obje
             vertex_group.add([index], weight, 'REPLACE')
 
 
+def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
+    """ Dump all modifiers of a modifier collection into a dict
+
+        :param modifiers: modifiers
+        :type modifiers: bpy.types.bpy_prop_collection
+        :return: dict
+    """
+    dumped_modifiers = {}
+    dumper = Dumper()
+    dumper.depth = 1
+    dumper.exclude_filter = ['is_active']
+
+    for index, modifier in enumerate(modifiers):
+        dumped_modifier = dumper.dump(modifier)
+        # hack to dump geometry nodes inputs
+        if modifier.type == 'NODES':
+            dumped_inputs = dump_modifier_geometry_node_inputs(
+                modifier)
+            dumped_modifier['inputs'] = dumped_inputs
+
+        elif modifier.type == 'PARTICLE_SYSTEM':
+            dumper.exclude_filter = [
+                "is_edited",
+                "is_editable",
+                "is_global_hair"
+            ]
+            dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
+            dumped_modifier['particle_system']['settings_uuid'] = modifier.particle_system.settings.uuid
+
+        elif modifier.type in ['SOFT_BODY', 'CLOTH']:
+            dumped_modifier['settings'] = dumper.dump(modifier.settings)
+        elif modifier.type == 'UV_PROJECT':
+            dumped_modifier['projectors'] =[p.object.name for p in modifier.projectors if p and p.object]
+
+        dumped_modifiers[modifier.name] = dumped_modifier
+    return dumped_modifiers
+
+
+def load_modifiers_custom_data(dumped_modifiers: dict, modifiers: bpy.types.bpy_prop_collection):
+    """ Load modifiers custom data not managed by the dump_anything loader
+
+        :param dumped_modifiers: modifiers to load
+        :type dumped_modifiers: dict
+        :param modifiers: target modifiers collection 
+        :type modifiers: bpy.types.bpy_prop_collection
+    """
+    loader = Loader()
+
+    for modifier in modifiers:
+        dumped_modifier = dumped_modifiers.get(modifier.name)
+        if modifier.type == 'NODES':
+            load_modifier_geometry_node_inputs(dumped_modifier, modifier)
+        elif modifier.type == 'PARTICLE_SYSTEM':
+            default =  modifier.particle_system.settings
+            dumped_particles = dumped_modifier['particle_system']
+            loader.load(modifier.particle_system, dumped_particles)
+
+            settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
+            if settings:
+                modifier.particle_system.settings = settings
+                # Hack to remove the default generated particle settings
+                if not default.uuid:
+                    bpy.data.particles.remove(default)
+        elif modifier.type in ['SOFT_BODY', 'CLOTH']:
+            loader.load(modifier.settings, dumped_modifier['settings'])
+        elif modifier.type == 'UV_PROJECT':
+            for projector_index, projector_object in enumerate(dumped_modifier['projectors']):
+                target_object = bpy.data.objects.get(projector_object)
+                if target_object:
+                    modifier.projectors[projector_index].object = target_object
+                else:
+                    logging.error("Could't load projector target object {projector_object}")
+            
 class BlObject(BlDatablock):
     bl_id = "objects"
     bl_class = bpy.types.Object
@@ -427,34 +500,8 @@ class BlObject(BlDatablock):
                 and 'cycles_visibility' in data:
             loader.load(target.cycles_visibility, data['cycles_visibility'])
 
-        # TODO: handle geometry nodes input from dump_anything
         if hasattr(target, 'modifiers'):
-            nodes_modifiers = [
-                mod for mod in target.modifiers if mod.type == 'NODES']
-            for modifier in nodes_modifiers:
-                load_modifier_geometry_node_inputs(
-                    data['modifiers'][modifier.name], modifier)
-
-            particles_modifiers = [
-                mod for mod in target.modifiers if mod.type == 'PARTICLE_SYSTEM']
-
-            for mod in particles_modifiers:
-                default =  mod.particle_system.settings
-                dumped_particles = data['modifiers'][mod.name]['particle_system']
-                loader.load(mod.particle_system, dumped_particles)
-
-                settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
-                if settings:
-                    mod.particle_system.settings = settings
-                    # Hack to remove the default generated particle settings
-                    if not default.uuid:
-                        bpy.data.particles.remove(default)
-
-            phys_modifiers = [
-                mod for mod in target.modifiers if mod.type in ['SOFT_BODY', 'CLOTH']]
-            
-            for mod in phys_modifiers:
-                loader.load(mod.settings, data['modifiers'][mod.name]['settings'])
+            load_modifiers_custom_data(data['modifiers'], target.modifiers)
 
         # PHYSICS
         load_physics(data, target)
@@ -532,34 +579,9 @@ class BlObject(BlDatablock):
             data['parent_uid'] = (instance.parent.uuid, instance.parent.name)
 
         # MODIFIERS
+        modifiers = getattr(instance, 'modifiers', None)
         if hasattr(instance, 'modifiers'):
-            data["modifiers"] = {}
-            modifiers = getattr(instance, 'modifiers', None)
-            if modifiers:
-                dumper.include_filter = None
-                dumper.depth = 1
-                dumper.exclude_filter = ['is_active']
-                for index, modifier in enumerate(modifiers):
-                    dumped_modifier = dumper.dump(modifier)
-                    # hack to dump geometry nodes inputs
-                    if modifier.type == 'NODES':
-                        dumped_inputs = dump_modifier_geometry_node_inputs(
-                            modifier)
-                        dumped_modifier['inputs'] = dumped_inputs
-
-                    elif modifier.type == 'PARTICLE_SYSTEM':
-                        dumper.exclude_filter = [
-                            "is_edited",
-                            "is_editable",
-                            "is_global_hair"
-                        ]
-                        dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
-                        dumped_modifier['particle_system']['settings_uuid'] = modifier.particle_system.settings.uuid
-
-                    elif modifier.type in ['SOFT_BODY', 'CLOTH']:
-                        dumped_modifier['settings'] = dumper.dump(modifier.settings)
-
-                    data["modifiers"][modifier.name] = dumped_modifier
+            data['modifiers'] = dump_modifiers(modifiers)
 
         gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
 
