@@ -56,6 +56,11 @@ class BlCamera(BlDatablock):
                     target_img.image = bpy.data.images[img_id]
                     loader.load(target_img, img_data)
 
+                    img_user = img_data.get('image_user')
+                    if img_user:
+                        loader.load(target_img.image_user, img_user)
+
+
     def _dump_implementation(self, data, instance=None):
         assert(instance)
 
@@ -101,10 +106,19 @@ class BlCamera(BlDatablock):
             'scale',
             'use_flip_x',
             'use_flip_y',
-            'image'
+            'image_user',
+            'image',
+            'frame_duration',
+            'frame_start',
+            'frame_offset',
+            'use_cyclic',
+            'use_auto_refresh'
         ]
-        return dumper.dump(instance)
-    
+        data =  dumper.dump(instance)
+        for index, image in enumerate(instance.background_images):
+            if image.image_user:
+                data['background_images'][index]['image_user'] = dumper.dump(image.image_user)
+        return data
     def _resolve_deps_implementation(self):
         deps = []
         for background in self.instance.background_images:
