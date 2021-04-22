@@ -161,19 +161,17 @@ class BlDatablock(ReplicatedDatablock):
     def _dump(self, instance=None):
         dumper = Dumper()
         data = {}
+        animation_data = {}
         # Dump animation data
         if has_action(instance):
-            dumper = Dumper()
-            dumper.include_filter = ['action']
-            data['animation_data'] = dumper.dump(instance.animation_data)
-
+            animation_data['action'] = instance.animation_data.action.name
         if has_driver(instance):
-            dumped_drivers = {'animation_data': {'drivers': []}}
+            animation_data['drivers'] = []
             for driver in instance.animation_data.drivers:
-                dumped_drivers['animation_data']['drivers'].append(
-                    dump_driver(driver))
+                animation_data['drivers'].append(dump_driver(driver))
 
-            data.update(dumped_drivers)
+        if animation_data:
+            data['animation_data'] = animation_data
 
         if self.is_library:
             data.update(dumper.dump(instance))
@@ -200,6 +198,9 @@ class BlDatablock(ReplicatedDatablock):
 
             if 'action' in data['animation_data']:
                 target.animation_data.action = bpy.data.actions[data['animation_data']['action']]
+            elif target.animation_data.action:
+                target.animation_data.action = None
+
         # Remove existing animation data if there is not more to load
         elif hasattr(target, 'animation_data') and target.animation_data:
             target.animation_data_clear()
