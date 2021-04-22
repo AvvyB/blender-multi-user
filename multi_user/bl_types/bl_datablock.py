@@ -72,10 +72,10 @@ def load_driver(target_datablock, src_driver):
 
         for src_target in src_var_data['targets']:
             src_target_data = src_var_data['targets'][src_target]
-            new_var.targets[src_target].id = utils.resolve_from_id(
-                src_target_data['id'], src_target_data['id_type'])
-            loader.load(
-                new_var.targets[src_target],  src_target_data)
+            src_id = src_target_data.get('id')
+            if src_id:
+                new_var.targets[src_target].id = utils.resolve_from_id(src_target_data['id'], src_target_data['id_type'])
+            loader.load(new_var.targets[src_target],  src_target_data)
 
     # Fcurve
     new_fcurve = new_driver.keyframe_points
