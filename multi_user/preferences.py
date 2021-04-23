@@ -181,7 +181,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
         description='connection timeout before disconnection',
-        default=1000
+        default=5000
     )
     # Replication update settings
     depsgraph_update_rate: bpy.props.FloatProperty(

@@ -610,6 +610,8 @@ class Loader:
             instance.write(bpy.data.fonts.get(dump))
         elif isinstance(rna_property_type, T.Sound):
             instance.write(bpy.data.sounds.get(dump))
+        # elif isinstance(rna_property_type, T.ParticleSettings):
+        #     instance.write(bpy.data.particles.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))

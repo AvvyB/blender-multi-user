@@ -18,7 +18,6 @@
 import logging
 import sys
 import traceback
-
 import bpy
 from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_LOBBY, STATE_QUITTING,
@@ -118,6 +117,7 @@ class ApplyTimer(Timer):
                     try:
                         apply(session.repository, node)
                     except Exception as e:
+                        logging.error(f"Fail to apply {node_ref.uuid}")
                         traceback.print_exc()
                     else:
                         if node_ref.bl_reload_parent:

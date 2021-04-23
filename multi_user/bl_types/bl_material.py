@@ -27,7 +27,7 @@ from .dump_anything import Loader, Dumper
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
-IGNORED_SOCKETS = ['GEOMETRY', 'SHADER']
+IGNORED_SOCKETS = ['GEOMETRY', 'SHADER', 'CUSTOM']
 
 def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
@@ -54,8 +54,8 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     if inputs_data:
         inputs = [i for i in target_node.inputs if i.type not in IGNORED_SOCKETS]
         for idx, inpt in enumerate(inputs):
-            loaded_input = inputs_data[idx]
             if idx < len(inputs_data) and hasattr(inpt, "default_value"):
+                loaded_input = inputs_data[idx]
                 try:
                     if inpt.type in ['OBJECT', 'COLLECTION']:
                         inpt.default_value = get_datablock_from_uuid(loaded_input, None)
@@ -69,13 +69,17 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     outputs_data = node_data.get('outputs')
     if outputs_data:
         outputs = [o for o in target_node.outputs if o.type not in IGNORED_SOCKETS]
-        for idx, output in enumerate(outputs_data):
-            if idx < len(outputs) and hasattr(outputs[idx], "default_value"):
+        for idx, output in enumerate(outputs):
+            if idx < len(outputs_data) and hasattr(output, "default_value"):
+                loaded_output = outputs_data[idx]
                 try:
-                    outputs[idx].default_value = output
+                    if output.type in ['OBJECT', 'COLLECTION']:
+                        output.default_value = get_datablock_from_uuid(loaded_output, None)
+                    else:
+                        output.default_value = loaded_output
                 except Exception as e:
                     logging.warning(
-                        f"Node {target_node.name} output {outputs[idx].name} parameter not supported, skipping ({e})")
+                        f"Node {target_node.name} output {output.name} parameter not supported, skipping ({e})")
             else:
                 logging.warning(
                     f"Node {target_node.name} output length mismatch.")
@@ -119,6 +123,9 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
 
     dumped_node = node_dumper.dump(node)
 
+    if node.parent:
+        dumped_node['parent'] = node.parent.name
+
     dump_io_needed = (node.type not in ['REROUTE', 'OUTPUT_MATERIAL'])
 
     if dump_io_needed:
@@ -155,6 +162,7 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
             'color',
             'position',
             'interpolation',
+            'hue_interpolation',
             'color_mode'
         ]
         dumped_node['color_ramp'] = ramp_dumper.dump(node.color_ramp)
@@ -313,6 +321,14 @@ def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeT
     for node in node_tree_data["nodes"]:
         load_node(node_tree_data["nodes"][node], target_node_tree)
 
+    for node_id, node_data in node_tree_data["nodes"].items():
+        target_node = target_node_tree.nodes.get(node_id, None)
+        if target_node is None:
+            continue
+        elif 'parent' in node_data:
+            target_node.parent =  target_node_tree.nodes[node_data['parent']]
+        else:
+            target_node.parent = None
     # TODO: load only required nodes links
     # Load nodes links
     target_node_tree.links.clear()
@@ -327,6 +343,8 @@ def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
     def has_node_group(node): return (
         hasattr(node, 'node_tree') and node.node_tree)
 
+    def has_texture(node): return (
+        node.type in ['ATTRIBUTE_SAMPLE_TEXTURE','TEXTURE']  and node.texture)
     deps = []
 
     for node in node_tree.nodes:
@@ -334,6 +352,8 @@ def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
             deps.append(node.image)
         elif has_node_group(node):
             deps.append(node.node_tree)
+        elif has_texture(node):
+            deps.append(node.texture)
 
     return deps
 
@@ -364,10 +384,7 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
         if mat_uuid is not None:
             mat_ref = get_datablock_from_uuid(mat_uuid, None)
         else:
-            mat_ref = bpy.data.materials.get(mat_name, None)
-
-        if mat_ref is None:
-            raise Exception(f"Material {mat_name} doesn't exist")
+            mat_ref = bpy.data.materials[mat_name]
 
         dst_materials.append(mat_ref)
 

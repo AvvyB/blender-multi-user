@@ -23,12 +23,12 @@ import mathutils
 from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from .bl_material import IGNORED_SOCKETS
 from .dump_anything import (
     Dumper,
     Loader,
     np_load_collection,
     np_dump_collection)
-
 
 
 SKIN_DATA = [
@@ -37,25 +37,91 @@ SKIN_DATA = [
     'use_root'
 ]
 
-def get_input_index(e):
-    return int(re.findall('[0-9]+', e)[0])
+if bpy.app.version[1] >= 93:
+    SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
+else:
+    SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str)
+    logging.warning("Geometry node Float parameter not supported in \
+                    blender 2.92.")
+
+def get_node_group_inputs(node_group):
+    inputs = []
+    for inpt in node_group.inputs:
+        if inpt.type in IGNORED_SOCKETS:
+            continue
+        else:
+            inputs.append(inpt)
+    return inputs
+    # return [inpt.identifer for inpt in node_group.inputs if  inpt.type not in IGNORED_SOCKETS]
 
 
+def dump_physics(target: bpy.types.Object)->dict:
+    """ 
+        Dump all physics settings from a given object excluding modifier 
+        related physics settings (such as softbody, cloth, dynapaint and fluid) 
+    """
+    dumper = Dumper()
+    dumper.depth = 1
+    physics_data = {}
+
+    # Collisions (collision)
+    if target.collision and target.collision.use:
+        physics_data['collision'] = dumper.dump(target.collision)
+
+    # Field (field)
+    if target.field and target.field.type != "NONE":
+        physics_data['field'] = dumper.dump(target.field)
+
+    # Rigid Body (rigid_body)
+    if target.rigid_body:
+        physics_data['rigid_body'] = dumper.dump(target.rigid_body)
+
+    # Rigid Body constraint (rigid_body_constraint)
+    if target.rigid_body_constraint:
+        physics_data['rigid_body_constraint'] = dumper.dump(target.rigid_body_constraint)
+
+    return physics_data
+
+def load_physics(dumped_settings: dict, target: bpy.types.Object):
+    """  Load all physics settings from a given object excluding modifier 
+        related physics settings (such as softbody, cloth, dynapaint and fluid) 
+    """
+    loader = Loader()
+
+    if 'collision' in dumped_settings:
+        loader.load(target.collision, dumped_settings['collision'])
+
+    if 'field' in dumped_settings:
+        loader.load(target.field, dumped_settings['field'])
+
+    if 'rigid_body' in dumped_settings:
+        if not target.rigid_body:
+            bpy.ops.rigidbody.object_add({"object": target})
+        loader.load(target.rigid_body, dumped_settings['rigid_body'])
+    elif target.rigid_body:
+        bpy.ops.rigidbody.object_remove({"object": target})
+
+    if 'rigid_body_constraint' in dumped_settings:
+        if not target.rigid_body_constraint:
+            bpy.ops.rigidbody.constraint_add({"object": target})
+        loader.load(target.rigid_body_constraint, dumped_settings['rigid_body_constraint'])
+    elif target.rigid_body_constraint:
+        bpy.ops.rigidbody.constraint_remove({"object": target})
+    
 def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
     """ Dump geometry node modifier input properties
 
         :arg modifier: geometry node modifier to dump
         :type modifier: bpy.type.Modifier
     """
-    inputs_name = [p for p in dir(modifier) if "Input_" in p]
-    inputs_name.sort(key=get_input_index)
     dumped_inputs = []
-    for inputs_index, input_name in enumerate(inputs_name):
-        input_value = modifier[input_name]
+    for inpt in get_node_group_inputs(modifier.node_group):
+        input_value = modifier[inpt.identifier]
+
         dumped_input = None
         if isinstance(input_value, bpy.types.ID):
             dumped_input = input_value.uuid
-        elif type(input_value) in [int, str, float]:
+        elif isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
             dumped_input = input_value
         elif hasattr(input_value, 'to_list'):
             dumped_input = input_value.to_list()
@@ -73,18 +139,16 @@ def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: b
         :type target_modifier: bpy.type.Modifier
     """
 
-    inputs_name = [p for p in dir(target_modifier) if "Input_" in p]
-    inputs_name.sort(key=get_input_index)
-    for input_index, input_name in enumerate(inputs_name):
+    for input_index, inpt in enumerate(get_node_group_inputs(target_modifier.node_group)):
         dumped_value = dumped_modifier['inputs'][input_index]
-        input_value = target_modifier[input_name]
-        if type(input_value) in [int, str, float]:
-            input_value = dumped_value
+        input_value = target_modifier[inpt.identifier]
+        if isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
+            target_modifier[inpt.identifier] = dumped_value
         elif hasattr(input_value, 'to_list'):
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
-        else:
-            target_modifier[input_name] = get_datablock_from_uuid(
+        elif inpt.type in ['COLLECTION', 'OBJECT']:
+            target_modifier[inpt.identifier] = get_datablock_from_uuid(
                 dumped_value, None)
 
 
@@ -161,19 +225,24 @@ def find_textures_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy
     return textures
 
 
-def find_geometry_nodes(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.NodeTree]:
-    """ Find geometry nodes group from a modifier stack
+def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.NodeTree]:
+    """ Find geometry nodes dependencies from a modifier stack
 
         :arg modifiers: modifiers collection
         :type modifiers: bpy.types.bpy_prop_collection
         :return: list of bpy.types.NodeTree pointers
     """
-    nodes_groups = []
-    for item in modifiers:
-        if item.type == 'NODES' and item.node_group:
-            nodes_groups.append(item.node_group)
+    dependencies = []
+    for mod in modifiers:
+        if mod.type == 'NODES' and mod.node_group:
+            dependencies.append(mod.node_group)
+            # for inpt in get_node_group_inputs(mod.node_group):
+            #     parameter = mod.get(inpt.identifier)
+            #     if parameter and isinstance(parameter, bpy.types.ID):
+            #         dependencies.append(parameter)
 
-    return nodes_groups
+    return dependencies
+
 
 def dump_vertex_groups(src_object: bpy.types.Object) -> dict:
     """ Dump object's vertex groups
@@ -218,6 +287,7 @@ def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Obje
         vertex_group = target_object.vertex_groups.new(name=vg['name'])
         for index, weight in vg['vertices']:
             vertex_group.add([index], weight, 'REPLACE')
+
 
 class BlObject(BlDatablock):
     bl_id = "objects"
@@ -301,9 +371,9 @@ class BlObject(BlDatablock):
             loader.load(target.display, data['display'])
 
         #  Parenting
-        parent_id = data.get('parent_id')
+        parent_id = data.get('parent_uid')
         if parent_id:
-            parent = bpy.data.objects[parent_id]
+            parent = get_datablock_from_uuid(parent_id[0], bpy.data.objects[parent_id[1]])
             # Avoid reloading
             if target.parent != parent and parent is not None:
                 target.parent = parent
@@ -354,20 +424,48 @@ class BlObject(BlDatablock):
                     SKIN_DATA)
 
         if hasattr(target, 'cycles_visibility') \
-            and 'cycles_visibility' in data:
+                and 'cycles_visibility' in data:
             loader.load(target.cycles_visibility, data['cycles_visibility'])
 
         # TODO: handle geometry nodes input from dump_anything
         if hasattr(target, 'modifiers'):
-            nodes_modifiers = [mod for mod in target.modifiers if mod.type == 'NODES']
+            nodes_modifiers = [
+                mod for mod in target.modifiers if mod.type == 'NODES']
             for modifier in nodes_modifiers:
-                load_modifier_geometry_node_inputs(data['modifiers'][modifier.name], modifier)
+                load_modifier_geometry_node_inputs(
+                    data['modifiers'][modifier.name], modifier)
+
+            particles_modifiers = [
+                mod for mod in target.modifiers if mod.type == 'PARTICLE_SYSTEM']
+
+            for mod in particles_modifiers:
+                default =  mod.particle_system.settings
+                dumped_particles = data['modifiers'][mod.name]['particle_system']
+                loader.load(mod.particle_system, dumped_particles)
+
+                settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
+                if settings:
+                    mod.particle_system.settings = settings
+                    # Hack to remove the default generated particle settings
+                    if not default.uuid:
+                        bpy.data.particles.remove(default)
+
+            phys_modifiers = [
+                mod for mod in target.modifiers if mod.type in ['SOFT_BODY', 'CLOTH']]
+            
+            for mod in phys_modifiers:
+                loader.load(mod.settings, data['modifiers'][mod.name]['settings'])
+
+        # PHYSICS
+        load_physics(data, target)
 
         transform = data.get('transforms', None)
         if transform:
-            target.matrix_parent_inverse = mathutils.Matrix(transform['matrix_parent_inverse'])
+            target.matrix_parent_inverse = mathutils.Matrix(
+                transform['matrix_parent_inverse'])
             target.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
             target.matrix_local = mathutils.Matrix(transform['matrix_local'])
+
 
     def _dump_implementation(self, data, instance=None):
         assert(instance)
@@ -431,7 +529,7 @@ class BlObject(BlDatablock):
 
         # PARENTING
         if instance.parent:
-            data['parent_id'] = instance.parent.name 
+            data['parent_uid'] = (instance.parent.uuid, instance.parent.name)
 
         # MODIFIERS
         if hasattr(instance, 'modifiers'):
@@ -440,12 +538,29 @@ class BlObject(BlDatablock):
             if modifiers:
                 dumper.include_filter = None
                 dumper.depth = 1
+                dumper.exclude_filter = ['is_active']
                 for index, modifier in enumerate(modifiers):
-                    data["modifiers"][modifier.name] = dumper.dump(modifier)
+                    dumped_modifier = dumper.dump(modifier)
                     # hack to dump geometry nodes inputs
                     if modifier.type == 'NODES':
-                        dumped_inputs = dump_modifier_geometry_node_inputs(modifier)
-                        data["modifiers"][modifier.name]['inputs'] = dumped_inputs
+                        dumped_inputs = dump_modifier_geometry_node_inputs(
+                            modifier)
+                        dumped_modifier['inputs'] = dumped_inputs
+
+                    elif modifier.type == 'PARTICLE_SYSTEM':
+                        dumper.exclude_filter = [
+                            "is_edited",
+                            "is_editable",
+                            "is_global_hair"
+                        ]
+                        dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
+                        dumped_modifier['particle_system']['settings_uuid'] = modifier.particle_system.settings.uuid
+
+                    elif modifier.type in ['SOFT_BODY', 'CLOTH']:
+                        dumped_modifier['settings'] = dumper.dump(modifier.settings)
+
+                    data["modifiers"][modifier.name] = dumped_modifier
+
         gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
 
         if gp_modifiers:
@@ -466,6 +581,7 @@ class BlObject(BlDatablock):
                         'points',
                         'location']
                     gp_mod_data['curve'] = curve_dumper.dump(modifier.curve)
+
 
         # CONSTRAINTS
         if hasattr(instance, 'constraints'):
@@ -511,7 +627,6 @@ class BlObject(BlDatablock):
                 bone_groups[group.name] = dumper.dump(group)
             data['pose']['bone_groups'] = bone_groups
 
-
         # VERTEx GROUP
         if len(instance.vertex_groups) > 0:
             data['vertex_groups'] = dump_vertex_groups(instance)
@@ -548,7 +663,8 @@ class BlObject(BlDatablock):
         if hasattr(object_data, 'skin_vertices') and object_data.skin_vertices:
             skin_vertices = list()
             for skin_data in object_data.skin_vertices:
-                skin_vertices.append(np_dump_collection(skin_data.data, SKIN_DATA))
+                skin_vertices.append(
+                    np_dump_collection(skin_data.data, SKIN_DATA))
             data['skin_vertices'] = skin_vertices
 
         # CYCLE SETTINGS
@@ -563,6 +679,9 @@ class BlObject(BlDatablock):
             ]
             data['cycles_visibility'] = dumper.dump(instance.cycles_visibility)
 
+        # PHYSICS
+        data.update(dump_physics(instance))
+
         return data
 
     def _resolve_deps_implementation(self):
@@ -572,10 +691,14 @@ class BlObject(BlDatablock):
         if self.instance.data:
             deps.append(self.instance.data)
 
+        # Particle systems
+        for particle_slot in self.instance.particle_systems:
+            deps.append(particle_slot.settings)
+
         if self.is_library:
             deps.append(self.instance.library)
 
-        if self.instance.parent :
+        if self.instance.parent:
             deps.append(self.instance.parent)
 
         if self.instance.instance_type == 'COLLECTION':
@@ -584,6 +707,6 @@ class BlObject(BlDatablock):
 
         if self.instance.modifiers:
             deps.extend(find_textures_dependencies(self.instance.modifiers))
-            deps.extend(find_geometry_nodes(self.instance.modifiers))
+            deps.extend(find_geometry_nodes_dependencies(self.instance.modifiers))
 
         return deps

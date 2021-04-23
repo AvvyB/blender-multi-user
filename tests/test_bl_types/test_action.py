@@ -8,6 +8,7 @@ import random
 from multi_user.bl_types.bl_action import BlAction
 
 INTERPOLATION = ['CONSTANT', 'LINEAR', 'BEZIER', 'SINE', 'QUAD', 'CUBIC', 'QUART', 'QUINT', 'EXPO', 'CIRC', 'BACK', 'BOUNCE', 'ELASTIC']
+FMODIFIERS = ['GENERATOR', 'FNGENERATOR', 'ENVELOPE', 'CYCLES', 'NOISE', 'LIMITS', 'STEPPED']
 
 # @pytest.mark.parametrize('blendname', ['test_action.blend'])
 def test_action(clear_blend):
@@ -21,6 +22,9 @@ def test_action(clear_blend):
         point.co[0] = i
         point.co[1] = random.randint(-10,10)
         point.interpolation = INTERPOLATION[random.randint(0, len(INTERPOLATION)-1)]
+
+    for mod_type in FMODIFIERS:
+        fcurve_sample.modifiers.new(mod_type)
 
     bpy.ops.mesh.primitive_plane_add()
     bpy.data.objects[0].animation_data_create()

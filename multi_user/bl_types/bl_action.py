@@ -61,7 +61,6 @@ def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy: bool = True) -> dict:
         points = fcurve.keyframe_points
         fcurve_data['keyframes_count'] = len(fcurve.keyframe_points)
         fcurve_data['keyframe_points'] = np_dump_collection(points, KEYFRAME)
-
     else:  # Legacy method
         dumper = Dumper()
         fcurve_data["keyframe_points"] = []
@@ -70,6 +69,18 @@ def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy: bool = True) -> dict:
             fcurve_data["keyframe_points"].append(
                 dumper.dump(k)
             )
+
+    if fcurve.modifiers:
+        dumper = Dumper()
+        dumper.exclude_filter = [
+            'is_valid',
+            'active'
+        ]
+        dumped_modifiers = []
+        for modfifier in fcurve.modifiers:
+            dumped_modifiers.append(dumper.dump(modfifier))
+
+        fcurve_data['modifiers'] = dumped_modifiers
 
     return fcurve_data
 
@@ -83,7 +94,7 @@ def load_fcurve(fcurve_data, fcurve):
         :type fcurve: bpy.types.FCurve
     """
     use_numpy = fcurve_data.get('use_numpy')
-
+    loader = Loader()
     keyframe_points = fcurve.keyframe_points
 
     # Remove all keyframe points
@@ -128,6 +139,21 @@ def load_fcurve(fcurve_data, fcurve):
 
             fcurve.update()
 
+    dumped_fcurve_modifiers = fcurve_data.get('modifiers', None)
+
+    if dumped_fcurve_modifiers:
+        # clear modifiers
+        for fmod in fcurve.modifiers:
+            fcurve.modifiers.remove(fmod)
+
+        # Load each modifiers in order
+        for modifier_data in dumped_fcurve_modifiers:
+            modifier = fcurve.modifiers.new(modifier_data['type'])
+
+            loader.load(modifier, modifier_data)
+    elif fcurve.modifiers:
+        for fmod in fcurve.modifiers:
+            fcurve.modifiers.remove(fmod)
 
 class BlAction(BlDatablock):
     bl_id = "actions"
