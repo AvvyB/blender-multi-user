@@ -312,13 +312,14 @@ class BlObject(BlDatablock):
         object_name = data.get("name")
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
+        data_type = data.get("type")
 
         object_data = get_datablock_from_uuid(
             data_uuid,
             find_data_from_name(data_id),
             ignore=['images'])  # TODO: use resolve_from_id
 
-        if object_data is None and data_uuid:
+        if data_type != 'EMPTY' and object_data is None:
             raise Exception(f"Fail to load object {data['name']}({self.uuid})")
 
         instance = bpy.data.objects.new(object_name, object_data)
