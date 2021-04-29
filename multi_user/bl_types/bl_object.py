@@ -37,6 +37,12 @@ SKIN_DATA = [
     'use_root'
 ]
 
+SHAPEKEY_BLOCK_ATTR = [
+    'mute',
+    'value',
+    'slider_min',
+    'slider_max',
+]
 if bpy.app.version[1] >= 93:
     SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
 else:
@@ -288,6 +294,66 @@ def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Obje
         for index, weight in vg['vertices']:
             vertex_group.add([index], weight, 'REPLACE')
 
+def dump_shape_keys(target_key: bpy.types.Key)->dict:
+    """ Dump the target shape_keys datablock to a dict using numpy
+
+        :param dumped_key: target key datablock
+        :type dumped_key: bpy.types.Key
+        :return: dict
+    """
+
+    dumped_key_blocks = []
+    dumper = Dumper()
+    dumper.include_filter = [
+        'name',
+        'mute',
+        'value',
+        'slider_min',
+        'slider_max',
+    ]
+    for key in target_key.key_blocks:
+        dumped_key_block = dumper.dump(key)
+        dumped_key_block['data'] = np_dump_collection(key.data, ['co'])
+        dumped_key_block['relative_key'] = key.relative_key.name
+        dumped_key_blocks.append(dumped_key_block)
+
+    return {
+        'reference_key': target_key.reference_key.name,
+        'use_relative': target_key.use_relative,
+        'key_blocks': dumped_key_blocks
+    }
+
+
+def load_shape_keys(dumped_shape_keys: dict, target_object: bpy.types.Object):
+    """ Load the target shape_keys datablock to a dict using numpy
+
+        :param dumped_key: src key data
+        :type dumped_key: bpy.types.Key
+        :param target_object: object used to load the shapekeys data onto
+        :type target_object: bpy.types.Object
+    """
+    loader = Loader()
+    # Remove existing ones
+    target_object.shape_key_clear()
+
+    # Create keys and load vertices coords
+    dumped_key_blocks = dumped_shape_keys.get('key_blocks')
+    for dumped_key_block in dumped_key_blocks:
+        key_block = target_object.shape_key_add(name=dumped_key_block['name'])
+
+        loader.load(key_block, dumped_key_block)
+        np_load_collection(dumped_key_block['data'], key_block.data, ['co'])
+
+    # Load relative key after all
+    for dumped_key_block in dumped_key_blocks:
+        relative_key_name = dumped_key_block.get('relative_key')
+        key_name = dumped_key_block.get('name')
+
+        target_keyblock = target_object.data.shape_keys.key_blocks[key_name]
+        relative_key = target_object.data.shape_keys.key_blocks[relative_key_name]
+
+        target_keyblock.relative_key = relative_key
+
 
 class BlObject(BlDatablock):
     bl_id = "objects"
@@ -345,24 +411,9 @@ class BlObject(BlDatablock):
         object_data = target.data
 
         # SHAPE KEYS
-        if 'shape_keys' in data:
-            target.shape_key_clear()
-
-            # Create keys and load vertices coords
-            for key_block in data['shape_keys']['key_blocks']:
-                key_data = data['shape_keys']['key_blocks'][key_block]
-                target.shape_key_add(name=key_block)
-
-                loader.load(
-                    target.data.shape_keys.key_blocks[key_block], key_data)
-                for vert in key_data['data']:
-                    target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
-
-            # Load relative key after all
-            for key_block in data['shape_keys']['key_blocks']:
-                reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
-
-                target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
+        shape_keys = data.get('shape_keys')
+        if shape_keys:
+            load_shape_keys(shape_keys, target)
 
         # Load transformation data
         loader.load(target, data)
@@ -635,30 +686,7 @@ class BlObject(BlDatablock):
         #  SHAPE KEYS
         object_data = instance.data
         if hasattr(object_data, 'shape_keys') and object_data.shape_keys:
-            dumper = Dumper()
-            dumper.depth = 2
-            dumper.include_filter = [
-                'reference_key',
-                'use_relative'
-            ]
-            data['shape_keys'] = dumper.dump(object_data.shape_keys)
-            data['shape_keys']['reference_key'] = object_data.shape_keys.reference_key.name
-            key_blocks = {}
-            for key in object_data.shape_keys.key_blocks:
-                dumper.depth = 3
-                dumper.include_filter = [
-                    'name',
-                    'data',
-                    'mute',
-                    'value',
-                    'slider_min',
-                    'slider_max',
-                    'data',
-                    'co'
-                ]
-                key_blocks[key.name] = dumper.dump(key)
-                key_blocks[key.name]['relative_key'] = key.relative_key.name
-            data['shape_keys']['key_blocks'] = key_blocks
+            data['shape_keys'] = dump_shape_keys(object_data.shape_keys)
 
         #  SKIN VERTICES
         if hasattr(object_data, 'skin_vertices') and object_data.skin_vertices:
