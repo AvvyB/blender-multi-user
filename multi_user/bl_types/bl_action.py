@@ -25,7 +25,7 @@ from enum import Enum
 from .. import utils
 from .dump_anything import (
     Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
-from .bl_datablock import BlDatablock
+from .bl_datablock import BlDatablock, has_action, has_driver, dump_driver, load_driver
 
 
 KEYFRAME = [
@@ -154,6 +154,49 @@ def load_fcurve(fcurve_data, fcurve):
     elif fcurve.modifiers:
         for fmod in fcurve.modifiers:
             fcurve.modifiers.remove(fmod)
+
+
+def dump_animation_data(datablock):
+    animation_data = {}
+    if has_action(datablock):
+            animation_data['action'] = datablock.animation_data.action.name
+    if has_driver(datablock):
+        animation_data['drivers'] = []
+        for driver in datablock.animation_data.drivers:
+            animation_data['drivers'].append(dump_driver(driver))
+
+    return animation_data
+
+
+def load_animation_data(animation_data, datablock):
+    # Load animation data
+    if animation_data:
+        if datablock.animation_data is None:
+            datablock.animation_data_create()
+
+        for d in datablock.animation_data.drivers:
+            datablock.animation_data.drivers.remove(d)
+
+        if 'drivers' in animation_data:
+            for driver in animation_data['drivers']:
+                load_driver(datablock, driver)
+
+        if 'action' in animation_data:
+            datablock.animation_data.action = bpy.data.actions[animation_data['action']]
+        elif datablock.animation_data.action:
+            datablock.animation_data.action = None
+
+    # Remove existing animation data if there is not more to load
+    elif hasattr(datablock, 'animation_data') and datablock.animation_data:
+        datablock.animation_data_clear()
+
+
+def resolve_animation_dependencies(datablock):
+    if has_action(datablock):
+        return [datablock.animation_data.action]
+    else:
+        return []
+
 
 class BlAction(BlDatablock):
     bl_id = "actions"

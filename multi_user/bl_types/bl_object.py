@@ -24,6 +24,7 @@ from replication.exception import ContextError
 
 from .bl_datablock import BlDatablock, get_datablock_from_uuid
 from .bl_material import IGNORED_SOCKETS
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from .dump_anything import (
     Dumper,
     Loader,
@@ -320,7 +321,8 @@ def dump_shape_keys(target_key: bpy.types.Key)->dict:
     return {
         'reference_key': target_key.reference_key.name,
         'use_relative': target_key.use_relative,
-        'key_blocks': dumped_key_blocks
+        'key_blocks': dumped_key_blocks,
+        'animation_data': dump_animation_data(target_key)
     }
 
 
@@ -353,6 +355,12 @@ def load_shape_keys(dumped_shape_keys: dict, target_object: bpy.types.Object):
         relative_key = target_object.data.shape_keys.key_blocks[relative_key_name]
 
         target_keyblock.relative_key = relative_key
+
+    # Shape keys animation data
+    anim_data = dumped_shape_keys.get('animation_data')
+
+    if anim_data:
+        load_animation_data(anim_data, target_object.data.shape_keys)
 
 
 def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
@@ -760,4 +768,6 @@ class BlObject(BlDatablock):
             deps.extend(find_textures_dependencies(self.instance.modifiers))
             deps.extend(find_geometry_nodes_dependencies(self.instance.modifiers))
 
+        if self.instance.data.shape_keys:
+            deps.extend(resolve_animation_dependencies(self.instance.data.shape_keys))
         return deps
