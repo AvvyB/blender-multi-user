@@ -768,6 +768,6 @@ class BlObject(BlDatablock):
             deps.extend(find_textures_dependencies(self.instance.modifiers))
             deps.extend(find_geometry_nodes_dependencies(self.instance.modifiers))
 
-        if self.instance.data.shape_keys:
+        if hasattr(self.instance.data, 'shape_keys') and self.instance.data.shape_keys:
             deps.extend(resolve_animation_dependencies(self.instance.data.shape_keys))
         return deps
