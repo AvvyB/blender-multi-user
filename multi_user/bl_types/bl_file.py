@@ -134,6 +134,8 @@ class BlFile(ReplicatedDatablock):
         if self.preferences.clear_memory_filecache:
             return False
         else:
+            if not self.instance:
+                return False
             memory_size = sys.getsizeof(self.data['file'])-33
             disk_size = self.instance.stat().st_size
             return memory_size != disk_size

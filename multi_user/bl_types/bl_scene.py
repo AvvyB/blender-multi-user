@@ -368,6 +368,8 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
 
 
 class BlScene(BlDatablock):
+    is_root = True
+
     bl_id = "scenes"
     bl_class = bpy.types.Scene
     bl_check_common = True

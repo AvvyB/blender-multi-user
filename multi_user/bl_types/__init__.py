@@ -49,7 +49,7 @@ if bpy.app.version[1] >= 91:
     __all__.append('bl_volume')
 
 from . import *
-from replication.data import ReplicatedDataFactory
+from replication.data import DataTranslationProtocol
 
 def types_to_register():
     return __all__

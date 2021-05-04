@@ -36,7 +36,7 @@ from replication.constants import (STATE_ACTIVE, STATE_AUTH,
                                   STATE_INITIAL, STATE_SRV_SYNC,
                                   STATE_WAITING, STATE_QUITTING,
                                   STATE_LOBBY,
-                                  STATE_LAUNCHING_SERVICES)
+                                  CONNECTING)
 
 
 def find_from_attr(attr_name, attr_value, list):
@@ -92,7 +92,7 @@ def get_state_str(state):
         state_str = 'OFFLINE'
     elif state == STATE_QUITTING:
         state_str = 'QUITTING'
-    elif state == STATE_LAUNCHING_SERVICES:
+    elif state == CONNECTING:
         state_str = 'LAUNCHING SERVICES'
     elif state == STATE_LOBBY:
         state_str = 'LOBBY'

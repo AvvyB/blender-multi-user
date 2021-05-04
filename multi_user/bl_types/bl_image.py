@@ -66,7 +66,7 @@ class BlImage(BlDatablock):
         loader = Loader()
         loader.load(data, target)
 
-        target.source = data['source']
+        target.source = 'FILE'
         target.filepath_raw = get_filepath(data['filename'])
         color_space_name = data["colorspace_settings"]["name"]
 
@@ -86,7 +86,7 @@ class BlImage(BlDatablock):
         dumper.depth = 2
         dumper.include_filter = [
             "name",
-            'source',
+            # 'source',
             'size',
             'height',
             'alpha',
