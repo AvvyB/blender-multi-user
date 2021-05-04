@@ -50,7 +50,7 @@ def install_pip():
     subprocess.run([str(PYTHON_PATH), "-m", "ensurepip"])
 
 
-def install_package(name, version):
+def install_package(name):
     logging.info(f"installing {name} version...")
     env = os.environ
     if "PIP_REQUIRE_VIRTUALENV" in env:
@@ -60,7 +60,7 @@ def install_package(name, version):
         # env var for the subprocess.
         env = os.environ.copy()
         del env["PIP_REQUIRE_VIRTUALENV"]
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}=={version}"], env=env)
+    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}"], env=env)
 
     if name in sys.modules:
         del sys.modules[name]
@@ -103,9 +103,7 @@ def setup(dependencies, python_path):
     if not module_can_be_imported("pip"):
         install_pip()
 
-    for package_name, package_version in dependencies:
+    for package_name in dependencies:
         if not module_can_be_imported(package_name):
-            install_package(package_name, package_version)
+            install_package(package_name)
             module_can_be_imported(package_name)
-        elif not check_package_version(package_name, package_version):
-            install_package(package_name, package_version)

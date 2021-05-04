@@ -44,9 +44,10 @@ from . import environment
 
 
 DEPENDENCIES = {
-    ("replication", '0.1.33'),
+    "pyzmq",
+    "deepdiff"
 }
-
+LIBS = os.path.dirname(os.path.abspath(__file__))+"/libs/replication"
 
 module_error_msg = "Insufficient rights to install the multi-user \
                 dependencies, aunch blender with administrator rights."
@@ -64,6 +65,13 @@ def register():
             python_binary_path = bpy.app.binary_path_python
 
         environment.setup(DEPENDENCIES, python_binary_path)
+
+        if LIBS in sys.path:
+            logging.debug('Third party module already added')
+        else:
+            logging.info('Adding local modules dir to the path')
+            sys.path.insert(0, LIBS)
+
 
         from . import presence
         from . import operators
