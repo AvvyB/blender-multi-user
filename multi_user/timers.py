@@ -72,6 +72,7 @@ class Timer(object):
         except Exception as e:
             logging.error(e)
             self.unregister()
+            traceback.print_exc()
             session.disconnect(reason=f"Error during timer {self.id} execution")
         else:    
             if self.is_running:

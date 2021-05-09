@@ -930,8 +930,7 @@ def update_external_dependencies():
     nodes_ids = session.list(filter=bl_types.bl_file.BlFile)
     for node_id in nodes_ids:
         node = session.repository.get_node(node_id)
-        if node and node.owner in [session.id, RP_COMMON] \
-                and node.has_changed():
+        if node and node.owner in [session.id, RP_COMMON]:
             session.commit(node_id)
             session.push(node_id, check_data=False)
 
@@ -1004,9 +1003,8 @@ def depsgraph_evaluation(scene):
                 if node and (node.owner == session.id or node.bl_check_common):
                     if node.state == UP:
                         try:
-                            if node.has_changed():
-                                session.commit(node.uuid)
-                                session.push(node.uuid, check_data=False)
+                            session.commit(node.uuid)
+                            session.push(node.uuid, check_data=False)
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
                             if not node.is_valid():

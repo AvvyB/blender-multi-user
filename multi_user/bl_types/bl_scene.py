@@ -21,7 +21,7 @@ from pathlib import Path
 
 import bpy
 import mathutils
-from deepdiff import DeepDiff
+from deepdiff import DeepDiff, Delta
 from replication.constants import DIFF_JSON, MODIFIED
 
 from ..utils import flush_history
@@ -555,4 +555,4 @@ class BlScene(BlDatablock):
         if not self.preferences.sync_flags.sync_active_camera:
             exclude_path.append("root['camera']")
 
-        return DeepDiff(self.data, self._dump(instance=self.instance), exclude_paths=exclude_path)
+        return Delta(DeepDiff(self.data, self._dump(instance=self.instance), exclude_paths=exclude_path))
