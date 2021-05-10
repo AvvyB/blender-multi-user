@@ -305,10 +305,11 @@ class BlGpencil(BlDatablock):
         return  bpy.context.scene.frame_current != self.data["eval_frame"]
 
     def diff(self):
-        if self.layer_changed() \
+        if not self.data \
+                or self.layer_changed() \
                 or self.frame_changed() \
                 or bpy.context.mode == 'OBJECT' \
                 or self.preferences.sync_flags.sync_during_editmode:
             return super().diff()
         else:
-            return False
+            return None

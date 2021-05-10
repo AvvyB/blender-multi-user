@@ -66,9 +66,11 @@ def register():
 
         environment.setup(DEPENDENCIES, python_binary_path)
 
-        if LIBS in sys.path:
-            logging.debug('Third party module already added')
-        else:
+        for module_name in list(sys.modules.keys()):
+            if 'replication' in module_name:
+                del sys.modules[module_name]
+
+        if LIBS not in sys.path:
             logging.info('Adding local modules dir to the path')
             sys.path.insert(0, LIBS)
 

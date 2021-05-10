@@ -99,11 +99,11 @@ class BlImage(BlDatablock):
     def diff(self):
         if self.instance.is_dirty:
             self.instance.save()
-
-        if self.instance and (self.instance.name != self.data['name']):
-            return True
+        
+        if not self.data or (self.instance and (self.instance.name != self.data['name'])):
+            return super().diff()
         else:
-            return False
+            return None
 
     def _resolve_deps_implementation(self):
         deps = []

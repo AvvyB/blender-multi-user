@@ -243,6 +243,6 @@ class BlCurve(BlDatablock):
     def diff(self):
         if 'EDIT' in bpy.context.mode \
                 and not self.preferences.sync_flags.sync_during_editmode:
-            return False
+            return None
         else:
             return super().diff()

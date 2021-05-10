@@ -135,7 +135,15 @@ class BlFile(ReplicatedDatablock):
             return False
         else:
             if not self.instance:
-                return False
+                return None
+
+            if not self.data:
+                return super().diff()
+
             memory_size = sys.getsizeof(self.data['file'])-33
             disk_size = self.instance.stat().st_size
-            return memory_size != disk_size
+
+            if memory_size != disk_size:
+                return super().diff()
+            else:
+                return None
