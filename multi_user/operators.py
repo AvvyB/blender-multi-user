@@ -630,12 +630,12 @@ class SessionCommit(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            porcelain.commit(session.repository, uuid=self.target)
+            porcelain.commit(session.repository, self.target)
             session.push(self.target)
             return {"FINISHED"}
         except Exception as e:
             self.report({'ERROR'}, repr(e))
-            return {"CANCELED"}
+            return {"CANCELLED"}
 
 class ApplyArmatureOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
@@ -946,7 +946,7 @@ def sanitize_deps_graph(remove_nodes: bool = False):
                         rm_cpt += 1
                     except NonAuthorizedOperationError:
                         continue
-        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms")
+        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms, removed {rm_cpt} nodes")
 
 
 @persistent
@@ -1019,6 +1019,8 @@ def depsgraph_evaluation(scene):
                     scn_uuid = porcelain.add(session.repository, update.id)
                     porcelain.commit(session.node_id, scn_uuid)
                     session.push(scn_uuid, check_data=False)
+            elif isinstance(update.id, bpy.types.Collection):
+                sanitize_deps_graph()
 def register():
     from bpy.utils import register_class
 
