@@ -24,7 +24,7 @@ from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_SRV_SYNC, STATE_SYNCING, UP)
 from replication.exception import NonAuthorizedOperationError, ContextError
 from replication.interface import session
-from replication.porcelain import apply, add
+from replication import porcelain
 
 from . import operators, utils
 from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
@@ -116,7 +116,7 @@ class ApplyTimer(Timer):
 
                 if node_ref.state == FETCHED:
                     try:
-                        apply(session.repository, node)
+                        porcelain.apply(session.repository, node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}")
                         traceback.print_exc()
@@ -124,7 +124,7 @@ class ApplyTimer(Timer):
                         if node_ref.bl_reload_parent:
                             for parent in session.repository.get_parents(node):
                                 logging.debug("Refresh parent {node}")
-                                apply(session.repository,
+                                porcelain.apply(session.repository,
                                       parent.uuid,
                                       force=True)
 
@@ -169,7 +169,7 @@ class DynamicRightSelectTimer(Timer):
                         if registered_gp.owner == settings.username:
                             gp_node = session.repository.get_node(annotation_gp.uuid)
                             if gp_node.has_changed():
-                                session.commit(gp_node.uuid)
+                                porcelain.commit(session.repository, gp_node.uuid)
                                 session.push(gp_node.uuid, check_data=False)
 
                     elif self._annotating:

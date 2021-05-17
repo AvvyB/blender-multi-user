@@ -48,7 +48,7 @@ from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
 from replication.data import DataTranslationProtocol
 from replication.exception import ContextError, NonAuthorizedOperationError
 from replication.interface import session
-from replication.porcelain import add, apply
+from replication import porcelain
 from replication.repository import Repository
 
 from . import bl_types, environment, timers, ui, utils
@@ -93,7 +93,7 @@ def initialize_session():
     # Step 2: Load nodes
     logging.info("Loading nodes")
     for node in session.repository.list_ordered():
-        apply(session.repository, node)
+        porcelain.apply(session.repository, node)
 
     logging.info("Registering timers")
     # Step 4: Register blender timers
@@ -226,7 +226,7 @@ class SessionStartOperator(bpy.types.Operator):
             try:
                 # Init repository
                 for scene in bpy.data.scenes:
-                    add(repo, scene)
+                    porcelain.add(repo, scene)
 
                 session.host(
                     repository= repo,
@@ -325,7 +325,7 @@ class SessionInitOperator(bpy.types.Operator):
             utils.clean_scene()
 
         for scene in bpy.data.scenes:
-            add(session.repository, scene)
+            porcelain.add(session.repository, scene)
 
         session.init()
 
@@ -597,17 +597,17 @@ class SessionApply(bpy.types.Operator):
         logging.debug(f"Running apply on {self.target}")
         try:
             node_ref = session.repository.get_node(self.target)
-            apply(session.repository,
-                  self.target,
-                  force=True,
-                  force_dependencies=self.reset_dependencies)
+            porcelain.apply(session.repository,
+                            self.target,
+                            force=True,
+                            force_dependencies=self.reset_dependencies)
             if node_ref.bl_reload_parent:
                 for parent in session.repository.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
 
-                    apply(session.repository,
-                          parent.uuid,
-                          force=True)
+                    porcelain.apply(session.repository,
+                                    parent.uuid,
+                                    force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
             traceback.print_exc()
@@ -630,7 +630,7 @@ class SessionCommit(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            session.commit(uuid=self.target)
+            porcelain.commit(session.repository, uuid=self.target)
             session.push(self.target)
             return {"FINISHED"}
         except Exception as e:
@@ -659,7 +659,7 @@ class ApplyArmatureOperator(bpy.types.Operator):
 
                     if node_ref.state == FETCHED:
                         try:
-                            apply(session.repository, node)
+                            porcelain.apply(session.repository, node)
                         except Exception as e:
                             logging.error("Fail to apply armature: {e}")
 
@@ -926,7 +926,7 @@ def update_external_dependencies():
     for node_id in nodes_ids:
         node = session.repository.get_node(node_id)
         if node and node.owner in [session.id, RP_COMMON]:
-            session.commit(node_id)
+            porcelain.commit(session.repository, node_id)
             session.push(node_id, check_data=False)
 
 def sanitize_deps_graph(remove_nodes: bool = False):
@@ -998,7 +998,7 @@ def depsgraph_evaluation(scene):
                 if node and (node.owner == session.id or node.bl_check_common):
                     if node.state == UP:
                         try:
-                            session.commit(node.uuid)
+                            porcelain.commit(session.repository, node.uuid)
                             session.push(node.uuid, check_data=False)
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
@@ -1016,8 +1016,8 @@ def depsgraph_evaluation(scene):
                 if ref:
                     ref.resolve()
                 else:
-                    scn_uuid = add(session.repository, update.id)
-                    session.commit(scn_uuid)
+                    scn_uuid = porcelain.add(session.repository, update.id)
+                    porcelain.commit(session.node_id, scn_uuid)
                     session.push(scn_uuid, check_data=False)
 def register():
     from bpy.utils import register_class
