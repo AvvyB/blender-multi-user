@@ -248,7 +248,7 @@ class DynamicRightSelectTimer(Timer):
                                     key,
                                     RP_COMMON,
                                     ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                    affect_dependencies=True)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {key} owner")
