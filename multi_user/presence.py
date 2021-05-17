@@ -302,9 +302,10 @@ class UserSelectionWidget(Widget):
                 return
 
             vertex_pos = bbox_from_obj(ob, 1.0)
-            vertex_indices = ((0, 1), (0, 2), (1, 3), (2, 3),
-                              (4, 5), (4, 6), (5, 7), (6, 7),
-                              (0, 4), (1, 5), (2, 6), (3, 7))
+            vertex_indices = (
+                    (0, 1), (1, 2), (2, 3), (0, 3),
+                    (4, 5), (5, 6), (6, 7), (4, 7),
+                    (0, 4), (1, 5), (2, 6), (3, 7))
 
             if ob.instance_collection:
                 for obj in ob.instance_collection.objects:
