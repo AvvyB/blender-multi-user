@@ -93,12 +93,7 @@ def initialize_session():
     # Step 2: Load nodes
     logging.info("Loading nodes")
     for node in session.repository.list_ordered():
-        node_ref = session.repository.get_node(node)
-
-        if node_ref is None:
-            logging.error(f"Can't load node {node}")
-        elif node_ref.state == FETCHED:
-            node_ref.apply()
+        apply(session.repository, node)
 
     logging.info("Registering timers")
     # Step 4: Register blender timers
