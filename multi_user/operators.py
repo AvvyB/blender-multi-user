@@ -946,8 +946,7 @@ def sanitize_deps_graph(remove_nodes: bool = False):
                         rm_cpt += 1
                     except NonAuthorizedOperationError:
                         continue
-        if rm_cpt:
-            logging.info(f"Sanitize took { utils.current_milli_time()-start} ms, removed {rm_cpt} nodes")
+        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms, removed {rm_cpt} nodes")
 
 
 @persistent
@@ -1014,15 +1013,14 @@ def depsgraph_evaluation(scene):
             # A new scene is created 
             elif isinstance(update.id, bpy.types.Scene):
                 ref = session.repository.get_node_by_datablock(update.id)
-                if ref and ref.resolve(construct=False):
-                    sanitize_deps_graph(remove_nodes=True)
+                if ref:
+                    ref.resolve()
                 else:
                     scn_uuid = porcelain.add(session.repository, update.id)
                     porcelain.commit(session.node_id, scn_uuid)
                     session.push(scn_uuid, check_data=False)
-            if isinstance(update.id, bpy.types.Collection):
-                sanitize_deps_graph(remove_nodes=True)
-
+            elif isinstance(update.id, bpy.types.Collection):
+                sanitize_deps_graph()
 def register():
     from bpy.utils import register_class
 

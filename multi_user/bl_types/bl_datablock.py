@@ -133,17 +133,21 @@ class BlDatablock(ReplicatedDatablock):
         if not datablock_ref:
             try:
                 datablock_ref = datablock_root[self.data['name']]
-            except KeyError as e:
-                if construct:
-                    name = self.data.get('name')
-                    logging.debug(f"Constructing {name}")
-                    datablock_ref = self._construct(data=self.data)
-                    setattr(datablock_ref, 'uuid', self.uuid)
-                else:
-                    return False
-        self.instance = datablock_ref
-        return True
+            except Exception:
+                pass
 
+            if construct and not datablock_ref:
+                name = self.data.get('name')
+                logging.debug(f"Constructing {name}")
+                datablock_ref = self._construct(data=self.data)
+
+        if datablock_ref is not None:
+            setattr(datablock_ref, 'uuid', self.uuid)
+            self.instance = datablock_ref
+            return True
+        else:
+            return False
+        
 
     def remove_instance(self):
         """
