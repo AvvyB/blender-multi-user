@@ -21,17 +21,18 @@ import mathutils
 from pathlib import Path
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import get_datablock_from_uuid
 from .bl_material import dump_materials_slots, load_materials_slots
 
-class BlVolume(BlDatablock):
+class BlVolume(ReplicatedDatablock):
     bl_id = "volumes"
     bl_class = bpy.types.Volume
     bl_check_common = False
     bl_icon = 'VOLUME_DATA'
     bl_reload_parent = False
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
         loader.load(target.display, data['display'])
@@ -41,10 +42,10 @@ class BlVolume(BlDatablock):
         if src_materials:
             load_materials_slots(src_materials, target.materials)
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.volumes.new(data["name"])
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
 
         dumper = Dumper()
@@ -69,7 +70,7 @@ class BlVolume(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve material
         deps = []
 

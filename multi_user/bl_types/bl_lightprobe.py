@@ -21,17 +21,17 @@ import mathutils
 import logging
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 
-class BlLightprobe(BlDatablock):
+class BlLightprobe(ReplicatedDatablock):
     bl_id = "lightprobes"
     bl_class = bpy.types.LightProbe
     bl_check_common = False
     bl_icon = 'LIGHTPROBE_GRID'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
         # See https://developer.blender.org/D6396
         if bpy.app.version[1] >= 83:
@@ -39,11 +39,11 @@ class BlLightprobe(BlDatablock):
         else:
             logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
         if bpy.app.version[1] < 83:
             logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")

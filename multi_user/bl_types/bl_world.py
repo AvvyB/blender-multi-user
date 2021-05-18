@@ -20,23 +20,23 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .bl_material import (load_node_tree,
                           dump_node_tree,
                           get_node_tree_dependencies)
 
 
-class BlWorld(BlDatablock):
+class BlWorld(ReplicatedDatablock):
     bl_id = "worlds"
     bl_class = bpy.types.World
     bl_check_common = True
     bl_icon = 'WORLD_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.worlds.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
@@ -46,7 +46,7 @@ class BlWorld(BlDatablock):
 
             load_node_tree(data['node_tree'], target.node_tree)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
 
         world_dumper = Dumper()
@@ -62,7 +62,7 @@ class BlWorld(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
         if self.instance.use_nodes:

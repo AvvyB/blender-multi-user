@@ -2,7 +2,8 @@ import bpy
 import mathutils
 
 from . import dump_anything
-from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import get_datablock_from_uuid
 
 
 def dump_textures_slots(texture_slots: bpy.types.bpy_prop_collection) -> list:
@@ -37,19 +38,19 @@ IGNORED_ATTR = [
     "users"
 ]
 
-class BlParticle(BlDatablock):
+class BlParticle(ReplicatedDatablock):
     bl_id = "particles"
     bl_class = bpy.types.ParticleSettings
     bl_icon = "PARTICLES"
     bl_check_common = False
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         instance = bpy.data.particles.new(data["name"])
         instance.uuid = self.uuid
         return instance
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         dump_anything.load(target, data)
 
         dump_anything.load(target.effector_weights, data["effector_weights"])
@@ -66,7 +67,7 @@ class BlParticle(BlDatablock):
         # Texture slots
         load_texture_slots(data["texture_slots"], target.texture_slots)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert instance
 
         dumper = dump_anything.Dumper()
@@ -86,5 +87,5 @@ class BlParticle(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         return [t.texture for t in self.instance.texture_slots if t and t.texture]

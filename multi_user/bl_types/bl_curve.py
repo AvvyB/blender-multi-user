@@ -22,11 +22,10 @@ import mathutils
 import logging
 
 from .. import utils
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .dump_anything import (Dumper, Loader,
                             np_load_collection,
                             np_dump_collection)
-from .bl_datablock import get_datablock_from_uuid
 from .bl_material import dump_materials_slots, load_materials_slots
 
 SPLINE_BEZIER_POINT = [
@@ -134,17 +133,17 @@ SPLINE_METADATA = [
 ]
 
 
-class BlCurve(BlDatablock):
+class BlCurve(ReplicatedDatablock):
     bl_id = "curves"
     bl_class = bpy.types.Curve
     bl_check_common = False
     bl_icon = 'CURVE_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.curves.new(data["name"], data["type"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
@@ -175,7 +174,7 @@ class BlCurve(BlDatablock):
             if src_materials:
                 load_materials_slots(src_materials, target.materials)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
         dumper = Dumper()
         # Conflicting attributes
@@ -222,7 +221,7 @@ class BlCurve(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve material
         deps = []
         curve = self.instance

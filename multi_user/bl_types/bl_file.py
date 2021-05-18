@@ -24,7 +24,7 @@ from pathlib import Path
 import bpy
 import mathutils
 from replication.constants import DIFF_BINARY, UP
-from replication.data import ReplicatedDatablock
+from replication.protocol import ReplicatedDatablock
 
 from .. import utils
 from .dump_anything import Dumper, Loader

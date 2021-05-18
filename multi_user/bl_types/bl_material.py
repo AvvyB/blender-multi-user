@@ -24,7 +24,9 @@ import re
 from uuid import uuid4
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from replication.protocol import ReplicatedDatablock
+
+from .bl_datablock import get_datablock_from_uuid
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 IGNORED_SOCKETS = ['GEOMETRY', 'SHADER', 'CUSTOM']
@@ -389,17 +391,17 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
         dst_materials.append(mat_ref)
 
 
-class BlMaterial(BlDatablock):
+class BlMaterial(ReplicatedDatablock):
     bl_id = "materials"
     bl_class = bpy.types.Material
     bl_check_common = False
     bl_icon = 'MATERIAL_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.materials.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
 
         is_grease_pencil = data.get('is_grease_pencil')
@@ -417,7 +419,7 @@ class BlMaterial(BlDatablock):
 
             load_node_tree(data['node_tree'], target.node_tree)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
         mat_dumper = Dumper()
         mat_dumper.depth = 2
@@ -486,7 +488,7 @@ class BlMaterial(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve node group deps
         deps = []
 

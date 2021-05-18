@@ -23,7 +23,7 @@ from .dump_anything import (
     Dumper, Loader, np_dump_collection_primitive, np_load_collection_primitives,
     np_dump_collection, np_load_collection)
 
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 
 ELEMENT = [
@@ -62,17 +62,17 @@ def load_metaball_elements(elements_data, elements):
     np_load_collection(elements_data, elements, ELEMENT)
 
 
-class BlMetaball(BlDatablock):
+class BlMetaball(ReplicatedDatablock):
     bl_id = "metaballs"
     bl_class = bpy.types.MetaBall
     bl_check_common = False
     bl_icon = 'META_BALL'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.metaballs.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
@@ -83,7 +83,7 @@ class BlMetaball(BlDatablock):
 
         load_metaball_elements(data['elements'], target.elements)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
         dumper = Dumper()
         dumper.depth = 1

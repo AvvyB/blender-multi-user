@@ -20,26 +20,26 @@ import bpy
 import mathutils
 
 from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .bl_material import (dump_node_tree,
                           load_node_tree,
                           get_node_tree_dependencies)
 
-class BlNodeGroup(BlDatablock):
+class BlNodeGroup(ReplicatedDatablock):
     bl_id = "node_groups"
     bl_class = bpy.types.NodeTree
     bl_check_common = False
     bl_icon = 'NODETREE'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.node_groups.new(data["name"], data["type"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         load_node_tree(data, target)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         return dump_node_tree(instance)
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         return get_node_tree_dependencies(self.instance)

@@ -24,7 +24,7 @@ from .dump_anything import  (Dumper,
                                     Loader,
                                     np_dump_collection,
                                     np_load_collection)
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 # GPencil data api is structured as it follow: 
 # GP-Object --> GP-Layers --> GP-Frames --> GP-Strokes --> GP-Stroke-Points
@@ -228,17 +228,17 @@ def load_layer(layer_data, layer):
         load_frame(frame_data, target_frame)
 
 
-class BlGpencil(BlDatablock):
+class BlGpencil(ReplicatedDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
     bl_check_common = False
     bl_icon = 'GREASEPENCIL'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.grease_pencils.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         target.materials.clear()
         if "materials" in data.keys():
             for mat in data['materials']:
@@ -267,7 +267,7 @@ class BlGpencil(BlDatablock):
 
 
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
         dumper = Dumper()
         dumper.depth = 2
@@ -290,7 +290,7 @@ class BlGpencil(BlDatablock):
         data["eval_frame"] = bpy.context.scene.frame_current
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
         for material in self.instance.materials:

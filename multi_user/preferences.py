@@ -407,18 +407,18 @@ class SessionPrefs(bpy.types.AddonPreferences):
     def generate_supported_types(self):
         self.supported_datablocks.clear()
 
-        for type in bl_types.types_to_register():
+        bpy_protocol = bl_types.get_data_translation_protocol()
+
+        # init the factory with supported types
+        for impl in bpy_protocol.implementations.values():
             new_db = self.supported_datablocks.add()
 
-            type_module = getattr(bl_types, type)
-            name = [e.capitalize() for e in type.split('_')[1:]]
-            type_impl_name = 'Bl'+''.join(name)
-            type_module_class = getattr(type_module, type_impl_name)
-            new_db.name = type_impl_name
-            new_db.type_name = type_impl_name
+            new_db.name = impl.__name__
+            new_db.type_name = impl.__name__
             new_db.use_as_filter = True
-            new_db.icon = type_module_class.bl_icon
-            new_db.bl_name = type_module_class.bl_id
+            new_db.icon = impl.bl_icon
+            new_db.bl_name = impl.bl_id
+
 
 
 def client_list_callback(scene, context):

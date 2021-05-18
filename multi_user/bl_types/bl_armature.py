@@ -22,7 +22,7 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from .. import presence, operators, utils
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 
 def get_roll(bone: bpy.types.Bone) -> float:
@@ -35,17 +35,17 @@ def get_roll(bone: bpy.types.Bone) -> float:
     return bone.AxisRollFromMatrix(bone.matrix_local.to_3x3())[1]
 
 
-class BlArmature(BlDatablock):
+class BlArmature(ReplicatedDatablock):
     bl_id = "armatures"
     bl_class = bpy.types.Armature
     bl_check_common = False
     bl_icon = 'ARMATURE_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.armatures.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         # Load parent object
         parent_object = utils.find_from_attr(
             'uuid',
@@ -119,7 +119,7 @@ class BlArmature(BlDatablock):
         if 'EDIT' in current_mode:
             bpy.ops.object.mode_set(mode='EDIT')
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
 
         dumper = Dumper()

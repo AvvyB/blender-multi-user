@@ -20,17 +20,17 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 
-class BlLibrary(BlDatablock):
+class BlLibrary(ReplicatedDatablock):
     bl_id = "libraries"
     bl_class = bpy.types.Library
     bl_check_common = False
     bl_icon = 'LIBRARY_DATA_DIRECT'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         with bpy.data.libraries.load(filepath=data["filepath"], link=True) as (sourceData, targetData):
             targetData = sourceData
             return sourceData

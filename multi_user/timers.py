@@ -121,7 +121,8 @@ class ApplyTimer(Timer):
                         logging.error(f"Fail to apply {node_ref.uuid}")
                         traceback.print_exc()
                     else:
-                        if node_ref.bl_reload_parent:
+                        impl = session.repository.rdp.get_implementation(node_ref.instance)
+                        if impl.bl_reload_parent:
                             for parent in session.repository.get_parents(node):
                                 logging.debug("Refresh parent {node}")
                                 porcelain.apply(session.repository,

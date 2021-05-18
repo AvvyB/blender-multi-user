@@ -453,8 +453,8 @@ def draw_property(context, parent, property_uuid, level=0):
 
     detail_item_box = line.row(align=True)
 
-    detail_item_box.label(text="",
-                          icon=settings.supported_datablocks[item.str_type].icon)
+    detail_item_box.label(text="")
+                        #   icon=settings.supported_datablocks].icon)
     detail_item_box.label(text=f"{name}")
 
     # Operations
@@ -561,12 +561,7 @@ class SESSION_PT_repository(bpy.types.Panel):
             types_filter = [t.type_name for t in settings.supported_datablocks
                             if t.use_as_filter]
 
-            key_to_filter = session.list(
-                filter_owner=settings.username) if runtime_settings.filter_owned else session.list()
-
-            client_keys = [key for key in key_to_filter
-                           if session.repository.get_node(key).str_type
-                           in types_filter]
+            client_keys = session.list()
 
             if client_keys:
                 col = layout.column(align=True)

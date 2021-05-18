@@ -23,18 +23,18 @@ from pathlib import Path
 import bpy
 
 from .bl_file import get_filepath, ensure_unpacked
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .dump_anything import Dumper, Loader
 
 
-class BlSound(BlDatablock):
+class BlSound(ReplicatedDatablock):
     bl_id = "sounds"
     bl_class = bpy.types.Sound
     bl_check_common = False
     bl_icon = 'SOUND'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         filename = data.get('filename')
 
         return bpy.data.sounds.load(get_filepath(filename))
@@ -57,7 +57,7 @@ class BlSound(BlDatablock):
             'name': instance.name
         }
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
         if self.instance.filepath and self.instance.filepath != '<builtin>':
             ensure_unpacked(self.instance)

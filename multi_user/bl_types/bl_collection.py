@@ -20,7 +20,7 @@ import bpy
 import mathutils
 
 from .. import utils
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .dump_anything import Loader, Dumper
 
 
@@ -81,14 +81,14 @@ def resolve_collection_dependencies(collection):
 
     return deps
 
-class BlCollection(BlDatablock):
+class BlCollection(ReplicatedDatablock):
     bl_id = "collections"
     bl_icon = 'FILE_FOLDER'
     bl_class = bpy.types.Collection
     bl_check_common = True
     bl_reload_parent = False
     
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         if self.is_library:
             with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
                 targetData.collections = [
@@ -101,7 +101,7 @@ class BlCollection(BlDatablock):
         instance = bpy.data.collections.new(data["name"])
         return instance
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
@@ -115,7 +115,7 @@ class BlCollection(BlDatablock):
         # Keep other user from deleting collection object by flushing their history
         utils.flush_history()
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
 
         dumper = Dumper()
@@ -134,5 +134,5 @@ class BlCollection(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         return resolve_collection_dependencies(self.instance)

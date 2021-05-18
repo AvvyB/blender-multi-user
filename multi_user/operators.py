@@ -45,11 +45,12 @@ from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
-from replication.data import DataTranslationProtocol
+from replication.protocol import DataTranslationProtocol
 from replication.exception import ContextError, NonAuthorizedOperationError
 from replication.interface import session
 from replication import porcelain
 from replication.repository import Repository
+from replication.objects import Node
 
 from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
@@ -88,8 +89,10 @@ def initialize_session():
         if node_ref is None:
             logging.error(f"Can't construct node {node}")
         elif node_ref.state == FETCHED:
-            node_ref.resolve()
-    
+            node_ref.instance = session.repository.rdp.resolve(node_ref.data)
+            if node_ref.instance is None:
+                node_ref.instance = session.repository.rdp.construct(node_ref.data)
+
     # Step 2: Load nodes
     logging.info("Loading nodes")
     for node in session.repository.list_ordered():
@@ -184,29 +187,16 @@ class SessionStartOperator(bpy.types.Operator):
 
                 handler.setFormatter(formatter)
 
-        bpy_protocol = DataTranslationProtocol()
-        supported_bl_types = []
+        bpy_protocol = bl_types.get_data_translation_protocol()
 
-        # init the factory with supported types
-        for type in bl_types.types_to_register():
-            type_module = getattr(bl_types, type)
-            name = [e.capitalize() for e in type.split('_')[1:]]
-            type_impl_name = 'Bl'+''.join(name)
-            type_module_class = getattr(type_module, type_impl_name)
-
-            supported_bl_types.append(type_module_class.bl_id)
-
-            if type_impl_name not in settings.supported_datablocks:
-                logging.info(f"{type_impl_name} not found, \
+        # Check if supported_datablocks are up to date before starting the
+        # the session
+        for impl in bpy_protocol.implementations.values():
+            if impl.__name__ not in settings.supported_datablocks:
+                logging.info(f"{impl.__name__} not found, \
                              regenerate type settings...")
                 settings.generate_supported_types()
 
-            type_local_config = settings.supported_datablocks[type_impl_name]
-
-            bpy_protocol.register_type(
-                type_module_class.bl_class,
-                type_module_class,
-                check_common=type_module_class.bl_check_common)
 
         if bpy.app.version[1] >= 91:
             python_binary_path = sys.executable
@@ -214,7 +204,7 @@ class SessionStartOperator(bpy.types.Operator):
             python_binary_path = bpy.app.binary_path_python
 
         repo = Repository(
-            data_protocol=bpy_protocol,
+            rdp=bpy_protocol,
             username=settings.username)
     
         # Host a session
@@ -850,28 +840,13 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
             
 
             # init the factory with supported types
-            bpy_protocol = DataTranslationProtocol()
-            for type in bl_types.types_to_register():
-                type_module = getattr(bl_types, type)
-                name = [e.capitalize() for e in type.split('_')[1:]]
-                type_impl_name = 'Bl'+''.join(name)
-                type_module_class = getattr(type_module, type_impl_name)
-
-
-                bpy_protocol.register_type(
-                    type_module_class.bl_class,
-                    type_module_class)
+            bpy_protocol = bl_types.get_data_translation_protocol()
             
             graph = Repository()
 
             for node, node_data in nodes:
-                node_type = node_data.get('str_type')
-
-                impl = bpy_protocol.get_implementation_from_net(node_type)
-
-                if impl:
                     logging.info(f"Loading  {node}")
-                    instance = impl(owner=node_data['owner'],
+                    instance = Node(owner=node_data['owner'],
                                     uuid=node,
                                     dependencies=node_data['dependencies'],
                                     data=node_data['data'])
@@ -990,20 +965,20 @@ def depsgraph_evaluation(scene):
             if update.id.uuid:
                 # Retrieve local version
                 node = session.repository.get_node(update.id.uuid)
-                
+                check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update
-                if node and (node.owner == session.id or node.bl_check_common):
+                if node and (node.owner == session.id or check_common):
                     if node.state == UP:
                         try:
                             porcelain.commit(session.repository, node.uuid)
                             porcelain.push(session.repository, 'origin', node.uuid)
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
-                            if not node.is_valid():
-                                session.remove(node.uuid)
+                            # if not node.is_valid():
+                            #     session.remove(node.uuid)
                         except ContextError as e:
                             logging.debug(e) 
                         except Exception as e:

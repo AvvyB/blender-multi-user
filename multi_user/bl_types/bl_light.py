@@ -20,24 +20,24 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 
-class BlLight(BlDatablock):
+class BlLight(ReplicatedDatablock):
     bl_id = "lights"
     bl_class = bpy.types.Light
     bl_check_common = False
     bl_icon = 'LIGHT_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.lights.new(data["name"], data["type"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
         dumper = Dumper()
         dumper.depth = 3

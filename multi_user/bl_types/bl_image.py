@@ -24,7 +24,7 @@ import bpy
 import mathutils
 
 from .. import utils
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .dump_anything import Dumper, Loader
 from .bl_file import get_filepath, ensure_unpacked
 
@@ -48,14 +48,14 @@ format_to_ext = {
 }
 
 
-class BlImage(BlDatablock):
+class BlImage(ReplicatedDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
     bl_check_common = False
     bl_icon = 'IMAGE_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.images.new(
             name=data['name'],
             width=data['size'][0],
@@ -105,7 +105,7 @@ class BlImage(BlDatablock):
         else:
             return None
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
         if self.instance.packed_file:

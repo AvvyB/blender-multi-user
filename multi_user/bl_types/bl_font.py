@@ -22,19 +22,19 @@ from pathlib import Path
 
 import bpy
 
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .bl_file import get_filepath, ensure_unpacked
 from .dump_anything import Dumper, Loader
 
 
-class BlFont(BlDatablock):
+class BlFont(ReplicatedDatablock):
     bl_id = "fonts"
     bl_class = bpy.types.VectorFont
     bl_check_common = False
     bl_icon = 'FILE_FONT'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         filename = data.get('filename')
 
         if filename == '<builtin>':
@@ -62,7 +62,7 @@ class BlFont(BlDatablock):
     def diff(self):
         return False
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
         if self.instance.filepath and self.instance.filepath != '<builtin>':
             ensure_unpacked(self.instance)

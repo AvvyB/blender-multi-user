@@ -18,7 +18,7 @@
 
 import logging
 from pathlib import Path
-
+from uuid import uuid4
 import bpy
 import mathutils
 from deepdiff import DeepDiff, Delta
@@ -28,9 +28,12 @@ from ..utils import flush_history
 from .bl_collection import (dump_collection_children, dump_collection_objects,
                             load_collection_childrens, load_collection_objects,
                             resolve_collection_dependencies)
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .bl_file import get_filepath
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from .dump_anything import Dumper, Loader
+from ..utils import get_preferences
+from .bl_datablock import resolve_datablock_from_uuid
 
 RENDER_SETTINGS = [
     'dither_intensity',
@@ -367,7 +370,7 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
     sequence.select = False
 
 
-class BlScene(BlDatablock):
+class BlScene(ReplicatedDatablock):
     is_root = True
 
     bl_id = "scenes"
@@ -376,58 +379,62 @@ class BlScene(BlDatablock):
     bl_icon = 'SCENE_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    @staticmethod
+    def construct(data: dict) -> object:
         instance = bpy.data.scenes.new(data["name"])
-        instance.uuid = self.uuid
+        instance.uuid = data.get('uuid')
 
         return instance
 
-    def _load_implementation(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
+        load_animation_data(datablock.get('animation_data'), datablock)
+
         # Load other meshes metadata
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         # Load master collection
         load_collection_objects(
-            data['collection']['objects'], target.collection)
+            data['collection']['objects'], datablock.collection)
         load_collection_childrens(
-            data['collection']['children'], target.collection)
+            data['collection']['children'], datablock.collection)
 
         if 'world' in data.keys():
-            target.world = bpy.data.worlds[data['world']]
+            datablock.world = bpy.data.worlds[data['world']]
 
         # Annotation
         if 'grease_pencil' in data.keys():
-            target.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
+            datablock.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
 
-        if self.preferences.sync_flags.sync_render_settings:
+        if get_preferences().sync_flags.sync_render_settings:
             if 'eevee' in data.keys():
-                loader.load(target.eevee, data['eevee'])
+                loader.load(datablock.eevee, data['eevee'])
 
             if 'cycles' in data.keys():
-                loader.load(target.cycles, data['cycles'])
+                loader.load(datablock.cycles, data['cycles'])
 
             if 'render' in data.keys():
-                loader.load(target.render, data['render'])
+                loader.load(datablock.render, data['render'])
 
             if 'view_settings' in data.keys():
-                loader.load(target.view_settings, data['view_settings'])
-                if target.view_settings.use_curve_mapping and \
+                loader.load(datablock.view_settings, data['view_settings'])
+                if datablock.view_settings.use_curve_mapping and \
                         'curve_mapping' in data['view_settings']:
                     # TODO: change this ugly fix
-                    target.view_settings.curve_mapping.white_level = data[
+                    datablock.view_settings.curve_mapping.white_level = data[
                         'view_settings']['curve_mapping']['white_level']
-                    target.view_settings.curve_mapping.black_level = data[
+                    datablock.view_settings.curve_mapping.black_level = data[
                         'view_settings']['curve_mapping']['black_level']
-                    target.view_settings.curve_mapping.update()
+                    datablock.view_settings.curve_mapping.update()
 
         # Sequencer
         sequences = data.get('sequences')
         
         if sequences:
             # Create sequencer data
-            target.sequence_editor_create()
-            vse = target.sequence_editor
+            datablock.sequence_editor_create()
+            vse = datablock.sequence_editor
 
             # Clear removed sequences
             for seq in vse.sequences_all:
@@ -437,15 +444,17 @@ class BlScene(BlDatablock):
             for seq_name, seq_data in sequences.items():
                 load_sequence(seq_data, vse)
         # If the sequence is no longer used, clear it
-        elif target.sequence_editor and not sequences:
-            target.sequence_editor_clear()
+        elif datablock.sequence_editor and not sequences:
+            datablock.sequence_editor_clear()
 
         # FIXME: Find a better way after the replication big refacotoring
         # Keep other user from deleting collection object by flushing their history
         flush_history()
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
+    @staticmethod
+    def dump(datablock: object) -> dict:
+        data = {}
+        data['animation_data'] = dump_animation_data(datablock)
 
         # Metadata
         scene_dumper = Dumper()
@@ -459,40 +468,40 @@ class BlScene(BlDatablock):
             'frame_end',
             'frame_step',
         ]
-        if self.preferences.sync_flags.sync_active_camera:
+        if get_preferences().sync_flags.sync_active_camera:
             scene_dumper.include_filter.append('camera')
 
-        data.update(scene_dumper.dump(instance))
+        data.update(scene_dumper.dump(datablock))
 
         # Master collection
         data['collection'] = {}
         data['collection']['children'] = dump_collection_children(
-            instance.collection)
+            datablock.collection)
         data['collection']['objects'] = dump_collection_objects(
-            instance.collection)
+            datablock.collection)
 
         scene_dumper.depth = 1
         scene_dumper.include_filter = None
 
         # Render settings
-        if self.preferences.sync_flags.sync_render_settings:
+        if get_preferences().sync_flags.sync_render_settings:
             scene_dumper.include_filter = RENDER_SETTINGS
 
-            data['render'] = scene_dumper.dump(instance.render)
+            data['render'] = scene_dumper.dump(datablock.render)
 
-            if instance.render.engine == 'BLENDER_EEVEE':
+            if datablock.render.engine == 'BLENDER_EEVEE':
                 scene_dumper.include_filter = EVEE_SETTINGS
-                data['eevee'] = scene_dumper.dump(instance.eevee)
-            elif instance.render.engine == 'CYCLES':
+                data['eevee'] = scene_dumper.dump(datablock.eevee)
+            elif datablock.render.engine == 'CYCLES':
                 scene_dumper.include_filter = CYCLES_SETTINGS
-                data['cycles'] = scene_dumper.dump(instance.cycles)
+                data['cycles'] = scene_dumper.dump(datablock.cycles)
 
             scene_dumper.include_filter = VIEW_SETTINGS
-            data['view_settings'] = scene_dumper.dump(instance.view_settings)
+            data['view_settings'] = scene_dumper.dump(datablock.view_settings)
 
-            if instance.view_settings.use_curve_mapping:
+            if datablock.view_settings.use_curve_mapping:
                 data['view_settings']['curve_mapping'] = scene_dumper.dump(
-                    instance.view_settings.curve_mapping)
+                    datablock.view_settings.curve_mapping)
                 scene_dumper.depth = 5
                 scene_dumper.include_filter = [
                     'curves',
@@ -500,10 +509,10 @@ class BlScene(BlDatablock):
                     'location',
                 ]
                 data['view_settings']['curve_mapping']['curves'] = scene_dumper.dump(
-                    instance.view_settings.curve_mapping.curves)
+                    datablock.view_settings.curve_mapping.curves)
 
         # Sequence
-        vse = instance.sequence_editor
+        vse = datablock.sequence_editor
         if vse:
             dumped_sequences = {}
             for seq in vse.sequences_all:
@@ -513,22 +522,25 @@ class BlScene(BlDatablock):
 
         return data
 
-    def _resolve_deps_implementation(self):
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
         # Master Collection
-        deps.extend(resolve_collection_dependencies(self.instance.collection))
+        deps.extend(resolve_collection_dependencies(datablock.collection))
 
         # world
-        if self.instance.world:
-            deps.append(self.instance.world)
+        if datablock.world:
+            deps.append(datablock.world)
 
         # annotations
-        if self.instance.grease_pencil:
-            deps.append(self.instance.grease_pencil)
+        if datablock.grease_pencil:
+            deps.append(datablock.grease_pencil)
+
+        deps.extend(resolve_animation_dependencies(datablock))
 
         # Sequences
-        vse = self.instance.sequence_editor
+        vse = datablock.sequence_editor
         if vse:
             for sequence in vse.sequences_all:
                 if sequence.type == 'MOVIE' and sequence.filepath:
@@ -542,6 +554,16 @@ class BlScene(BlDatablock):
                             elem.filename))
 
         return deps
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.scenes)
+        if datablock is None:
+            datablock = bpy.data.scenes.get(name)
+
+        return datablock
 
     def diff(self):
         exclude_path = []
@@ -564,4 +586,6 @@ class BlScene(BlDatablock):
             'mutate':True
         }
         return super().diff(diff_params=diff_params)
-        # return Delta(DeepDiff(self.data, self._dump(instance=self.instance),))
+
+_type = bpy.types.Scene
+_class = BlScene

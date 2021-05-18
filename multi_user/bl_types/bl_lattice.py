@@ -20,23 +20,23 @@ import bpy
 import mathutils
 
 from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from replication.exception import ContextError
 
 POINT = ['co', 'weight_softbody', 'co_deform']
 
 
-class BlLattice(BlDatablock):
+class BlLattice(ReplicatedDatablock):
     bl_id = "lattices"
     bl_class = bpy.types.Lattice
     bl_check_common = False
     bl_icon = 'LATTICE_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.lattices.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         if target.is_editmode:
             raise ContextError("lattice is in edit mode")
 
@@ -45,7 +45,7 @@ class BlLattice(BlDatablock):
 
         np_load_collection(data['points'], target.points, POINT)
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         if instance.is_editmode:
             raise ContextError("lattice is in edit mode")
 

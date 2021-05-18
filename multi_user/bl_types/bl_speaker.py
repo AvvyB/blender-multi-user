@@ -20,24 +20,24 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 
 
-class BlSpeaker(BlDatablock):
+class BlSpeaker(ReplicatedDatablock):
     bl_id = "speakers"
     bl_class = bpy.types.Speaker
     bl_check_common = False
     bl_icon = 'SPEAKER'
     bl_reload_parent = False
 
-    def _load_implementation(self, data, target):
+    def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(target, data)
 
-    def _construct(self, data):
+    def construct(data: dict) -> object:
         return bpy.data.speakers.new(data["name"])
 
-    def _dump_implementation(self, data, instance=None):
+    def dump(datablock: object) -> dict:
         assert(instance)
 
         dumper = Dumper()
@@ -60,7 +60,7 @@ class BlSpeaker(BlDatablock):
 
         return dumper.dump(instance)
 
-    def _resolve_deps_implementation(self):
+    def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve material
         deps = []
 
