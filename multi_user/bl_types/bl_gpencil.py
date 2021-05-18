@@ -286,7 +286,7 @@ class BlGpencil(BlDatablock):
         for layer in instance.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
-        data["active_layers"] = instance.layers.active.info
+        data["active_layers"] = instance.layers.active.info if instance.layers.active else "None"
         data["eval_frame"] = bpy.context.scene.frame_current
         return data
 
@@ -299,7 +299,11 @@ class BlGpencil(BlDatablock):
         return deps
 
     def layer_changed(self):
-        return self.instance.layers.active.info != self.data["active_layers"]
+        if self.instance.layers.active and \
+            self.instance.layers.active.info != self.data["active_layers"]:
+            return True
+        else:
+            return False
 
     def frame_changed(self):
         return  bpy.context.scene.frame_current != self.data["eval_frame"]
