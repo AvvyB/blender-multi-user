@@ -170,7 +170,7 @@ class DynamicRightSelectTimer(Timer):
                             gp_node = session.repository.get_node(annotation_gp.uuid)
                             if gp_node.has_changed():
                                 porcelain.commit(session.repository, gp_node.uuid)
-                                session.push(gp_node.uuid, check_data=False)
+                                porcelain.push(session.repository, 'origin', gp_node.uuid)
 
                     elif self._annotating:
                         session.change_owner(

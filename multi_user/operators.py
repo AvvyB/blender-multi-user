@@ -213,8 +213,10 @@ class SessionStartOperator(bpy.types.Operator):
         else:
             python_binary_path = bpy.app.binary_path_python
 
-        repo = Repository(data_protocol=bpy_protocol)
-
+        repo = Repository(
+            data_protocol=bpy_protocol,
+            username=settings.username)
+    
         # Host a session
         if self.host:
             if settings.init_method == 'EMPTY':
@@ -228,10 +230,10 @@ class SessionStartOperator(bpy.types.Operator):
                 for scene in bpy.data.scenes:
                     porcelain.add(repo, scene)
 
+                porcelain.remote_add(repo, 'origin','127.0.0.1', settings.port)
                 session.host(
                     repository= repo,
-                    id=settings.username,
-                    port=settings.port,
+                    remote='origin',
                     timeout=settings.connection_timeout,
                     password=admin_pass,
                     cache_directory=settings.cache_directory,
@@ -250,11 +252,9 @@ class SessionStartOperator(bpy.types.Operator):
                 admin_pass = None
 
             try:
+                porcelain.remote_add(repo, 'origin', settings.ip, settings.port)
                 session.connect(
                     repository= repo,
-                    id=settings.username,
-                    address=settings.ip,
-                    port=settings.port,
                     timeout=settings.connection_timeout,
                     password=admin_pass
                 )
@@ -631,7 +631,7 @@ class SessionCommit(bpy.types.Operator):
     def execute(self, context):
         try:
             porcelain.commit(session.repository, self.target)
-            session.push(self.target)
+            porcelain.push(session.repository, 'origin', self.target)
             return {"FINISHED"}
         except Exception as e:
             self.report({'ERROR'}, repr(e))
@@ -927,7 +927,7 @@ def update_external_dependencies():
         node = session.repository.get_node(node_id)
         if node and node.owner in [session.id, RP_COMMON]:
             porcelain.commit(session.repository, node_id)
-            session.push(node_id, check_data=False)
+            porcelain.push(session.repository,'origin', node_id)
 
 def sanitize_deps_graph(remove_nodes: bool = False):
     """ Cleanup the replication graph
@@ -999,7 +999,7 @@ def depsgraph_evaluation(scene):
                     if node.state == UP:
                         try:
                             porcelain.commit(session.repository, node.uuid)
-                            session.push(node.uuid, check_data=False)
+                            porcelain.push(session.repository, 'origin', node.uuid)
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
                             if not node.is_valid():
@@ -1018,7 +1018,7 @@ def depsgraph_evaluation(scene):
                 else:
                     scn_uuid = porcelain.add(session.repository, update.id)
                     porcelain.commit(session.node_id, scn_uuid)
-                    session.push(scn_uuid, check_data=False)
+                    porcelain.push(session.repository,'origin', scn_uuid)
 def register():
     from bpy.utils import register_class
 
