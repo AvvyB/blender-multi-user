@@ -1014,13 +1014,11 @@ def depsgraph_evaluation(scene):
             elif isinstance(update.id, bpy.types.Scene):
                 ref = session.repository.get_node_by_datablock(update.id)
                 if ref:
-                    ref.resolve()
+                    pass
                 else:
                     scn_uuid = porcelain.add(session.repository, update.id)
                     porcelain.commit(session.node_id, scn_uuid)
                     session.push(scn_uuid, check_data=False)
-            elif isinstance(update.id, bpy.types.Collection):
-                sanitize_deps_graph()
 def register():
     from bpy.utils import register_class
 
