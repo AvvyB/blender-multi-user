@@ -562,16 +562,17 @@ class BlScene(ReplicatedDatablock):
 
         return datablock
 
-    def diff(self):
+    @staticmethod
+    def compute_delta(last_data:dict, current_data: dict)-> Delta:
         exclude_path = []
 
-        if not self.preferences.sync_flags.sync_render_settings:
+        if not get_preferences().sync_flags.sync_render_settings:
             exclude_path.append("root['eevee']")
             exclude_path.append("root['cycles']")
             exclude_path.append("root['view_settings']")
             exclude_path.append("root['render']")
 
-        if not self.preferences.sync_flags.sync_active_camera:
+        if not get_preferences().sync_flags.sync_active_camera:
             exclude_path.append("root['camera']")
 
         diff_params = {
@@ -582,7 +583,9 @@ class BlScene(ReplicatedDatablock):
         delta_params = {
             'mutate':True
         }
-        return super().diff(diff_params=diff_params)
+
+        return Delta(DeepDiff(last_data, current_data, cache_size=5000,**diff_params), **delta_params)
+
 
 _type = bpy.types.Scene
 _class = BlScene

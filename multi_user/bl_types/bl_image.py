@@ -100,16 +100,6 @@ class BlImage(ReplicatedDatablock):
         data.update(dumper.dump(datablock))
         return data
 
-
-    def diff(self):
-        if self.instance.is_dirty:
-            self.instance.save()
-        
-        if not self.data or (self.instance and (self.instance.name != self.data['name'])):
-            return super().diff()
-        else:
-            return None
-
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
@@ -142,6 +132,15 @@ class BlImage(ReplicatedDatablock):
 
         return deps
 
+    @staticmethod
+    def needs_update(datablock: object, data:dict)-> bool:
+        if datablock.is_dirty:
+            datablock.save()
+
+        if not data or (datablock and (datablock.name != data.get('name'))):
+            return True
+        else:
+            return False
 
 _type = bpy.types.Image
 _class = BlImage

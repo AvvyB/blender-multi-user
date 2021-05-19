@@ -43,25 +43,3 @@ def resolve_datablock_from_uuid(uuid, bpy_collection):
         if getattr(item, 'uuid', None) == uuid:
             return item
     return None
-
-def resolve_from_root(data: dict, root: str, construct = True):
-    datablock_root = getattr(bpy.data, self.bl_id)
-    datablock_ref = utils.find_from_attr('uuid', self.uuid, datablock_root)
-
-    if not datablock_ref:
-        try:
-            datablock_ref = datablock_root[self.data['name']]
-        except Exception:
-            pass
-
-        if construct and not datablock_ref:
-            name = self.data.get('name')
-            logging.debug(f"Constructing {name}")
-            datablock_ref = self.construct(data=self.data)
-
-    if datablock_ref is not None:
-        setattr(datablock_ref, 'uuid', self.uuid)
-        self.instance = datablock_ref
-        return True
-    else:
-        return False

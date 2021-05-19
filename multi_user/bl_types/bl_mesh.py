@@ -196,13 +196,10 @@ class BlMesh(ReplicatedDatablock):
 
         return datablock
 
-    def diff(self):
-        if 'EDIT' in bpy.context.mode \
-                and not get_preferences().sync_flags.sync_during_editmode:
-            return False
-        else:
-            return super().diff()
-
+    @staticmethod
+    def needs_update(datablock: object, data: dict) -> bool:
+        return 'EDIT' not in bpy.context.mode \
+            or get_preferences().sync_flags.sync_during_editmode
 
 _type = bpy.types.Mesh
 _class = BlMesh

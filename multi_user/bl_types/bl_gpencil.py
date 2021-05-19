@@ -27,9 +27,8 @@ from .dump_anything import  (Dumper,
 from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from ..utils import get_preferences
 
-# GPencil data api is structured as it follow: 
-# GP-Object --> GP-Layers --> GP-Frames --> GP-Strokes --> GP-Stroke-Points
 
 STROKE_POINT = [
     'co',
@@ -231,6 +230,18 @@ def load_layer(layer_data, layer):
 
         load_frame(frame_data, target_frame)
 
+
+def layer_changed(datablock: object, data: dict) -> bool:
+    if datablock.layers.active and \
+            datablock.layers.active.info != data["active_layers"]:
+        return True
+    else:
+        return False
+
+
+def frame_changed(data: dict) -> bool:
+    return bpy.context.scene.frame_current != data["eval_frame"]
+
 class BlGpencil(ReplicatedDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
@@ -312,25 +323,12 @@ class BlGpencil(ReplicatedDatablock):
 
         return deps
 
-    def layer_changed(self):
-        if datablock.layers.active and \
-            datablock.layers.active.info != self.data["active_layers"]:
-            return True
-        else:
-            return False
-
-    def frame_changed(self):
-        return  bpy.context.scene.frame_current != self.data["eval_frame"]
-
-    def diff(self):
-        if not self.data \
-                or self.layer_changed() \
-                or self.frame_changed() \
-                or bpy.context.mode == 'OBJECT' \
-                or get_preferences().sync_flags.sync_during_editmode:
-            return super().diff()
-        else:
-            return None
+    @staticmethod
+    def needs_update(datablock: object, data: dict) -> bool:
+        return bpy.context.mode == 'OBJECT' \
+            or layer_changed(datablock, data) \
+            or frame_changed(data) \
+            or get_preferences().sync_flags.sync_during_editmode
 
 _type = bpy.types.GreasePencil
 _class = BlGpencil

@@ -114,27 +114,28 @@ class BlFile(ReplicatedDatablock):
         else:
             file.close()
 
-    def diff(self):
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        return []
+    
+    @staticmethod
+    def needs_update(datablock: object, data:dict)-> bool:
         if get_preferences().clear_memory_filecache:
             return False
         else:
             if not datablock:
                 return None
 
-            if not self.data:
-                return super().diff()
+            if not data:
+                return True
 
-            memory_size = sys.getsizeof(self.data['file'])-33
+            memory_size = sys.getsizeof(data['file'])-33
             disk_size = datablock.stat().st_size
 
             if memory_size != disk_size:
-                return super().diff()
+                return True
             else:
-                return None
-    
-    @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
-        return []
+                return False
 
 _type = [WindowsPath, PosixPath]
 _class = BlFile

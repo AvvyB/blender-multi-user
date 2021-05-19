@@ -62,9 +62,6 @@ class BlFont(ReplicatedDatablock):
             'name': datablock.name
         }
 
-    def diff(self):
-        return False
-
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
@@ -84,6 +81,10 @@ class BlFont(ReplicatedDatablock):
             deps.append(Path(bpy.path.abspath(datablock.filepath)))
 
         return deps
+
+    @staticmethod
+    def needs_update(datablock: object, data:dict)-> bool:
+        return False
 
 _type = bpy.types.VectorFont
 _class = BlFont

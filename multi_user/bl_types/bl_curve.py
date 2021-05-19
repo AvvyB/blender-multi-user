@@ -261,12 +261,10 @@ class BlCurve(ReplicatedDatablock):
         return deps
 
     @staticmethod
-    def diff(self):
-        if 'EDIT' in bpy.context.mode \
-                and not get_preferences().sync_flags.sync_during_editmode:
-            return None
-        else:
-            return super().diff()
+    def needs_update(datablock: object, data: dict) -> bool:
+        return 'EDIT' not in bpy.context.mode \
+            or get_preferences().sync_flags.sync_during_editmode
+
 
 _type = [bpy.types.Curve, bpy.types.TextCurve]
 _class = BlCurve

@@ -46,9 +46,6 @@ class BlSound(ReplicatedDatablock):
         loader = Loader()
         loader.load(datablock, data)
 
-    def diff(self):
-        return False
-
     @staticmethod
     def dump(datablock: object) -> dict:
         filename = Path(datablock.filepath).name
@@ -80,6 +77,10 @@ class BlSound(ReplicatedDatablock):
             datablock = bpy.data.sounds.get(name)
 
         return datablock
+
+    @staticmethod
+    def needs_update(datablock: object, data:dict)-> bool:
+        return False
 
 _type = bpy.types.Sound
 _class = BlSound
