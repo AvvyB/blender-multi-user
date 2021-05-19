@@ -22,7 +22,7 @@ import mathutils
 from .. import utils
 from replication.protocol import ReplicatedDatablock
 from .dump_anything import Loader, Dumper
-
+from .bl_datablock import resolve_datablock_from_uuid
 
 def dump_collection_children(collection):
     collection_children = []
@@ -87,52 +87,63 @@ class BlCollection(ReplicatedDatablock):
     bl_class = bpy.types.Collection
     bl_check_common = True
     bl_reload_parent = False
-    
+
+
+    @staticmethod
     def construct(data: dict) -> object:
-        if self.is_library:
-            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
-                targetData.collections = [
-                    name for name in sourceData.collections if name == self.data['name']]
-
-            instance = bpy.data.collections[self.data['name']]
-
-            return instance
-
         instance = bpy.data.collections.new(data["name"])
         return instance
 
+
+    @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         # Objects
-        load_collection_objects(data['objects'], target)
+        load_collection_objects(data['objects'], datablock)
 
         # Link childrens
-        load_collection_childrens(data['children'], target)
+        load_collection_childrens(data['children'], datablock)
 
         # FIXME: Find a better way after the replication big refacotoring
         # Keep other user from deleting collection object by flushing their history
         utils.flush_history()
 
-    def dump(datablock: object) -> dict:
-        assert(instance)
 
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             "name",
             "instance_offset"
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
         # dump objects
-        data['objects'] = dump_collection_objects(instance)
+        data['objects'] = dump_collection_objects(datablock)
 
         # dump children collections
-        data['children'] = dump_collection_children(instance)
+        data['children'] = dump_collection_children(datablock)
 
         return data
 
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.collections)
+        if datablock is None:
+            datablock = bpy.data.collections.get(name)
+
+        return datablock
+
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
-        return resolve_collection_dependencies(self.instance)
+        return resolve_collection_dependencies(datablock)
+
+_type = bpy.types.Collection
+_class = BlCollection

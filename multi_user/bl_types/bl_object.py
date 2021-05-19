@@ -476,7 +476,7 @@ class BlObject(ReplicatedDatablock):
     @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-
+        load_animation_data(datablock.get('animation_data'), datablock)
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
 
@@ -618,7 +618,7 @@ class BlObject(ReplicatedDatablock):
         ]
 
         data = dumper.dump(datablock)
-
+        data['animation_data'] = dump_animation_data(datablock)
         dumper.include_filter = [
             'matrix_parent_inverse',
             'matrix_local',
@@ -766,6 +766,8 @@ class BlObject(ReplicatedDatablock):
         if hasattr(datablock.data, 'shape_keys') and datablock.data.shape_keys:
             deps.extend(resolve_animation_dependencies(datablock.data.shape_keys))
         return deps
+
+        deps.extend(resolve_animation_dependencies(datablock))
 
     @staticmethod
     def resolve(data: dict) -> object:
