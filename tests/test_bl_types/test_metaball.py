@@ -13,11 +13,11 @@ def test_metaball(clear_blend, metaballs_type):
 
     datablock = bpy.data.metaballs[0]
     dumper = BlMetaball()
-    expected = dumper._dump(datablock)
+    expected = dumper.dump(datablock)
     bpy.data.metaballs.remove(datablock)
 
-    test = dumper._construct(expected)
-    dumper._load(expected, test)
-    result = dumper._dump(test)
+    test = dumper.construct(expected)
+    dumper.load(expected, test)
+    result = dumper.dump(test)
 
     assert not DeepDiff(expected, result)

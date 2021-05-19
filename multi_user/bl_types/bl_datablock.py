@@ -57,7 +57,7 @@ def resolve_from_root(data: dict, root: str, construct = True):
         if construct and not datablock_ref:
             name = self.data.get('name')
             logging.debug(f"Constructing {name}")
-            datablock_ref = self._construct(data=self.data)
+            datablock_ref = self.construct(data=self.data)
 
     if datablock_ref is not None:
         setattr(datablock_ref, 'uuid', self.uuid)

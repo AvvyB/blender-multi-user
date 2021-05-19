@@ -18,11 +18,11 @@ def test_mesh(clear_blend, mesh_type):
     
     # Test
     implementation = BlMesh()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.meshes.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)

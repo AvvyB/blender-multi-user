@@ -381,10 +381,7 @@ class BlScene(ReplicatedDatablock):
 
     @staticmethod
     def construct(data: dict) -> object:
-        instance = bpy.data.scenes.new(data["name"])
-        instance.uuid = data.get('uuid')
-
-        return instance
+        return bpy.data.scenes.new(data["name"])
 
     @staticmethod
     def load(data: dict, datablock: object):

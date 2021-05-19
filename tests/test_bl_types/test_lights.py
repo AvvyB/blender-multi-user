@@ -13,11 +13,11 @@ def test_light(clear_blend, light_type):
 
     blender_light = bpy.data.lights[0]
     light_dumper = BlLight()
-    expected = light_dumper._dump(blender_light)
+    expected = light_dumper.dump(blender_light)
     bpy.data.lights.remove(blender_light)
 
-    test = light_dumper._construct(expected)
-    light_dumper._load(expected, test)
-    result = light_dumper._dump(test)
+    test = light_dumper.construct(expected)
+    light_dumper.load(expected, test)
+    result = light_dumper.dump(test)
 
     assert not DeepDiff(expected, result)

@@ -469,10 +469,7 @@ class BlObject(ReplicatedDatablock):
         if data_type != 'EMPTY' and object_data is None:
             raise Exception(f"Fail to load object {data['name']})")
 
-        instance = bpy.data.objects.new(object_name, object_data)
-        instance.uuid = data.get("uuid")
-
-        return instance
+        return bpy.data.objects.new(object_name, object_data)
 
     @staticmethod
     def load(data: dict, datablock: object):

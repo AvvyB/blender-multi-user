@@ -63,9 +63,7 @@ class BlMesh(ReplicatedDatablock):
 
     @staticmethod
     def construct(data: dict) -> object:
-        instance = bpy.data.meshes.new(data.get("name"))
-        instance.uuid = data.get("uuid")
-        return instance
+        return bpy.data.meshes.new(data.get("name"))
 
     @staticmethod
     def load(data: dict, datablock: object):

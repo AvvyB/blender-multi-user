@@ -13,11 +13,11 @@ def test_lattice(clear_blend):
     datablock = bpy.data.lattices[0]
 
     implementation = BlLattice()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.lattices.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)
