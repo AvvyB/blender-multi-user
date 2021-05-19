@@ -22,8 +22,9 @@ from pathlib import Path
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
-from .bl_datablock import get_datablock_from_uuid
+from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_material import dump_materials_slots, load_materials_slots
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 class BlVolume(ReplicatedDatablock):
     bl_id = "volumes"
@@ -32,22 +33,12 @@ class BlVolume(ReplicatedDatablock):
     bl_icon = 'VOLUME_DATA'
     bl_reload_parent = False
 
-    def load(data: dict, datablock: object):
-        loader = Loader()
-        loader.load(target, data)
-        loader.load(target.display, data['display'])
-
-        # MATERIAL SLOTS
-        src_materials = data.get('materials', None)
-        if src_materials:
-            load_materials_slots(src_materials, target.materials)
-
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.volumes.new(data["name"])
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
-
         dumper = Dumper()
         dumper.depth = 1
         dumper.exclude_filter = [
@@ -61,27 +52,53 @@ class BlVolume(ReplicatedDatablock):
             'use_fake_user'
         ]
 
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
-        data['display'] = dumper.dump(instance.display)
+        data['display'] = dumper.dump(datablock.display)
 
          # Fix material index
-        data['materials'] = dump_materials_slots(instance.materials)
-
+        data['materials'] = dump_materials_slots(datablock.materials)
+        data['animation_data'] = dump_animation_data(datablock)
         return data
 
+    @staticmethod
+    def load(data: dict, datablock: object):
+        load_animation_data(datablock.get('animation_data'), datablock)
+        loader = Loader()
+        loader.load(datablock, data)
+        loader.load(datablock.display, data['display'])
+
+        # MATERIAL SLOTS
+        src_materials = data.get('materials', None)
+        if src_materials:
+            load_materials_slots(src_materials, datablock.materials)
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.volumes)
+        if datablock is None:
+            datablock = bpy.data.volumes.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve material
         deps = []
 
-        external_vdb = Path(bpy.path.abspath(self.instance.filepath))
+        external_vdb = Path(bpy.path.abspath(datablock.filepath))
         if external_vdb.exists() and not external_vdb.is_dir():
             deps.append(external_vdb)
 
-        for material in self.instance.materials:
+        for material in datablock.materials:
             if material:
                 deps.append(material)
 
+        deps.extend(resolve_animation_dependencies(datablock))
+
         return deps
 
-
+_type = bpy.types.Volume
+_class = BlVolume
