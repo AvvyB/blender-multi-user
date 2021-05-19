@@ -21,6 +21,8 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 
 class BlLight(ReplicatedDatablock):
@@ -30,15 +32,20 @@ class BlLight(ReplicatedDatablock):
     bl_icon = 'LIGHT_DATA'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
-        return bpy.data.lights.new(data["name"], data["type"])
+        instance = bpy.data.lights.new(data["name"], data["type"])
+        instance.uuid = data.get("uuid")
+        return instance
 
+    @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
+        load_animation_data(datablock.get('animation_data'), datablock)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
         dumper = Dumper()
         dumper.depth = 3
         dumper.include_filter = [
@@ -67,9 +74,28 @@ class BlLight(ReplicatedDatablock):
             'spot_size',
             'spot_blend'
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
+        data['animation_data'] = dump_animation_data(datablock)
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.lights)
+        if datablock is None:
+            datablock = bpy.data.lights.get(name)
+
+        return datablock
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        deps = []
+
+        deps.extend(resolve_animation_dependencies(datablock))
+
+        return deps
 
 
-
+_type = [bpy.types.SpotLight, bpy.types.PointLight, bpy.types.AreaLight, bpy.types.SunLight]
+_class = BlLight

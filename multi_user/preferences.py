@@ -410,11 +410,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         bpy_protocol = bl_types.get_data_translation_protocol()
 
         # init the factory with supported types
-        for impl in bpy_protocol.implementations.values():
+        for dcc_type_id, impl in bpy_protocol.implementations.items():
             new_db = self.supported_datablocks.add()
 
-            new_db.name = impl.bl_class.__name__
-            new_db.type_name = impl.bl_class.__name__
+            new_db.name = dcc_type_id
+            new_db.type_name = dcc_type_id
             new_db.use_as_filter = True
             new_db.icon = impl.bl_icon
             new_db.bl_name = impl.bl_id

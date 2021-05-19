@@ -27,6 +27,9 @@ from .dump_anything import (Dumper, Loader,
                             np_load_collection,
                             np_dump_collection)
 from .bl_material import dump_materials_slots, load_materials_slots
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+
 
 SPLINE_BEZIER_POINT = [
     # "handle_left_type",
@@ -140,18 +143,22 @@ class BlCurve(ReplicatedDatablock):
     bl_icon = 'CURVE_DATA'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.curves.new(data["name"], data["type"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
-        loader = Loader()
-        loader.load(target, data)
+        load_animation_data(datablock.get('animation_data'), datablock)
 
-        target.splines.clear()
+        loader = Loader()
+        loader.load(datablock, data)
+
+        datablock.splines.clear()
 
         # load splines
         for spline in data['splines'].values():
-            new_spline = target.splines.new(spline['type'])
+            new_spline = datablock.splines.new(spline['type'])
 
             # Load curve geometry data
             if new_spline.type == 'BEZIER':
@@ -172,15 +179,14 @@ class BlCurve(ReplicatedDatablock):
             # MATERIAL SLOTS
             src_materials = data.get('materials', None)
             if src_materials:
-                load_materials_slots(src_materials, target.materials)
+                load_materials_slots(src_materials, datablock.materials)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
         dumper = Dumper()
         # Conflicting attributes
         # TODO: remove them with the NURBS support
         dumper.include_filter = CURVE_METADATA
-
         dumper.exclude_filter = [
             'users',
             'order_u',
@@ -189,14 +195,16 @@ class BlCurve(ReplicatedDatablock):
             'point_count_u',
             'active_textbox'
         ]
-        if instance.use_auto_texspace:
+        if datablock.use_auto_texspace:
             dumper.exclude_filter.extend([
                 'texspace_location',
                 'texspace_size'])
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
+
+        data['animation_data'] = dump_animation_data(datablock)
         data['splines'] = {}
 
-        for index, spline in enumerate(instance.splines):
+        for index, spline in enumerate(datablock.splines):
             dumper.depth = 2
             dumper.include_filter = SPLINE_METADATA
             spline_data = dumper.dump(spline)
@@ -210,21 +218,32 @@ class BlCurve(ReplicatedDatablock):
                 spline.bezier_points, SPLINE_BEZIER_POINT)
             data['splines'][index] = spline_data
 
-        if isinstance(instance, T.SurfaceCurve):
+        if isinstance(datablock, T.SurfaceCurve):
             data['type'] = 'SURFACE'
-        elif isinstance(instance, T.TextCurve):
+        elif isinstance(datablock, T.TextCurve):
             data['type'] = 'FONT'
-        elif isinstance(instance, T.Curve):
+        elif isinstance(datablock, T.Curve):
             data['type'] = 'CURVE'
 
-        data['materials'] = dump_materials_slots(instance.materials)
+        data['materials'] = dump_materials_slots(datablock.materials)
 
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.curves)
+        if datablock is None:
+            datablock = bpy.data.curves.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve material
         deps = []
-        curve = self.instance
+        curve = datablock
 
         if isinstance(curve, T.TextCurve):
             deps.extend([
@@ -233,15 +252,21 @@ class BlCurve(ReplicatedDatablock):
                 curve.font_bold_italic,
                 curve.font_italic])
 
-        for material in self.instance.materials:
+        for material in datablock.materials:
             if material:
                 deps.append(material)
+        
+        deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
 
+    @staticmethod
     def diff(self):
         if 'EDIT' in bpy.context.mode \
                 and not self.preferences.sync_flags.sync_during_editmode:
             return None
         else:
             return super().diff()
+
+_type = bpy.types.Curve
+_class = BlCurve

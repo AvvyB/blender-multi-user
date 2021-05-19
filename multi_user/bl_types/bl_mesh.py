@@ -205,5 +205,6 @@ class BlMesh(ReplicatedDatablock):
         else:
             return super().diff()
 
+
 _type = bpy.types.Mesh
 _class = BlMesh

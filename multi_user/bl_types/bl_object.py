@@ -765,9 +765,11 @@ class BlObject(ReplicatedDatablock):
 
         if hasattr(datablock.data, 'shape_keys') and datablock.data.shape_keys:
             deps.extend(resolve_animation_dependencies(datablock.data.shape_keys))
-        return deps
 
         deps.extend(resolve_animation_dependencies(datablock))
+
+        return deps
+
 
     @staticmethod
     def resolve(data: dict) -> object:

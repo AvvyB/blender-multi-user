@@ -191,9 +191,9 @@ class SessionStartOperator(bpy.types.Operator):
 
         # Check if supported_datablocks are up to date before starting the
         # the session
-        for impl in bpy_protocol.implementations.values():
-            if impl.bl_class.__name__ not in settings.supported_datablocks:
-                logging.info(f"{impl.bl_class.__name__} not found, \
+        for dcc_type_id in bpy_protocol.implementations.keys():
+            if dcc_type_id not in settings.supported_datablocks:
+                logging.info(f"{dcc_type_id} not found, \
                              regenerate type settings...")
                 settings.generate_supported_types()
 
