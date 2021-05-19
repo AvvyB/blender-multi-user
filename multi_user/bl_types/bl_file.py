@@ -27,6 +27,7 @@ from replication.constants import DIFF_BINARY, UP
 from replication.protocol import ReplicatedDatablock
 
 from .. import utils
+from ..utils import get_preferences
 from .dump_anything import Dumper, Loader
 
 
@@ -64,8 +65,7 @@ class BlFile(ReplicatedDatablock):
         
         if self.instance and not self.instance.exists():
             raise FileNotFoundError(str(self.instance))
-   
-        self.preferences = utils.get_preferences()
+
 
     def resolve(self, construct = True):
         self.instance = Path(get_filepath(self.data['name']))
@@ -81,7 +81,7 @@ class BlFile(ReplicatedDatablock):
     def push(self, socket, identity=None, check_data=False):
         super().push(socket, identity=None, check_data=False)
         
-        if self.preferences.clear_memory_filecache:
+        if get_preferences().clear_memory_filecache:
                 del self.data['file']
 
     def _dump(self, instance=None):
@@ -123,7 +123,7 @@ class BlFile(ReplicatedDatablock):
             file = open(target, "wb")
             file.write(data['file'])
             
-            if self.preferences.clear_memory_filecache:
+            if get_preferences().clear_memory_filecache:
                 del self.data['file']
         except IOError:
             logging.warning(f"{target} doesn't exist, skipping")
@@ -131,7 +131,7 @@ class BlFile(ReplicatedDatablock):
             file.close()
 
     def diff(self):
-        if self.preferences.clear_memory_filecache:
+        if get_preferences().clear_memory_filecache:
             return False
         else:
             if not self.instance:

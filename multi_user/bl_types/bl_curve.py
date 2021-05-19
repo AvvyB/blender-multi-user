@@ -21,7 +21,7 @@ import bpy.types as T
 import mathutils
 import logging
 
-from .. import utils
+from ..utils import get_preferences
 from replication.protocol import ReplicatedDatablock
 from .dump_anything import (Dumper, Loader,
                             np_load_collection,
@@ -255,7 +255,7 @@ class BlCurve(ReplicatedDatablock):
         for material in datablock.materials:
             if material:
                 deps.append(material)
-        
+
         deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
@@ -263,7 +263,7 @@ class BlCurve(ReplicatedDatablock):
     @staticmethod
     def diff(self):
         if 'EDIT' in bpy.context.mode \
-                and not self.preferences.sync_flags.sync_during_editmode:
+                and not get_preferences().sync_flags.sync_during_editmode:
             return None
         else:
             return super().diff()

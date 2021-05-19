@@ -24,6 +24,8 @@ from replication.protocol import ReplicatedDatablock
 from .bl_material import (dump_node_tree,
                           load_node_tree,
                           get_node_tree_dependencies)
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 class BlNodeGroup(ReplicatedDatablock):
     bl_id = "node_groups"
@@ -32,14 +34,34 @@ class BlNodeGroup(ReplicatedDatablock):
     bl_icon = 'NODETREE'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.node_groups.new(data["name"], data["type"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
-        load_node_tree(data, target)
+        load_node_tree(data, datablock)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        return dump_node_tree(instance)
+        return dump_node_tree(datablock)
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.node_groups)
+        if datablock is None:
+            datablock = bpy.data.node_groups.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
-        return get_node_tree_dependencies(self.instance)
+        deps = []
+        deps.extend(get_node_tree_dependencies(datablock))
+        deps.extend(resolve_animation_dependencies(datablock))
+        return deps
+
+_type = [bpy.types.ShaderNodeTree, bpy.types.GeometryNodeTree]
+_class = BlNodeGroup

@@ -26,7 +26,8 @@ from uuid import uuid4
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
 
-from .bl_datablock import get_datablock_from_uuid
+from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 IGNORED_SOCKETS = ['GEOMETRY', 'SHADER', 'CUSTOM']
@@ -398,29 +399,33 @@ class BlMaterial(ReplicatedDatablock):
     bl_icon = 'MATERIAL_DATA'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.materials.new(data["name"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
+        load_animation_data(datablock.get('animation_data'), datablock)
+
         loader = Loader()
 
         is_grease_pencil = data.get('is_grease_pencil')
         use_nodes = data.get('use_nodes')
 
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         if is_grease_pencil:
-            if not target.is_grease_pencil:
-                bpy.data.materials.create_gpencil_data(target)
-            loader.load(target.grease_pencil, data['grease_pencil'])
+            if not datablock.is_grease_pencil:
+                bpy.data.materials.create_gpencil_data(datablock)
+            loader.load(datablock.grease_pencil, data['grease_pencil'])
         elif use_nodes:
-            if target.node_tree is None:
-                target.use_nodes = True
+            if datablock.node_tree is None:
+                datablock.use_nodes = True
 
-            load_node_tree(data['node_tree'], target.node_tree)
+            load_node_tree(data['node_tree'], datablock.node_tree)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
         mat_dumper = Dumper()
         mat_dumper.depth = 2
         mat_dumper.include_filter = [
@@ -446,9 +451,9 @@ class BlMaterial(ReplicatedDatablock):
             'line_priority',
             'is_grease_pencil'
         ]
-        data = mat_dumper.dump(instance)
+        data = mat_dumper.dump(datablock)
 
-        if instance.is_grease_pencil:
+        if datablock.is_grease_pencil:
             gp_mat_dumper = Dumper()
             gp_mat_dumper.depth = 3
 
@@ -482,19 +487,35 @@ class BlMaterial(ReplicatedDatablock):
                 'use_overlap_strokes',
                 'use_fill_holdout',
             ]
-            data['grease_pencil'] = gp_mat_dumper.dump(instance.grease_pencil)
-        elif instance.use_nodes:
-            data['node_tree'] = dump_node_tree(instance.node_tree)
+            data['grease_pencil'] = gp_mat_dumper.dump(datablock.grease_pencil)
+        elif datablock.use_nodes:
+            data['node_tree'] = dump_node_tree(datablock.node_tree)
 
+        data['animation_data'] = dump_animation_data(datablock)
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.materials)
+        if datablock is None:
+            datablock = bpy.data.materials.get(name)
+
+        return datablock
+
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve node group deps
         deps = []
 
-        if self.instance.use_nodes:
-            deps.extend(get_node_tree_dependencies(self.instance.node_tree))
-        if self.is_library:
-            deps.append(self.instance.library)
+        if datablock.use_nodes:
+            deps.extend(get_node_tree_dependencies(datablock.node_tree))
+
+        deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
+
+_type = bpy.types.Material
+_class = BlMaterial

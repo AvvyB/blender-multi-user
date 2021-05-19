@@ -25,6 +25,7 @@ from replication.exception import ContextError
 from replication.protocol import ReplicatedDatablock
 from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_material import IGNORED_SOCKETS
+from ..utils import get_preferences
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from .dump_anything import (
     Dumper,
@@ -577,7 +578,7 @@ class BlObject(ReplicatedDatablock):
     @staticmethod
     def dump(datablock: object) -> dict:
         if _is_editmode(datablock):
-            if self.preferences.sync_flags.sync_during_editmode:
+            if get_preferences().sync_flags.sync_during_editmode:
                 datablock.update_from_editmode()
             else:
                 raise ContextError("Object is in edit-mode.")
