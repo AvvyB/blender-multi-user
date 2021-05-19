@@ -268,5 +268,5 @@ class BlCurve(ReplicatedDatablock):
         else:
             return super().diff()
 
-_type = bpy.types.Curve
+_type = [bpy.types.Curve, bpy.types.TextCurve]
 _class = BlCurve

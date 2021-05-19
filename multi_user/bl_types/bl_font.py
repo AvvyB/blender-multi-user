@@ -25,7 +25,7 @@ import bpy
 from replication.protocol import ReplicatedDatablock
 from .bl_file import get_filepath, ensure_unpacked
 from .dump_anything import Dumper, Loader
-
+from .bl_datablock import resolve_datablock_from_uuid
 
 class BlFont(ReplicatedDatablock):
     bl_id = "fonts"
@@ -34,6 +34,7 @@ class BlFont(ReplicatedDatablock):
     bl_icon = 'FILE_FONT'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         filename = data.get('filename')
 
@@ -42,31 +43,47 @@ class BlFont(ReplicatedDatablock):
         else:
             return bpy.data.fonts.load(get_filepath(filename))
 
-    def _load(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
         pass
 
-    def _dump(self, instance=None):
-        if instance.filepath  == '<builtin>':
+    @staticmethod
+    def dump(datablock: object) -> dict:
+        if datablock.filepath  == '<builtin>':
             filename = '<builtin>'
         else:
-            filename = Path(instance.filepath).name
+            filename = Path(datablock.filepath).name
 
         if not filename:
-            raise FileExistsError(instance.filepath)
+            raise FileExistsError(datablock.filepath)
 
         return {
             'filename': filename,
-            'name': instance.name
+            'name': datablock.name
         }
 
     def diff(self):
         return False
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.fonts)
+        if datablock is None:
+            datablock = bpy.data.fonts.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         deps = []
-        if self.instance.filepath and self.instance.filepath != '<builtin>':
-            ensure_unpacked(self.instance)
+        if datablock.filepath and datablock.filepath != '<builtin>':
+            ensure_unpacked(datablock)
 
-            deps.append(Path(bpy.path.abspath(self.instance.filepath)))
+            deps.append(Path(bpy.path.abspath(datablock.filepath)))
 
         return deps
+
+_type = bpy.types.VectorFont
+_class = BlFont
