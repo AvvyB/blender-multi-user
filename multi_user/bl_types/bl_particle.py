@@ -4,6 +4,8 @@ import mathutils
 from . import dump_anything
 from replication.protocol import ReplicatedDatablock
 from .bl_datablock import get_datablock_from_uuid
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 
 def dump_textures_slots(texture_slots: bpy.types.bpy_prop_collection) -> list:
@@ -45,47 +47,63 @@ class BlParticle(ReplicatedDatablock):
     bl_check_common = False
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
-        instance = bpy.data.particles.new(data["name"])
-        instance.uuid = self.uuid
-        return instance
+        return bpy.data.particles.new(data["name"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
-        dump_anything.load(target, data)
+        load_animation_data(datablock.get('animation_data'), datablock)
+        dump_anything.load(datablock, data)
 
-        dump_anything.load(target.effector_weights, data["effector_weights"])
+        dump_anything.load(datablock.effector_weights, data["effector_weights"])
 
         # Force field
         force_field_1 = data.get("force_field_1", None)
         if force_field_1:
-            dump_anything.load(target.force_field_1, force_field_1)
+            dump_anything.load(datablock.force_field_1, force_field_1)
 
         force_field_2 = data.get("force_field_2", None)
         if force_field_2:
-            dump_anything.load(target.force_field_2, force_field_2)
+            dump_anything.load(datablock.force_field_2, force_field_2)
 
         # Texture slots
-        load_texture_slots(data["texture_slots"], target.texture_slots)
+        load_texture_slots(data["texture_slots"], datablock.texture_slots)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert instance
-
         dumper = dump_anything.Dumper()
         dumper.depth = 1
         dumper.exclude_filter = IGNORED_ATTR
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
         # Particle effectors
-        data["effector_weights"] = dumper.dump(instance.effector_weights)
-        if instance.force_field_1:
-            data["force_field_1"] = dumper.dump(instance.force_field_1)
-        if instance.force_field_2:
-            data["force_field_2"] = dumper.dump(instance.force_field_2)
+        data["effector_weights"] = dumper.dump(datablock.effector_weights)
+        if datablock.force_field_1:
+            data["force_field_1"] = dumper.dump(datablock.force_field_1)
+        if datablock.force_field_2:
+            data["force_field_2"] = dumper.dump(datablock.force_field_2)
 
         # Texture slots
-        data["texture_slots"] = dump_textures_slots(instance.texture_slots)
-
+        data["texture_slots"] = dump_textures_slots(datablock.texture_slots)
+        data['animation_data'] = dump_animation_data(datablock)
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.particles)
+        if datablock is None:
+            datablock = bpy.data.particles.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
-        return [t.texture for t in self.instance.texture_slots if t and t.texture]
+        deps = [t.texture for t in datablock.texture_slots if t and t.texture]
+        deps.extend(resolve_animation_dependencies(datablock))
+        return deps
+
+_type = bpy.types.ParticleSettings
+_class = BlParticle

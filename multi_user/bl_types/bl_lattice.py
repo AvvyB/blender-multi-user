@@ -22,6 +22,8 @@ import mathutils
 from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from replication.protocol import ReplicatedDatablock
 from replication.exception import ContextError
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 POINT = ['co', 'weight_softbody', 'co_deform']
 
@@ -33,20 +35,24 @@ class BlLattice(ReplicatedDatablock):
     bl_icon = 'LATTICE_DATA'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.lattices.new(data["name"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
-        if target.is_editmode:
+        load_animation_data(datablock.get('animation_data'), datablock)
+        if datablock.is_editmode:
             raise ContextError("lattice is in edit mode")
 
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
-        np_load_collection(data['points'], target.points, POINT)
+        np_load_collection(data['points'], datablock.points, POINT)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        if instance.is_editmode:
+        if datablock.is_editmode:
             raise ContextError("lattice is in edit mode")
 
         dumper = Dumper()
@@ -62,9 +68,25 @@ class BlLattice(ReplicatedDatablock):
             'interpolation_type_w',
             'use_outside'
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
-        data['points'] = np_dump_collection(instance.points, POINT)
-
+        data['points'] = np_dump_collection(datablock.points, POINT)
+        data['animation_data'] = dump_animation_data(datablock)
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.lattices)
+        if datablock is None:
+            datablock = bpy.data.lattices.get(name)
+
+        return datablock
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        return resolve_animation_dependencies(datablock)
+
+_type = bpy.types.Lattice
+_class = BlLattice
