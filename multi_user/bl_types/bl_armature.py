@@ -23,7 +23,8 @@ import mathutils
 from .dump_anything import Loader, Dumper
 from .. import presence, operators, utils
 from replication.protocol import ReplicatedDatablock
-
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 def get_roll(bone: bpy.types.Bone) -> float:
     """ Compute the actuall roll of a pose bone
@@ -42,9 +43,11 @@ class BlArmature(ReplicatedDatablock):
     bl_icon = 'ARMATURE_DATA'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.armatures.new(data["name"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
         # Load parent object
         parent_object = utils.find_from_attr(
@@ -55,7 +58,7 @@ class BlArmature(ReplicatedDatablock):
 
         if parent_object is None:
             parent_object = bpy.data.objects.new(
-                data['user_name'], target)
+                data['user_name'], datablock)
             parent_object.uuid = data['user']
 
         is_object_in_master = (
@@ -90,10 +93,10 @@ class BlArmature(ReplicatedDatablock):
         bpy.ops.object.mode_set(mode='EDIT')
 
         for bone in data['bones']:
-            if bone not in target.edit_bones:
-                new_bone = target.edit_bones.new(bone)
+            if bone not in datablock.edit_bones:
+                new_bone = datablock.edit_bones.new(bone)
             else:
-                new_bone = target.edit_bones[bone]
+                new_bone = datablock.edit_bones[bone]
 
             bone_data = data['bones'].get(bone)
 
@@ -104,7 +107,7 @@ class BlArmature(ReplicatedDatablock):
             new_bone.roll =  bone_data['roll']
             
             if 'parent' in bone_data:
-                new_bone.parent = target.edit_bones[data['bones']
+                new_bone.parent = datablock.edit_bones[data['bones']
                                                     [bone]['parent']]
                 new_bone.use_connect = bone_data['use_connect']
 
@@ -119,9 +122,10 @@ class BlArmature(ReplicatedDatablock):
         if 'EDIT' in current_mode:
             bpy.ops.object.mode_set(mode='EDIT')
 
-    def dump(datablock: object) -> dict:
-        assert(instance)
+        load_animation_data(datablock.get('animation_data'), datablock)
 
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 4
         dumper.include_filter = [
@@ -135,14 +139,14 @@ class BlArmature(ReplicatedDatablock):
             'name',
             'layers',
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
-        for bone in instance.bones:
+        for bone in datablock.bones:
             if bone.parent:
                 data['bones'][bone.name]['parent'] = bone.parent.name
         # get the parent Object
         # TODO: Use id_data instead
-        object_users = utils.get_datablock_users(instance)[0]
+        object_users = utils.get_datablock_users(datablock)[0]
         data['user'] = object_users.uuid
         data['user_name'] = object_users.name
 
@@ -153,7 +157,25 @@ class BlArmature(ReplicatedDatablock):
         data['user_scene'] = [
             item.name for item in container_users if isinstance(item, bpy.types.Scene)]
 
-        for bone in instance.bones:
+        for bone in datablock.bones:
             data['bones'][bone.name]['roll'] = get_roll(bone)
 
+        data['animation_data'] = dump_animation_data(datablock)
         return data
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.armatures)
+        if datablock is None:
+            datablock = bpy.data.armatures.get(name)
+
+        return datablock
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        return resolve_animation_dependencies(datablock)
+
+_type = bpy.types.Armature
+_class = BlArmature

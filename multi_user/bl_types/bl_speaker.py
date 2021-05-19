@@ -21,7 +21,8 @@ import mathutils
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
-
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 class BlSpeaker(ReplicatedDatablock):
     bl_id = "speakers"
@@ -30,16 +31,18 @@ class BlSpeaker(ReplicatedDatablock):
     bl_icon = 'SPEAKER'
     bl_reload_parent = False
 
+    @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
+        load_animation_data(datablock.get('animation_data'), datablock)
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.speakers.new(data["name"])
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
-
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
@@ -58,17 +61,32 @@ class BlSpeaker(ReplicatedDatablock):
             'cone_volume_outer'
         ]
 
-        return dumper.dump(instance)
+        data = dumper.dump(datablock)
+        data['animation_data'] = dump_animation_data(datablock)
+        return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.speakers)
+        if datablock is None:
+            datablock = bpy.data.speakers.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         # TODO: resolve material
         deps = []
 
-        sound = self.instance.sound
+        sound = datablock.sound
 
         if sound:
             deps.append(sound)
 
+        deps.extend(resolve_animation_dependencies(datablock))
         return deps
 
-
+_type = bpy.types.Speaker
+_class = BlSpeaker

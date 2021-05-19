@@ -22,7 +22,7 @@ import logging
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
-
+from .bl_datablock import resolve_datablock_from_uuid
 
 class BlLightprobe(ReplicatedDatablock):
     bl_id = "lightprobes"
@@ -31,6 +31,7 @@ class BlLightprobe(ReplicatedDatablock):
     bl_icon = 'LIGHTPROBE_GRID'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
         # See https://developer.blender.org/D6396
@@ -39,12 +40,13 @@ class BlLightprobe(ReplicatedDatablock):
         else:
             logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
+    @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
         if bpy.app.version[1] < 83:
             logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
@@ -71,7 +73,21 @@ class BlLightprobe(ReplicatedDatablock):
             'visibility_blur'
         ]
 
-        return dumper.dump(instance)
+        return dumper.dump(datablock)
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid') 
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.lightprobes)
+        if datablock is None:
+            datablock = bpy.data.lightprobes.get(name)
 
+        return datablock
 
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        return []
+
+_type = bpy.types.LightProbe
+_class = BlLightprobe
