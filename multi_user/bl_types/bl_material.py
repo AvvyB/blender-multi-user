@@ -507,7 +507,6 @@ class BlMaterial(ReplicatedDatablock):
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:
-        # TODO: resolve node group deps
         deps = []
 
         if datablock.use_nodes:
