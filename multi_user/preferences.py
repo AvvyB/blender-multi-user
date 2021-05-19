@@ -491,6 +491,11 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Show only owned datablocks',
         default=True
     )
+    filter_name: bpy.props.StringProperty(
+        name="filter_name",
+        default="",
+        description='Node name filter',
+    )
     admin: bpy.props.BoolProperty(
         name="admin",
         description='Connect as admin',
