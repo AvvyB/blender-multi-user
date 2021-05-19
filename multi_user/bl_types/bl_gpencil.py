@@ -25,6 +25,8 @@ from .dump_anything import  (Dumper,
                                     np_dump_collection,
                                     np_load_collection)
 from replication.protocol import ReplicatedDatablock
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 # GPencil data api is structured as it follow: 
 # GP-Object --> GP-Layers --> GP-Frames --> GP-Strokes --> GP-Stroke-Points
@@ -113,6 +115,7 @@ def load_stroke(stroke_data, stroke):
     # fix fill issues
     stroke.uv_scale = stroke_data["uv_scale"]
 
+
 def dump_frame(frame):
     """ Dump a grease pencil frame to a dict
 
@@ -150,6 +153,7 @@ def load_frame(frame_data, frame):
         load_stroke(stroke_data, target_stroke)
 
     np_load_collection(frame_data['strokes'], frame.strokes, STROKE)
+
 
 def dump_layer(layer):
     """ Dump a grease pencil layer
@@ -227,7 +231,6 @@ def load_layer(layer_data, layer):
 
         load_frame(frame_data, target_frame)
 
-
 class BlGpencil(ReplicatedDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
@@ -235,40 +238,40 @@ class BlGpencil(ReplicatedDatablock):
     bl_icon = 'GREASEPENCIL'
     bl_reload_parent = False
 
+    @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.grease_pencils.new(data["name"])
 
+    @staticmethod
     def load(data: dict, datablock: object):
-        target.materials.clear()
+        datablock.materials.clear()
         if "materials" in data.keys():
             for mat in data['materials']:
-                target.materials.append(bpy.data.materials[mat])
+                datablock.materials.append(bpy.data.materials[mat])
 
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         # TODO: reuse existing layer
-        for layer in target.layers:
-            target.layers.remove(layer)
+        for layer in datablock.layers:
+            datablock.layers.remove(layer)
 
         if "layers" in data.keys():
             for layer in data["layers"]:
                 layer_data = data["layers"].get(layer)
 
-                # if layer not in target.layers.keys():
-                target_layer = target.layers.new(data["layers"][layer]["info"])
+                # if layer not in datablock.layers.keys():
+                target_layer = datablock.layers.new(data["layers"][layer]["info"])
                 # else:
                 #     target_layer = target.layers[layer]
                 #     target_layer.clear()
 
                 load_layer(layer_data, target_layer)
 
-            target.layers.update()
+            datablock.layers.update()
 
-
-
+    @staticmethod
     def dump(datablock: object) -> dict:
-        assert(instance)
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
@@ -279,28 +282,39 @@ class BlGpencil(ReplicatedDatablock):
             'pixel_factor',
             'stroke_depth_order'
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
         data['layers'] = {}
 
-        for layer in instance.layers:
+        for layer in datablock.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
-        data["active_layers"] = instance.layers.active.info if instance.layers.active else "None"
+        data["active_layers"] = datablock.layers.active.info if datablock.layers.active else "None"
         data["eval_frame"] = bpy.context.scene.frame_current
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        name = data.get('name')
+        datablock = resolve_datablock_from_uuid(uuid, bpy.data.grease_pencils)
+        if datablock is None:
+            datablock = bpy.data.grease_pencils.get(name)
+
+        return datablock
+
+    @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         deps = []
 
-        for material in self.instance.materials:
+        for material in datablock.materials:
             deps.append(material)
 
         return deps
 
     def layer_changed(self):
-        if self.instance.layers.active and \
-            self.instance.layers.active.info != self.data["active_layers"]:
+        if datablock.layers.active and \
+            datablock.layers.active.info != self.data["active_layers"]:
             return True
         else:
             return False
@@ -317,3 +331,6 @@ class BlGpencil(ReplicatedDatablock):
             return super().diff()
         else:
             return None
+
+_type = bpy.types.GreasePencil
+_class = BlGpencil
