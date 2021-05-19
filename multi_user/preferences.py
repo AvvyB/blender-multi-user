@@ -413,8 +413,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
         for impl in bpy_protocol.implementations.values():
             new_db = self.supported_datablocks.add()
 
-            new_db.name = impl.__name__
-            new_db.type_name = impl.__name__
+            new_db.name = impl.bl_class.__name__
+            new_db.type_name = impl.bl_class.__name__
             new_db.use_as_filter = True
             new_db.icon = impl.bl_icon
             new_db.bl_name = impl.bl_id

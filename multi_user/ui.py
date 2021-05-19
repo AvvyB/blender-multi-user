@@ -439,7 +439,7 @@ def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
     item = session.repository.get_node(property_uuid)
-
+    type_id = item.data.get('type_id')
     area_msg = parent.row(align=True)
 
     if item.state == ERROR:
@@ -450,11 +450,10 @@ def draw_property(context, parent, property_uuid, level=0):
     line = area_msg.box()
 
     name = item.data['name'] if item.data else item.uuid
-
+    icon = settings.supported_datablocks[type_id].icon if type_id else 'ERROR'
     detail_item_box = line.row(align=True)
 
-    detail_item_box.label(text="")
-                        #   icon=settings.supported_datablocks].icon)
+    detail_item_box.label(text="", icon=icon)
     detail_item_box.label(text=f"{name}")
 
     # Operations
