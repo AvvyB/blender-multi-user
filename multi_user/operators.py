@@ -92,6 +92,7 @@ def initialize_session():
             node_ref.instance = session.repository.rdp.resolve(node_ref.data)
             if node_ref.instance is None:
                 node_ref.instance = session.repository.rdp.construct(node_ref.data)
+                node_ref.instance.uuid = node_ref.uuid
 
     # Step 2: Load nodes
     logging.info("Loading nodes")

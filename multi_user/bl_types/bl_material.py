@@ -48,7 +48,11 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     node_tree_uuid = node_data.get('node_tree_uuid', None)
 
     if image_uuid and not target_node.image:
-        target_node.image = get_datablock_from_uuid(image_uuid, None)
+        image = resolve_datablock_from_uuid(image_uuid, bpy.data.images)
+        if image is None:
+            logging.error(f"Fail to find material image from uuid {image_uuid}")
+        else:
+            target_node.image = image
 
     if node_tree_uuid:
         target_node.node_tree = get_datablock_from_uuid(node_tree_uuid, None)

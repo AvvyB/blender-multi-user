@@ -91,5 +91,10 @@ class BlTexture(ReplicatedDatablock):
 
         return deps
 
-_type = [T.WoodTexture, T.WoodTexture, T.StucciTexture, T.NoiseTexture, T.MusgraveTexture, T.MarbleTexture, T.MagicTexture, T.ImageTexture, T.DistortedNoiseTexture, T.CloudsTexture, T.BlendTexture]
+_type = [T.WoodTexture, T.VoronoiTexture,
+         T.StucciTexture, T.NoiseTexture,
+         T.MusgraveTexture, T.MarbleTexture,
+         T.MagicTexture, T.ImageTexture,
+         T.DistortedNoiseTexture, T.CloudsTexture,
+         T.BlendTexture]
 _class = BlTexture
