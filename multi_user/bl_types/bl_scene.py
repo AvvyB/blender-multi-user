@@ -19,21 +19,22 @@
 import logging
 from pathlib import Path
 from uuid import uuid4
+
 import bpy
 import mathutils
 from deepdiff import DeepDiff, Delta
 from replication.constants import DIFF_JSON, MODIFIED
+from replication.protocol import ReplicatedDatablock
 
-from ..utils import flush_history
+from ..utils import flush_history, get_preferences
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_collection import (dump_collection_children, dump_collection_objects,
                             load_collection_childrens, load_collection_objects,
                             resolve_collection_dependencies)
-from replication.protocol import ReplicatedDatablock
-from .bl_file import get_filepath
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
-from .dump_anything import Dumper, Loader
-from ..utils import get_preferences
 from .bl_datablock import resolve_datablock_from_uuid
+from .bl_file import get_filepath
+from .dump_anything import Dumper, Loader
 
 RENDER_SETTINGS = [
     'dither_intensity',
@@ -289,11 +290,9 @@ def dump_sequence(sequence: bpy.types.Sequence) -> dict:
     dumper.depth = 1
     data = dumper.dump(sequence)
 
-
     # TODO: Support multiple images
     if sequence.type == 'IMAGE':
         data['filenames'] = [e.filename for e in sequence.elements]
-
 
     # Effect strip inputs
     input_count = getattr(sequence, 'input_count', None)
@@ -305,7 +304,8 @@ def dump_sequence(sequence: bpy.types.Sequence) -> dict:
     return data
 
 
-def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor):
+def load_sequence(sequence_data: dict,
+                  sequence_editor: bpy.types.SequenceEditor):
     """ Load sequence from dumped data
 
         :arg sequence_data: sequence to dump
@@ -324,48 +324,49 @@ def load_sequence(sequence_data: dict, sequence_editor: bpy.types.SequenceEditor
         if strip_type == 'SCENE':
             strip_scene = bpy.data.scenes.get(sequence_data.get('scene'))
             sequence = sequence_editor.sequences.new_scene(strip_name,
-                                                        strip_scene,
-                                                        strip_channel,
-                                                        strip_frame_start)
+                                                           strip_scene,
+                                                           strip_channel,
+                                                           strip_frame_start)
         elif strip_type == 'MOVIE':
             filepath = get_filepath(Path(sequence_data['filepath']).name)
             sequence = sequence_editor.sequences.new_movie(strip_name,
-                                                        filepath,
-                                                        strip_channel,
-                                                        strip_frame_start)
+                                                           filepath,
+                                                           strip_channel,
+                                                           strip_frame_start)
         elif strip_type == 'SOUND':
             filepath = bpy.data.sounds[sequence_data['sound']].filepath
             sequence = sequence_editor.sequences.new_sound(strip_name,
-                                                        filepath,
-                                                        strip_channel,
-                                                        strip_frame_start)
+                                                           filepath,
+                                                           strip_channel,
+                                                           strip_frame_start)
         elif strip_type == 'IMAGE':
             images_name = sequence_data.get('filenames')
             filepath = get_filepath(images_name[0])
             sequence = sequence_editor.sequences.new_image(strip_name,
-                                                        filepath,
-                                                        strip_channel,
-                                                        strip_frame_start)
+                                                           filepath,
+                                                           strip_channel,
+                                                           strip_frame_start)
             # load other images
-            if len(images_name)>1:
-                for img_idx in range(1,len(images_name)):
+            if len(images_name) > 1:
+                for img_idx in range(1, len(images_name)):
                     sequence.elements.append((images_name[img_idx]))
         else:
             seq = {}
 
             for i in range(sequence_data['input_count']):
-                seq[f"seq{i+1}"] = sequence_editor.sequences_all.get(sequence_data.get(f"input_{i+1}", None))
+                seq[f"seq{i+1}"] = sequence_editor.sequences_all.get(
+                    sequence_data.get(f"input_{i+1}", None))
 
             sequence = sequence_editor.sequences.new_effect(name=strip_name,
-                                                        type=strip_type,
-                                                        channel=strip_channel,
-                                                        frame_start=strip_frame_start,
-                                                        frame_end=sequence_data['frame_final_end'],
-                                                        **seq)
+                                                            type=strip_type,
+                                                            channel=strip_channel,
+                                                            frame_start=strip_frame_start,
+                                                            frame_end=sequence_data['frame_final_end'],
+                                                            **seq)
 
     loader = Loader()
-    # TODO: Support filepath updates 
-    loader.exclure_filter = ['filepath', 'sound', 'filenames','fps']
+
+    loader.exclure_filter = ['filepath', 'sound', 'filenames', 'fps']
     loader.load(sequence, sequence_data)
     sequence.select = False
 
@@ -414,15 +415,14 @@ class BlScene(ReplicatedDatablock):
             if 'render' in data.keys():
                 loader.load(datablock.render, data['render'])
 
-            if 'view_settings' in data.keys():
-                loader.load(datablock.view_settings, data['view_settings'])
+            view_settings = data.get('view_settings')
+            if view_settings:
+                loader.load(datablock.view_settings, view_settings)
                 if datablock.view_settings.use_curve_mapping and \
-                        'curve_mapping' in data['view_settings']:
+                        'curve_mapping' in view_settings:
                     # TODO: change this ugly fix
-                    datablock.view_settings.curve_mapping.white_level = data[
-                        'view_settings']['curve_mapping']['white_level']
-                    datablock.view_settings.curve_mapping.black_level = data[
-                        'view_settings']['curve_mapping']['black_level']
+                    datablock.view_settings.curve_mapping.white_level = view_settings['curve_mapping']['white_level']
+                    datablock.view_settings.curve_mapping.black_level = view_settings['curve_mapping']['black_level']
                     datablock.view_settings.curve_mapping.update()
 
         # Sequencer
@@ -438,7 +438,7 @@ class BlScene(ReplicatedDatablock):
                 if seq.name not in sequences:
                     vse.sequences.remove(seq)
             # Load existing sequences
-            for seq_name, seq_data in sequences.items():
+            for seq_data in sequences.value():
                 load_sequence(seq_data, vse)
         # If the sequence is no longer used, clear it
         elif datablock.sequence_editor and not sequences:
@@ -516,7 +516,6 @@ class BlScene(ReplicatedDatablock):
                 dumped_sequences[seq.name] = dump_sequence(seq)
             data['sequences'] = dumped_sequences
 
-
         return data
 
     @staticmethod
@@ -563,7 +562,7 @@ class BlScene(ReplicatedDatablock):
         return datablock
 
     @staticmethod
-    def compute_delta(last_data:dict, current_data: dict)-> Delta:
+    def compute_delta(last_data: dict, current_data: dict) -> Delta:
         exclude_path = []
 
         if not get_preferences().sync_flags.sync_render_settings:
@@ -576,15 +575,20 @@ class BlScene(ReplicatedDatablock):
             exclude_path.append("root['camera']")
 
         diff_params = {
-            'exclude_paths':exclude_path,
-            'ignore_order':True, 
-            'report_repetition':True
+            'exclude_paths': exclude_path,
+            'ignore_order': True,
+            'report_repetition': True
         }
         delta_params = {
-            'mutate':True
+            'mutate': True
         }
 
-        return Delta(DeepDiff(last_data, current_data, cache_size=5000,**diff_params), **delta_params)
+        return Delta(
+            DeepDiff(last_data,
+                     current_data,
+                     cache_size=5000,
+                     **diff_params),
+            **delta_params)
 
 
 _type = bpy.types.Scene
