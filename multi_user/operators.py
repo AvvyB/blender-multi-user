@@ -592,7 +592,8 @@ class SessionApply(bpy.types.Operator):
                             self.target,
                             force=True,
                             force_dependencies=self.reset_dependencies)
-            if node_ref.bl_reload_parent:
+            impl = session.repository.rdp.get_implementation(node_ref.instance)
+            if impl.bl_reload_parent:
                 for parent in session.repository.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
 
@@ -913,8 +914,9 @@ def sanitize_deps_graph(remove_nodes: bool = False):
         rm_cpt = 0
         for node_key in session.list():
             node = session.repository.get_node(node_key)
+            node.instance = session.repository.rdp.resolve(node.data)
             if node is None \
-                    or (node.state == UP and not node.resolve(construct=False)):
+                    or (node.state == UP and not node.instance):
                 if remove_nodes:
                     try:
                         session.remove(node.uuid, remove_dependencies=False)
