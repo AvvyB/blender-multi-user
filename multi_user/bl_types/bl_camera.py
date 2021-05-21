@@ -45,7 +45,7 @@ class BlCamera(ReplicatedDatablock):
 
         dof_settings = data.get('dof')
 
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
 
         # DOF settings
         if dof_settings:

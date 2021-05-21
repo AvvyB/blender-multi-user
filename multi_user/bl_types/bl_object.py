@@ -474,7 +474,7 @@ class BlObject(ReplicatedDatablock):
     @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
 

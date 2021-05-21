@@ -53,7 +53,7 @@ class BlParticle(ReplicatedDatablock):
 
     @staticmethod
     def load(data: dict, datablock: object):
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
         dump_anything.load(datablock, data)
 
         dump_anything.load(datablock.effector_weights, data["effector_weights"])

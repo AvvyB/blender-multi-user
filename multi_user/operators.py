@@ -554,7 +554,7 @@ class SessionSnapTimeOperator(bpy.types.Operator):
 
     def modal(self, context, event):
         is_running = context.window_manager.session.user_snap_running
-        if event.type in {'RIGHTMOUSE', 'ESC'} or not is_running:
+        if not is_running:
             self.cancel(context)
             return {'CANCELLED'}
 

@@ -70,7 +70,7 @@ class BlMesh(ReplicatedDatablock):
         if not datablock or datablock.is_editmode:
             raise ContextError
         else:
-            load_animation_data(datablock.get('animation_data'), datablock)
+            load_animation_data(data.get('animation_data'), datablock)
 
             loader = Loader()
             loader.load(datablock, data)

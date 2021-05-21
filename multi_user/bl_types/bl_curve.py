@@ -149,7 +149,7 @@ class BlCurve(ReplicatedDatablock):
 
     @staticmethod
     def load(data: dict, datablock: object):
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
 
         loader = Loader()
         loader.load(datablock, data)

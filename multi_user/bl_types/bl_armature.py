@@ -122,7 +122,7 @@ class BlArmature(ReplicatedDatablock):
         if 'EDIT' in current_mode:
             bpy.ops.object.mode_set(mode='EDIT')
 
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
 
     @staticmethod
     def dump(datablock: object) -> dict:

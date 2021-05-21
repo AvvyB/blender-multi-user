@@ -41,7 +41,7 @@ class BlLattice(ReplicatedDatablock):
 
     @staticmethod
     def load(data: dict, datablock: object):
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
         if datablock.is_editmode:
             raise ContextError("lattice is in edit mode")
 

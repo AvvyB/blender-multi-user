@@ -42,7 +42,7 @@ class BlLight(ReplicatedDatablock):
     def load(data: dict, datablock: object):
         loader = Loader()
         loader.load(datablock, data)
-        load_animation_data(datablock.get('animation_data'), datablock)
+        load_animation_data(data.get('animation_data'), datablock)
 
     @staticmethod
     def dump(datablock: object) -> dict:
