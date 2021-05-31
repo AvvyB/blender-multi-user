@@ -782,7 +782,7 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
             recorder.register()
             deleyables.append(recorder)
         else:
-            session.save(self.filepath)
+            session.repository.dumps(self.filepath)
 
         return {'FINISHED'}
 
@@ -824,48 +824,24 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from replication.repository import Repository
 
-        # TODO: add filechecks
+        # init the factory with supported types
+        bpy_protocol = bl_types.get_data_translation_protocol()
+        repo = Repository(bpy_protocol)
+        repo.loads(self.filepath)
+        utils.clean_scene()
 
-        try:
-            f = gzip.open(self.filepath, "rb")
-            db = pickle.load(f)
-        except OSError as e:
-            f = open(self.filepath, "rb")
-            db = pickle.load(f)
-        
-        if db:
-            logging.info(f"Reading {self.filepath}")
-            nodes = db.get("nodes")
+        nodes = [repo.get_node(n) for n in repo.list_ordered()]
 
-            logging.info(f"{len(nodes)} Nodes to load")
+        # Step 1: Construct nodes
+        for node in nodes:
+            node.instance = bpy_protocol.resolve(node.data)
+            if node.instance is None:
+                node.instance = bpy_protocol.construct(node.data)
+                node.instance.uuid = node.uuid
 
-            
-
-            # init the factory with supported types
-            bpy_protocol = bl_types.get_data_translation_protocol()
-            
-            graph = Repository()
-
-            for node, node_data in nodes:
-                    logging.info(f"Loading  {node}")
-                    instance = Node(owner=node_data['owner'],
-                                    uuid=node,
-                                    dependencies=node_data['dependencies'],
-                                    data=node_data['data'])
-                    graph.do_commit(instance)
-                    instance.state = FETCHED
-            
-            logging.info("Graph succefully loaded")
-
-            utils.clean_scene()
-
-            # Step 1: Construct nodes
-            for node in graph.list_ordered():
-                graph[node].resolve()
-
-            # Step 2: Load nodes
-            for node in graph.list_ordered():
-                graph[node].apply()
+        # Step 2: Load nodes
+        for node in nodes:
+            porcelain.apply(repo, node.uuid)
 
 
         return {'FINISHED'}
