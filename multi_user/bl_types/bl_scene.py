@@ -576,11 +576,11 @@ class BlScene(ReplicatedDatablock):
 
         diff_params = {
             'exclude_paths': exclude_path,
-            'ignore_order': True,
-            'report_repetition': True
+            # 'ignore_order': True,
+            # 'report_repetition': True
         }
         delta_params = {
-            'mutate': True
+            # 'mutate': True
         }
 
         return Delta(
