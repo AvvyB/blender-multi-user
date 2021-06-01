@@ -76,12 +76,7 @@ class BlVolume(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.volumes)
-        if datablock is None:
-            datablock = bpy.data.volumes.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.volumes)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

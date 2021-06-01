@@ -81,12 +81,7 @@ class BlLight(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.lights)
-        if datablock is None:
-            datablock = bpy.data.lights.get(name)
-
-        return datablock
+        return  resolve_datablock_from_uuid(uuid, bpy.data.lights)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

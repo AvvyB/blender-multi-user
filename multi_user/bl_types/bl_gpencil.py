@@ -307,12 +307,7 @@ class BlGpencil(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.grease_pencils)
-        if datablock is None:
-            datablock = bpy.data.grease_pencils.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.grease_pencils)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

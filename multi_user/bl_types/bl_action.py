@@ -317,10 +317,7 @@ class BlAction(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.actions)
-        if datablock is None:
-            bpy.data.actions.get(name)
+        return resolve_datablock_from_uuid(uuid, bpy.data.actions)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

@@ -71,12 +71,7 @@ class BlSound(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.sounds)
-        if datablock is None:
-            datablock = bpy.data.sounds.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.sounds)
 
     @staticmethod
     def needs_update(datablock: object, data:dict)-> bool:

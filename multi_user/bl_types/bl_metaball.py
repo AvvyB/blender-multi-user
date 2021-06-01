@@ -113,12 +113,7 @@ class BlMetaball(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.metaballs)
-        if datablock is None:
-            datablock = bpy.data.metaballs.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.metaballs)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

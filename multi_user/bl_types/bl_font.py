@@ -65,12 +65,7 @@ class BlFont(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.fonts)
-        if datablock is None:
-            datablock = bpy.data.fonts.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.fonts)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

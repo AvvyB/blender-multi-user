@@ -78,12 +78,7 @@ class BlLightprobe(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid') 
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.lightprobes)
-        if datablock is None:
-            datablock = bpy.data.lightprobes.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.lightprobes)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

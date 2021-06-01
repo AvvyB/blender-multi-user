@@ -49,12 +49,7 @@ class BlNodeGroup(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.node_groups)
-        if datablock is None:
-            datablock = bpy.data.node_groups.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.node_groups)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

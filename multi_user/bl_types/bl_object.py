@@ -772,12 +772,7 @@ class BlObject(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.objects)
-        if datablock is None:
-            datablock = bpy.data.objects.get(name)
-
-        return datablock
+        return  resolve_datablock_from_uuid(uuid, bpy.data.objects)
 
 _type = bpy.types.Object
 _class = BlObject

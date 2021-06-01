@@ -133,12 +133,7 @@ class BlCollection(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.collections)
-        if datablock is None:
-            datablock = bpy.data.collections.get(name)
-
-        return datablock
+        return  resolve_datablock_from_uuid(uuid, bpy.data.collections)
 
 
     @staticmethod

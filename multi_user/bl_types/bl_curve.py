@@ -232,12 +232,7 @@ class BlCurve(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.curves)
-        if datablock is None:
-            datablock = bpy.data.curves.get(name)
-
-        return datablock
+        return resolve_datablock_from_uuid(uuid, bpy.data.curves)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:

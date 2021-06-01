@@ -501,13 +501,7 @@ class BlMaterial(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        name = data.get('name')
-        datablock = resolve_datablock_from_uuid(uuid, bpy.data.materials)
-        if datablock is None:
-            datablock = bpy.data.materials.get(name)
-
-        return datablock
-
+        return resolve_datablock_from_uuid(uuid, bpy.data.materials)
 
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:
