@@ -401,7 +401,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            session.remove(self.property_path)
+            porcelain.rm(session.repository, self.property_path)
 
             return {"FINISHED"}
         except:  # NonAuthorizedOperationError:
@@ -907,7 +907,9 @@ def sanitize_deps_graph(remove_nodes: bool = False):
                     or (node.state == UP and not node.instance):
                 if remove_nodes:
                     try:
-                        session.remove(node.uuid, remove_dependencies=False)
+                        porcelain.rm(session.repository,
+                                     node.uuid,
+                                     remove_dependencies=False)
                         logging.info(f"Removing {node.uuid}")
                         rm_cpt += 1
                     except NonAuthorizedOperationError:
@@ -968,8 +970,6 @@ def depsgraph_evaluation(scene):
                             porcelain.push(session.repository, 'origin', node.uuid)
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
-                            # if not node.is_valid():
-                            #     session.remove(node.uuid)
                         except ContextError as e:
                             logging.debug(e) 
                         except Exception as e:
