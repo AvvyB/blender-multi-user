@@ -230,7 +230,7 @@ class DynamicRightSelectTimer(Timer):
                         'selected_objects': current_selection
                     }
 
-                    session.update_user_metadata(user_metadata)
+                    porcelain.update_user_metadata(session.repository, user_metadata)
                     logging.debug("Update selection")
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
@@ -305,18 +305,18 @@ class ClientUpdate(Timer):
                         'frame_current': bpy.context.scene.frame_current,
                         'scene_current': scene_current
                     }
-                    session.update_user_metadata(metadata)
+                    porcelain.update_user_metadata(session.repository, metadata)
 
                 # Update client representation
                 # Update client current scene
                 elif scene_current != local_user_metadata['scene_current']:
                     local_user_metadata['scene_current'] = scene_current
-                    session.update_user_metadata(local_user_metadata)
+                    porcelain.update_user_metadata(session.repository, local_user_metadata)
                 elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
                     local_user_metadata['view_matrix'] = get_view_matrix(
                     )
-                    session.update_user_metadata(local_user_metadata)
+                    porcelain.update_user_metadata(session.repository, local_user_metadata)
 
 
 class SessionStatusUpdate(Timer):

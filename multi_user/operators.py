@@ -937,7 +937,7 @@ def load_pre_handler(dummy):
 @persistent
 def update_client_frame(scene):
     if session and session.state == STATE_ACTIVE:
-        session.update_user_metadata({
+        porcelain.update_user_metadata(session.repository, {
             'frame_current': scene.frame_current
         })
 
