@@ -161,11 +161,10 @@ class DynamicRightSelectTimer(Timer):
                             self._annotating = True
                             logging.debug(
                                 "Getting the right on the annotation GP")
-                            session.change_owner(
-                                registered_gp.uuid,
-                                settings.username,
-                                ignore_warnings=True,
-                                affect_dependencies=False)
+                            porcelain.lock(session.repository,
+                                            registered_gp.uuid,
+                                            ignore_warnings=True,
+                                            affect_dependencies=False)
                         
                         if registered_gp.owner == settings.username:
                             gp_node = session.repository.get_node(annotation_gp.uuid)
@@ -173,11 +172,10 @@ class DynamicRightSelectTimer(Timer):
                             porcelain.push(session.repository, 'origin', gp_node.uuid)
 
                     elif self._annotating:
-                        session.change_owner(
-                            registered_gp.uuid,
-                            RP_COMMON,
-                            ignore_warnings=True,
-                            affect_dependencies=False)
+                        porcelain.unlock(session.repository,
+                                        registered_gp.uuid,
+                                        ignore_warnings=True,
+                                        affect_dependencies=False)
 
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
@@ -198,11 +196,10 @@ class DynamicRightSelectTimer(Timer):
                             if node.data and 'instance_type' in node.data.keys():
                                 recursive = node.data['instance_type'] != 'COLLECTION'
                             try:
-                                session.change_owner(
-                                    node.uuid,
-                                    RP_COMMON,
-                                    ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                porcelain.unlock(session.repository,
+                                                node.uuid,
+                                                ignore_warnings=True,
+                                                affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {node} owner")
@@ -217,11 +214,10 @@ class DynamicRightSelectTimer(Timer):
                                 recursive = node.data['instance_type'] != 'COLLECTION'
 
                             try:
-                                session.change_owner(
-                                    node.uuid,
-                                    settings.username,
-                                    ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                porcelain.lock(session.repository,
+                                               node.uuid,
+                                               ignore_warnings=True,
+                                               affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {node} owner")
@@ -244,11 +240,10 @@ class DynamicRightSelectTimer(Timer):
                         for key in owned_keys:
                             node = session.repository.get_node(key)
                             try:
-                                session.change_owner(
-                                    key,
-                                    RP_COMMON,
-                                    ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                porcelain.unlock(session.repository,
+                                                key,
+                                                ignore_warnings=True,
+                                                affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {key} owner")

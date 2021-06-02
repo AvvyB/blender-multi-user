@@ -221,7 +221,12 @@ class SessionStartOperator(bpy.types.Operator):
                 for scene in bpy.data.scenes:
                     porcelain.add(repo, scene)
 
-                porcelain.remote_add(repo, 'origin','127.0.0.1', settings.port)
+                porcelain.remote_add(
+                    repo,
+                    'origin',
+                    '127.0.0.1',
+                    settings.port,
+                    admin_password=admin_pass)
                 session.host(
                     repository= repo,
                     remote='origin',
@@ -243,7 +248,12 @@ class SessionStartOperator(bpy.types.Operator):
                 admin_pass = None
 
             try:
-                porcelain.remote_add(repo, 'origin', settings.ip, settings.port)
+                porcelain.remote_add(
+                    repo,
+                    'origin',
+                    settings.ip,
+                    settings.port,
+                    admin_password=admin_pass)
                 session.connect(
                     repository= repo,
                     timeout=settings.connection_timeout,
@@ -257,10 +267,7 @@ class SessionStartOperator(bpy.types.Operator):
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
         deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
-        # deleyables.append(timers.PushTimer(
-        #     queue=stagging,
-        #     timeout=settings.depsgraph_update_rate
-        #     ))
+
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
@@ -365,7 +372,7 @@ class SessionKickOperator(bpy.types.Operator):
         assert(session)
 
         try:
-            session.kick(self.user)
+            porcelain.kick(session.repository, self.user)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
