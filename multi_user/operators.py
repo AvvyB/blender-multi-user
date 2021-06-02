@@ -436,10 +436,15 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
 
         if session:
-            session.change_owner(self.key,
-                                 runtime_settings.clients,
-                                 ignore_warnings=True,
-                                 affect_dependencies=self.recursive)
+            if runtime_settings.clients == RP_COMMON:
+                session.unlock(self.key,
+                               ignore_warnings=True,
+                               affect_dependencies=self.recursive)
+            else:
+                session.lock(self.key,
+                             runtime_settings.clients,
+                             ignore_warnings=True,
+                             affect_dependencies=self.recursive)
 
         return {"FINISHED"}
 

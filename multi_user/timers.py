@@ -256,7 +256,7 @@ class DynamicRightSelectTimer(Timer):
             for obj in bpy.data.objects:
                 object_uuid = getattr(obj, 'uuid', None)
                 if object_uuid:
-                    is_selectable = not session.is_readonly(object_uuid)
+                    is_selectable = not session.repository.is_node_readonly(object_uuid)
                     if obj.hide_select != is_selectable:
                         obj.hide_select = is_selectable
 
