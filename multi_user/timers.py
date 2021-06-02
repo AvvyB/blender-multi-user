@@ -100,7 +100,7 @@ class SessionBackupTimer(Timer):
 
 
     def execute(self):
-        session.save(self._filepath)
+        session.repository.dumps(self._filepath)
 
 class SessionListenTimer(Timer):
     def execute(self):
