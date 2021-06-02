@@ -444,11 +444,13 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
         if session:
             if runtime_settings.clients == RP_COMMON:
-                session.unlock(self.key,
-                               ignore_warnings=True,
-                               affect_dependencies=self.recursive)
+                porcelain.unlock(session.repository,
+                                 self.key,
+                                 ignore_warnings=True,
+                                 affect_dependencies=self.recursive)
             else:
-                session.lock(self.key,
+                porcelain.lock(session.repository,
+                             self.key,
                              runtime_settings.clients,
                              ignore_warnings=True,
                              affect_dependencies=self.recursive)
