@@ -580,7 +580,7 @@ class BlScene(ReplicatedDatablock):
             # 'report_repetition': True
         }
         delta_params = {
-            # 'mutate': True
+            'mutate': True
         }
 
         return Delta(
