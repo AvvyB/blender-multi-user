@@ -19,6 +19,8 @@
 import bpy
 import mathutils
 
+from deepdiff import DeepDiff, Delta
+
 from .. import utils
 from replication.protocol import ReplicatedDatablock
 from .dump_anything import Loader, Dumper
@@ -139,6 +141,23 @@ class BlCollection(ReplicatedDatablock):
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         return resolve_collection_dependencies(datablock)
+
+    @staticmethod
+    def compute_delta(last_data: dict, current_data: dict) -> Delta:
+        diff_params = {
+            'ignore_order': True,
+            'report_repetition': True
+        }
+        delta_params = {
+            # 'mutate': True
+        }
+
+        return Delta(
+            DeepDiff(last_data,
+                     current_data,
+                     cache_size=5000,
+                     **diff_params),
+            **delta_params)
 
 _type = bpy.types.Collection
 _class = BlCollection

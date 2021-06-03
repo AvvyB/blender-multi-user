@@ -952,7 +952,11 @@ def depsgraph_evaluation(scene):
 
         update_external_dependencies()
 
+        is_internal = [u for u in dependency_updates if u.is_updated_geometry or u.is_updated_shading or u.is_updated_transform]
+
         # NOTE: maybe we don't need to check each update but only the first
+        if not is_internal:
+            return
         for update in reversed(dependency_updates):
             # Is the object tracked ?
             if update.id.uuid:
