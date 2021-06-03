@@ -78,26 +78,27 @@ def session_callback(name):
 def initialize_session():
     """Session connection init hander 
     """
-    logging.info("Intializing the scene")
     settings = utils.get_preferences()
     runtime_settings = bpy.context.window_manager.session
 
-    # Step 1: Constrect nodes
-    logging.info("Constructing nodes")
-    for node in session.repository.list_ordered():
-        node_ref = session.repository.get_node(node)
-        if node_ref is None:
-            logging.error(f"Can't construct node {node}")
-        elif node_ref.state == FETCHED:
-            node_ref.instance = session.repository.rdp.resolve(node_ref.data)
-            if node_ref.instance is None:
-                node_ref.instance = session.repository.rdp.construct(node_ref.data)
-                node_ref.instance.uuid = node_ref.uuid
+    if not runtime_settings.is_host:
+        logging.info("Intializing the scene")
+        # Step 1: Constrect nodes
+        logging.info("Instantiating nodes")
+        for node in session.repository.list_ordered():
+            node_ref = session.repository.get_node(node)
+            if node_ref is None:
+                logging.error(f"Can't construct node {node}")
+            elif node_ref.state == FETCHED:
+                node_ref.instance = session.repository.rdp.resolve(node_ref.data)
+                if node_ref.instance is None:
+                    node_ref.instance = session.repository.rdp.construct(node_ref.data)
+                    node_ref.instance.uuid = node_ref.uuid
 
-    # Step 2: Load nodes
-    logging.info("Loading nodes")
-    for node in session.repository.list_ordered():
-        porcelain.apply(session.repository, node)
+        # Step 2: Load nodes
+        logging.info("Applying nodes")
+        for node in session.repository.list_ordered():
+            porcelain.apply(session.repository, node)
 
     logging.info("Registering timers")
     # Step 4: Register blender timers
@@ -283,11 +284,7 @@ class SessionStartOperator(bpy.types.Operator):
         deleyables.append(session_update)
         deleyables.append(session_user_sync)
         deleyables.append(session_listen)
-        
 
-        self.report(
-            {'INFO'},
-            f"connecting to tcp://{settings.ip}:{settings.port}")
         return {"FINISHED"}
 
 
@@ -326,6 +323,7 @@ class SessionInitOperator(bpy.types.Operator):
             porcelain.add(session.repository, scene)
 
         session.init()
+        context.window_manager.session.is_host = True
 
         return {"FINISHED"}
 
