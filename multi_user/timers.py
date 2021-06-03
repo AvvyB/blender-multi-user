@@ -235,15 +235,14 @@ class DynamicRightSelectTimer(Timer):
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
                     if len(current_selection) == 0 :
-                        owned_keys = session.list(
-                            filter_owner=settings.username)
+                        owned_keys = session.list(filter_owner=settings.username)
                         for key in owned_keys:
                             node = session.repository.get_node(key)
                             try:
                                 porcelain.unlock(session.repository,
                                                 key,
                                                 ignore_warnings=True,
-                                                affect_dependencies=recursive)
+                                                affect_dependencies=True)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {key} owner")
