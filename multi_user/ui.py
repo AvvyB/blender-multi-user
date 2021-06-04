@@ -438,7 +438,7 @@ class SESSION_PT_presence(bpy.types.Panel):
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
-    item = session.repository.get_node(property_uuid)
+    item = session.repository.nodes.get(property_uuid)
     type_id = item.data.get('type_id')
     area_msg = parent.row(align=True)
 
@@ -554,7 +554,7 @@ class SESSION_PT_repository(bpy.types.Panel):
 
             if runtime_settings.filter_name:
                 for node_id in filtered_node:
-                    node_instance = session.repository.get_node(node_id)
+                    node_instance = session.repository.nodes.get(node_id)
                     name = node_instance.data.get('name')
                     if runtime_settings.filter_name not in name:
                         filtered_node.remove(node_id)

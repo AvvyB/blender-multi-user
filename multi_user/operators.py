@@ -86,7 +86,7 @@ def initialize_session():
         # Step 1: Constrect nodes
         logging.info("Instantiating nodes")
         for node in session.repository.list_ordered():
-            node_ref = session.repository.get_node(node)
+            node_ref = session.repository.nodes.get(node)
             if node_ref is None:
                 logging.error(f"Can't construct node {node}")
             elif node_ref.state == FETCHED:
@@ -598,7 +598,7 @@ class SessionApply(bpy.types.Operator):
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
         try:
-            node_ref = session.repository.get_node(self.target)
+            node_ref = session.repository.nodes.get(self.target)
             porcelain.apply(session.repository,
                             self.target,
                             force=True,
@@ -801,7 +801,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         repo.loads(self.filepath)
         utils.clean_scene()
 
-        nodes = [repo.get_node(n) for n in repo.list_ordered()]
+        nodes = [repo.nodes.get(n) for n in repo.list_ordered()]
 
         # Step 1: Construct nodes
         for node in nodes:
@@ -849,7 +849,7 @@ classes = (
 def update_external_dependencies():
     nodes_ids = [n.uuid for n in session.repository.nodes.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
     for node_id in nodes_ids:
-        node = session.repository.get_node(node_id)
+        node = session.repository.nodes.get(node_id)
         if node and node.owner in [session.id, RP_COMMON]:
             porcelain.commit(session.repository, node_id)
             porcelain.push(session.repository,'origin', node_id)
@@ -922,7 +922,7 @@ def depsgraph_evaluation(scene):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
-                node = session.repository.get_node(update.id.uuid)
+                node = session.repository.nodes.get(update.id.uuid)
                 check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
