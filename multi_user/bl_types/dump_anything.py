@@ -507,14 +507,12 @@ class Loader:
         _constructors = {
             T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
             T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
-            T.Modifier: (CONSTRUCTOR_NEW, ["name", "type"]),
             T.GpencilModifier: (CONSTRUCTOR_NEW, ["name", "type"]),
             T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
         }
 
         destructors = {
             T.ColorRampElement: DESTRUCTOR_REMOVE,
-            T.Modifier: DESTRUCTOR_CLEAR,
             T.GpencilModifier: DESTRUCTOR_CLEAR,
             T.Constraint: DESTRUCTOR_REMOVE,
         }

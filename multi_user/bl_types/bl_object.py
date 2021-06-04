@@ -378,12 +378,12 @@ def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
         :type modifiers: bpy.types.bpy_prop_collection
         :return: dict
     """
-    dumped_modifiers = {}
+    dumped_modifiers = []
     dumper = Dumper()
     dumper.depth = 1
     dumper.exclude_filter = ['is_active']
 
-    for index, modifier in enumerate(modifiers):
+    for modifier in modifiers:
         dumped_modifier = dumper.dump(modifier)
         # hack to dump geometry nodes inputs
         if modifier.type == 'NODES':
@@ -405,8 +405,48 @@ def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
         elif modifier.type == 'UV_PROJECT':
             dumped_modifier['projectors'] =[p.object.name for p in modifier.projectors if p and p.object]
 
-        dumped_modifiers[modifier.name] = dumped_modifier
+        dumped_modifiers.append(dumped_modifier)
     return dumped_modifiers
+
+
+def load_modifiers(dumped_modifiers: list, modifiers: bpy.types.bpy_prop_collection):
+    """ Dump all modifiers of a modifier collection into a dict
+
+        :param dumped_modifiers: list of modifiers to load
+        :type dumped_modifiers: list
+        :param modifiers: modifiers
+        :type modifiers: bpy.types.bpy_prop_collection
+    """
+    loader = Loader()
+    modifiers.clear()
+    for dumped_modifier in dumped_modifiers:
+        name = dumped_modifier.get('name')
+        mtype = dumped_modifier.get('type')
+        loaded_modifier = modifiers.new(name, mtype)
+        loader.load(loaded_modifier, dumped_modifier)
+
+        if loaded_modifier.type == 'NODES':
+            load_modifier_geometry_node_inputs(dumped_modifier, loaded_modifier)
+        elif loaded_modifier.type == 'PARTICLE_SYSTEM':
+            default =  loaded_modifier.particle_system.settings
+            dumped_particles = dumped_modifier['particle_system']
+            loader.load(loaded_modifier.particle_system, dumped_particles)
+
+            settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
+            if settings:
+                loaded_modifier.particle_system.settings = settings
+                # Hack to remove the default generated particle settings
+                if not default.uuid:
+                    bpy.data.particles.remove(default)
+        elif loaded_modifier.type in ['SOFT_BODY', 'CLOTH']:
+            loader.load(loaded_modifier.settings, dumped_modifier['settings'])
+        elif loaded_modifier.type == 'UV_PROJECT':
+            for projector_index, projector_object in enumerate(dumped_modifier['projectors']):
+                target_object = bpy.data.objects.get(projector_object)
+                if target_object:
+                    loaded_modifier.projectors[projector_index].object = target_object
+                else:
+                    logging.error("Could't load projector target object {projector_object}")
 
 
 def load_modifiers_custom_data(dumped_modifiers: dict, modifiers: bpy.types.bpy_prop_collection):
@@ -421,28 +461,7 @@ def load_modifiers_custom_data(dumped_modifiers: dict, modifiers: bpy.types.bpy_
 
     for modifier in modifiers:
         dumped_modifier = dumped_modifiers.get(modifier.name)
-        if modifier.type == 'NODES':
-            load_modifier_geometry_node_inputs(dumped_modifier, modifier)
-        elif modifier.type == 'PARTICLE_SYSTEM':
-            default =  modifier.particle_system.settings
-            dumped_particles = dumped_modifier['particle_system']
-            loader.load(modifier.particle_system, dumped_particles)
-
-            settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
-            if settings:
-                modifier.particle_system.settings = settings
-                # Hack to remove the default generated particle settings
-                if not default.uuid:
-                    bpy.data.particles.remove(default)
-        elif modifier.type in ['SOFT_BODY', 'CLOTH']:
-            loader.load(modifier.settings, dumped_modifier['settings'])
-        elif modifier.type == 'UV_PROJECT':
-            for projector_index, projector_object in enumerate(dumped_modifier['projectors']):
-                target_object = bpy.data.objects.get(projector_object)
-                if target_object:
-                    modifier.projectors[projector_index].object = target_object
-                else:
-                    logging.error("Could't load projector target object {projector_object}")
+        
             
 class BlObject(ReplicatedDatablock):
     bl_id = "objects"
@@ -559,7 +578,7 @@ class BlObject(ReplicatedDatablock):
             loader.load(datablock.cycles_visibility, data['cycles_visibility'])
 
         if hasattr(datablock, 'modifiers'):
-            load_modifiers_custom_data(data['modifiers'], datablock.modifiers)
+            load_modifiers(data['modifiers'], datablock.modifiers)
 
         # PHYSICS
         load_physics(data, datablock)
