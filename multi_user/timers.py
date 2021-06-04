@@ -109,8 +109,8 @@ class SessionListenTimer(Timer):
 class ApplyTimer(Timer):
     def execute(self):
         if session and session.state == STATE_ACTIVE:
-            for node in session.repository.nodes.keys():
-                node_ref = session.repository.nodes.get(node)
+            for node in session.repository.graph.keys():
+                node_ref = session.repository.graph.get(node)
 
                 if node_ref.state == FETCHED:
                     try:
@@ -121,7 +121,7 @@ class ApplyTimer(Timer):
                     else:
                         impl = session.repository.rdp.get_implementation(node_ref.instance)
                         if impl.bl_reload_parent:
-                            for parent in session.repository.get_parents(node):
+                            for parent in session.repository.graph.get_parents(node):
                                 logging.debug("Refresh parent {node}")
                                 porcelain.apply(session.repository,
                                       parent.uuid,
@@ -152,7 +152,7 @@ class DynamicRightSelectTimer(Timer):
 
                 # if an annotation exist and is tracked
                 if annotation_gp and annotation_gp.uuid:
-                    registered_gp = session.repository.nodes.get(annotation_gp.uuid)
+                    registered_gp = session.repository.graph.get(annotation_gp.uuid)
                     if is_annotating(bpy.context):
                         # try to get the right on it
                         if registered_gp.owner == RP_COMMON:
@@ -165,7 +165,7 @@ class DynamicRightSelectTimer(Timer):
                                             affect_dependencies=False)
                         
                         if registered_gp.owner == settings.username:
-                            gp_node = session.repository.nodes.get(annotation_gp.uuid)
+                            gp_node = session.repository.graph.get(annotation_gp.uuid)
                             porcelain.commit(session.repository, gp_node.uuid)
                             porcelain.push(session.repository, 'origin', gp_node.uuid)
 
@@ -187,7 +187,7 @@ class DynamicRightSelectTimer(Timer):
 
                     # change old selection right to common
                     for obj in obj_common:
-                        node = session.repository.nodes.get(obj)
+                        node = session.repository.graph.get(obj)
 
                         if node and (node.owner == settings.username or node.owner == RP_COMMON):
                             recursive = True
@@ -204,7 +204,7 @@ class DynamicRightSelectTimer(Timer):
 
                     # change new selection to our
                     for obj in obj_ours:
-                        node = session.repository.nodes.get(obj)
+                        node = session.repository.graph.get(obj)
 
                         if node and node.owner == RP_COMMON:
                             recursive = True
@@ -233,9 +233,9 @@ class DynamicRightSelectTimer(Timer):
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
                     if len(current_selection) == 0 :
-                        owned_keys = [k for k, v in session.repository.nodes.items() if v.owner==settings.username]
+                        owned_keys = [k for k, v in session.repository.graph.items() if v.owner==settings.username]
                         for key in owned_keys:
-                            node = session.repository.nodes.get(key)
+                            node = session.repository.graph.get(key)
                             try:
                                 porcelain.unlock(session.repository,
                                                 key,

@@ -85,8 +85,8 @@ def initialize_session():
         logging.info("Intializing the scene")
         # Step 1: Constrect nodes
         logging.info("Instantiating nodes")
-        for node in session.repository.list_ordered():
-            node_ref = session.repository.nodes.get(node)
+        for node in session.repository.index_sorted:
+            node_ref = session.repository.graph.get(node)
             if node_ref is None:
                 logging.error(f"Can't construct node {node}")
             elif node_ref.state == FETCHED:
@@ -97,7 +97,7 @@ def initialize_session():
 
         # Step 2: Load nodes
         logging.info("Applying nodes")
-        for node in session.repository.list_ordered():
+        for node in session.repository.index_sorted:
             porcelain.apply(session.repository, node)
 
     logging.info("Registering timers")
@@ -598,14 +598,14 @@ class SessionApply(bpy.types.Operator):
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
         try:
-            node_ref = session.repository.nodes.get(self.target)
+            node_ref = session.repository.graph.get(self.target)
             porcelain.apply(session.repository,
                             self.target,
                             force=True,
                             force_dependencies=self.reset_dependencies)
             impl = session.repository.rdp.get_implementation(node_ref.instance)
             if impl.bl_reload_parent:
-                for parent in session.repository.get_parents(self.target):
+                for parent in session.repository.graph.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
 
                     porcelain.apply(session.repository,
@@ -801,7 +801,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         repo.loads(self.filepath)
         utils.clean_scene()
 
-        nodes = [repo.nodes.get(n) for n in repo.list_ordered()]
+        nodes = [repo.graph.get(n) for n in repo.index_sorted]
 
         # Step 1: Construct nodes
         for node in nodes:
@@ -847,9 +847,9 @@ classes = (
 
 
 def update_external_dependencies():
-    nodes_ids = [n.uuid for n in session.repository.nodes.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
+    nodes_ids = [n.uuid for n in session.repository.graph.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
     for node_id in nodes_ids:
-        node = session.repository.nodes.get(node_id)
+        node = session.repository.graph.get(node_id)
         if node and node.owner in [session.id, RP_COMMON]:
             porcelain.commit(session.repository, node_id)
             porcelain.push(session.repository,'origin', node_id)
@@ -861,7 +861,7 @@ def sanitize_deps_graph(remove_nodes: bool = False):
     if session and session.state == STATE_ACTIVE:
         start = utils.current_milli_time()
         rm_cpt = 0
-        for node in session.repository.nodes.values():
+        for node in session.repository.graph.values():
             node.instance = session.repository.rdp.resolve(node.data)
             if node is None \
                     or (node.state == UP and not node.instance):
@@ -922,7 +922,7 @@ def depsgraph_evaluation(scene):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
-                node = session.repository.nodes.get(update.id.uuid)
+                node = session.repository.graph.get(update.id.uuid)
                 check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
