@@ -105,7 +105,6 @@ def initialize_session():
     for d in deleyables:
         d.register()
 
-    bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
     # Step 5: Clearing history
     utils.flush_history()
@@ -641,48 +640,6 @@ class SessionCommit(bpy.types.Operator):
             self.report({'ERROR'}, repr(e))
             return {"CANCELLED"}
 
-class ApplyArmatureOperator(bpy.types.Operator):
-    """Operator which runs its self from a timer"""
-    bl_idname = "session.apply_armature_operator"
-    bl_label = "Modal Executor Operator"
-
-    _timer = None
-
-    def modal(self, context, event):
-        global stop_modal_executor, modal_executor_queue
-        if stop_modal_executor:
-            self.cancel(context)
-            return {'CANCELLED'}
-
-        if event.type == 'TIMER':
-            if session and session.state == STATE_ACTIVE:
-                nodes = session.list(filter=bl_types.bl_armature.BlArmature)
-
-                for node in nodes:
-                    node_ref = session.repository.get_node(node)
-
-                    if node_ref.state == FETCHED:
-                        try:
-                            porcelain.apply(session.repository, node)
-                        except Exception as e:
-                            logging.error("Fail to apply armature: {e}")
-
-        return {'PASS_THROUGH'}
-
-    def execute(self, context):
-        wm = context.window_manager
-        self._timer = wm.event_timer_add(2, window=context.window)
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def cancel(self, context):
-        global stop_modal_executor
-
-        wm = context.window_manager
-        wm.event_timer_remove(self._timer)
-
-        stop_modal_executor = False
-
 
 class SessionClearCache(bpy.types.Operator):
     "Clear local session cache"
@@ -711,6 +668,7 @@ class SessionClearCache(bpy.types.Operator):
     def draw(self, context):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
+
 
 class SessionPurgeOperator(bpy.types.Operator):
     "Remove node with lost references"
@@ -802,6 +760,7 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
     def poll(cls, context):
         return session.state == STATE_ACTIVE
 
+
 class SessionStopAutoSaveOperator(bpy.types.Operator):
     bl_idname = "session.cancel_autosave"
     bl_label = "Cancel auto-save"
@@ -862,6 +821,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     def poll(cls, context):
         return True
 
+
 def menu_func_import(self, context):
     self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
 
@@ -875,7 +835,6 @@ classes = (
     SessionPropertyRightOperator,
     SessionApply,
     SessionCommit,
-    ApplyArmatureOperator,
     SessionKickOperator,
     SessionInitOperator,
     SessionClearCache,
@@ -886,13 +845,15 @@ classes = (
     SessionPurgeOperator,
 )
 
+
 def update_external_dependencies():
-    nodes_ids = session.list(filter=bl_types.bl_file.BlFile)
+    nodes_ids = [n.uuid for n in session.repository.nodes.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
     for node_id in nodes_ids:
         node = session.repository.get_node(node_id)
         if node and node.owner in [session.id, RP_COMMON]:
             porcelain.commit(session.repository, node_id)
             porcelain.push(session.repository,'origin', node_id)
+
 
 def sanitize_deps_graph(remove_nodes: bool = False):
     """ Cleanup the replication graph
@@ -900,8 +861,7 @@ def sanitize_deps_graph(remove_nodes: bool = False):
     if session and session.state == STATE_ACTIVE:
         start = utils.current_milli_time()
         rm_cpt = 0
-        for node_key in session.list():
-            node = session.repository.get_node(node_key)
+        for node in session.repository.nodes.values():
             node.instance = session.repository.rdp.resolve(node.data)
             if node is None \
                     or (node.state == UP and not node.instance):
@@ -927,6 +887,7 @@ def resolve_deps_graph(dummy):
     """
     if session and session.state == STATE_ACTIVE:
         sanitize_deps_graph(remove_nodes=True)
+
 
 @persistent
 def load_pre_handler(dummy):

@@ -548,10 +548,9 @@ class SESSION_PT_repository(bpy.types.Panel):
             row = box.row()
 
             # Properties
-            types_filter = [t.type_name for t in settings.supported_datablocks
-                            if t.use_as_filter]
+            owned_nodes = [k for k, v in  session.repository.nodes.items() if v.owner==settings.username]
 
-            filtered_node = session.list(filter_owner=settings.username) if runtime_settings.filter_owned else session.list()
+            filtered_node = owned_nodes if runtime_settings.filter_owned else session.repository.nodes.keys()
 
             if runtime_settings.filter_name:
                 for node_id in filtered_node:

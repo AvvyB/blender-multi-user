@@ -109,9 +109,7 @@ class SessionListenTimer(Timer):
 class ApplyTimer(Timer):
     def execute(self):
         if session and session.state == STATE_ACTIVE:
-            nodes = session.list()
-
-            for node in nodes:
+            for node in session.repository.nodes.keys():
                 node_ref = session.repository.get_node(node)
 
                 if node_ref.state == FETCHED:
@@ -235,7 +233,7 @@ class DynamicRightSelectTimer(Timer):
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
                     if len(current_selection) == 0 :
-                        owned_keys = session.list(filter_owner=settings.username)
+                        owned_keys = [k for k, v in session.repository.nodes.items() if v.owner==settings.username]
                         for key in owned_keys:
                             node = session.repository.get_node(key)
                             try:
