@@ -850,7 +850,7 @@ def update_external_dependencies():
     nodes_ids = [n.uuid for n in session.repository.graph.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
     for node_id in nodes_ids:
         node = session.repository.graph.get(node_id)
-        if node and node.owner in [session.id, RP_COMMON]:
+        if node and node.owner in [session.repository.username, RP_COMMON]:
             porcelain.commit(session.repository, node_id)
             porcelain.push(session.repository,'origin', node_id)
 
@@ -928,7 +928,7 @@ def depsgraph_evaluation(scene):
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update
-                if node and (node.owner == session.id or check_common):
+                if node and (node.owner == session.repository.username or check_common):
                     if node.state == UP:
                         try:
                             porcelain.commit(session.repository, node.uuid)
