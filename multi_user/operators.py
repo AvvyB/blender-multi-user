@@ -34,6 +34,8 @@ from queue import Queue
 from time import gmtime, strftime
 import traceback
 
+from bpy.props import FloatProperty
+
 try:
     import _pickle as pickle
 except ImportError:
@@ -901,6 +903,17 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     @classmethod
     def poll(cls, context):
         return True
+
+class SessionPresetServerAdd(bpy.types.Operator):
+    """Add a server to the server list preset"""
+    bl_idname = "session.preset_server_add"
+    bl_label = "add server preset"
+    bl_description = "add the current server preset to the server preset list"
+    bl_options = {"REGISTER"}
+
+    # name : 
+    
+
 
 def menu_func_import(self, context):
     self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')

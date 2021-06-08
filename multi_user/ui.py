@@ -173,6 +173,15 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.operator("session.start", text="HOST").host = True
         else:
             row = box.row()
+            row.prop(settings, "init_method", text="Preset")
+
+            # row = box.row()
+            # row.template_list("SERVER_group","server_group",settings,"server_group", settings, "active_server", rows=3)
+            # col = row.column(align=True)
+            # col.operator("session.preset_server_add", icon='ADD', text="")
+            # col.operator("session.preset_server_remove", icon='REMOVE', text="")
+
+            row = box.row()
             row.prop(settings, "ip", text="IP")
             row = box.row()
             row.label(text="Port:")
