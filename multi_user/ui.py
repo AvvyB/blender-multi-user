@@ -85,7 +85,7 @@ class SESSION_PT_settings(bpy.types.Panel):
         else:
             layout.label(text=f"Session - v{__version__}",icon="PROP_OFF")
 
-    def draw(self, context): # com
+    def draw(self, context):
         layout = self.layout
         row = layout.row()
         runtime_settings = context.window_manager.session
