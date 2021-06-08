@@ -66,14 +66,6 @@ def update_ip(self, context):
         self['ip'] = "127.0.0.1"
 
 
-def update_port(self, context):
-    max_port = self.port + 3
-
-    if self.ipc_port < max_port and \
-            self['ipc_port'] >= self.port:
-        logging.error(
-            "IPC Port in conflict with the port, assigning a random value")
-        self['ipc_port'] = random.randrange(self.port+4, 10000)
 
 
 def update_directory(self, context):
@@ -174,12 +166,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
     supported_datablocks: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
     )
-    ipc_port: bpy.props.IntProperty(
-        name="ipc_port",
-        description='internal ttl port(only useful for multiple local instances)',
-        default=random.randrange(5570, 70000),
-        update=update_port,
-    )
     init_method: bpy.props.EnumProperty(
         name='init_method',
         description='Init repo',
@@ -195,7 +181,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
         description='connection timeout before disconnection',
-        default=1000
+        default=5000
     )
     # Replication update settings
     depsgraph_update_rate: bpy.props.FloatProperty(

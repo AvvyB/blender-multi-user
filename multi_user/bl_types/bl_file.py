@@ -68,12 +68,15 @@ class BlFile(ReplicatedDatablock):
         self.preferences = utils.get_preferences()
 
     def resolve(self, construct = True):
-        if self.data:
-            self.instance = Path(get_filepath(self.data['name']))
+        self.instance = Path(get_filepath(self.data['name']))
+        
+        file_exists = self.instance.exists()
+        if not file_exists:
+            logging.debug("File don't exist, loading it.")
+            self._load(self.data, self.instance)
+        
+        return file_exists
 
-            if not self.instance.exists():
-                logging.debug("File don't exist, loading it.")
-                self._load(self.data, self.instance)
 
     def push(self, socket, identity=None, check_data=False):
         super().push(socket, identity=None, check_data=False)
@@ -131,6 +134,8 @@ class BlFile(ReplicatedDatablock):
         if self.preferences.clear_memory_filecache:
             return False
         else:
+            if not self.instance:
+                return False
             memory_size = sys.getsizeof(self.data['file'])-33
             disk_size = self.instance.stat().st_size
             return memory_size != disk_size

@@ -596,6 +596,8 @@ class Loader:
             instance.write(bpy.data.textures.get(dump))
         elif isinstance(rna_property_type, T.ColorRamp):
             self._load_default(instance, dump)
+        elif isinstance(rna_property_type, T.NodeTree):
+            instance.write(bpy.data.node_groups.get(dump))
         elif isinstance(rna_property_type, T.Object):
             instance.write(bpy.data.objects.get(dump))
         elif isinstance(rna_property_type, T.Mesh):
@@ -608,6 +610,8 @@ class Loader:
             instance.write(bpy.data.fonts.get(dump))
         elif isinstance(rna_property_type, T.Sound):
             instance.write(bpy.data.sounds.get(dump))
+        # elif isinstance(rna_property_type, T.ParticleSettings):
+        #     instance.write(bpy.data.particles.get(dump))
 
     def _load_matrix(self, matrix, dump):
         matrix.write(mathutils.Matrix(dump))

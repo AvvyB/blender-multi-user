@@ -7,7 +7,7 @@ import bpy
 import random
 from multi_user.bl_types.bl_object import BlObject
 
-# Removed 'BUILD' modifier because the seed doesn't seems to be
+# Removed 'BUILD', 'SOFT_BODY' modifier because the seed doesn't seems to be
 # correctly initialized (#TODO: report the bug)
 MOFIFIERS_TYPES = [
     'DATA_TRANSFER', 'MESH_CACHE', 'MESH_SEQUENCE_CACHE',
@@ -22,8 +22,7 @@ MOFIFIERS_TYPES = [
     'MESH_DEFORM', 'SHRINKWRAP', 'SIMPLE_DEFORM', 'SMOOTH',
     'CORRECTIVE_SMOOTH', 'LAPLACIANSMOOTH', 'SURFACE_DEFORM',
     'WARP', 'WAVE', 'CLOTH', 'COLLISION', 'DYNAMIC_PAINT',
-    'EXPLODE', 'FLUID', 'OCEAN', 'PARTICLE_INSTANCE',
-    'SOFT_BODY', 'SURFACE']
+    'EXPLODE', 'FLUID', 'OCEAN', 'PARTICLE_INSTANCE', 'SURFACE']
 
 GP_MODIFIERS_TYPE = [
     'GP_ARRAY', 'GP_BUILD', 'GP_MIRROR', 'GP_MULTIPLY',
@@ -72,5 +71,5 @@ def test_object(clear_blend):
     test = implementation._construct(expected)
     implementation._load(expected, test)
     result = implementation._dump(test)
-
+    print(DeepDiff(expected, result))
     assert not DeepDiff(expected, result)

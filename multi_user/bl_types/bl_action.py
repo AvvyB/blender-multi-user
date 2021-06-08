@@ -25,7 +25,7 @@ from enum import Enum
 from .. import utils
 from .dump_anything import (
     Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
-from .bl_datablock import BlDatablock
+from .bl_datablock import BlDatablock, has_action, has_driver, dump_driver, load_driver
 
 
 KEYFRAME = [
@@ -61,7 +61,6 @@ def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy: bool = True) -> dict:
         points = fcurve.keyframe_points
         fcurve_data['keyframes_count'] = len(fcurve.keyframe_points)
         fcurve_data['keyframe_points'] = np_dump_collection(points, KEYFRAME)
-
     else:  # Legacy method
         dumper = Dumper()
         fcurve_data["keyframe_points"] = []
@@ -70,6 +69,18 @@ def dump_fcurve(fcurve: bpy.types.FCurve, use_numpy: bool = True) -> dict:
             fcurve_data["keyframe_points"].append(
                 dumper.dump(k)
             )
+
+    if fcurve.modifiers:
+        dumper = Dumper()
+        dumper.exclude_filter = [
+            'is_valid',
+            'active'
+        ]
+        dumped_modifiers = []
+        for modfifier in fcurve.modifiers:
+            dumped_modifiers.append(dumper.dump(modfifier))
+
+        fcurve_data['modifiers'] = dumped_modifiers
 
     return fcurve_data
 
@@ -83,7 +94,7 @@ def load_fcurve(fcurve_data, fcurve):
         :type fcurve: bpy.types.FCurve
     """
     use_numpy = fcurve_data.get('use_numpy')
-
+    loader = Loader()
     keyframe_points = fcurve.keyframe_points
 
     # Remove all keyframe points
@@ -127,6 +138,64 @@ def load_fcurve(fcurve_data, fcurve):
             ]
 
             fcurve.update()
+
+    dumped_fcurve_modifiers = fcurve_data.get('modifiers', None)
+
+    if dumped_fcurve_modifiers:
+        # clear modifiers
+        for fmod in fcurve.modifiers:
+            fcurve.modifiers.remove(fmod)
+
+        # Load each modifiers in order
+        for modifier_data in dumped_fcurve_modifiers:
+            modifier = fcurve.modifiers.new(modifier_data['type'])
+
+            loader.load(modifier, modifier_data)
+    elif fcurve.modifiers:
+        for fmod in fcurve.modifiers:
+            fcurve.modifiers.remove(fmod)
+
+
+def dump_animation_data(datablock):
+    animation_data = {}
+    if has_action(datablock):
+            animation_data['action'] = datablock.animation_data.action.name
+    if has_driver(datablock):
+        animation_data['drivers'] = []
+        for driver in datablock.animation_data.drivers:
+            animation_data['drivers'].append(dump_driver(driver))
+
+    return animation_data
+
+
+def load_animation_data(animation_data, datablock):
+    # Load animation data
+    if animation_data:
+        if datablock.animation_data is None:
+            datablock.animation_data_create()
+
+        for d in datablock.animation_data.drivers:
+            datablock.animation_data.drivers.remove(d)
+
+        if 'drivers' in animation_data:
+            for driver in animation_data['drivers']:
+                load_driver(datablock, driver)
+
+        if 'action' in animation_data:
+            datablock.animation_data.action = bpy.data.actions[animation_data['action']]
+        elif datablock.animation_data.action:
+            datablock.animation_data.action = None
+
+    # Remove existing animation data if there is not more to load
+    elif hasattr(datablock, 'animation_data') and datablock.animation_data:
+        datablock.animation_data_clear()
+
+
+def resolve_animation_dependencies(datablock):
+    if has_action(datablock):
+        return [datablock.animation_data.action]
+    else:
+        return []
 
 
 class BlAction(BlDatablock):

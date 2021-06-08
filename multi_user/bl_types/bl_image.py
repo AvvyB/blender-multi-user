@@ -68,7 +68,10 @@ class BlImage(BlDatablock):
 
         target.source = 'FILE'
         target.filepath_raw = get_filepath(data['filename'])
-        target.colorspace_settings.name = data["colorspace_settings"]["name"]
+        color_space_name = data["colorspace_settings"]["name"]
+
+        if color_space_name:
+            target.colorspace_settings.name = color_space_name
 
     def _dump(self, instance=None):
         assert(instance)
@@ -83,6 +86,7 @@ class BlImage(BlDatablock):
         dumper.depth = 2
         dumper.include_filter = [
             "name",
+            # 'source',
             'size',
             'height',
             'alpha',

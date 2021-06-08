@@ -42,13 +42,14 @@ __all__ = [
     # 'bl_sequencer',
     'bl_node_group',
     'bl_texture',
+    "bl_particle",
 ]  # Order here defines execution order
 
 if bpy.app.version[1] >= 91:
     __all__.append('bl_volume')
 
 from . import *
-from replication.data import ReplicatedDataFactory
+from replication.data import DataTranslationProtocol
 
 def types_to_register():
     return __all__

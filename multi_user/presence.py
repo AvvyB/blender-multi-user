@@ -30,7 +30,7 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
-                                   STATE_INITIAL, STATE_LAUNCHING_SERVICES,
+                                   STATE_INITIAL, CONNECTING,
                                    STATE_LOBBY, STATE_QUITTING, STATE_SRV_SYNC,
                                    STATE_SYNCING, STATE_WAITING)
 from replication.interface import session
@@ -399,7 +399,7 @@ class SessionStatusWidget(Widget):
         text_scale = self.preferences.presence_hud_scale
         ui_scale = bpy.context.preferences.view.ui_scale
         color = [1, 1, 0, 1]
-        state = session.state.get('STATE')
+        state = session.state
         state_str = f"{get_state_str(state)}"
 
         if state == STATE_ACTIVE:
