@@ -43,11 +43,6 @@ from bpy.app.handlers import persistent
 from . import environment
 
 
-DEPENDENCIES = {
-    "zmq",
-    "deepdiff"
-}
-LIBS = os.path.dirname(os.path.abspath(__file__))+"/libs/replication"
 
 module_error_msg = "Insufficient rights to install the multi-user \
                 dependencies, aunch blender with administrator rights."
@@ -59,21 +54,7 @@ def register():
         level=logging.INFO)
 
     try:
-        if bpy.app.version[1] >= 91:
-            python_binary_path = sys.executable
-        else:
-            python_binary_path = bpy.app.binary_path_python
-
-        environment.setup(DEPENDENCIES, python_binary_path)
-
-        for module_name in list(sys.modules.keys()):
-            if 'replication' in module_name:
-                del sys.modules[module_name]
-
-        if LIBS not in sys.path:
-            logging.info('Adding local modules dir to the path')
-            sys.path.insert(0, LIBS)
-
+        environment.register()
 
         from . import presence
         from . import operators
@@ -121,3 +102,5 @@ def unregister():
     del bpy.types.ID.uuid
     del bpy.types.WindowManager.online_users
     del bpy.types.WindowManager.user_index
+
+    environment.unregister()
