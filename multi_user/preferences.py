@@ -65,8 +65,11 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
-
-
+def update_server_preset(self, context):
+    self.server_name = self.server_preset.get(self.server_preset_interface).name
+    self.ip = self.server_preset.get(self.server_preset_interface).server_ip
+    self.port = self.server_preset.get(self.server_preset_interface).server_port
+    # TODO: do password
 
 def update_directory(self, context):
     new_dir = Path(self.cache_directory)
@@ -93,6 +96,10 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
+class ServerPreset(bpy.types.PropertyGroup):
+    server_ip: bpy.props.StringProperty()
+    server_port: bpy.props.IntProperty(default=5555)
+    server_password: bpy.props.StringProperty(default="admin", subtype = "PASSWORD")
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -159,6 +166,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="port",
         description='Distant host port',
         default=5555
+    )
+    server_name: bpy.props.StringProperty(
+        name="server_name",
+        description="Name of the server",
+        default='server_001',
     )
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
@@ -321,6 +333,25 @@ class SessionPrefs(bpy.types.AddonPreferences):
         max=59
     )
 
+    # Server preset
+    def server_list_callback(scene, context):
+        settings = get_preferences()
+        enum = []
+        for i in settings.server_preset:
+            enum.append((i.name, i.name, ""))
+        return enum
+
+    server_preset: bpy.props.CollectionProperty(
+        name="server preset",
+        type=ServerPreset,
+    )
+    server_preset_interface: bpy.props.EnumProperty(
+        name="servers",
+        description="servers enum",
+        items=server_list_callback,
+        update=update_server_preset,
+    )
+
     # Custom panel
     panel_category: bpy.props.StringProperty(
         description="Choose a name for the category of the panel",
@@ -419,6 +450,16 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.use_as_filter = True
             new_db.icon = type_module_class.bl_icon
             new_db.bl_name = type_module_class.bl_id
+   
+    def generate_server_preset_localhost(self): 
+        # self.server_preset.clear()
+
+        new_server = self.server_preset.add()
+
+        new_server.name = "local host"
+        new_server.server_ip = "127.0.0.1"
+        new_server.server_port = 5555 
+        new_server.server_password = "admin"
 
 
 def client_list_callback(scene, context):
@@ -523,6 +564,7 @@ classes = (
     SessionProps,
     ReplicationFlags,
     ReplicatedDatablock,
+    ServerPreset,
     SessionPrefs,
 )
 
@@ -537,6 +579,9 @@ def register():
     if len(prefs.supported_datablocks) == 0:
         logging.debug('Generating bl_types preferences')
         prefs.generate_supported_types()
+    
+    if 'local host' not in prefs.server_preset:
+        prefs.generate_server_preset_localhost()
 
 
 def unregister():

@@ -908,11 +908,77 @@ class SessionPresetServerAdd(bpy.types.Operator):
     """Add a server to the server list preset"""
     bl_idname = "session.preset_server_add"
     bl_label = "add server preset"
-    bl_description = "add the current server preset to the server preset list"
+    bl_description = "add the current server to the server preset list"
     bl_options = {"REGISTER"}
 
-    # name : 
+    name : bpy.props.StringProperty(default="server_preset") # TODO: add name iteration
     
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        assert(context)
+        
+        if True : # TODO : add condition if name already in list
+            True # TODO : add window pop to ask confirmation
+
+
+        settings = utils.get_preferences()
+
+        new_server = settings.server_preset.add()
+
+        new_server.name = settings.server_name
+        new_server.server_ip = settings.ip
+        new_server.server_port = settings.port
+        new_server.server_password = "admin" # TODO: add password
+
+        return {'FINISHED'}
+
+class SessionPresetServerRemove(bpy.types.Operator):
+    """Remove a server to the server list preset"""
+    bl_idname = "session.preset_server_remove"
+    bl_label = "remove server preset"
+    bl_description = "remove the current server from the server preset list"
+    bl_options = {"REGISTER"}
+    
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        assert(context)
+
+        settings = utils.get_preferences()
+
+        settings.server_preset.remove(settings.server_preset.find(settings.server_preset_interface))
+
+        return {'FINISHED'}
+
+class SessionPresetServerOverwrite(bpy.types.Operator):
+    bl_idname = "session.preset_server_overwrite"
+    bl_description = "Overwrite the server preset that already has this name" # TODO : or increment the name
+    bl_label = "Overwrite server preset ?"
+    bl_options = {'REGISTER'}
+
+    prop1: bpy.props.BoolProperty()
+    prop2: bpy.props.BoolProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        self.report({'INFO'}, "Server overwrite")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    # def draw(self, context):
+    #     row = self.layout
+    #     row.prop(self, "prop1", text="Overwrite the server")
+    #     row.prop(self, "prop2", text="Keep the server")
 
 
 def menu_func_import(self, context):
@@ -932,11 +998,14 @@ classes = (
     SessionKickOperator,
     SessionInitOperator,
     SessionClearCache,
-    SessionNotifyOperator,
+    SessionNotifyOperator, 
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
     SessionStopAutoSaveOperator,
     SessionPurgeOperator,
+    SessionPresetServerAdd,
+    SessionPresetServerRemove,
+    SessionPresetServerOverwrite,
 )
 
 def update_external_dependencies():

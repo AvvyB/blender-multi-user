@@ -172,15 +172,23 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
+
             row = box.row()
-            row.prop(settings, "init_method", text="Preset")
+            row.prop(settings, "server_preset_interface", text="Preset")
+            col = row.row(align=True)
+            col.operator("session.preset_server_add", icon='ADD', text="")
+            col.operator("session.preset_server_remove", icon='REMOVE', text="")
+ 
+            # for servers in settings.supported_servers:
+            #     row = box.row()
+            #     row.prop(servers, "use_as_filter", text="")
 
             # row = box.row()
             # row.template_list("SERVER_group","server_group",settings,"server_group", settings, "active_server", rows=3)
             # col = row.column(align=True)
-            # col.operator("session.preset_server_add", icon='ADD', text="")
-            # col.operator("session.preset_server_remove", icon='REMOVE', text="")
-
+            
+            row = box.row()
+            row.prop(settings, "server_name", text="name")
             row = box.row()
             row.prop(settings, "ip", text="IP")
             row = box.row()
@@ -197,6 +205,18 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 
+class SESSION_PT_overwrite_server(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel_overwrite_server"
+    bl_label = "Server overwrite"
+    bl_space_type = "VIEW_3D"   
+    bl_region_type = "UI"
+
+    def draw(self, context):
+        layout = self.layout
+
+        settings = get_preferences()
+
+        layout.operator(settings.SessionPresetServerOverwrite.bl_idname)
 
 class SESSION_PT_settings_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
@@ -626,6 +646,7 @@ classes = (
     SESSION_PT_settings,
     SESSION_PT_settings_user,
     SESSION_PT_settings_network,
+    SESSION_PT_overwrite_server,
     SESSION_PT_presence,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
