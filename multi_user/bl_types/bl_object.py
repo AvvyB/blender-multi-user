@@ -408,6 +408,35 @@ def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
         dumped_modifiers.append(dumped_modifier)
     return dumped_modifiers
 
+def dump_constraints(constraints: bpy.types.bpy_prop_collection)->list:
+    """Dump all constraints to a list
+
+        :param constraints: constraints
+        :type constraints: bpy.types.bpy_prop_collection
+        :return: dict
+    """
+    dumper = Dumper()
+    dumper.depth = 2
+    dumper.include_filter = None
+    dumped_constraints = []
+    for constraint in constraints:
+        dumped_constraints.append(dumper.dump(constraint))
+    return dumped_constraints
+
+def load_constraints(dumped_constraints: list, constraints: bpy.types.bpy_prop_collection):
+    """ Load dumped constraints
+
+        :param dumped_constraints: list of constraints to load
+        :type dumped_constraints: list
+        :param constraints: constraints
+        :type constraints: bpy.types.bpy_prop_collection
+    """
+    loader = Loader()
+    constraints.clear()
+    for dumped_constraint in dumped_constraints:
+        constraint_type = dumped_constraint.get('type')
+        new_constraint = constraints.new(constraint_type)
+        loader.load(new_constraint, dumped_constraint)
 
 def load_modifiers(dumped_modifiers: list, modifiers: bpy.types.bpy_prop_collection):
     """ Dump all modifiers of a modifier collection into a dict
@@ -580,6 +609,10 @@ class BlObject(ReplicatedDatablock):
         if hasattr(datablock, 'modifiers'):
             load_modifiers(data['modifiers'], datablock.modifiers)
 
+        constraints = data.get('constraints')
+        if constraints:
+            load_constraints(constraints, datablock.constraints)
+
         # PHYSICS
         load_physics(data, datablock)
 
@@ -681,9 +714,7 @@ class BlObject(ReplicatedDatablock):
 
         # CONSTRAINTS
         if hasattr(datablock, 'constraints'):
-            dumper.include_filter = None
-            dumper.depth = 3
-            data["constraints"] = dumper.dump(datablock.constraints)
+            data["constraints"] = dump_constraints(datablock.constraints)
 
         # POSE
         if hasattr(datablock, 'pose') and datablock.pose:

@@ -508,13 +508,11 @@ class Loader:
             T.ColorRampElement: (CONSTRUCTOR_NEW, ["position"]),
             T.ParticleSettingsTextureSlot: (CONSTRUCTOR_ADD, []),
             T.GpencilModifier: (CONSTRUCTOR_NEW, ["name", "type"]),
-            T.Constraint: (CONSTRUCTOR_NEW, ["type"]),
         }
 
         destructors = {
             T.ColorRampElement: DESTRUCTOR_REMOVE,
             T.GpencilModifier: DESTRUCTOR_CLEAR,
-            T.Constraint: DESTRUCTOR_REMOVE,
         }
         element_type = element.bl_rna_property.fixed_type
 
