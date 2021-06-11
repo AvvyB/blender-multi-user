@@ -911,7 +911,7 @@ class SessionPresetServerAdd(bpy.types.Operator):
     bl_description = "add the current server to the server preset list"
     bl_options = {"REGISTER"}
 
-    name : bpy.props.StringProperty(default="server_preset") # TODO: add name iteration
+    name : bpy.props.StringProperty(default="server_preset")
     
     @classmethod
     def poll(cls, context):
@@ -920,18 +920,25 @@ class SessionPresetServerAdd(bpy.types.Operator):
     def execute(self, context):
         assert(context)
         
-        if True : # TODO : add condition if name already in list
-            True # TODO : add window pop to ask confirmation
-
-
         settings = utils.get_preferences()
+        runtime_settings = context.window_manager.session
+
+        if settings.server_name in settings.server_preset.keys():
+            
+            bpy.ops.session.preset_server_overwrite('INVOKE_DEFAULT')
+            
+            return {'FINISHED'}
 
         new_server = settings.server_preset.add()
+
+        settings = utils.get_preferences()
 
         new_server.name = settings.server_name
         new_server.server_ip = settings.ip
         new_server.server_port = settings.port
-        new_server.server_password = "admin" # TODO: add password
+        new_server.server_password = runtime_settings.password
+
+        settings.server_preset_interface = settings.server_name
 
         return {'FINISHED'}
 
@@ -969,16 +976,30 @@ class SessionPresetServerOverwrite(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        assert(context)
+
+        settings = utils.get_preferences()
+        runtime_settings = context.window_manager.session
+
+        old_server = settings.server_preset.get(settings.server_name)
+
+        old_server.server_ip = settings.ip
+        old_server.server_port = settings.port
+        old_server.server_password = runtime_settings.password
+
+        settings.server_preset_interface = settings.server_name
+
         self.report({'INFO'}, "Server overwrite")
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_confirm(self, event)
+        assert(context)
 
-    # def draw(self, context):
-    #     row = self.layout
-    #     row.prop(self, "prop1", text="Overwrite the server")
-    #     row.prop(self, "prop2", text="Keep the server")
+        settings = utils.get_preferences()
+
+        return context.window_manager.invoke_confirm(self, event)
+        
 
 
 def menu_func_import(self, context):

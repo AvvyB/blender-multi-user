@@ -65,10 +65,11 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
-def update_server_preset(self, context):
+def update_server_preset_interface(self, context):
     self.server_name = self.server_preset.get(self.server_preset_interface).name
     self.ip = self.server_preset.get(self.server_preset_interface).server_ip
     self.port = self.server_preset.get(self.server_preset_interface).server_port
+    self.password = self.server_preset.get(self.server_preset_interface).server_password 
     # TODO: do password
 
 def update_directory(self, context):
@@ -169,8 +170,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
     )
     server_name: bpy.props.StringProperty(
         name="server_name",
-        description="Name of the server",
-        default='server_001',
+        description="Custom name of the server",
+        default='local host',
     )
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
@@ -349,7 +350,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="servers",
         description="servers enum",
         items=server_list_callback,
-        update=update_server_preset,
+        update=update_server_preset_interface,
     )
 
     # Custom panel
@@ -450,14 +451,21 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.use_as_filter = True
             new_db.icon = type_module_class.bl_icon
             new_db.bl_name = type_module_class.bl_id
-   
-    def generate_server_preset_localhost(self): 
-        # self.server_preset.clear()
 
+    # custom at launch server preset
+    def generate_server_preset_localhost(self): 
         new_server = self.server_preset.add()
 
         new_server.name = "local host"
         new_server.server_ip = "127.0.0.1"
+        new_server.server_port = 5555 
+        new_server.server_password = "admin"
+
+    def generate_server_preset_publicsession(self): 
+        new_server = self.server_preset.add()
+
+        new_server.name = "public session"
+        new_server.server_ip = "51.75.71.183"
         new_server.server_port = 5555 
         new_server.server_password = "admin"
 
@@ -580,8 +588,12 @@ def register():
         logging.debug('Generating bl_types preferences')
         prefs.generate_supported_types()
     
+    # at launch server presets
     if 'local host' not in prefs.server_preset:
         prefs.generate_server_preset_localhost()
+        
+    if 'public session' not in prefs.server_preset:
+        prefs.generate_server_preset_publicsession()
 
 
 def unregister():

@@ -178,14 +178,6 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             col = row.row(align=True)
             col.operator("session.preset_server_add", icon='ADD', text="")
             col.operator("session.preset_server_remove", icon='REMOVE', text="")
- 
-            # for servers in settings.supported_servers:
-            #     row = box.row()
-            #     row.prop(servers, "use_as_filter", text="")
-
-            # row = box.row()
-            # row.template_list("SERVER_group","server_group",settings,"server_group", settings, "active_server", rows=3)
-            # col = row.column(align=True)
             
             row = box.row()
             row.prop(settings, "server_name", text="name")
