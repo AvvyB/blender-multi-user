@@ -33,6 +33,19 @@ from replication.interface import session
 IP_REGEX = re.compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
+DEFAULT_PRESETS = {
+    "localhost" : {
+        "server_ip": "localhost",
+        "server_port": 5555,
+        "server_password": "admin"
+    },
+    "public session" : {
+        "server_ip": "51.75.71.183",
+        "server_port": 5555,
+        "server_password": "admin"
+    },
+}
+
 def randomColor():
     """Generate a random color """
     r = random.random()
@@ -152,7 +165,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
-        default="127.0.0.1",
+        default="localhost",
         update=update_ip)
     username: bpy.props.StringProperty(
         name="Username",
@@ -170,7 +183,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     server_name: bpy.props.StringProperty(
         name="server_name",
         description="Custom name of the server",
-        default='local host',
+        default='localhost',
     )
     password: bpy.props.StringProperty(
         name="password",
@@ -458,21 +471,13 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.bl_name = type_module_class.bl_id
 
     # custom at launch server preset
-    def generate_server_preset_localhost(self): 
-        new_server = self.server_preset.add()
-
-        new_server.name = "local host"
-        new_server.server_ip = "127.0.0.1"
-        new_server.server_port = 5555 
-        new_server.server_password = "admin"
-
-    def generate_server_preset_publicsession(self): 
-        new_server = self.server_preset.add()
-
-        new_server.name = "public session"
-        new_server.server_ip = "51.75.71.183"
-        new_server.server_port = 5555 
-        new_server.server_password = "admin"
+    def generate_default_presets(self): 
+        for preset_name, preset_data in DEFAULT_PRESETS.items():
+            new_server = self.server_preset.add()
+            new_server.name = preset_name
+            new_server.server_ip = preset_data.get('server_ip')
+            new_server.server_port = preset_data.get('server_port')
+            new_server.server_password = preset_data.get('server_password',None)
 
 
 def client_list_callback(scene, context):
@@ -588,11 +593,8 @@ def register():
         prefs.generate_supported_types()
     
     # at launch server presets
-    if 'local host' not in prefs.server_preset:
-        prefs.generate_server_preset_localhost()
+    prefs.generate_default_presets()
         
-    if 'public session' not in prefs.server_preset:
-        prefs.generate_server_preset_publicsession()
 
 
 def unregister():

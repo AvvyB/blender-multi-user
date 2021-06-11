@@ -156,7 +156,13 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = layout.row()
         row.prop(runtime_settings, "session_mode", expand=True)
         row = layout.row()
+                     
+        col = row.row(align=True)
+        col.prop(settings, "server_preset_interface", text="")
+        col.operator("session.preset_server_add", icon='ADD', text="")
+        col.operator("session.preset_server_remove", icon='REMOVE', text="")
 
+        row = layout.row()
         box = row.box()
 
         if runtime_settings.session_mode == 'HOST':
@@ -172,15 +178,6 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
-
-            row = box.row()
-            row.prop(settings, "server_preset_interface", text="Preset")
-            col = row.row(align=True)
-            col.operator("session.preset_server_add", icon='ADD', text="")
-            col.operator("session.preset_server_remove", icon='REMOVE', text="")
-            
-            row = box.row()
-            row.prop(settings, "server_name", text="name")
             row = box.row()
             row.prop(settings, "ip", text="IP")
             row = box.row()
@@ -208,7 +205,7 @@ class SESSION_PT_overwrite_server(bpy.types.Panel):
 
         settings = get_preferences()
 
-        layout.operator(settings.SessionPresetServerOverwrite.bl_idname)
+        # layout.operator(settings.SessionPresetServerOverwrite.bl_idname)
 
 class SESSION_PT_settings_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
