@@ -193,7 +193,7 @@ class BlMesh(ReplicatedDatablock):
 
     @staticmethod
     def needs_update(datablock: object, data: dict) -> bool:
-        return 'EDIT' not in bpy.context.mode \
+        return ('EDIT' not in bpy.context.mode and bpy.context.mode != 'SCULPT') \
             or get_preferences().sync_flags.sync_during_editmode
 
 _type = bpy.types.Mesh
