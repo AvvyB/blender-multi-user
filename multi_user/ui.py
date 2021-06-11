@@ -168,7 +168,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.prop(settings, "init_method", text="")
             row = box.row()
             row.label(text="Admin password:")
-            row.prop(runtime_settings, "password", text="")
+            row.prop(settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
@@ -193,7 +193,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             if runtime_settings.admin:
                 row = box.row()
                 row.label(text="Password:")
-                row.prop(runtime_settings, "password", text="")
+                row.prop(settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 

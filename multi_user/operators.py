@@ -163,7 +163,7 @@ class SessionStartOperator(bpy.types.Operator):
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
-        admin_pass = runtime_settings.password
+        admin_pass = settings.password
 
         users.clear()
         deleyables.clear()
@@ -921,7 +921,6 @@ class SessionPresetServerAdd(bpy.types.Operator):
         assert(context)
         
         settings = utils.get_preferences()
-        runtime_settings = context.window_manager.session
 
         if settings.server_name in settings.server_preset.keys():
             
@@ -936,7 +935,7 @@ class SessionPresetServerAdd(bpy.types.Operator):
         new_server.name = settings.server_name
         new_server.server_ip = settings.ip
         new_server.server_port = settings.port
-        new_server.server_password = runtime_settings.password
+        new_server.server_password = settings.password
 
         settings.server_preset_interface = settings.server_name
 
@@ -979,13 +978,12 @@ class SessionPresetServerOverwrite(bpy.types.Operator):
         assert(context)
 
         settings = utils.get_preferences()
-        runtime_settings = context.window_manager.session
 
         old_server = settings.server_preset.get(settings.server_name)
 
         old_server.server_ip = settings.ip
         old_server.server_port = settings.port
-        old_server.server_password = runtime_settings.password
+        old_server.server_password = settings.password
 
         settings.server_preset_interface = settings.server_name
 

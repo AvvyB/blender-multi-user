@@ -70,7 +70,6 @@ def update_server_preset_interface(self, context):
     self.ip = self.server_preset.get(self.server_preset_interface).server_ip
     self.port = self.server_preset.get(self.server_preset_interface).server_port
     self.password = self.server_preset.get(self.server_preset_interface).server_password 
-    # TODO: do password
 
 def update_directory(self, context):
     new_dir = Path(self.cache_directory)
@@ -172,6 +171,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server_name",
         description="Custom name of the server",
         default='local host',
+    )
+    password: bpy.props.StringProperty(
+        name="password",
+        default=random_string_digits(),
+        description='Session password',
+        subtype='PASSWORD'
     )
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
@@ -544,12 +549,6 @@ class SessionProps(bpy.types.PropertyGroup):
         name="admin",
         description='Connect as admin',
         default=False
-    )
-    password: bpy.props.StringProperty(
-        name="password",
-        default=random_string_digits(),
-        description='Session password',
-        subtype='PASSWORD'
     )
     internet_ip: bpy.props.StringProperty(
         name="internet ip",
