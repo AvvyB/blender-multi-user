@@ -373,6 +373,7 @@ def load_sequence(sequence_data: dict,
 
 class BlScene(ReplicatedDatablock):
     is_root = True
+    use_delta = True
 
     bl_id = "scenes"
     bl_class = bpy.types.Scene

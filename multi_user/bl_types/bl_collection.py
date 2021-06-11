@@ -90,6 +90,7 @@ class BlCollection(ReplicatedDatablock):
     bl_check_common = True
     bl_reload_parent = False
 
+    use_delta = True
 
     @staticmethod
     def construct(data: dict) -> object:
