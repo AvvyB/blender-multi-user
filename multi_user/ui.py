@@ -443,8 +443,8 @@ class SESSION_PT_presence(bpy.types.Panel):
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
-    item = session.repository.get_node(property_uuid)
-
+    item = session.repository.graph.get(property_uuid)
+    type_id = item.data.get('type_id')
     area_msg = parent.row(align=True)
 
     if item.state == ERROR:
@@ -455,11 +455,10 @@ def draw_property(context, parent, property_uuid, level=0):
     line = area_msg.box()
 
     name = item.data['name'] if item.data else item.uuid
-
+    icon = settings.supported_datablocks[type_id].icon if type_id else 'ERROR'
     detail_item_box = line.row(align=True)
 
-    detail_item_box.label(text="",
-                          icon=settings.supported_datablocks[item.str_type].icon)
+    detail_item_box.label(text="", icon=icon)
     detail_item_box.label(text=f"{name}")
 
     # Operations
@@ -546,40 +545,32 @@ class SESSION_PT_repository(bpy.types.Panel):
             else:
                 row.operator('session.save', icon="FILE_TICK")
 
-            flow = layout.grid_flow(
-                row_major=True,
-                columns=0,
-                even_columns=True,
-                even_rows=False,
-                align=True)
-
-            for item in settings.supported_datablocks:
-                col = flow.column(align=True)
-                col.prop(item, "use_as_filter", text="", icon=item.icon)
-
-            row = layout.row(align=True)
-            row.prop(runtime_settings, "filter_owned", text="Show only owned")
-
-            row = layout.row(align=True)
+            box = layout.box()
+            row = box.row()
+            row.prop(runtime_settings, "filter_owned", text="Show only owned Nodes", icon_only=True, icon="DECORATE_UNLOCKED")
+            row = box.row()
+            row.prop(runtime_settings, "filter_name", text="Filter")
+            row = box.row()
 
             # Properties
-            types_filter = [t.type_name for t in settings.supported_datablocks
-                            if t.use_as_filter]
+            owned_nodes = [k for k, v in  session.repository.graph.items() if v.owner==settings.username]
 
-            key_to_filter = session.list(
-                filter_owner=settings.username) if runtime_settings.filter_owned else session.list()
+            filtered_node = owned_nodes if runtime_settings.filter_owned else session.repository.graph.keys()
 
-            client_keys = [key for key in key_to_filter
-                           if session.repository.get_node(key).str_type
-                           in types_filter]
+            if runtime_settings.filter_name:
+                for node_id in filtered_node:
+                    node_instance = session.repository.graph.get(node_id)
+                    name = node_instance.data.get('name')
+                    if runtime_settings.filter_name not in name:
+                        filtered_node.remove(node_id)
 
-            if client_keys:
+            if filtered_node:
                 col = layout.column(align=True)
-                for key in client_keys:
+                for key in filtered_node:
                     draw_property(context, col, key)
 
             else:
-                row.label(text="Empty")
+                layout.row().label(text="Empty")
 
         elif session.state == STATE_LOBBY and usr and usr['admin']:
             row.operator("session.init", icon='TOOL_SETTINGS', text="Init")

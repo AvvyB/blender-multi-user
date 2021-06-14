@@ -47,11 +47,12 @@ from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
-from replication.data import DataTranslationProtocol
+from replication.protocol import DataTranslationProtocol
 from replication.exception import ContextError, NonAuthorizedOperationError
 from replication.interface import session
-from replication.porcelain import add, apply
+from replication import porcelain
 from replication.repository import Repository
+from replication.objects import Node
 
 from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
@@ -79,35 +80,33 @@ def session_callback(name):
 def initialize_session():
     """Session connection init hander 
     """
-    logging.info("Intializing the scene")
     settings = utils.get_preferences()
     runtime_settings = bpy.context.window_manager.session
 
-    # Step 1: Constrect nodes
-    logging.info("Constructing nodes")
-    for node in session.repository.list_ordered():
-        node_ref = session.repository.get_node(node)
-        if node_ref is None:
-            logging.error(f"Can't construct node {node}")
-        elif node_ref.state == FETCHED:
-            node_ref.resolve()
-    
-    # Step 2: Load nodes
-    logging.info("Loading nodes")
-    for node in session.repository.list_ordered():
-        node_ref = session.repository.get_node(node)
+    if not runtime_settings.is_host:
+        logging.info("Intializing the scene")
+        # Step 1: Constrect nodes
+        logging.info("Instantiating nodes")
+        for node in session.repository.index_sorted:
+            node_ref = session.repository.graph.get(node)
+            if node_ref is None:
+                logging.error(f"Can't construct node {node}")
+            elif node_ref.state == FETCHED:
+                node_ref.instance = session.repository.rdp.resolve(node_ref.data)
+                if node_ref.instance is None:
+                    node_ref.instance = session.repository.rdp.construct(node_ref.data)
+                    node_ref.instance.uuid = node_ref.uuid
 
-        if node_ref is None:
-            logging.error(f"Can't load node {node}")
-        elif node_ref.state == FETCHED:
-            node_ref.apply()
+        # Step 2: Load nodes
+        logging.info("Applying nodes")
+        for node in session.repository.index_sorted:
+            porcelain.apply(session.repository, node)
 
     logging.info("Registering timers")
     # Step 4: Register blender timers
     for d in deleyables:
         d.register()
 
-    bpy.ops.session.apply_armature_operator('INVOKE_DEFAULT')
 
     # Step 5: Clearing history
     utils.flush_history()
@@ -191,37 +190,26 @@ class SessionStartOperator(bpy.types.Operator):
 
                 handler.setFormatter(formatter)
 
-        bpy_protocol = DataTranslationProtocol()
-        supported_bl_types = []
+        bpy_protocol = bl_types.get_data_translation_protocol()
 
-        # init the factory with supported types
-        for type in bl_types.types_to_register():
-            type_module = getattr(bl_types, type)
-            name = [e.capitalize() for e in type.split('_')[1:]]
-            type_impl_name = 'Bl'+''.join(name)
-            type_module_class = getattr(type_module, type_impl_name)
-
-            supported_bl_types.append(type_module_class.bl_id)
-
-            if type_impl_name not in settings.supported_datablocks:
-                logging.info(f"{type_impl_name} not found, \
+        # Check if supported_datablocks are up to date before starting the
+        # the session
+        for dcc_type_id in bpy_protocol.implementations.keys():
+            if dcc_type_id not in settings.supported_datablocks:
+                logging.info(f"{dcc_type_id} not found, \
                              regenerate type settings...")
                 settings.generate_supported_types()
 
-            type_local_config = settings.supported_datablocks[type_impl_name]
-
-            bpy_protocol.register_type(
-                type_module_class.bl_class,
-                type_module_class,
-                check_common=type_module_class.bl_check_common)
 
         if bpy.app.version[1] >= 91:
             python_binary_path = sys.executable
         else:
             python_binary_path = bpy.app.binary_path_python
 
-        repo = Repository(data_protocol=bpy_protocol)
-
+        repo = Repository(
+            rdp=bpy_protocol,
+            username=settings.username)
+    
         # Host a session
         if self.host:
             if settings.init_method == 'EMPTY':
@@ -233,12 +221,17 @@ class SessionStartOperator(bpy.types.Operator):
             try:
                 # Init repository
                 for scene in bpy.data.scenes:
-                    add(repo, scene)
+                    porcelain.add(repo, scene)
 
+                porcelain.remote_add(
+                    repo,
+                    'origin',
+                    '127.0.0.1',
+                    settings.port,
+                    admin_password=admin_pass)
                 session.host(
                     repository= repo,
-                    id=settings.username,
-                    port=settings.port,
+                    remote='origin',
                     timeout=settings.connection_timeout,
                     password=admin_pass,
                     cache_directory=settings.cache_directory,
@@ -257,11 +250,14 @@ class SessionStartOperator(bpy.types.Operator):
                 admin_pass = None
 
             try:
+                porcelain.remote_add(
+                    repo,
+                    'origin',
+                    settings.ip,
+                    settings.port,
+                    admin_password=admin_pass)
                 session.connect(
                     repository= repo,
-                    id=settings.username,
-                    address=settings.ip,
-                    port=settings.port,
                     timeout=settings.connection_timeout,
                     password=admin_pass
                 )
@@ -273,10 +269,7 @@ class SessionStartOperator(bpy.types.Operator):
         deleyables.append(timers.ClientUpdate())
         deleyables.append(timers.DynamicRightSelectTimer())
         deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
-        # deleyables.append(timers.PushTimer(
-        #     queue=stagging,
-        #     timeout=settings.depsgraph_update_rate
-        #     ))
+
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
         session_background_executor = timers.MainThreadExecutor(
@@ -292,11 +285,7 @@ class SessionStartOperator(bpy.types.Operator):
         deleyables.append(session_update)
         deleyables.append(session_user_sync)
         deleyables.append(session_listen)
-        
 
-        self.report(
-            {'INFO'},
-            f"connecting to tcp://{settings.ip}:{settings.port}")
         return {"FINISHED"}
 
 
@@ -332,9 +321,10 @@ class SessionInitOperator(bpy.types.Operator):
             utils.clean_scene()
 
         for scene in bpy.data.scenes:
-            add(session.repository, scene)
+            porcelain.add(session.repository, scene)
 
         session.init()
+        context.window_manager.session.is_host = True
 
         return {"FINISHED"}
 
@@ -381,7 +371,7 @@ class SessionKickOperator(bpy.types.Operator):
         assert(session)
 
         try:
-            session.kick(self.user)
+            porcelain.kick(session.repository, self.user)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
@@ -410,7 +400,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            session.remove(self.property_path)
+            porcelain.rm(session.repository, self.property_path)
 
             return {"FINISHED"}
         except:  # NonAuthorizedOperationError:
@@ -452,10 +442,17 @@ class SessionPropertyRightOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
 
         if session:
-            session.change_owner(self.key,
-                                 runtime_settings.clients,
+            if runtime_settings.clients == RP_COMMON:
+                porcelain.unlock(session.repository,
+                                 self.key,
                                  ignore_warnings=True,
                                  affect_dependencies=self.recursive)
+            else:
+                porcelain.lock(session.repository,
+                             self.key,
+                             runtime_settings.clients,
+                             ignore_warnings=True,
+                             affect_dependencies=self.recursive)
 
         return {"FINISHED"}
 
@@ -570,7 +567,7 @@ class SessionSnapTimeOperator(bpy.types.Operator):
 
     def modal(self, context, event):
         is_running = context.window_manager.session.user_snap_running
-        if event.type in {'RIGHTMOUSE', 'ESC'} or not is_running:
+        if not is_running:
             self.cancel(context)
             return {'CANCELLED'}
 
@@ -603,18 +600,19 @@ class SessionApply(bpy.types.Operator):
     def execute(self, context):
         logging.debug(f"Running apply on {self.target}")
         try:
-            node_ref = session.repository.get_node(self.target)
-            apply(session.repository,
-                  self.target,
-                  force=True,
-                  force_dependencies=self.reset_dependencies)
-            if node_ref.bl_reload_parent:
-                for parent in session.repository.get_parents(self.target):
+            node_ref = session.repository.graph.get(self.target)
+            porcelain.apply(session.repository,
+                            self.target,
+                            force=True,
+                            force_dependencies=self.reset_dependencies)
+            impl = session.repository.rdp.get_implementation(node_ref.instance)
+            if impl.bl_reload_parent:
+                for parent in session.repository.graph.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
 
-                    apply(session.repository,
-                          parent.uuid,
-                          force=True)
+                    porcelain.apply(session.repository,
+                                    parent.uuid,
+                                    force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
             traceback.print_exc()
@@ -637,54 +635,12 @@ class SessionCommit(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            session.commit(uuid=self.target)
-            session.push(self.target)
+            porcelain.commit(session.repository, self.target)
+            porcelain.push(session.repository, 'origin', self.target)
             return {"FINISHED"}
         except Exception as e:
             self.report({'ERROR'}, repr(e))
-            return {"CANCELED"}
-
-class ApplyArmatureOperator(bpy.types.Operator):
-    """Operator which runs its self from a timer"""
-    bl_idname = "session.apply_armature_operator"
-    bl_label = "Modal Executor Operator"
-
-    _timer = None
-
-    def modal(self, context, event):
-        global stop_modal_executor, modal_executor_queue
-        if stop_modal_executor:
-            self.cancel(context)
-            return {'CANCELLED'}
-
-        if event.type == 'TIMER':
-            if session and session.state == STATE_ACTIVE:
-                nodes = session.list(filter=bl_types.bl_armature.BlArmature)
-
-                for node in nodes:
-                    node_ref = session.repository.get_node(node)
-
-                    if node_ref.state == FETCHED:
-                        try:
-                            apply(session.repository, node)
-                        except Exception as e:
-                            logging.error("Fail to apply armature: {e}")
-
-        return {'PASS_THROUGH'}
-
-    def execute(self, context):
-        wm = context.window_manager
-        self._timer = wm.event_timer_add(2, window=context.window)
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def cancel(self, context):
-        global stop_modal_executor
-
-        wm = context.window_manager
-        wm.event_timer_remove(self._timer)
-
-        stop_modal_executor = False
+            return {"CANCELLED"}
 
 
 class SessionClearCache(bpy.types.Operator):
@@ -714,6 +670,7 @@ class SessionClearCache(bpy.types.Operator):
     def draw(self, context):
         row = self.layout
         row.label(text=f" Do you really want to remove local cache ? ")
+
 
 class SessionPurgeOperator(bpy.types.Operator):
     "Remove node with lost references"
@@ -797,13 +754,14 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
             recorder.register()
             deleyables.append(recorder)
         else:
-            session.save(self.filepath)
+            session.repository.dumps(self.filepath)
 
         return {'FINISHED'}
 
     @classmethod
     def poll(cls, context):
         return session.state == STATE_ACTIVE
+
 
 class SessionStopAutoSaveOperator(bpy.types.Operator):
     bl_idname = "session.cancel_autosave"
@@ -839,63 +797,24 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from replication.repository import Repository
 
-        # TODO: add filechecks
+        # init the factory with supported types
+        bpy_protocol = bl_types.get_data_translation_protocol()
+        repo = Repository(bpy_protocol)
+        repo.loads(self.filepath)
+        utils.clean_scene()
 
-        try:
-            f = gzip.open(self.filepath, "rb")
-            db = pickle.load(f)
-        except OSError as e:
-            f = open(self.filepath, "rb")
-            db = pickle.load(f)
-        
-        if db:
-            logging.info(f"Reading {self.filepath}")
-            nodes = db.get("nodes")
+        nodes = [repo.graph.get(n) for n in repo.index_sorted]
 
-            logging.info(f"{len(nodes)} Nodes to load")
+        # Step 1: Construct nodes
+        for node in nodes:
+            node.instance = bpy_protocol.resolve(node.data)
+            if node.instance is None:
+                node.instance = bpy_protocol.construct(node.data)
+                node.instance.uuid = node.uuid
 
-            
-
-            # init the factory with supported types
-            bpy_protocol = DataTranslationProtocol()
-            for type in bl_types.types_to_register():
-                type_module = getattr(bl_types, type)
-                name = [e.capitalize() for e in type.split('_')[1:]]
-                type_impl_name = 'Bl'+''.join(name)
-                type_module_class = getattr(type_module, type_impl_name)
-
-
-                bpy_protocol.register_type(
-                    type_module_class.bl_class,
-                    type_module_class)
-            
-            graph = Repository()
-
-            for node, node_data in nodes:
-                node_type = node_data.get('str_type')
-
-                impl = bpy_protocol.get_implementation_from_net(node_type)
-
-                if impl:
-                    logging.info(f"Loading  {node}")
-                    instance = impl(owner=node_data['owner'],
-                                    uuid=node,
-                                    dependencies=node_data['dependencies'],
-                                    data=node_data['data'])
-                    graph.do_commit(instance)
-                    instance.state = FETCHED
-            
-            logging.info("Graph succefully loaded")
-
-            utils.clean_scene()
-
-            # Step 1: Construct nodes
-            for node in graph.list_ordered():
-                graph[node].resolve()
-
-            # Step 2: Load nodes
-            for node in graph.list_ordered():
-                graph[node].apply()
+        # Step 2: Load nodes
+        for node in nodes:
+            porcelain.apply(repo, node.uuid)
 
 
         return {'FINISHED'}
@@ -987,7 +906,6 @@ classes = (
     SessionPropertyRightOperator,
     SessionApply,
     SessionCommit,
-    ApplyArmatureOperator,
     SessionKickOperator,
     SessionInitOperator,
     SessionClearCache,
@@ -1000,14 +918,15 @@ classes = (
     SessionPresetServerRemove,
 )
 
+
 def update_external_dependencies():
-    nodes_ids = session.list(filter=bl_types.bl_file.BlFile)
+    nodes_ids = [n.uuid for n in session.repository.graph.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
     for node_id in nodes_ids:
-        node = session.repository.get_node(node_id)
-        if node and node.owner in [session.id, RP_COMMON] \
-                and node.has_changed():
-            session.commit(node_id)
-            session.push(node_id, check_data=False)
+        node = session.repository.graph.get(node_id)
+        if node and node.owner in [session.repository.username, RP_COMMON]:
+            porcelain.commit(session.repository, node_id)
+            porcelain.push(session.repository,'origin', node_id)
+
 
 def sanitize_deps_graph(remove_nodes: bool = False):
     """ Cleanup the replication graph
@@ -1015,18 +934,20 @@ def sanitize_deps_graph(remove_nodes: bool = False):
     if session and session.state == STATE_ACTIVE:
         start = utils.current_milli_time()
         rm_cpt = 0
-        for node_key in session.list():
-            node = session.repository.get_node(node_key)
+        for node in session.repository.graph.values():
+            node.instance = session.repository.rdp.resolve(node.data)
             if node is None \
-                    or (node.state == UP and not node.resolve(construct=False)):
+                    or (node.state == UP and not node.instance):
                 if remove_nodes:
                     try:
-                        session.remove(node.uuid, remove_dependencies=False)
+                        porcelain.rm(session.repository,
+                                     node.uuid,
+                                     remove_dependencies=False)
                         logging.info(f"Removing {node.uuid}")
                         rm_cpt += 1
                     except NonAuthorizedOperationError:
                         continue
-        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms")
+        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms, removed {rm_cpt} nodes")
 
 
 @persistent
@@ -1040,6 +961,7 @@ def resolve_deps_graph(dummy):
     if session and session.state == STATE_ACTIVE:
         sanitize_deps_graph(remove_nodes=True)
 
+
 @persistent
 def load_pre_handler(dummy):
     if session and session.state in [STATE_ACTIVE, STATE_SYNCING]:
@@ -1049,7 +971,7 @@ def load_pre_handler(dummy):
 @persistent
 def update_client_frame(scene):
     if session and session.state == STATE_ACTIVE:
-        session.update_user_metadata({
+        porcelain.update_user_metadata(session.repository, {
             'frame_current': scene.frame_current
         })
 
@@ -1064,27 +986,28 @@ def depsgraph_evaluation(scene):
 
         update_external_dependencies()
 
+        is_internal = [u for u in dependency_updates if u.is_updated_geometry or u.is_updated_shading or u.is_updated_transform]
+
         # NOTE: maybe we don't need to check each update but only the first
+        if not is_internal:
+            return
         for update in reversed(dependency_updates):
             # Is the object tracked ?
             if update.id.uuid:
                 # Retrieve local version
-                node = session.repository.get_node(update.id.uuid)
-                
+                node = session.repository.graph.get(update.id.uuid)
+                check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
                 # Check our right on this update:
                 #   - if its ours or ( under common and diff), launch the
                 # update process
                 #   - if its to someone else, ignore the update
-                if node and (node.owner == session.id or node.bl_check_common):
+                if node and (node.owner == session.repository.username or check_common):
                     if node.state == UP:
                         try:
-                            if node.has_changed():
-                                session.commit(node.uuid)
-                                session.push(node.uuid, check_data=False)
+                            porcelain.commit(session.repository, node.uuid)
+                            porcelain.push(session.repository, 'origin', node.uuid)
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
-                            if not node.is_valid():
-                                session.remove(node.uuid)
                         except ContextError as e:
                             logging.debug(e) 
                         except Exception as e:
@@ -1095,11 +1018,11 @@ def depsgraph_evaluation(scene):
             elif isinstance(update.id, bpy.types.Scene):
                 ref = session.repository.get_node_by_datablock(update.id)
                 if ref:
-                    ref.resolve()
+                    pass
                 else:
-                    scn_uuid = add(session.repository, update.id)
-                    session.commit(scn_uuid)
-                    session.push(scn_uuid, check_data=False)
+                    scn_uuid = porcelain.add(session.repository, update.id)
+                    porcelain.commit(session.node_id, scn_uuid)
+                    porcelain.push(session.repository,'origin', scn_uuid)
 def register():
     from bpy.utils import register_class
 

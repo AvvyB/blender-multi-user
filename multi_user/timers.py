@@ -24,7 +24,7 @@ from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_SRV_SYNC, STATE_SYNCING, UP)
 from replication.exception import NonAuthorizedOperationError, ContextError
 from replication.interface import session
-from replication.porcelain import apply, add
+from replication import porcelain
 
 from . import operators, utils
 from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
@@ -72,6 +72,7 @@ class Timer(object):
         except Exception as e:
             logging.error(e)
             self.unregister()
+            traceback.print_exc()
             session.disconnect(reason=f"Error during timer {self.id} execution")
         else:    
             if self.is_running:
@@ -99,7 +100,7 @@ class SessionBackupTimer(Timer):
 
 
     def execute(self):
-        session.save(self._filepath)
+        session.repository.dumps(self._filepath)
 
 class SessionListenTimer(Timer):
     def execute(self):
@@ -108,22 +109,21 @@ class SessionListenTimer(Timer):
 class ApplyTimer(Timer):
     def execute(self):
         if session and session.state == STATE_ACTIVE:
-            nodes = session.list()
-
-            for node in nodes:
-                node_ref = session.repository.get_node(node)
+            for node in session.repository.graph.keys():
+                node_ref = session.repository.graph.get(node)
 
                 if node_ref.state == FETCHED:
                     try:
-                        apply(session.repository, node)
+                        porcelain.apply(session.repository, node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}")
                         traceback.print_exc()
                     else:
-                        if node_ref.bl_reload_parent:
-                            for parent in session.repository.get_parents(node):
+                        impl = session.repository.rdp.get_implementation(node_ref.instance)
+                        if impl.bl_reload_parent:
+                            for parent in session.repository.graph.get_parents(node):
                                 logging.debug("Refresh parent {node}")
-                                apply(session.repository,
+                                porcelain.apply(session.repository,
                                       parent.uuid,
                                       force=True)
 
@@ -152,31 +152,28 @@ class DynamicRightSelectTimer(Timer):
 
                 # if an annotation exist and is tracked
                 if annotation_gp and annotation_gp.uuid:
-                    registered_gp = session.repository.get_node(annotation_gp.uuid)
+                    registered_gp = session.repository.graph.get(annotation_gp.uuid)
                     if is_annotating(bpy.context):
                         # try to get the right on it
                         if registered_gp.owner == RP_COMMON:
                             self._annotating = True
                             logging.debug(
                                 "Getting the right on the annotation GP")
-                            session.change_owner(
-                                registered_gp.uuid,
-                                settings.username,
-                                ignore_warnings=True,
-                                affect_dependencies=False)
+                            porcelain.lock(session.repository,
+                                            registered_gp.uuid,
+                                            ignore_warnings=True,
+                                            affect_dependencies=False)
                         
                         if registered_gp.owner == settings.username:
-                            gp_node = session.repository.get_node(annotation_gp.uuid)
-                            if gp_node.has_changed():
-                                session.commit(gp_node.uuid)
-                                session.push(gp_node.uuid, check_data=False)
+                            gp_node = session.repository.graph.get(annotation_gp.uuid)
+                            porcelain.commit(session.repository, gp_node.uuid)
+                            porcelain.push(session.repository, 'origin', gp_node.uuid)
 
                     elif self._annotating:
-                        session.change_owner(
-                            registered_gp.uuid,
-                            RP_COMMON,
-                            ignore_warnings=True,
-                            affect_dependencies=False)
+                        porcelain.unlock(session.repository,
+                                        registered_gp.uuid,
+                                        ignore_warnings=True,
+                                        affect_dependencies=False)
 
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
@@ -190,25 +187,24 @@ class DynamicRightSelectTimer(Timer):
 
                     # change old selection right to common
                     for obj in obj_common:
-                        node = session.repository.get_node(obj)
+                        node = session.repository.graph.get(obj)
 
                         if node and (node.owner == settings.username or node.owner == RP_COMMON):
                             recursive = True
                             if node.data and 'instance_type' in node.data.keys():
                                 recursive = node.data['instance_type'] != 'COLLECTION'
                             try:
-                                session.change_owner(
-                                    node.uuid,
-                                    RP_COMMON,
-                                    ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                porcelain.unlock(session.repository,
+                                                node.uuid,
+                                                ignore_warnings=True,
+                                                affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {node} owner")
 
                     # change new selection to our
                     for obj in obj_ours:
-                        node = session.repository.get_node(obj)
+                        node = session.repository.graph.get(obj)
 
                         if node and node.owner == RP_COMMON:
                             recursive = True
@@ -216,11 +212,10 @@ class DynamicRightSelectTimer(Timer):
                                 recursive = node.data['instance_type'] != 'COLLECTION'
 
                             try:
-                                session.change_owner(
-                                    node.uuid,
-                                    settings.username,
-                                    ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                porcelain.lock(session.repository,
+                                               node.uuid,
+                                               ignore_warnings=True,
+                                               affect_dependencies=recursive)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {node} owner")
@@ -233,21 +228,19 @@ class DynamicRightSelectTimer(Timer):
                         'selected_objects': current_selection
                     }
 
-                    session.update_user_metadata(user_metadata)
+                    porcelain.update_user_metadata(session.repository, user_metadata)
                     logging.debug("Update selection")
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
                     if len(current_selection) == 0 :
-                        owned_keys = session.list(
-                            filter_owner=settings.username)
+                        owned_keys = [k for k, v in session.repository.graph.items() if v.owner==settings.username]
                         for key in owned_keys:
-                            node = session.repository.get_node(key)
+                            node = session.repository.graph.get(key)
                             try:
-                                session.change_owner(
-                                    key,
-                                    RP_COMMON,
-                                    ignore_warnings=True,
-                                    affect_dependencies=recursive)
+                                porcelain.unlock(session.repository,
+                                                key,
+                                                ignore_warnings=True,
+                                                affect_dependencies=True)
                             except NonAuthorizedOperationError:
                                 logging.warning(
                                     f"Not authorized to change {key} owner")
@@ -255,7 +248,7 @@ class DynamicRightSelectTimer(Timer):
             for obj in bpy.data.objects:
                 object_uuid = getattr(obj, 'uuid', None)
                 if object_uuid:
-                    is_selectable = not session.is_readonly(object_uuid)
+                    is_selectable = not session.repository.is_node_readonly(object_uuid)
                     if obj.hide_select != is_selectable:
                         obj.hide_select = is_selectable
 
@@ -309,18 +302,18 @@ class ClientUpdate(Timer):
                         'frame_current': bpy.context.scene.frame_current,
                         'scene_current': scene_current
                     }
-                    session.update_user_metadata(metadata)
+                    porcelain.update_user_metadata(session.repository, metadata)
 
                 # Update client representation
                 # Update client current scene
                 elif scene_current != local_user_metadata['scene_current']:
                     local_user_metadata['scene_current'] = scene_current
-                    session.update_user_metadata(local_user_metadata)
+                    porcelain.update_user_metadata(session.repository, local_user_metadata)
                 elif 'view_corners' in local_user_metadata and current_view_corners != local_user_metadata['view_corners']:
                     local_user_metadata['view_corners'] = current_view_corners
                     local_user_metadata['view_matrix'] = get_view_matrix(
                     )
-                    session.update_user_metadata(local_user_metadata)
+                    porcelain.update_user_metadata(session.repository, local_user_metadata)
 
 
 class SessionStatusUpdate(Timer):

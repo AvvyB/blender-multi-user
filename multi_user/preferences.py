@@ -457,18 +457,18 @@ class SessionPrefs(bpy.types.AddonPreferences):
     def generate_supported_types(self):
         self.supported_datablocks.clear()
 
-        for type in bl_types.types_to_register():
+        bpy_protocol = bl_types.get_data_translation_protocol()
+
+        # init the factory with supported types
+        for dcc_type_id, impl in bpy_protocol.implementations.items():
             new_db = self.supported_datablocks.add()
 
-            type_module = getattr(bl_types, type)
-            name = [e.capitalize() for e in type.split('_')[1:]]
-            type_impl_name = 'Bl'+''.join(name)
-            type_module_class = getattr(type_module, type_impl_name)
-            new_db.name = type_impl_name
-            new_db.type_name = type_impl_name
+            new_db.name = dcc_type_id
+            new_db.type_name = dcc_type_id
             new_db.use_as_filter = True
-            new_db.icon = type_module_class.bl_icon
-            new_db.bl_name = type_module_class.bl_id
+            new_db.icon = impl.bl_icon
+            new_db.bl_name = impl.bl_id
+
 
     # custom at launch server preset
     def generate_default_presets(self): 
@@ -552,6 +552,11 @@ class SessionProps(bpy.types.PropertyGroup):
         name="filter_owned",
         description='Show only owned datablocks',
         default=True
+    )
+    filter_name: bpy.props.StringProperty(
+        name="filter_name",
+        default="",
+        description='Node name filter',
     )
     admin: bpy.props.BoolProperty(
         name="admin",

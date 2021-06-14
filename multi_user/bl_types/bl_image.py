@@ -24,9 +24,12 @@ import bpy
 import mathutils
 
 from .. import utils
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .dump_anything import Dumper, Loader
 from .bl_file import get_filepath, ensure_unpacked
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+
 
 format_to_ext = {
     'BMP': 'bmp',
@@ -48,35 +51,36 @@ format_to_ext = {
 }
 
 
-class BlImage(BlDatablock):
+class BlImage(ReplicatedDatablock):
     bl_id = "images"
     bl_class = bpy.types.Image
     bl_check_common = False
     bl_icon = 'IMAGE_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    @staticmethod
+    def construct(data: dict) -> object:
         return bpy.data.images.new(
             name=data['name'],
             width=data['size'][0],
             height=data['size'][1]
         )
 
-    def _load(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(data, target)
+        loader.load(data, datablock)
 
-        target.source = 'FILE'
-        target.filepath_raw = get_filepath(data['filename'])
+        datablock.source = 'FILE'
+        datablock.filepath_raw = get_filepath(data['filename'])
         color_space_name = data["colorspace_settings"]["name"]
 
         if color_space_name:
-            target.colorspace_settings.name = color_space_name
+            datablock.colorspace_settings.name = color_space_name
 
-    def _dump(self, instance=None):
-        assert(instance)
-
-        filename = Path(instance.filepath).name
+    @staticmethod
+    def dump(datablock: object) -> dict:
+        filename = Path(datablock.filepath).name
 
         data = {
             "filename": filename
@@ -93,35 +97,45 @@ class BlImage(BlDatablock):
             'float_buffer',
             'alpha_mode',
             'colorspace_settings']
-        data.update(dumper.dump(instance))
+        data.update(dumper.dump(datablock))
         return data
 
-    def diff(self):
-        if self.instance.is_dirty:
-            self.instance.save()
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return resolve_datablock_from_uuid(uuid, bpy.data.images)
 
-        if self.instance and (self.instance.name != self.data['name']):
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        deps = []
+
+        if datablock.packed_file:
+            filename = Path(bpy.path.abspath(datablock.filepath)).name
+            datablock.filepath_raw = get_filepath(filename)
+            datablock.save()
+            # An image can't be unpacked to the modified path
+            # TODO: make a bug report
+            datablock.unpack(method="REMOVE")
+
+        elif datablock.source == "GENERATED":
+            filename = f"{datablock.name}.png"
+            datablock.filepath = get_filepath(filename)
+            datablock.save()
+
+        if datablock.filepath:
+            deps.append(Path(bpy.path.abspath(datablock.filepath)))
+
+        return deps
+
+    @staticmethod
+    def needs_update(datablock: object, data:dict)-> bool:
+        if datablock.is_dirty:
+            datablock.save()
+
+        if not data or (datablock and (datablock.name != data.get('name'))):
             return True
         else:
             return False
 
-    def _resolve_deps_implementation(self):
-        deps = []
-
-        if self.instance.packed_file:
-            filename = Path(bpy.path.abspath(self.instance.filepath)).name
-            self.instance.filepath_raw = get_filepath(filename)
-            self.instance.save()
-            # An image can't be unpacked to the modified path
-            # TODO: make a bug report
-            self.instance.unpack(method="REMOVE")
-
-        elif self.instance.source == "GENERATED":
-            filename = f"{self.instance.name}.png"
-            self.instance.filepath = get_filepath(filename)
-            self.instance.save()
-
-        if self.instance.filepath:
-            deps.append(Path(bpy.path.abspath(self.instance.filepath)))
-
-        return deps
+_type = bpy.types.Image
+_class = BlImage

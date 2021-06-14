@@ -19,11 +19,11 @@ def test_curve(clear_blend, curve_type):
     datablock = bpy.data.curves[0]
 
     implementation = BlCurve()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.curves.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)

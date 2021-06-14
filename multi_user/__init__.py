@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 4, 0),
+    "version": (0, 5, 0),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -43,13 +43,10 @@ from bpy.app.handlers import persistent
 from . import environment
 
 
-DEPENDENCIES = {
-    ("replication", '0.1.36'),
-}
-
-
 module_error_msg = "Insufficient rights to install the multi-user \
                 dependencies, aunch blender with administrator rights."
+
+
 def register():
     # Setup logging policy
     logging.basicConfig(
@@ -58,12 +55,7 @@ def register():
         level=logging.INFO)
 
     try:
-        if bpy.app.version[1] >= 91:
-            python_binary_path = sys.executable
-        else:
-            python_binary_path = bpy.app.binary_path_python
-
-        environment.setup(DEPENDENCIES, python_binary_path)
+        environment.register()
 
         from . import presence
         from . import operators
@@ -111,3 +103,5 @@ def unregister():
     del bpy.types.ID.uuid
     del bpy.types.WindowManager.online_users
     del bpy.types.WindowManager.user_index
+
+    environment.unregister()

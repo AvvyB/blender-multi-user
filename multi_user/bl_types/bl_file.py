@@ -19,14 +19,15 @@
 import logging
 import os
 import sys
-from pathlib import Path
+from pathlib import Path, WindowsPath, PosixPath
 
 import bpy
 import mathutils
 from replication.constants import DIFF_BINARY, UP
-from replication.data import ReplicatedDatablock
+from replication.protocol import ReplicatedDatablock
 
 from .. import utils
+from ..utils import get_preferences
 from .dump_anything import Dumper, Loader
 
 
@@ -58,33 +59,16 @@ class BlFile(ReplicatedDatablock):
     bl_icon = 'FILE'
     bl_reload_parent = True
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.instance = kwargs.get('instance', None)
-        
-        if self.instance and not self.instance.exists():
-            raise FileNotFoundError(str(self.instance))
-   
-        self.preferences = utils.get_preferences()
+    @staticmethod
+    def construct(data: dict) -> object:
+        return Path(get_filepath(data['name']))
 
-    def resolve(self, construct = True):
-        self.instance = Path(get_filepath(self.data['name']))
-        
-        file_exists = self.instance.exists()
-        if not file_exists:
-            logging.debug("File don't exist, loading it.")
-            self._load(self.data, self.instance)
-        
-        return file_exists
+    @staticmethod
+    def resolve(data: dict) -> object:
+        return Path(get_filepath(data['name']))
 
-
-    def push(self, socket, identity=None, check_data=False):
-        super().push(socket, identity=None, check_data=False)
-        
-        if self.preferences.clear_memory_filecache:
-                del self.data['file']
-
-    def _dump(self, instance=None):
+    @staticmethod
+    def dump(datablock: object) -> dict:
         """
         Read the file and return a dict as:
         {
@@ -96,46 +80,62 @@ class BlFile(ReplicatedDatablock):
         logging.info(f"Extracting file metadata")
 
         data = {
-            'name': self.instance.name,
+            'name': datablock.name,
         }
 
-        logging.info(
-            f"Reading {self.instance.name} content: {self.instance.stat().st_size} bytes")
+        logging.info(f"Reading {datablock.name} content: {datablock.stat().st_size} bytes")
 
         try:
-            file = open(self.instance, "rb")
+            file = open(datablock, "rb")
             data['file'] = file.read()
 
             file.close()
         except IOError:
-            logging.warning(f"{self.instance} doesn't exist, skipping")
+            logging.warning(f"{datablock} doesn't exist, skipping")
         else:
             file.close()
 
         return data
 
-    def _load(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
         """
         Writing the file
         """
 
         try:
-            file = open(target, "wb")
+            file = open(datablock, "wb")
             file.write(data['file'])
             
-            if self.preferences.clear_memory_filecache:
-                del self.data['file']
+            if get_preferences().clear_memory_filecache:
+                del data['file']
         except IOError:
-            logging.warning(f"{target} doesn't exist, skipping")
+            logging.warning(f"{datablock} doesn't exist, skipping")
         else:
             file.close()
 
-    def diff(self):
-        if self.preferences.clear_memory_filecache:
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        return []
+    
+    @staticmethod
+    def needs_update(datablock: object, data:dict)-> bool:
+        if get_preferences().clear_memory_filecache:
             return False
         else:
-            if not self.instance:
+            if not datablock:
+                return None
+
+            if not data:
+                return True
+
+            memory_size = sys.getsizeof(data['file'])-33
+            disk_size = datablock.stat().st_size
+
+            if memory_size != disk_size:
+                return True
+            else:
                 return False
-            memory_size = sys.getsizeof(self.data['file'])-33
-            disk_size = self.instance.stat().st_size
-            return memory_size != disk_size
+
+_type = [WindowsPath, PosixPath]
+_class = BlFile

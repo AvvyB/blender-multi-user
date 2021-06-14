@@ -20,25 +20,32 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 
-class BlLight(BlDatablock):
+class BlLight(ReplicatedDatablock):
     bl_id = "lights"
     bl_class = bpy.types.Light
     bl_check_common = False
     bl_icon = 'LIGHT_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
-        return bpy.data.lights.new(data["name"], data["type"])
+    @staticmethod
+    def construct(data: dict) -> object:
+        instance = bpy.data.lights.new(data["name"], data["type"])
+        instance.uuid = data.get("uuid")
+        return instance
 
-    def _load_implementation(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
+        load_animation_data(data.get('animation_data'), datablock)
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 3
         dumper.include_filter = [
@@ -67,9 +74,23 @@ class BlLight(BlDatablock):
             'spot_size',
             'spot_blend'
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
+        data['animation_data'] = dump_animation_data(datablock)
         return data
 
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return  resolve_datablock_from_uuid(uuid, bpy.data.lights)
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        deps = []
+
+        deps.extend(resolve_animation_dependencies(datablock))
+
+        return deps
 
 
-
+_type = [bpy.types.SpotLight, bpy.types.PointLight, bpy.types.AreaLight, bpy.types.SunLight]
+_class = BlLight

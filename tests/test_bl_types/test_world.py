@@ -12,11 +12,11 @@ def test_world(clear_blend):
     datablock.use_nodes = True
     
     implementation = BlWorld()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.worlds.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)
