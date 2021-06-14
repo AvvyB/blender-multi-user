@@ -42,7 +42,7 @@ DEFAULT_PRESETS = {
     "public session" : {
         "server_ip": "51.75.71.183",
         "server_port": 5555,
-        "server_password": "admin"
+        "server_password": ""
     },
 }
 
@@ -473,6 +473,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
     # custom at launch server preset
     def generate_default_presets(self): 
         for preset_name, preset_data in DEFAULT_PRESETS.items():
+            existing_preset = self.server_preset.get(preset_name)
+            if existing_preset :
+                continue
             new_server = self.server_preset.add()
             new_server.name = preset_name
             new_server.server_ip = preset_data.get('server_ip')

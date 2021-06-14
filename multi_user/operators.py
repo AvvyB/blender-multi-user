@@ -921,24 +921,21 @@ class SessionPresetServerAdd(bpy.types.Operator):
         assert(context)
         return context.window_manager.invoke_props_dialog(self)
 
-    
     def draw(self, context):
         layout = self.layout
 
-        # TODO: menu pour rentrer le nom 
-        # TODO: override en label pour prévenir (icon) si jamais ce nom existe déjà
-        
         col = layout.column()
         settings = utils.get_preferences()
+        
         col.prop(settings, "server_name", text="server name")
         
-
     def execute(self, context):
         assert(context)
 
         settings = utils.get_preferences()
 
         existing_preset = settings.server_preset.get(settings.server_name)
+
         new_server = existing_preset if existing_preset else settings.server_preset.add()
         new_server.name = settings.server_name
         new_server.server_ip = settings.ip
@@ -947,42 +944,13 @@ class SessionPresetServerAdd(bpy.types.Operator):
 
         settings.server_preset_interface = settings.server_name
 
+        if new_server == existing_preset :
+            self.report({'INFO'}, "Server '" + settings.server_name + "' override")
+        else :
+            self.report({'INFO'}, "New '" + settings.server_name + "' server preset")
+
         return {'FINISHED'}
 
-
-# class SessionPresetServerOverwrite(bpy.types.Operator):
-#     bl_idname = "session.preset_server_overwrite"
-#     bl_description = "Overwrite the server preset that already has this name" # TODO : or increment the name
-#     bl_label = "Overwrite server preset ?"
-#     bl_options = {'REGISTER'}
-
-#     @classmethod
-#     def poll(cls, context):
-#         return True
-
-#     def execute(self, context):
-#         assert(context)
-
-#         settings = utils.get_preferences()
-
-#         old_server = settings.server_preset.get(settings.server_name)
-
-#         old_server.server_ip = settings.ip
-#         old_server.server_port = settings.port
-#         old_server.server_password = settings.password
-
-#         settings.server_preset_interface = settings.server_name
-
-#         self.report({'INFO'}, "Server overwrite")
-
-#         return {'FINISHED'}
-
-#     def invoke(self, context, event):
-#         assert(context)
-
-#         settings = utils.get_preferences()
-
-#         return context.window_manager.invoke_confirm(self, event)
 
 class SessionPresetServerRemove(bpy.types.Operator):
     """Remove a server to the server list preset"""
@@ -1030,7 +998,6 @@ classes = (
     SessionPurgeOperator,
     SessionPresetServerAdd,
     SessionPresetServerRemove,
-    # SessionPresetServerOverwrite,
 )
 
 def update_external_dependencies():
