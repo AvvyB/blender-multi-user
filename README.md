@@ -32,32 +32,32 @@ Currently, not all data-block are supported for replication over the wire. The f
 | Name           | Status |                           Comment                            |
 | -------------- | :----: | :----------------------------------------------------------: |
 | action         |   ✔️    |                                                              |
-| armature       |   ❗    |                          Not stable                          |
 | camera         |   ✔️    |                                                              |
 | collection     |   ✔️    |                                                              |
-| curve          |   ❗    |                 Nurbs surfaces not supported                 |
 | gpencil        |   ✔️    |                                                              |
 | image          |   ✔️    |                                                              |
 | mesh           |   ✔️    |                                                              |
 | material       |   ✔️    |                                                              |
-| node_groups    |   ❗    |                   Material & Geometry only                   |
+| node_groups    |   ✔️    |                   Material & Geometry only                   |
 | geometry nodes |   ✔️    |                                                              |
 | metaball       |   ✔️    |                                                              |
 | object         |   ✔️    |                                                              |
-| textures       |   ❗    |       Supported for modifiers/materials/geo nodes only       |
 | texts          |   ✔️    |                                                              |
 | scene          |   ✔️    |                                                              |
 | world          |   ✔️    |                                                              |
-| lightprobes    |   ✔️    |                                                              |
-| compositing    |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/46) |
-| texts          |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/81) |
-| nla            |   ❌    |                                                              |
 | volumes        |   ✔️    |                                                              |
+| lightprobes    |   ✔️    |                                                              |
+| physics        |   ✔️    |                                                              |
+| curve          |   ❗    |                 Nurbs surfaces not supported                 |
+| textures       |   ❗    |       Supported for modifiers/materials/geo nodes only       |
+| armature       |   ❗    |                          Not stable                          |
 | particles      |   ❗    |                   The cache isn't syncing.                   |
 | speakers       |   ❗    | [Partial](https://gitlab.com/slumber/multi-user/-/issues/65) |
 | vse            |   ❗    |               Mask and Clip not supported yet                |
-| physics        |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45) |
 | libraries      |   ❗    |                           Partial                            |
+| nla            |   ❌    |                                                              |
+| texts          |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/81) |
+| compositing    |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/46) |
 
 
 
