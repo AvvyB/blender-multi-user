@@ -34,6 +34,8 @@ from queue import Queue
 from time import gmtime, strftime
 import traceback
 
+from bpy.props import FloatProperty
+
 try:
     import _pickle as pickle
 except ImportError:
@@ -161,7 +163,7 @@ class SessionStartOperator(bpy.types.Operator):
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
-        admin_pass = runtime_settings.password
+        admin_pass = settings.password
 
         users.clear()
         deleyables.clear()
@@ -902,6 +904,76 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     def poll(cls, context):
         return True
 
+class SessionPresetServerAdd(bpy.types.Operator):
+    """Add a server to the server list preset"""
+    bl_idname = "session.preset_server_add"
+    bl_label = "add server preset"
+    bl_description = "add the current server to the server preset list"
+    bl_options = {"REGISTER"}
+
+    name : bpy.props.StringProperty(default="server_preset")
+    
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def invoke(self, context, event):
+        assert(context)
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+
+        col = layout.column()
+        settings = utils.get_preferences()
+        
+        col.prop(settings, "server_name", text="server name")
+        
+    def execute(self, context):
+        assert(context)
+
+        settings = utils.get_preferences()
+
+        existing_preset = settings.server_preset.get(settings.server_name)
+
+        new_server = existing_preset if existing_preset else settings.server_preset.add()
+        new_server.name = settings.server_name
+        new_server.server_ip = settings.ip
+        new_server.server_port = settings.port
+        new_server.server_password = settings.password
+
+        settings.server_preset_interface = settings.server_name
+
+        if new_server == existing_preset :
+            self.report({'INFO'}, "Server '" + settings.server_name + "' override")
+        else :
+            self.report({'INFO'}, "New '" + settings.server_name + "' server preset")
+
+        return {'FINISHED'}
+
+
+class SessionPresetServerRemove(bpy.types.Operator):
+    """Remove a server to the server list preset"""
+    bl_idname = "session.preset_server_remove"
+    bl_label = "remove server preset"
+    bl_description = "remove the current server from the server preset list"
+    bl_options = {"REGISTER"}
+    
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        assert(context)
+
+        settings = utils.get_preferences()
+
+        settings.server_preset.remove(settings.server_preset.find(settings.server_preset_interface))
+
+        return {'FINISHED'}
+        
+
+
 def menu_func_import(self, context):
     self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
 
@@ -919,11 +991,13 @@ classes = (
     SessionKickOperator,
     SessionInitOperator,
     SessionClearCache,
-    SessionNotifyOperator,
+    SessionNotifyOperator, 
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
     SessionStopAutoSaveOperator,
     SessionPurgeOperator,
+    SessionPresetServerAdd,
+    SessionPresetServerRemove,
 )
 
 def update_external_dependencies():

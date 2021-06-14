@@ -156,7 +156,13 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = layout.row()
         row.prop(runtime_settings, "session_mode", expand=True)
         row = layout.row()
+                     
+        col = row.row(align=True)
+        col.prop(settings, "server_preset_interface", text="")
+        col.operator("session.preset_server_add", icon='ADD', text="")
+        col.operator("session.preset_server_remove", icon='REMOVE', text="")
 
+        row = layout.row()
         box = row.box()
 
         if runtime_settings.session_mode == 'HOST':
@@ -168,7 +174,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.prop(settings, "init_method", text="")
             row = box.row()
             row.label(text="Admin password:")
-            row.prop(runtime_settings, "password", text="")
+            row.prop(settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
@@ -184,10 +190,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             if runtime_settings.admin:
                 row = box.row()
                 row.label(text="Password:")
-                row.prop(runtime_settings, "password", text="")
+                row.prop(settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
-
 
 class SESSION_PT_settings_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"

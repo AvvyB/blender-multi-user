@@ -108,35 +108,68 @@ Before starting make sure that you have access to the session IP address and por
 1. Fill in your user information
 --------------------------------
 
-Follow the user-info_ section for this step.
+Joining a server 
+=======================
 
-----------------
-2. Network setup
-----------------
+--------------
+Network setup
+--------------
 
 In the network panel, select **JOIN**.
 The **join sub-panel** (see image below) allows you to configure your client to join a
 collaborative session which is already hosted.
 
-.. figure:: img/quickstart_join.png
-   :align: center
-   :alt: Connect menu
+.. figure:: img/server_preset_image_normal_server.png
+    :align: center
+    :width: 200px
 
-   Connection panel
+    Connection pannel
 
 Fill in the fields with your information:
 
 - **IP**: the host's IP address.
 - **Port**: the host's port number.
-- **Connect as admin**: connect yourself with **admin rights** (see :ref:`admin` ) to the session.
-
-.. Maybe something more explicit here
-
-.. note::
-   Additional configuration settings can be found in the :ref:`advanced` section.
 
 Once you've configured every field, hit the button **CONNECT** to join the session !
 When the :ref:`session-status` is **ONLINE** you are online and ready to start co-creating.
+
+.. note::
+   
+   If you want to have **administrator rights** (see :ref:`admin` ) on the server, just enter the password created by the host in the **Connect as admin** section
+
+    .. figure:: img/server_preset_image_admin.png
+        :align: center
+        :width: 200px
+
+        Admin password
+
+---------------
+Server presets
+---------------
+
+You can save your server presets in a preset list below the 'JOIN' and 'HOST' buttons. This allows you to quickly access and manage your servers.
+
+To add a server, first enter the ip address and the port (plus the password if needed), then click on the + icon to add a name to your preset. To remove a server from the list, select it and click on the - icon.
+
+.. figure:: img/server_preset_exemple.gif
+    :align: center
+    :width: 200px
+
+.. warning:: Be careful, if you don't rename your new preset, or if it has the same name as an existing preset, the old preset will be overwritten.
+
+    .. figure:: img/server_preset_image_report.png
+        :align: center
+        :width: 200px
+
+.. note:: 
+   
+   Two presets are already present when the addon is launched:
+
+  - The 'localhost' preset, to host and join a local session quickly
+  - The 'public session' preset, to join the public sessions of the multi-user server (official discord to participate : https://discord.gg/aBPvGws)
+
+.. note::
+   Additional configuration settings can be found in the :ref:`advanced` section.
 
 .. note::
    When starting a **dedicated server**, the session status screen will take you to the **LOBBY**, awaiting an admin to start the session.
