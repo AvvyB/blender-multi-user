@@ -76,7 +76,7 @@ Hit 'Create a network'(see image below) and go to the network settings.
     :align: center
     :width: 450px
 
-    Network page
+    Admin password
 
 Now that the network is created, let's configure it.
 
