@@ -1688,10 +1688,7 @@ class GitlabEngine(object):
 		# Could clash with tag names and if it does, it will
 		# download TAG zip instead of branch zip to get
 		# direct path, would need.
-		return "{}{}{}".format(
-			self.form_repo_url(updater),
-			"/repository/archive.zip?sha=",
-			branch)
+		return f"https://gitlab.com/slumber/multi-user/-/jobs/artifacts/{branch}/download?job=build"
 
 	def get_zip_url(self, sha, updater):
 		return "{base}/repository/archive.zip?sha={sha}".format(
