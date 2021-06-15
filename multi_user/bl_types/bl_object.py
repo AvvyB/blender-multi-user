@@ -664,7 +664,11 @@ class BlObject(ReplicatedDatablock):
             'show_all_edges',
             'show_texture_space',
             'show_in_front',
-            'type'
+            'type',
+            'parent_type',
+            'parent_bone',
+            'track_axis',
+            'up_axis',
         ]
 
         data = dumper.dump(datablock)
