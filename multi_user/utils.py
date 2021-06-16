@@ -101,11 +101,14 @@ def get_state_str(state):
 
 
 def clean_scene():
-    for type_name in dir(bpy.data):
+    to_delete = [f for f in dir(bpy.data) if f not in ['brushes', 'palettes']]
+    for type_name in to_delete:
         try:
+            sub_collection_to_avoid = [bpy.data.linestyles['LineStyle'], bpy.data.materials['Dots Stroke']]
             type_collection = getattr(bpy.data, type_name)
             for item in type_collection:
-                type_collection.remove(item)
+                if item not in sub_collection_to_avoid :
+                    type_collection.remove(item) 
         except:
             continue
     
