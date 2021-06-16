@@ -106,9 +106,12 @@ def clean_scene():
         try:
             sub_collection_to_avoid = [bpy.data.linestyles['LineStyle'], bpy.data.materials['Dots Stroke']]
             type_collection = getattr(bpy.data, type_name)
-            for item in type_collection:
-                if item not in sub_collection_to_avoid :
-                    type_collection.remove(item) 
+            items_to_remove = [i for i in type_collection if i not in sub_collection_to_avoid]
+            for item in items_to_remove:
+                try:
+                    type_collection.remove(item)
+                except:
+                    continue
         except:
             continue
     
