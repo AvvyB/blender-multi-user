@@ -27,12 +27,12 @@ import shutil
 import string
 import sys
 import time
+import traceback
 from datetime import datetime
 from operator import itemgetter
 from pathlib import Path
 from queue import Queue
 from time import gmtime, strftime
-import traceback
 
 from bpy.props import FloatProperty
 
@@ -45,19 +45,19 @@ import bpy
 import mathutils
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
+from replication import porcelain
 from replication.constants import (COMMITED, FETCHED, RP_COMMON, STATE_ACTIVE,
                                    STATE_INITIAL, STATE_SYNCING, UP)
-from replication.protocol import DataTranslationProtocol
 from replication.exception import ContextError, NonAuthorizedOperationError
 from replication.interface import session
-from replication import porcelain
-from replication.repository import Repository
 from replication.objects import Node
+from replication.protocol import DataTranslationProtocol
+from replication.repository import Repository
 
-from . import bl_types, environment, timers, ui, utils
+from . import bl_types, environment, shared_data, timers, ui, utils
+from .handlers import on_scene_update, sanitize_deps_graph
 from .presence import SessionStatusWidget, renderer, view3d_find
 from .timers import registry
-from . import shared_data
 
 background_execution_queue = Queue()
 deleyables = []
@@ -113,7 +113,7 @@ def initialize_session():
     utils.flush_history()
 
     # Step 6: Launch deps graph update handling
-    bpy.app.handlers.depsgraph_update_post.append(depsgraph_evaluation)
+    bpy.app.handlers.depsgraph_update_post.append(on_scene_update)
 
 
 @session_callback('on_exit')
@@ -133,8 +133,8 @@ def on_connection_end(reason="none"):
 
     stop_modal_executor = True
 
-    if depsgraph_evaluation in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.remove(depsgraph_evaluation)
+    if on_scene_update in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(on_scene_update)
 
     # Step 3: remove file handled
     logger = logging.getLogger()
@@ -685,6 +685,7 @@ class SessionPurgeOperator(bpy.types.Operator):
     def execute(self, context):
         try:
             sanitize_deps_graph(remove_nodes=True)
+            porcelain.purge_orphan_nodes(session.repository)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
 
@@ -716,7 +717,6 @@ class SessionNotifyOperator(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         layout.row().label(text=self.message)
-
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -920,120 +920,11 @@ classes = (
 )
 
 
-def update_external_dependencies():
-    nodes_ids = [n.uuid for n in session.repository.graph.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
-    for node_id in nodes_ids:
-        node = session.repository.graph.get(node_id)
-        if node and node.owner in [session.repository.username, RP_COMMON]:
-            porcelain.commit(session.repository, node_id)
-            porcelain.push(session.repository,'origin', node_id)
-
-
-def sanitize_deps_graph(remove_nodes: bool = False):
-    """ Cleanup the replication graph
-    """
-    if session and session.state == STATE_ACTIVE:
-        start = utils.current_milli_time()
-        rm_cpt = 0
-        for node in session.repository.graph.values():
-            node.instance = session.repository.rdp.resolve(node.data)
-            if node is None \
-                    or (node.state == UP and not node.instance):
-                if remove_nodes:
-                    try:
-                        porcelain.rm(session.repository,
-                                     node.uuid,
-                                     remove_dependencies=False)
-                        logging.info(f"Removing {node.uuid}")
-                        rm_cpt += 1
-                    except NonAuthorizedOperationError:
-                        continue
-        logging.info(f"Sanitize took { utils.current_milli_time()-start} ms, removed {rm_cpt} nodes")
-
-
-@persistent
-def resolve_deps_graph(dummy):
-    """Resolve deps graph
-
-    Temporary solution to resolve each node pointers after a Undo.
-    A future solution should be to avoid storing dataclock reference...
-
-    """
-    if session and session.state == STATE_ACTIVE:
-        sanitize_deps_graph(remove_nodes=True)
-
-
-@persistent
-def load_pre_handler(dummy):
-    if session and session.state in [STATE_ACTIVE, STATE_SYNCING]:
-        bpy.ops.session.stop()
-
-
-@persistent
-def update_client_frame(scene):
-    if session and session.state == STATE_ACTIVE:
-        porcelain.update_user_metadata(session.repository, {
-            'frame_current': scene.frame_current
-        })
-
-
-@persistent
-def depsgraph_evaluation(scene):
-    if session and session.state == STATE_ACTIVE:
-        context = bpy.context
-        blender_depsgraph = bpy.context.view_layer.depsgraph
-        dependency_updates = [u for u in blender_depsgraph.updates]
-        settings = utils.get_preferences()
-
-        distant_update = [getattr(u.id, 'uuid', None) for u in dependency_updates if getattr(u.id, 'uuid', None) in shared_data.session.applied_updates]
-        if distant_update:
-            for u in distant_update:
-                shared_data.session.applied_updates.remove(u)
-            logging.info(f"Ignoring distant update of {dependency_updates[0].id.name}")
-            return
-
-        update_external_dependencies()
-
-        # NOTE: maybe we don't need to check each update but only the first
-        for update in reversed(dependency_updates):
-            update_uuid = getattr(update.id, 'uuid', None)
-            if update_uuid:
-                logging.info(f"Updating {update.id.name}")
-                node = session.repository.graph.get(update.id.uuid)
-                check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
-                # Check our right on this update:
-                #   - if its ours or ( under common and diff), launch the
-                # update process
-                #   - if its to someone else, ignore the update
-                if node and (node.owner == session.repository.username or check_common):
-                    if node.state == UP:
-                        try:
-                            porcelain.commit(session.repository, node.uuid)
-                            porcelain.push(session.repository, 'origin', node.uuid)
-                        except ReferenceError:
-                            logging.debug(f"Reference error {node.uuid}")
-                        except ContextError as e:
-                            logging.debug(e) 
-                        except Exception as e:
-                            logging.error(e)
-                else:
-                    continue
-            elif isinstance(update.id, bpy.types.Scene):
-                scn_uuid = porcelain.add(session.repository, update.id)
-                porcelain.commit(session.repository, scn_uuid)
-                porcelain.push(session.repository, 'origin', scn_uuid)
 def register():
     from bpy.utils import register_class
 
     for cls in classes: 
         register_class(cls)
-
-
-    bpy.app.handlers.undo_post.append(resolve_deps_graph)
-    bpy.app.handlers.redo_post.append(resolve_deps_graph)
-
-    bpy.app.handlers.load_pre.append(load_pre_handler)
-    bpy.app.handlers.frame_change_pre.append(update_client_frame)
 
 
 def unregister():
@@ -1043,9 +934,3 @@ def unregister():
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
-
-    bpy.app.handlers.undo_post.remove(resolve_deps_graph)
-    bpy.app.handlers.redo_post.remove(resolve_deps_graph)
-
-    bpy.app.handlers.load_pre.remove(load_pre_handler)
-    bpy.app.handlers.frame_change_pre.remove(update_client_frame)
