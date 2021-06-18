@@ -57,6 +57,7 @@ from replication.objects import Node
 from . import bl_types, environment, timers, ui, utils
 from .presence import SessionStatusWidget, renderer, view3d_find
 from .timers import registry
+from . import shared_data
 
 background_execution_queue = Queue()
 deleyables = []
@@ -984,17 +985,20 @@ def depsgraph_evaluation(scene):
         dependency_updates = [u for u in blender_depsgraph.updates]
         settings = utils.get_preferences()
 
+        distant_update = [getattr(u.id, 'uuid', None) for u in dependency_updates if getattr(u.id, 'uuid', None) in shared_data.session.applied_updates]
+        if distant_update:
+            for u in distant_update:
+                shared_data.session.applied_updates.remove(u)
+            logging.info(f"Ignoring distant update of {dependency_updates[0].id.name}")
+            return
+
         update_external_dependencies()
 
-        is_internal = [u for u in dependency_updates if u.is_updated_geometry or u.is_updated_shading or u.is_updated_transform]
-
         # NOTE: maybe we don't need to check each update but only the first
-        if not is_internal:
-            return
         for update in reversed(dependency_updates):
-            # Is the object tracked ?
-            if update.id.uuid:
-                # Retrieve local version
+            update_uuid = getattr(update.id, 'uuid', None)
+            if update_uuid:
+                logging.info(f"Updating {update.id.name}")
                 node = session.repository.graph.get(update.id.uuid)
                 check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
                 # Check our right on this update:
@@ -1014,15 +1018,10 @@ def depsgraph_evaluation(scene):
                             logging.error(e)
                 else:
                     continue
-            # A new scene is created 
             elif isinstance(update.id, bpy.types.Scene):
-                ref = session.repository.get_node_by_datablock(update.id)
-                if ref:
-                    pass
-                else:
-                    scn_uuid = porcelain.add(session.repository, update.id)
-                    porcelain.commit(session.node_id, scn_uuid)
-                    porcelain.push(session.repository,'origin', scn_uuid)
+                scn_uuid = porcelain.add(session.repository, update.id)
+                porcelain.commit(session.repository, scn_uuid)
+                porcelain.push(session.repository, 'origin', scn_uuid)
 def register():
     from bpy.utils import register_class
 
