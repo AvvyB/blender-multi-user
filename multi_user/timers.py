@@ -31,6 +31,8 @@ from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
                        generate_user_camera, get_view_matrix, refresh_3d_view,
                        refresh_sidebar_view, renderer)
 
+from . import shared_data 
+
 this = sys.modules[__name__]
 
 # Registered timers
@@ -89,7 +91,7 @@ class Timer(object):
         if bpy.app.timers.is_registered(self.main):
             logging.info(f"Unregistering {self.id}")
             bpy.app.timers.unregister(self.main)
-        
+
         del this.registry[self.id]
         self.is_running = False
 
@@ -114,6 +116,7 @@ class ApplyTimer(Timer):
 
                 if node_ref.state == FETCHED:
                     try:
+                        shared_data.session.applied_updates.append(node)
                         porcelain.apply(session.repository, node)
                     except Exception as e:
                         logging.error(f"Fail to apply {node_ref.uuid}")
@@ -251,6 +254,7 @@ class DynamicRightSelectTimer(Timer):
                     is_selectable = not session.repository.is_node_readonly(object_uuid)
                     if obj.hide_select != is_selectable:
                         obj.hide_select = is_selectable
+                        shared_data.session.applied_updates.append(object_uuid)
 
 
 class ClientUpdate(Timer):
