@@ -88,7 +88,7 @@ def on_scene_update(scene):
                 check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
 
                 if node and (node.owner == session.repository.username or check_common):
-                    logging.info(f"Updating {update.id.name}")
+                    logging.debug(f"Evaluate {update.id.name}")
                     if node.state == UP:
                         try:
                             porcelain.commit(session.repository, node.uuid)
