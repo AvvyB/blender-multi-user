@@ -75,7 +75,7 @@ def on_scene_update(scene):
         if distant_update:
             for u in distant_update:
                 shared_data.session.applied_updates.remove(u)
-            logging.info(f"Ignoring distant update of {dependency_updates[0].id.name}")
+            logging.debug(f"Ignoring distant update of {dependency_updates[0].id.name}")
             return
 
         update_external_dependencies()
