@@ -37,6 +37,8 @@ def get_roll(bone: bpy.types.Bone) -> float:
 
 
 class BlArmature(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "armatures"
     bl_class = bpy.types.Armature
     bl_check_common = False

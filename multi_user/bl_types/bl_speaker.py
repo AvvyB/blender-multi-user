@@ -25,6 +25,8 @@ from .bl_datablock import resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 class BlSpeaker(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "speakers"
     bl_class = bpy.types.Speaker
     bl_check_common = False

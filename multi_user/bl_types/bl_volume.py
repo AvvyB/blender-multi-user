@@ -27,6 +27,8 @@ from .bl_material import dump_materials_slots, load_materials_slots
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 class BlVolume(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "volumes"
     bl_class = bpy.types.Volume
     bl_check_common = False

@@ -41,6 +41,8 @@ IGNORED_ATTR = [
 ]
 
 class BlParticle(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "particles"
     bl_class = bpy.types.ParticleSettings
     bl_icon = "PARTICLES"

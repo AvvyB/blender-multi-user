@@ -65,6 +65,8 @@ def load_metaball_elements(elements_data, elements):
 
 
 class BlMetaball(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "metaballs"
     bl_class = bpy.types.MetaBall
     bl_check_common = False

@@ -397,6 +397,8 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
 
 
 class BlMaterial(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "materials"
     bl_class = bpy.types.Material
     bl_check_common = False

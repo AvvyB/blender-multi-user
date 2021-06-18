@@ -493,6 +493,8 @@ def load_modifiers_custom_data(dumped_modifiers: dict, modifiers: bpy.types.bpy_
         
             
 class BlObject(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "objects"
     bl_class = bpy.types.Object
     bl_check_common = False

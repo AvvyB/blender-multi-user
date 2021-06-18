@@ -25,6 +25,8 @@ from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
 
 class BlLightprobe(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "lightprobes"
     bl_class = bpy.types.LightProbe
     bl_check_common = False

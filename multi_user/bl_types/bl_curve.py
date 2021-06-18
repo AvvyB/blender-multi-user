@@ -137,6 +137,8 @@ SPLINE_METADATA = [
 
 
 class BlCurve(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "curves"
     bl_class = bpy.types.Curve
     bl_check_common = False

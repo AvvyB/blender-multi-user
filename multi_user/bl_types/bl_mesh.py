@@ -55,6 +55,8 @@ POLYGON = [
 ]
 
 class BlMesh(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "meshes"
     bl_class = bpy.types.Mesh
     bl_check_common = False

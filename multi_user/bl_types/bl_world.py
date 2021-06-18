@@ -30,6 +30,8 @@ from .bl_action import dump_animation_data, load_animation_data, resolve_animati
 
 
 class BlWorld(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "worlds"
     bl_class = bpy.types.World
     bl_check_common = True

@@ -26,6 +26,8 @@ from .bl_action import dump_animation_data, load_animation_data, resolve_animati
 import bpy.types as T
 
 class BlTexture(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "textures"
     bl_class = bpy.types.Texture
     bl_check_common = False

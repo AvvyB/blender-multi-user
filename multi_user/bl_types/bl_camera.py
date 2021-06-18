@@ -26,6 +26,8 @@ from .bl_action import dump_animation_data, load_animation_data, resolve_animati
 
 
 class BlCamera(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "cameras"
     bl_class = bpy.types.Camera
     bl_check_common = False

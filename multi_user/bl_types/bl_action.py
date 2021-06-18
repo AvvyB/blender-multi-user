@@ -259,6 +259,8 @@ def resolve_animation_dependencies(datablock):
 
 
 class BlAction(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "actions"
     bl_class = bpy.types.Action
     bl_check_common = False

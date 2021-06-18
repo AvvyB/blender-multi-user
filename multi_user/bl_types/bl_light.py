@@ -26,6 +26,8 @@ from .bl_action import dump_animation_data, load_animation_data, resolve_animati
 
 
 class BlLight(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "lights"
     bl_class = bpy.types.Light
     bl_check_common = False

@@ -29,6 +29,8 @@ POINT = ['co', 'weight_softbody', 'co_deform']
 
 
 class BlLattice(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "lattices"
     bl_class = bpy.types.Lattice
     bl_check_common = False
