@@ -219,7 +219,7 @@ def load_fcurve(fcurve_data, fcurve):
 def dump_animation_data(datablock):
     animation_data = {}
     if has_action(datablock):
-            animation_data['action'] = datablock.animation_data.action.name
+        animation_data['action'] = datablock.animation_data.action.uuid
     if has_driver(datablock):
         animation_data['drivers'] = []
         for driver in datablock.animation_data.drivers:
@@ -241,8 +241,10 @@ def load_animation_data(animation_data, datablock):
             for driver in animation_data['drivers']:
                 load_driver(datablock, driver)
 
-        if 'action' in animation_data:
-            datablock.animation_data.action = bpy.data.actions[animation_data['action']]
+        action = animation_data.get('action')
+        if action:
+            action = resolve_datablock_from_uuid(action, bpy.data.actions)
+            datablock.animation_data.action = action
         elif datablock.animation_data.action:
             datablock.animation_data.action = None
 
