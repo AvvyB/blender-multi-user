@@ -100,7 +100,7 @@ def initialize_session():
 
         # Step 2: Load nodes
         logging.info("Applying nodes")
-        for node in session.repository.index_sorted:
+        for node in session.repository.heads:
             porcelain.apply(session.repository, node)
 
     logging.info("Registering timers")
