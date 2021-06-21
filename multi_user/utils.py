@@ -38,6 +38,14 @@ from replication.constants import (STATE_ACTIVE, STATE_AUTH,
                                   STATE_LOBBY,
                                   CONNECTING)
 
+CLEARED_DATABLOCKS = ['actions', 'armatures', 'cache_files', 'cameras',
+                     'collections', 'curves', 'filepath', 'fonts',
+                     'grease_pencils', 'images', 'lattices', 'libraries',
+                     'lightprobes', 'lights', 'linestyles', 'masks',
+                     'materials', 'meshes', 'metaballs', 'movieclips',
+                     'node_groups', 'objects', 'paint_curves', 'particles',
+                     'scenes', 'shape_keys', 'sounds', 'speakers', 'texts',
+                     'textures', 'volumes', 'worlds']
 
 def find_from_attr(attr_name, attr_value, list):
     for item in list:
@@ -101,22 +109,24 @@ def get_state_str(state):
 
 
 def clean_scene():
-    to_delete = [f for f in dir(bpy.data) if f not in ['brushes', 'palettes']]
-    for type_name in to_delete:
-        try:
-            sub_collection_to_avoid = [bpy.data.linestyles['LineStyle'], bpy.data.materials['Dots Stroke']]
-            type_collection = getattr(bpy.data, type_name)
-            items_to_remove = [i for i in type_collection if i not in sub_collection_to_avoid]
-            for item in items_to_remove:
-                try:
-                    type_collection.remove(item)
-                except:
-                    continue
-        except:
-            continue
-    
+    for type_name in CLEARED_DATABLOCKS:
+        sub_collection_to_avoid = [
+            bpy.data.linestyles.get('LineStyle'),
+            bpy.data.materials.get('Dots Stroke')
+        ]
+
+        type_collection = getattr(bpy.data, type_name)
+        items_to_remove = [i for i in type_collection if i not in sub_collection_to_avoid]
+        for item in items_to_remove:
+            try:
+                type_collection.remove(item)
+                logging.info(item.name)
+            except:
+                continue
+
     # Clear sequencer
     bpy.context.scene.sequence_editor_clear()
+
 
 def get_selected_objects(scene, active_view_layer):
     return [obj.uuid for obj in scene.objects if obj.select_get(view_layer=active_view_layer)]
