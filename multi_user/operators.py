@@ -604,8 +604,7 @@ class SessionApply(bpy.types.Operator):
             node_ref = session.repository.graph.get(self.target)
             porcelain.apply(session.repository,
                             self.target,
-                            force=True,
-                            force_dependencies=self.reset_dependencies)
+                            force=True)
             impl = session.repository.rdp.get_implementation(node_ref.instance)
             if impl.bl_reload_parent:
                 for parent in session.repository.graph.get_parents(self.target):
@@ -613,6 +612,11 @@ class SessionApply(bpy.types.Operator):
 
                     porcelain.apply(session.repository,
                                     parent.uuid,
+                                    force=True)
+            if hasattr(impl, 'bl_reload_child') and impl.bl_reload_child:
+                for dep in node_ref.dependencies:
+                    porcelain.apply(session.repository,
+                                    dep,
                                     force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))

@@ -404,6 +404,7 @@ class BlMaterial(ReplicatedDatablock):
     bl_check_common = False
     bl_icon = 'MATERIAL_DATA'
     bl_reload_parent = False
+    bl_reload_child = True
 
     @staticmethod
     def construct(data: dict) -> object:
@@ -513,6 +514,7 @@ class BlMaterial(ReplicatedDatablock):
 
         if datablock.use_nodes:
             deps.extend(get_node_tree_dependencies(datablock.node_tree))
+            deps.extend(resolve_animation_dependencies(datablock.node_tree))
         deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
