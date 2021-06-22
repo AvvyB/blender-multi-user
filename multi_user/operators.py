@@ -637,7 +637,7 @@ class SessionCommit(bpy.types.Operator):
     def execute(self, context):
         try:
             porcelain.commit(session.repository, self.target)
-            porcelain.push(session.repository, 'origin', self.target)
+            porcelain.push(session.repository, 'origin', self.target, force=True)
             return {"FINISHED"}
         except Exception as e:
             self.report({'ERROR'}, repr(e))
