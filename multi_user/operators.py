@@ -606,6 +606,7 @@ class SessionApply(bpy.types.Operator):
                             self.target,
                             force=True)
             impl = session.repository.rdp.get_implementation(node_ref.instance)
+            # NOTE: find another way to handle child and parent automatic reloading
             if impl.bl_reload_parent:
                 for parent in session.repository.graph.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
