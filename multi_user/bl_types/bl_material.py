@@ -426,8 +426,9 @@ class BlMaterial(ReplicatedDatablock):
             if datablock.node_tree is None:
                 datablock.use_nodes = True
 
-            load_animation_data(data.get('animation_data'), datablock.node_tree)
             load_node_tree(data['node_tree'], datablock.node_tree)
+            load_animation_data(data.get('nodes_animation_data'), datablock.node_tree)
+        load_animation_data(data.get('animation_data'), datablock)
 
     @staticmethod
     def dump(datablock: object) -> dict:
@@ -495,8 +496,10 @@ class BlMaterial(ReplicatedDatablock):
             data['grease_pencil'] = gp_mat_dumper.dump(datablock.grease_pencil)
         elif datablock.use_nodes:
             data['node_tree'] = dump_node_tree(datablock.node_tree)
+            data['nodes_animation_data'] = dump_animation_data(datablock.node_tree)
 
-        data['animation_data'] = dump_animation_data(datablock.node_tree)
+        data['animation_data'] = dump_animation_data(datablock)
+
         return data
 
     @staticmethod
@@ -510,8 +513,7 @@ class BlMaterial(ReplicatedDatablock):
 
         if datablock.use_nodes:
             deps.extend(get_node_tree_dependencies(datablock.node_tree))
-
-        deps.extend(resolve_animation_dependencies(datablock.node_tree))
+        deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
 
