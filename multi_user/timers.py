@@ -129,6 +129,11 @@ class ApplyTimer(Timer):
                                 porcelain.apply(session.repository,
                                       parent.uuid,
                                       force=True)
+                        if hasattr(impl, 'bl_reload_child') and impl.bl_reload_child:
+                            for dep in node_ref.dependencies:
+                                porcelain.apply(session.repository,
+                                                dep,
+                                                force=True)
 
 
 class DynamicRightSelectTimer(Timer):

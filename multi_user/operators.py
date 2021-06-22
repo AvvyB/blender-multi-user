@@ -604,15 +604,20 @@ class SessionApply(bpy.types.Operator):
             node_ref = session.repository.graph.get(self.target)
             porcelain.apply(session.repository,
                             self.target,
-                            force=True,
-                            force_dependencies=self.reset_dependencies)
+                            force=True)
             impl = session.repository.rdp.get_implementation(node_ref.instance)
+            # NOTE: find another way to handle child and parent automatic reloading
             if impl.bl_reload_parent:
                 for parent in session.repository.graph.get_parents(self.target):
                     logging.debug(f"Refresh parent {parent}")
 
                     porcelain.apply(session.repository,
                                     parent.uuid,
+                                    force=True)
+            if hasattr(impl, 'bl_reload_child') and impl.bl_reload_child:
+                for dep in node_ref.dependencies:
+                    porcelain.apply(session.repository,
+                                    dep,
                                     force=True)
         except Exception as e:
             self.report({'ERROR'}, repr(e))
@@ -637,7 +642,7 @@ class SessionCommit(bpy.types.Operator):
     def execute(self, context):
         try:
             porcelain.commit(session.repository, self.target)
-            porcelain.push(session.repository, 'origin', self.target)
+            porcelain.push(session.repository, 'origin', self.target, force=True)
             return {"FINISHED"}
         except Exception as e:
             self.report({'ERROR'}, repr(e))
