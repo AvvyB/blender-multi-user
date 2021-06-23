@@ -147,20 +147,16 @@ def bbox_from_instance_collection(ic: bpy.types.Object) -> list:
     """
     vertex_pos = []
     vertex_indices = ()
-    nb_obj = 0
 
-    for obj in ic.instance_collection.objects:
+    for obj_index, obj in enumerate(ic.instance_collection.objects):
         vertex_pos_temp, vertex_indices_temp = bbox_from_obj(obj)
         vertex_pos += vertex_pos_temp
-
         vertex_indices_list_temp = list(list(indice) for indice in vertex_indices_temp)
         for indice in vertex_indices_list_temp:
-            indice[0] += 8*nb_obj
-            indice[1] += 8*nb_obj
+            indice[0] += 8*obj_index
+            indice[1] += 8*obj_index
         vertex_indices_temp = tuple(tuple(indice) for indice in vertex_indices_list_temp)
         vertex_indices += vertex_indices_temp
-
-        nb_obj += 1
 
     bbox_corners = [ic.matrix_world @ mathutils.Vector(vertex) for vertex in vertex_pos]
 
