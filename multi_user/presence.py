@@ -94,15 +94,35 @@ def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, 
     return [target.x, target.y, target.z]
 
 
-def bbox_from_obj(obj: bpy.types.Object, radius: float) -> list:
+def bbox_from_obj(obj: bpy.types.Object) -> list:
     """ Generate a bounding box for a given object by using its world matrix
 
         :param obj: target object
         :type obj: bpy.types.Object
-        :param radius: bounding box radius
-        :type radius: float
-        :return: list of 8 points [(x,y,z),...]
+        :return: list of 8 points [(x,y,z),...], list of 12 link between these points [(1,2),...]
     """
+    radius = 1.0 # Radius of the bounding box
+    vertex_indices = (
+            (0, 1), (0, 2), (1, 3), (2, 3),
+            (4, 5), (4, 6), (5, 7), (6, 7),
+            (0, 4), (1, 5), (2, 6), (3, 7))
+
+    if obj.type == 'EMPTY':
+        radius = obj.empty_display_size
+    elif obj.type == 'LIGHT':
+        radius = obj.data.shadow_soft_size
+    elif obj.type == 'LIGHT_PROBE':
+        radius = obj.data.influence_distance
+    elif obj.type == 'CAMERA':
+        radius = obj.data.display_size
+    elif hasattr(obj, 'bound_box'):
+        vertex_indices = (
+            (0, 1), (1, 2), (2, 3), (0, 3),
+            (4, 5), (5, 6), (6, 7), (4, 7),
+            (0, 4), (1, 5), (2, 6), (3, 7))
+        vertex_pos = get_bb_coords_from_obj(obj)
+        return vertex_pos, vertex_indices
+
     coords = [
         (-radius, -radius, -radius), (+radius, -radius, -radius),
         (-radius, +radius, -radius), (+radius, +radius, -radius),
@@ -112,9 +132,41 @@ def bbox_from_obj(obj: bpy.types.Object, radius: float) -> list:
     base = obj.matrix_world
     bbox_corners = [base @ mathutils.Vector(corner) for corner in coords]
 
-    return [(point.x, point.y, point.z)
-            for point in bbox_corners]
+    vertex_pos = [(point.x, point.y, point.z) for point in bbox_corners]
 
+    return vertex_pos, vertex_indices
+
+def bbox_from_instance_collection(ic: bpy.types.Object) -> list:
+    """ Generate a bounding box for a given instance collection by using its objects
+
+        :param ic: target instance collection
+        :type ic: bpy.types.Object
+        :param radius: bounding box radius
+        :type radius: float
+        :return: list of 8*objs points [(x,y,z),...], tuple of 12*objs link between these points [(1,2),...]
+    """
+    vertex_pos = []
+    vertex_indices = ()
+    nb_obj = 0
+
+    for obj in ic.instance_collection.objects:
+        vertex_pos_temp, vertex_indices_temp = bbox_from_obj(obj)
+        vertex_pos += vertex_pos_temp
+
+        vertex_indices_list_temp = list(list(indice) for indice in vertex_indices_temp)
+        for indice in vertex_indices_list_temp:
+            indice[0] += 8*nb_obj
+            indice[1] += 8*nb_obj
+        vertex_indices_temp = tuple(tuple(indice) for indice in vertex_indices_list_temp)
+        vertex_indices += vertex_indices_temp
+
+        nb_obj += 1
+
+    bbox_corners = [ic.matrix_world @ mathutils.Vector(vertex) for vertex in vertex_pos]
+
+    vertex_pos = [(point.x, point.y, point.z) for point in bbox_corners]
+
+    return vertex_pos, vertex_indices
 
 def generate_user_camera() -> list:
     """ Generate a basic camera represention of the user point of view
@@ -296,36 +348,14 @@ class UserSelectionWidget(Widget):
 
     def draw(self):
         user_selection = self.data.get('selected_objects')
-        for select_ob in user_selection:
-            ob = find_from_attr("uuid", select_ob, bpy.data.objects)
-            if not ob:
+        for select_obj in user_selection:
+            obj = find_from_attr("uuid", select_obj, bpy.data.objects)
+            if not obj:
                 return
-
-            vertex_pos = bbox_from_obj(ob, 1.0)
-            vertex_indices = (
-                    (0, 1), (1, 2), (2, 3), (0, 3),
-                    (4, 5), (5, 6), (6, 7), (4, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7))
-
-            if ob.instance_collection:
-                for obj in ob.instance_collection.objects:
-                    if obj.type == 'MESH' and  hasattr(obj, 'bound_box'):
-                        vertex_pos = get_bb_coords_from_obj(obj, instance=ob)
-                        break
-            elif ob.type == 'EMPTY':
-                vertex_pos = bbox_from_obj(ob, ob.empty_display_size)
-            elif ob.type == 'LIGHT':
-                vertex_pos = bbox_from_obj(ob, ob.data.shadow_soft_size)
-            elif ob.type == 'LIGHT_PROBE':
-                vertex_pos = bbox_from_obj(ob, ob.data.influence_distance)
-            elif ob.type == 'CAMERA':
-                vertex_pos = bbox_from_obj(ob, ob.data.display_size)
-            elif hasattr(ob, 'bound_box'):
-                vertex_indices = (
-                    (0, 1), (1, 2), (2, 3), (0, 3),
-                    (4, 5), (5, 6), (6, 7), (4, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7))
-                vertex_pos = get_bb_coords_from_obj(ob)
+            if obj.instance_collection:
+                vertex_pos, vertex_indices = bbox_from_instance_collection(obj)
+            else :
+                vertex_pos, vertex_indices = bbox_from_obj(obj)
 
             shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
             batch = batch_for_shader(
@@ -337,7 +367,6 @@ class UserSelectionWidget(Widget):
             shader.bind()
             shader.uniform_float("color", self.data.get('color'))
             batch.draw(shader)
-
 
 class UserNameWidget(Widget):
     draw_type = 'POST_PIXEL'
