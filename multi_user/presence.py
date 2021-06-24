@@ -406,6 +406,57 @@ class UserNameWidget(Widget):
             blf.color(0, color[0], color[1], color[2], color[3])
             blf.draw(0,  self.username)
 
+class UserModeWidget(Widget):
+    draw_type = 'POST_PIXEL'
+
+    def __init__(
+            self,
+            username):
+        self.username = username
+        self.settings = bpy.context.window_manager.session
+
+    @property
+    def data(self):
+        user = session.online_users.get(self.username)
+        if user:
+            return user.get('metadata')
+        else:
+            return None
+
+    def poll(self):
+        if self.data is None:
+            return False
+
+        scene_current = self.data.get('scene_current')
+        mode_current = self.data.get('mode_current')
+        user_selection = self.data.get('selected_objects')
+
+        return (scene_current == bpy.context.scene.name or
+                mode_current == bpy.context.mode or
+                self.settings.presence_show_far_user) and \
+            user_selection and \
+            self.settings.presence_show_user and \
+            self.settings.enable_presence
+
+    def draw(self):
+        user_selection = self.data.get('selected_objects')
+        
+        for select_obj in user_selection:
+            obj = find_from_attr("uuid", select_obj, bpy.data.objects)
+            if not obj:
+                return
+            else :
+                vertex_pos, vertex_indices = bbox_from_obj(obj)
+            mode_current = self.data.get('mode_current')      
+            color = self.data.get('color')
+            coords = project_to_screen(vertex_pos[1])
+
+        if coords:
+            blf.position(0, coords[0], coords[1]+10, 0)
+            blf.size(0, 16, 72)
+            blf.color(0, color[0], color[1], color[2], color[3])
+            blf.draw(0,  mode_current)
+
 
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
