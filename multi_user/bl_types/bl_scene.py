@@ -445,6 +445,15 @@ class BlScene(ReplicatedDatablock):
         elif datablock.sequence_editor and not sequences:
             datablock.sequence_editor_clear()
 
+        # Timeline markers
+        markers = data.get('timeline_markers')
+        if markers:
+            datablock.timeline_markers.clear()
+            for name, frame, camera in markers:
+                marker = datablock.timeline_markers.new(name, frame=frame)
+                if camera:
+                    marker.camera = resolve_datablock_from_uuid(camera, bpy.data.objects)
+
         # FIXME: Find a better way after the replication big refacotoring
         # Keep other user from deleting collection object by flushing their history
         flush_history()
@@ -516,6 +525,10 @@ class BlScene(ReplicatedDatablock):
             for seq in vse.sequences_all:
                 dumped_sequences[seq.name] = dump_sequence(seq)
             data['sequences'] = dumped_sequences
+
+        # Timeline markers
+        if datablock.timeline_markers:
+            data['timeline_markers'] = [(m.name, m.frame, getattr(m.camera, 'uuid', None)) for m in datablock.timeline_markers]
 
         return data
 
