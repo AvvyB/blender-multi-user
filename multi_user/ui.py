@@ -555,20 +555,15 @@ class SESSION_PT_repository(bpy.types.Panel):
             # Properties
             owned_nodes = [k for k, v in  session.repository.graph.items() if v.owner==settings.username]
 
-            filtered_node = owned_nodes if runtime_settings.filter_owned else session.repository.graph.keys()
+            filtered_node = owned_nodes if runtime_settings.filter_owned else list(session.repository.graph.keys())
 
             if runtime_settings.filter_name:
-                for node_id in filtered_node:
-                    node_instance = session.repository.graph.get(node_id)
-                    name = node_instance.data.get('name')
-                    if runtime_settings.filter_name not in name:
-                        filtered_node.remove(node_id)
+                filtered_node = [n for n in filtered_node if runtime_settings.filter_name.lower() in session.repository.graph.get(n).data.get('name').lower()]
 
             if filtered_node:
                 col = layout.column(align=True)
                 for key in filtered_node:
                     draw_property(context, col, key)
-
             else:
                 layout.row().label(text="Empty")
 
