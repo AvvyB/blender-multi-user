@@ -453,7 +453,7 @@ class BlScene(ReplicatedDatablock):
                 marker = datablock.timeline_markers.new(name, frame=frame)
                 if camera:
                     marker.camera = resolve_datablock_from_uuid(camera, bpy.data.objects)
-
+                marker.select = False
         # FIXME: Find a better way after the replication big refacotoring
         # Keep other user from deleting collection object by flushing their history
         flush_history()
