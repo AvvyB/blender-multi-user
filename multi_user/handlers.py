@@ -103,7 +103,8 @@ def on_scene_update(scene):
                 else:
                     continue
             elif isinstance(update.id, bpy.types.Scene):
-                scn_uuid = porcelain.add(session.repository, update.id)
+                scene = bpy.data.scenes.get(update.id.name)
+                scn_uuid = porcelain.add(session.repository, scene)
                 porcelain.commit(session.repository, scn_uuid)
                 porcelain.push(session.repository, 'origin', scn_uuid)
 
