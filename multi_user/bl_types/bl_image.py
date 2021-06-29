@@ -69,11 +69,12 @@ class BlImage(ReplicatedDatablock):
     @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(data, datablock)
+        loader.load(datablock, data)
 
+        # datablock.name = data.get('name')
         datablock.source = 'FILE'
         datablock.filepath_raw = get_filepath(data['filename'])
-        color_space_name = data["colorspace_settings"]["name"]
+        color_space_name = data.get("colorspace")
 
         if color_space_name:
             datablock.colorspace_settings.name = color_space_name
@@ -92,12 +93,10 @@ class BlImage(ReplicatedDatablock):
             "name",
             # 'source',
             'size',
-            'height',
-            'alpha',
-            'float_buffer',
-            'alpha_mode',
-            'colorspace_settings']
+            'alpha_mode']
         data.update(dumper.dump(datablock))
+        data['colorspace'] = datablock.colorspace_settings.name
+
         return data
 
     @staticmethod
@@ -132,10 +131,7 @@ class BlImage(ReplicatedDatablock):
         if datablock.is_dirty:
             datablock.save()
 
-        if not data or (datablock and (datablock.name != data.get('name'))):
-            return True
-        else:
-            return False
+        return True
 
 _type = bpy.types.Image
 _class = BlImage

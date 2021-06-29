@@ -56,7 +56,7 @@ class BlCamera(ReplicatedDatablock):
         background_images = data.get('background_images')
 
         datablock.background_images.clear()
-
+        # TODO: Use image uuid
         if background_images:
             for img_name, img_data in background_images.items():
                 img_id = img_data.get('image')
