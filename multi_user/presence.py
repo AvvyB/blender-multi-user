@@ -27,6 +27,7 @@ import blf
 import bpy
 import gpu
 import mathutils
+# from mathutils import Vector
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
@@ -251,6 +252,13 @@ class Widget(object):
         """
         return True
 
+    def configure_bgl(self):
+        bgl.glLineWidth(2.)
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+
+
     def draw(self):
         """How to draw the widget
         """
@@ -303,11 +311,6 @@ class UserFrustumWidget(Widget):
             'LINES',
             {"pos": positions},
             indices=self.indices)
-
-        bgl.glLineWidth(2.)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
 
         shader.bind()
         shader.uniform_float("color", self.data.get('color'))
@@ -408,7 +411,7 @@ class UserNameWidget(Widget):
 
 class UserModeWidget(Widget):
     draw_type = 'POST_PIXEL'
-
+    
     def __init__(
             self,
             username):
@@ -435,11 +438,18 @@ class UserModeWidget(Widget):
                 mode_current == bpy.context.mode or
                 self.settings.presence_show_far_user) and \
             user_selection and \
-            self.settings.presence_show_user and \
+            self.settings.presence_show_mode and \
             self.settings.enable_presence
+
+    
 
     def draw(self):
         user_selection = self.data.get('selected_objects')
+        
+        B = [1000,0]
+        A = [1000,0]
+        C = [1000,0]
+
         
         for select_obj in user_selection:
             obj = find_from_attr("uuid", select_obj, bpy.data.objects)
@@ -449,14 +459,30 @@ class UserModeWidget(Widget):
                 vertex_pos, vertex_indices = bbox_from_obj(obj)
             mode_current = self.data.get('mode_current')      
             color = self.data.get('color')
-            coords = project_to_screen(vertex_pos[1])
 
-        if coords:
-            blf.position(0, coords[0], coords[1]+10, 0)
+            origin_coord = project_to_screen(obj.location)
+
+            # A upper left corner
+            # B lower right corner
+            for vertex in range(len(vertex_pos)) :
+                coords = project_to_screen(vertex_pos[vertex])
+                if coords[0] < A[0]:
+                    A[0] = coords[0]
+                if coords[1] > A[1]:
+                    A[1] = coords[1]
+                if coords[0] > B[0]:
+                    B[0] = coords[0]
+                if coords[1] < B[1]:
+                    B[1] = coords[1]
+
+            
+        distance = math.sqrt((A[0]-B[0])**2 + (A[1]-B[1])**2)
+        
+        if distance > 950 and coords :
+            blf.position(0, origin_coord[0]+8, origin_coord[1]-15, 0)
             blf.size(0, 16, 72)
             blf.color(0, color[0], color[1], color[2], color[3])
-            blf.draw(0,  mode_current)
-
+            blf.draw(0,  mode_current)            
 
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
@@ -539,6 +565,7 @@ class DrawFactory(object):
         try:
             for widget in self.widgets.values():
                 if widget.draw_type == 'POST_VIEW' and widget.poll():
+                    widget.configure_bgl()
                     widget.draw()
         except Exception as e:
             logging.error(
@@ -548,6 +575,7 @@ class DrawFactory(object):
         try:
             for widget in self.widgets.values():
                 if widget.draw_type == 'POST_PIXEL' and widget.poll():
+                    widget.configure_bgl()
                     widget.draw()
         except Exception as e:
             logging.error(
@@ -560,6 +588,7 @@ this.renderer = DrawFactory()
 
 def register():
     this.renderer.register_handlers()
+    
 
     this.renderer.add_widget("session_status", SessionStatusWidget())
 

@@ -354,6 +354,7 @@ class SessionUserSync(Timer):
                     renderer.remove_widget(f"{user.username}_cam")
                     renderer.remove_widget(f"{user.username}_select")
                     renderer.remove_widget(f"{user.username}_name")
+                    renderer.remove_widget(f"{user.username}_mode")
                     ui_users.remove(index)
                     break
 
@@ -370,7 +371,7 @@ class SessionUserSync(Timer):
                     renderer.add_widget(
                         f"{user}_name", UserNameWidget(user))
                     renderer.add_widget(
-                        f"{user}_name", UserModeWidget(user))
+                        f"{user}_mode", UserModeWidget(user))
 
 
 class MainThreadExecutor(Timer):

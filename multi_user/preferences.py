@@ -538,6 +538,11 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Enable user overlay ',
         default=True,
     )
+    presence_show_mode: bpy.props.BoolProperty(
+        name="Show users current mode",
+        description='Enable user mode overlay ',
+        default=True,
+    )
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show users on different scenes",
         description="Show user on different scenes",
