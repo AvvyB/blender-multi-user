@@ -273,6 +273,13 @@ class SessionPrefs(bpy.types.AddonPreferences):
         step=1,
         subtype='PERCENTAGE',
     )
+    presence_mode_distance: bpy.props.FloatProperty(
+        name="Distance mode visibilty",
+        description="Adjust the distance visibilty of user's mode",
+        min=0.1,
+        max=1000,
+        default=100,
+    )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
         description="Identity",
@@ -446,9 +453,10 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 col = box.column(align=True)
                 col.prop(self, "presence_hud_scale", expand=True)
                 
-
                 col.prop(self, "presence_hud_hpos", expand=True)
                 col.prop(self, "presence_hud_vpos", expand=True)
+
+                col.prop(self, "presence_mode_distance", expand=True)
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
@@ -541,7 +549,7 @@ class SessionProps(bpy.types.PropertyGroup):
     presence_show_mode: bpy.props.BoolProperty(
         name="Show users current mode",
         description='Enable user mode overlay ',
-        default=True,
+        default=False,
     )
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show users on different scenes",

@@ -469,6 +469,10 @@ class SESSION_PT_presence(bpy.types.Panel):
         row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
         
         col = layout.column()
+        if settings.presence_show_mode :
+            row = col.column()
+            row.prop(pref, "presence_mode_distance", expand=True)
+
         col.prop(settings, "presence_show_session_status")
         if settings.presence_show_session_status :
             row = col.column()
@@ -642,6 +646,10 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
         
         col = layout.column()
+        if settings.presence_show_mode :
+            row = col.column()
+            row.prop(pref, "presence_mode_distance", expand=True)
+        
         col.prop(settings, "presence_show_session_status")
         if settings.presence_show_session_status :
             row = col.column()
@@ -651,6 +659,7 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
             row.active = settings.presence_show_session_status
             row.prop(pref, "presence_hud_hpos", expand=True)
             row.prop(pref, "presence_hud_vpos", expand=True)
+        
 
 classes = (
     SESSION_UL_users,

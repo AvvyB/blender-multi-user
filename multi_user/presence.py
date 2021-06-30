@@ -417,6 +417,7 @@ class UserModeWidget(Widget):
             username):
         self.username = username
         self.settings = bpy.context.window_manager.session
+        self.preferences = get_preferences()
 
     @property
     def data(self):
@@ -441,48 +442,31 @@ class UserModeWidget(Widget):
             self.settings.presence_show_mode and \
             self.settings.enable_presence
 
-    
-
     def draw(self):
         user_selection = self.data.get('selected_objects')
-        
-        B = [1000,0]
-        A = [1000,0]
-        C = [1000,0]
-
+        location = self.data.get('view_corners')
+        positions = [tuple(coord) for coord in location]
+        viewport_coord = positions[6]
         
         for select_obj in user_selection:
             obj = find_from_attr("uuid", select_obj, bpy.data.objects)
             if not obj:
                 return
-            else :
-                vertex_pos, vertex_indices = bbox_from_obj(obj)
             mode_current = self.data.get('mode_current')      
             color = self.data.get('color')
-
             origin_coord = project_to_screen(obj.location)
-
-            # A upper left corner
-            # B lower right corner
-            for vertex in range(len(vertex_pos)) :
-                coords = project_to_screen(vertex_pos[vertex])
-                if coords[0] < A[0]:
-                    A[0] = coords[0]
-                if coords[1] > A[1]:
-                    A[1] = coords[1]
-                if coords[0] > B[0]:
-                    B[0] = coords[0]
-                if coords[1] < B[1]:
-                    B[1] = coords[1]
-
             
-        distance = math.sqrt((A[0]-B[0])**2 + (A[1]-B[1])**2)
-        
-        if distance > 950 and coords :
+        distance_viewport_object = math.sqrt((viewport_coord[0]-obj.location[0])**2+(viewport_coord[1]-obj.location[1])**2+(viewport_coord[2]-obj.location[2])**2)
+
+        if distance_viewport_object > self.preferences.presence_mode_distance :
+            return
+
+        if origin_coord :
             blf.position(0, origin_coord[0]+8, origin_coord[1]-15, 0)
             blf.size(0, 16, 72)
             blf.color(0, color[0], color[1], color[2], color[3])
-            blf.draw(0,  mode_current)            
+            blf.draw(0,  mode_current)        
+
 
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
