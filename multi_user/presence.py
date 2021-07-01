@@ -27,7 +27,6 @@ import blf
 import bpy
 import gpu
 import mathutils
-# from mathutils import Vector
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
@@ -446,15 +445,14 @@ class UserModeWidget(Widget):
         user_selection = self.data.get('selected_objects')
         area, region, rv3d = view3d_find()
         viewport_coord = project_to_viewport(region, rv3d, (0, 0))
-        
-        for select_obj in user_selection:
-            obj = find_from_attr("uuid", select_obj, bpy.data.objects)
-            if not obj:
-                return
-            mode_current = self.data.get('mode_current')      
-            color = self.data.get('color')
-            origin_coord = project_to_screen(obj.location)
             
+        obj = find_from_attr("uuid", user_selection[0], bpy.data.objects)
+        if not obj:
+            return
+        mode_current = self.data.get('mode_current')      
+        color = self.data.get('color')
+        origin_coord = project_to_screen(obj.location)
+
         distance_viewport_object = math.sqrt((viewport_coord[0]-obj.location[0])**2+(viewport_coord[1]-obj.location[1])**2+(viewport_coord[2]-obj.location[2])**2)
 
         if distance_viewport_object > self.preferences.presence_mode_distance :
