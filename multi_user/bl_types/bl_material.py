@@ -124,8 +124,7 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
         "show_preview",
         "show_texture",
         "outputs",
-        "width_hidden",
-        "image"
+        "width_hidden"
     ]
 
     dumped_node = node_dumper.dump(node)

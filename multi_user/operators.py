@@ -273,8 +273,7 @@ class SessionStartOperator(bpy.types.Operator):
 
         session_update = timers.SessionStatusUpdate()
         session_user_sync = timers.SessionUserSync()
-        session_background_executor = timers.MainThreadExecutor(
-            execution_queue=background_execution_queue)
+        session_background_executor = timers.MainThreadExecutor(execution_queue=background_execution_queue)
         session_listen = timers.SessionListenTimer(timeout=0.001)
 
         session_listen.register()

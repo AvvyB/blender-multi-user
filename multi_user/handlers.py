@@ -52,7 +52,8 @@ def sanitize_deps_graph(remove_nodes: bool = False):
 def update_external_dependencies():
     """Force external dependencies(files such as images) evaluation 
     """
-    nodes_ids = [n.uuid for n in session.repository.graph.values() if n.data['type_id'] in ['WindowsPath', 'PosixPath']]
+    external_types = ['WindowsPath', 'PosixPath', 'Image']
+    nodes_ids = [n.uuid for n in session.repository.graph.values() if n.data['type_id'] in external_types]
     for node_id in nodes_ids:
         node = session.repository.graph.get(node_id)
         if node and node.owner in [session.repository.username, RP_COMMON]:
