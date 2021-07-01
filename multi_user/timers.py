@@ -27,7 +27,7 @@ from replication.interface import session
 from replication import porcelain
 
 from . import operators, utils
-from .presence import (UserFrustumWidget, UserNameWidget, UserSelectionWidget,
+from .presence import (UserFrustumWidget, UserNameWidget, UserModeWidget, UserSelectionWidget,
                        generate_user_camera, get_view_matrix, refresh_3d_view,
                        refresh_sidebar_view, renderer)
 
@@ -309,7 +309,8 @@ class ClientUpdate(Timer):
                                   settings.client_color.b,
                                   1),
                         'frame_current': bpy.context.scene.frame_current,
-                        'scene_current': scene_current
+                        'scene_current': scene_current,
+                        'mode_current': bpy.context.mode
                     }
                     porcelain.update_user_metadata(session.repository, metadata)
 
@@ -322,6 +323,9 @@ class ClientUpdate(Timer):
                     local_user_metadata['view_corners'] = current_view_corners
                     local_user_metadata['view_matrix'] = get_view_matrix(
                     )
+                    porcelain.update_user_metadata(session.repository, local_user_metadata)
+                elif bpy.context.mode != local_user_metadata['mode_current']:
+                    local_user_metadata['mode_current'] = bpy.context.mode
                     porcelain.update_user_metadata(session.repository, local_user_metadata)
 
 
@@ -350,6 +354,7 @@ class SessionUserSync(Timer):
                     renderer.remove_widget(f"{user.username}_cam")
                     renderer.remove_widget(f"{user.username}_select")
                     renderer.remove_widget(f"{user.username}_name")
+                    renderer.remove_widget(f"{user.username}_mode")
                     ui_users.remove(index)
                     break
 
@@ -365,6 +370,8 @@ class SessionUserSync(Timer):
                             f"{user}_select", UserSelectionWidget(user))
                         renderer.add_widget(
                             f"{user}_name", UserNameWidget(user))
+                        renderer.add_widget(
+                            f"{user}_mode", UserModeWidget(user))
 
 
 class MainThreadExecutor(Timer):

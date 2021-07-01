@@ -107,7 +107,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
                     row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
                     row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
-                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='OBJECT_DATAMODE')
+                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
 
                 row= layout.row()
 
@@ -343,9 +343,10 @@ class SESSION_PT_user(bpy.types.Panel):
         box = row.box()
         split = box.split(factor=0.35)
         split.label(text="user")
-        split = split.split(factor=0.5)
-        split.label(text="location")
+        split = split.split(factor=0.3)
+        split.label(text="mode")
         split.label(text="frame")
+        split.label(text="location")
         split.label(text="ping")
 
         row = layout.row()
@@ -383,6 +384,8 @@ class SESSION_UL_users(bpy.types.UIList):
         ping = '-'
         frame_current = '-'
         scene_current = '-'
+        mode_current = '-'
+        mode_icon = 'BLANK1'
         status_icon = 'BLANK1'
         if session:
             user = session.online_users.get(item.username)
@@ -392,13 +395,45 @@ class SESSION_UL_users(bpy.types.UIList):
                 if metadata and 'frame_current' in metadata:
                     frame_current = str(metadata.get('frame_current','-'))
                     scene_current = metadata.get('scene_current','-')
+                    mode_current = metadata.get('mode_current','-')
+                    if mode_current == "OBJECT" :
+                        mode_icon = "OBJECT_DATAMODE"
+                    elif mode_current == "EDIT_MESH" :
+                        mode_icon = "EDITMODE_HLT"
+                    elif mode_current == 'EDIT_CURVE':
+                        mode_icon = "CURVE_DATA"
+                    elif mode_current == 'EDIT_SURFACE':
+                        mode_icon = "SURFACE_DATA"
+                    elif mode_current == 'EDIT_TEXT':
+                        mode_icon = "FILE_FONT"
+                    elif mode_current == 'EDIT_ARMATURE':
+                        mode_icon = "ARMATURE_DATA"
+                    elif mode_current == 'EDIT_METABALL':
+                        mode_icon = "META_BALL"
+                    elif mode_current == 'EDIT_LATTICE':
+                        mode_icon = "LATTICE_DATA"
+                    elif mode_current == 'POSE':
+                        mode_icon = "POSE_HLT"
+                    elif mode_current == 'SCULPT':
+                        mode_icon = "SCULPTMODE_HLT"
+                    elif mode_current == 'PAINT_WEIGHT':
+                        mode_icon = "WPAINT_HLT"
+                    elif mode_current == 'PAINT_VERTEX':
+                        mode_icon = "VPAINT_HLT"
+                    elif mode_current == 'PAINT_TEXTURE':
+                        mode_icon = "TPAINT_HLT"
+                    elif mode_current == 'PARTICLE':
+                        mode_icon = "PARTICLES"
+                    elif mode_current == 'PAINT_GPENCIL' or mode_current =='EDIT_GPENCIL' or mode_current =='SCULPT_GPENCIL' or mode_current =='WEIGHT_GPENCIL' or mode_current =='VERTEX_GPENCIL':
+                        mode_icon = "GREASEPENCIL"
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
         split = layout.split(factor=0.35)
         split.label(text=item.username, icon=status_icon)
-        split = split.split(factor=0.5)
-        split.label(text=scene_current)
+        split = split.split(factor=0.3)
+        split.label(icon=mode_icon)
         split.label(text=frame_current)
+        split.label(text=scene_current)
         split.label(text=ping)
 
 
@@ -425,20 +460,29 @@ class SESSION_PT_presence(bpy.types.Panel):
         settings = context.window_manager.session
         pref = get_preferences()
         layout.active = settings.enable_presence
+        
+        row = layout.row()
+        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        row.prop(settings, "presence_show_selected",text="",icon_only=True, icon='CUBE')
+        row.prop(settings, "presence_show_user", text="",icon_only=True, icon='CAMERA_DATA')
+        row.prop(settings, "presence_show_mode", text="",icon_only=True, icon='OBJECT_DATAMODE')
+        row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
+        
         col = layout.column()
+        if settings.presence_show_mode :
+            row = col.column()
+            row.prop(pref, "presence_mode_distance", expand=True)
+
         col.prop(settings, "presence_show_session_status")
-        row = col.column()
-        row.active = settings.presence_show_session_status
-        row.prop(pref, "presence_hud_scale", expand=True)
-        row = col.column(align=True)
-        row.active = settings.presence_show_session_status
-        row.prop(pref, "presence_hud_hpos", expand=True)
-        row.prop(pref, "presence_hud_vpos", expand=True)
-        col.prop(settings, "presence_show_selected")
-        col.prop(settings, "presence_show_user")
-        row = layout.column()
-        row.active = settings.presence_show_user
-        row.prop(settings, "presence_show_far_user")
+        if settings.presence_show_session_status :
+            row = col.column()
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_scale", expand=True)
+            row = col.column(align=True)
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_hpos", expand=True)
+            row.prop(pref, "presence_hud_vpos", expand=True)
+
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
@@ -585,23 +629,32 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        view = context.space_data
-        overlay = view.overlay
-        display_all = overlay.show_overlays
-
-        col = layout.column()
-
-        row = col.row(align=True)
         settings = context.window_manager.session
+        pref = get_preferences()
         layout.active = settings.enable_presence
+        
+        row = layout.row()
+        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        row.prop(settings, "presence_show_selected",text="",icon_only=True, icon='CUBE')
+        row.prop(settings, "presence_show_user", text="",icon_only=True, icon='CAMERA_DATA')
+        row.prop(settings, "presence_show_mode", text="",icon_only=True, icon='OBJECT_DATAMODE')
+        row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
+        
         col = layout.column()
+        if settings.presence_show_mode :
+            row = col.column()
+            row.prop(pref, "presence_mode_distance", expand=True)
+        
         col.prop(settings, "presence_show_session_status")
-        col.prop(settings, "presence_show_selected")
-        col.prop(settings, "presence_show_user")
-
-        row = layout.column()
-        row.active = settings.presence_show_user
-        row.prop(settings, "presence_show_far_user")
+        if settings.presence_show_session_status :
+            row = col.column()
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_scale", expand=True)
+            row = col.column(align=True)
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_hpos", expand=True)
+            row.prop(pref, "presence_hud_vpos", expand=True)
+        
 
 classes = (
     SESSION_UL_users,

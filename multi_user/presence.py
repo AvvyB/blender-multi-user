@@ -251,6 +251,13 @@ class Widget(object):
         """
         return True
 
+    def configure_bgl(self):
+        bgl.glLineWidth(2.)
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+
+
     def draw(self):
         """How to draw the widget
         """
@@ -304,11 +311,6 @@ class UserFrustumWidget(Widget):
             {"pos": positions},
             indices=self.indices)
 
-        bgl.glLineWidth(2.)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-
         shader.bind()
         shader.uniform_float("color", self.data.get('color'))
         batch.draw(shader)
@@ -342,7 +344,7 @@ class UserSelectionWidget(Widget):
             self.settings.presence_show_selected and \
             self.settings.enable_presence
 
-    def draw(self):
+    def draw(self):        
         user_selection = self.data.get('selected_objects')
         for select_obj in user_selection:
             obj = find_from_attr("uuid", select_obj, bpy.data.objects)
@@ -405,6 +407,62 @@ class UserNameWidget(Widget):
             blf.size(0, 16, 72)
             blf.color(0, color[0], color[1], color[2], color[3])
             blf.draw(0,  self.username)
+
+class UserModeWidget(Widget):
+    draw_type = 'POST_PIXEL'
+    
+    def __init__(
+            self,
+            username):
+        self.username = username
+        self.settings = bpy.context.window_manager.session
+        self.preferences = get_preferences()
+
+    @property
+    def data(self):
+        user = session.online_users.get(self.username)
+        if user:
+            return user.get('metadata')
+        else:
+            return None
+
+    def poll(self):
+        if self.data is None:
+            return False
+
+        scene_current = self.data.get('scene_current')
+        mode_current = self.data.get('mode_current')
+        user_selection = self.data.get('selected_objects')
+
+        return (scene_current == bpy.context.scene.name or
+                mode_current == bpy.context.mode or
+                self.settings.presence_show_far_user) and \
+            user_selection and \
+            self.settings.presence_show_mode and \
+            self.settings.enable_presence
+
+    def draw(self):
+        user_selection = self.data.get('selected_objects')
+        area, region, rv3d = view3d_find()
+        viewport_coord = project_to_viewport(region, rv3d, (0, 0))
+            
+        obj = find_from_attr("uuid", user_selection[0], bpy.data.objects)
+        if not obj:
+            return
+        mode_current = self.data.get('mode_current')      
+        color = self.data.get('color')
+        origin_coord = project_to_screen(obj.location)
+
+        distance_viewport_object = math.sqrt((viewport_coord[0]-obj.location[0])**2+(viewport_coord[1]-obj.location[1])**2+(viewport_coord[2]-obj.location[2])**2)
+
+        if distance_viewport_object > self.preferences.presence_mode_distance :
+            return
+
+        if origin_coord :
+            blf.position(0, origin_coord[0]+8, origin_coord[1]-15, 0)
+            blf.size(0, 16, 72)
+            blf.color(0, color[0], color[1], color[2], color[3])
+            blf.draw(0,  mode_current)        
 
 
 class SessionStatusWidget(Widget):
@@ -488,6 +546,7 @@ class DrawFactory(object):
         try:
             for widget in self.widgets.values():
                 if widget.draw_type == 'POST_VIEW' and widget.poll():
+                    widget.configure_bgl()
                     widget.draw()
         except Exception as e:
             logging.error(
@@ -497,6 +556,7 @@ class DrawFactory(object):
         try:
             for widget in self.widgets.values():
                 if widget.draw_type == 'POST_PIXEL' and widget.poll():
+                    widget.configure_bgl()
                     widget.draw()
         except Exception as e:
             logging.error(
@@ -509,6 +569,7 @@ this.renderer = DrawFactory()
 
 def register():
     this.renderer.register_handlers()
+    
 
     this.renderer.add_widget("session_status", SessionStatusWidget())
 
