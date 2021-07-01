@@ -363,15 +363,15 @@ class SessionUserSync(Timer):
                     new_key = ui_users.add()
                     new_key.name = user
                     new_key.username = user
-                    # if user != self.settings.username:
-                    renderer.add_widget(
-                        f"{user}_cam", UserFrustumWidget(user))
-                    renderer.add_widget(
-                        f"{user}_select", UserSelectionWidget(user))
-                    renderer.add_widget(
-                        f"{user}_name", UserNameWidget(user))
-                    renderer.add_widget(
-                        f"{user}_mode", UserModeWidget(user))
+                    if user != self.settings.username:
+                        renderer.add_widget(
+                            f"{user}_cam", UserFrustumWidget(user))
+                        renderer.add_widget(
+                            f"{user}_select", UserSelectionWidget(user))
+                        renderer.add_widget(
+                            f"{user}_name", UserNameWidget(user))
+                        renderer.add_widget(
+                            f"{user}_mode", UserModeWidget(user))
 
 
 class MainThreadExecutor(Timer):

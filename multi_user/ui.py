@@ -343,10 +343,10 @@ class SESSION_PT_user(bpy.types.Panel):
         box = row.box()
         split = box.split(factor=0.35)
         split.label(text="user")
-        split = split.split(factor=0.5)
-        split.label(text="location")
+        split = split.split(factor=0.3)
         split.label(text="mode")
         split.label(text="frame")
+        split.label(text="location")
         split.label(text="ping")
 
         row = layout.row()
@@ -430,10 +430,10 @@ class SESSION_UL_users(bpy.types.UIList):
                     status_icon = 'FAKE_USER_ON'
         split = layout.split(factor=0.35)
         split.label(text=item.username, icon=status_icon)
-        split = split.split(factor=0.5)
-        split.label(text=scene_current)
+        split = split.split(factor=0.3)
         split.label(icon=mode_icon)
         split.label(text=frame_current)
+        split.label(text=scene_current)
         split.label(text=ping)
 
 

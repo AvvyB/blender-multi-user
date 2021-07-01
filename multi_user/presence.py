@@ -345,7 +345,7 @@ class UserSelectionWidget(Widget):
             self.settings.presence_show_selected and \
             self.settings.enable_presence
 
-    def draw(self):
+    def draw(self):        
         user_selection = self.data.get('selected_objects')
         for select_obj in user_selection:
             obj = find_from_attr("uuid", select_obj, bpy.data.objects)
@@ -444,9 +444,8 @@ class UserModeWidget(Widget):
 
     def draw(self):
         user_selection = self.data.get('selected_objects')
-        location = self.data.get('view_corners')
-        positions = [tuple(coord) for coord in location]
-        viewport_coord = positions[6]
+        area, region, rv3d = view3d_find()
+        viewport_coord = project_to_viewport(region, rv3d, (0, 0))
         
         for select_obj in user_selection:
             obj = find_from_attr("uuid", select_obj, bpy.data.objects)
