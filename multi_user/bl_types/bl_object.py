@@ -620,10 +620,8 @@ class BlObject(ReplicatedDatablock):
 
         transform = data.get('transforms', None)
         if transform:
-            datablock.matrix_parent_inverse = mathutils.Matrix(
-                transform['matrix_parent_inverse'])
+            datablock.matrix_parent_inverse = mathutils.Matrix(transform['matrix_parent_inverse'])
             datablock.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
-            datablock.matrix_local = mathutils.Matrix(transform['matrix_local'])
 
 
     @staticmethod
