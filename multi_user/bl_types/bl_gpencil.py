@@ -28,7 +28,7 @@ from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from ..utils import get_preferences
-
+from ..timers import is_annotating
 
 STROKE_POINT = [
     'co',
@@ -323,7 +323,8 @@ class BlGpencil(ReplicatedDatablock):
         return bpy.context.mode == 'OBJECT' \
             or layer_changed(datablock, data) \
             or frame_changed(data) \
-            or get_preferences().sync_flags.sync_during_editmode
+            or get_preferences().sync_flags.sync_during_editmode \
+            or is_annotating(bpy.context)
 
 _type = bpy.types.GreasePencil
 _class = BlGpencil

@@ -137,12 +137,50 @@ class ApplyTimer(Timer):
                                                 force=True)
 
 
+class AnnotationUpdates(Timer):
+    def __init__(self, timeout=1):
+        self._annotating = False
+        self._settings = utils.get_preferences()
+
+        super().__init__(timeout)
+
+    def execute(self):
+        if session and session.state == STATE_ACTIVE:
+            ctx = bpy.context
+            annotation_gp = ctx.scene.grease_pencil
+
+            if annotation_gp and not annotation_gp.uuid:
+                ctx.scene.update_tag()
+
+            # if an annotation exist and is tracked
+            if annotation_gp and annotation_gp.uuid:
+                registered_gp = session.repository.graph.get(annotation_gp.uuid)
+                if is_annotating(bpy.context):
+                    # try to get the right on it
+                    if registered_gp.owner == RP_COMMON:
+                        self._annotating = True
+                        logging.debug(
+                            "Getting the right on the annotation GP")
+                        porcelain.lock(session.repository,
+                                        registered_gp.uuid,
+                                        ignore_warnings=True,
+                                        affect_dependencies=False)
+
+                    if registered_gp.owner == self._settings.username:
+                        porcelain.commit(session.repository, annotation_gp.uuid)
+                        porcelain.push(session.repository, 'origin', annotation_gp.uuid)
+
+                elif self._annotating:
+                    porcelain.unlock(session.repository,
+                                    registered_gp.uuid,
+                                    ignore_warnings=True,
+                                    affect_dependencies=False)
+
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
         super().__init__(timeout)
         self._last_selection = []
         self._user = None
-        self._annotating = False
 
     def execute(self):
         settings = utils.get_preferences()
@@ -153,37 +191,6 @@ class DynamicRightSelectTimer(Timer):
                 self._user = session.online_users.get(settings.username)
 
             if self._user:
-                ctx = bpy.context
-                annotation_gp = ctx.scene.grease_pencil
-
-                if annotation_gp and not annotation_gp.uuid:
-                    ctx.scene.update_tag()
-
-                # if an annotation exist and is tracked
-                if annotation_gp and annotation_gp.uuid:
-                    registered_gp = session.repository.graph.get(annotation_gp.uuid)
-                    if is_annotating(bpy.context):
-                        # try to get the right on it
-                        if registered_gp.owner == RP_COMMON:
-                            self._annotating = True
-                            logging.debug(
-                                "Getting the right on the annotation GP")
-                            porcelain.lock(session.repository,
-                                            registered_gp.uuid,
-                                            ignore_warnings=True,
-                                            affect_dependencies=False)
-                        
-                        if registered_gp.owner == settings.username:
-                            gp_node = session.repository.graph.get(annotation_gp.uuid)
-                            porcelain.commit(session.repository, gp_node.uuid)
-                            porcelain.push(session.repository, 'origin', gp_node.uuid)
-
-                    elif self._annotating:
-                        porcelain.unlock(session.repository,
-                                        registered_gp.uuid,
-                                        ignore_warnings=True,
-                                        affect_dependencies=False)
-
                 current_selection = utils.get_selected_objects(
                     bpy.context.scene,
                     bpy.data.window_managers['WinMan'].windows[0].view_layer

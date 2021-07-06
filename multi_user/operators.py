@@ -285,6 +285,7 @@ class SessionStartOperator(bpy.types.Operator):
         deleyables.append(session_update)
         deleyables.append(session_user_sync)
         deleyables.append(session_listen)
+        deleyables.append(timers.AnnotationUpdates())
 
         return {"FINISHED"}
 
