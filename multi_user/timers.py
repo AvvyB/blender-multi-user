@@ -41,7 +41,8 @@ this.registry = dict()
 def is_annotating(context: bpy.types.Context):
     """ Check if the annotate mode is enabled
     """
-    return bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False).idname == 'builtin.annotate'
+    active_tool = bpy.context.workspace.tools.from_space_view3d_mode('OBJECT', create=False)
+    return (active_tool and active_tool.idname == 'builtin.annotate')
 
 
 class Timer(object):
