@@ -28,7 +28,7 @@ from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from ..utils import get_preferences
-
+from ..timers import is_annotating
 
 STROKE_POINT = [
     'co',
@@ -65,36 +65,9 @@ def dump_stroke(stroke):
 
         :param stroke: target grease pencil stroke
         :type stroke: bpy.types.GPencilStroke
-        :return: dict
+        :return: (p_count, p_data)
     """
-
-    assert(stroke)
-
-    dumper = Dumper()
-    dumper.include_filter = [
-        "aspect",
-        "display_mode",
-        "draw_cyclic",
-        "end_cap_mode",
-        "hardeness",
-        "line_width",
-        "material_index",
-        "start_cap_mode",
-        "uv_rotation",
-        "uv_scale",
-        "uv_translation",
-        "vertex_color_fill",
-    ]
-    dumped_stroke = dumper.dump(stroke)
-
-    # Stoke points
-    p_count = len(stroke.points)
-    dumped_stroke['p_count'] = p_count
-    dumped_stroke['points'] = np_dump_collection(stroke.points, STROKE_POINT)
-
-    # TODO: uv_factor, uv_rotation
-
-    return dumped_stroke
+    return (len(stroke.points), np_dump_collection(stroke.points, STROKE_POINT))
 
 
 def load_stroke(stroke_data, stroke):
@@ -107,12 +80,12 @@ def load_stroke(stroke_data, stroke):
     """
     assert(stroke and stroke_data)
 
-    stroke.points.add(stroke_data["p_count"])
-    np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
+    stroke.points.add(stroke_data[0])
+    np_load_collection(stroke_data[1], stroke.points, STROKE_POINT)
 
     # HACK: Temporary fix to trigger a BKE_gpencil_stroke_geometry_update to 
     # fix fill issues
-    stroke.uv_scale = stroke_data["uv_scale"]
+    stroke.uv_scale = 1.0
 
 
 def dump_frame(frame):
@@ -147,10 +120,12 @@ def load_frame(frame_data, frame):
 
     assert(frame and frame_data)
 
+    # Load stroke points
     for stroke_data in frame_data['strokes_points']:
         target_stroke = frame.strokes.new()
         load_stroke(stroke_data, target_stroke)
 
+    # Load stroke metadata
     np_load_collection(frame_data['strokes'], frame.strokes, STROKE)
 
 
@@ -170,7 +145,6 @@ def dump_layer(layer):
         'opacity',
         'channel_color',
         'color',
-        # 'thickness', #TODO: enabling only for annotation
         'tint_color',
         'tint_factor',
         'vertex_paint_opacity',
@@ -323,7 +297,8 @@ class BlGpencil(ReplicatedDatablock):
         return bpy.context.mode == 'OBJECT' \
             or layer_changed(datablock, data) \
             or frame_changed(data) \
-            or get_preferences().sync_flags.sync_during_editmode
+            or get_preferences().sync_flags.sync_during_editmode \
+            or is_annotating(bpy.context)
 
 _type = bpy.types.GreasePencil
 _class = BlGpencil

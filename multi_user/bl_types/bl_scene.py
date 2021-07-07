@@ -403,8 +403,9 @@ class BlScene(ReplicatedDatablock):
             datablock.world = bpy.data.worlds[data['world']]
 
         # Annotation
-        if 'grease_pencil' in data.keys():
-            datablock.grease_pencil = bpy.data.grease_pencils[data['grease_pencil']]
+        gpencil_uid = data.get('grease_pencil')
+        if gpencil_uid:
+            datablock.grease_pencil = resolve_datablock_from_uuid(gpencil_uid, bpy.data.grease_pencils)
 
         if get_preferences().sync_flags.sync_render_settings:
             if 'eevee' in data.keys():
@@ -470,7 +471,6 @@ class BlScene(ReplicatedDatablock):
             'name',
             'world',
             'id',
-            'grease_pencil',
             'frame_start',
             'frame_end',
             'frame_step',
@@ -530,6 +530,9 @@ class BlScene(ReplicatedDatablock):
         if datablock.timeline_markers:
             data['timeline_markers'] = [(m.name, m.frame, getattr(m.camera, 'uuid', None)) for m in datablock.timeline_markers]
 
+        if datablock.grease_pencil:
+            data['grease_pencil'] = datablock.grease_pencil.uuid
+ 
         return data
 
     @staticmethod
