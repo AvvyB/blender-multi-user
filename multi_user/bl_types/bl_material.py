@@ -387,11 +387,10 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
 
     for mat_uuid, mat_name in src_materials:
         mat_ref = None
-        if mat_uuid is not None:
+        if mat_uuid:
             mat_ref = get_datablock_from_uuid(mat_uuid, None)
         else:
             mat_ref = bpy.data.materials[mat_name]
-
         dst_materials.append(mat_ref)
 
 

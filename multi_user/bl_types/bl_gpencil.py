@@ -29,6 +29,7 @@ from .bl_datablock import resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from ..utils import get_preferences
 from ..timers import is_annotating
+from .bl_material import load_materials_slots, dump_materials_slots
 
 STROKE_POINT = [
     'co',
@@ -229,10 +230,10 @@ class BlGpencil(ReplicatedDatablock):
 
     @staticmethod
     def load(data: dict, datablock: object):
-        datablock.materials.clear()
-        if "materials" in data.keys():
-            for mat in data['materials']:
-                datablock.materials.append(bpy.data.materials[mat])
+        # MATERIAL SLOTS
+        src_materials = data.get('materials', None)
+        if src_materials:
+            load_materials_slots(src_materials, datablock.materials)
 
         loader = Loader()
         loader.load(datablock, data)
@@ -260,7 +261,6 @@ class BlGpencil(ReplicatedDatablock):
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
-            'materials',
             'name',
             'zdepth_offset',
             'stroke_thickness_space',
@@ -268,7 +268,7 @@ class BlGpencil(ReplicatedDatablock):
             'stroke_depth_order'
         ]
         data = dumper.dump(datablock)
-
+        data['materials'] = dump_materials_slots(datablock.materials)
         data['layers'] = {}
 
         for layer in datablock.layers:
