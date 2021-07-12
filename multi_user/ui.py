@@ -17,6 +17,7 @@
 
 
 import bpy
+import bpy.utils.previews
 
 from .utils import get_preferences, get_expanded_icon, get_folder_size, get_state_str
 from replication.constants import (ADDED, ERROR, FETCHED,
@@ -71,19 +72,26 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw_header(self, context):
         layout = self.layout
+        settings = get_preferences()
+
+        from multi_user import icons
+        offline_icon = icons.icons_col["session_status_offline"]
+        waiting_icon = icons.icons_col["session_status_waiting"]
+        online_icon = icons.icons_col["session_status_online"]
+
         if session and session.state != STATE_INITIAL:
             cli_state = session.state
             state =  session.state
-            connection_icon = "KEYTYPE_MOVING_HOLD_VEC"
+            connection_icon = offline_icon
 
             if state == STATE_ACTIVE:
-                connection_icon = 'PROP_ON'
+                connection_icon = online_icon
             else:
-                connection_icon = 'PROP_CON'
+                connection_icon = waiting_icon
 
-            layout.label(text=f"Session - {get_state_str(cli_state)}", icon=connection_icon)
+            layout.label(text=f"{str(settings.server_name)} - {get_state_str(cli_state)}", icon_value=connection_icon.icon_id)
         else:
-            layout.label(text=f"Session - v{__version__}",icon="PROP_OFF")
+            layout.label(text=f"Multi-user - v{__version__}", icon="ANTIALIASED")
 
     def draw(self, context):
         layout = self.layout
@@ -668,6 +676,7 @@ classes = (
     VIEW3D_PT_overlay_session,
 )
 
+preview_collections = {}
 
 register, unregister = bpy.utils.register_classes_factory(classes)
 

@@ -61,6 +61,7 @@ def register():
         from . import operators
         from . import handlers
         from . import ui
+        from . import icons
         from . import preferences
         from . import addon_updater_ops
 
@@ -70,6 +71,7 @@ def register():
         operators.register()
         handlers.register()
         ui.register()
+        icons.register()
     except ModuleNotFoundError as e:
         raise Exception(module_error_msg)
         logging.error(module_error_msg)
@@ -91,6 +93,7 @@ def unregister():
     from . import operators
     from . import handlers
     from . import ui
+    from . import icons
     from . import preferences
     from . import addon_updater_ops
 
@@ -99,6 +102,7 @@ def unregister():
     presence.unregister()
     addon_updater_ops.unregister()
     ui.unregister()
+    icons.unregister()
     handlers.unregister()
     operators.unregister()
     preferences.unregister()
