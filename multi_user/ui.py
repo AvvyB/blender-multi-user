@@ -182,7 +182,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.prop(settings, "init_method", text="")
             row = box.row()
             row.label(text="Admin password:")
-            row.prop(settings, "password", text="")
+            row.prop(settings, "admin_password", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
@@ -198,7 +198,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             if runtime_settings.admin:
                 row = box.row()
                 row.label(text="Password:")
-                row.prop(settings, "password", text="")
+                row.prop(settings, "admin_password", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
 
@@ -242,8 +242,10 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
+        settings = get_preferences()
         return not session \
-            or (session and session.state == 0)
+            or (session and session.state == 0) \
+            and not settings.sidebar_advanced_shown
 
     def draw_header(self, context):
         self.layout.label(text="", icon='PREFERENCES')
@@ -254,7 +256,6 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         runtime_settings = context.window_manager.session
         settings = get_preferences()
 
-        
         net_section = layout.row().box()
         net_section.prop(
             settings,
@@ -323,6 +324,7 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             log_section_row = log_section.row()
             log_section_row.label(text="Log level:")
             log_section_row.prop(settings, 'logging_level', text="")
+
 class SESSION_PT_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_USER_PT_panel"
     bl_label = "Online users"
@@ -573,7 +575,8 @@ class SESSION_PT_repository(bpy.types.Panel):
         return hasattr(context.window_manager, 'session') and \
             session and \
             (session.state == STATE_ACTIVE or \
-            session.state == STATE_LOBBY and admin)
+            session.state == STATE_LOBBY and admin) and \
+            not settings.sidebar_repository_shown
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')

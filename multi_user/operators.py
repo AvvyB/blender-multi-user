@@ -163,7 +163,8 @@ class SessionStartOperator(bpy.types.Operator):
         settings = utils.get_preferences()
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
-        admin_pass = settings.password
+        admin_pass = settings.admin_password
+        server_pass = settings.server_password
 
         users.clear()
         deleyables.clear()
@@ -229,12 +230,14 @@ class SessionStartOperator(bpy.types.Operator):
                     'origin',
                     '127.0.0.1',
                     settings.port,
+                    server_password=server_pass,
                     admin_password=admin_pass)
                 session.host(
                     repository= repo,
                     remote='origin',
                     timeout=settings.connection_timeout,
-                    password=admin_pass,
+                    server_password=server_pass,
+                    admin_password=admin_pass,
                     cache_directory=settings.cache_directory,
                     server_log_level=logging.getLevelName(
                         logging.getLogger().level),
@@ -247,8 +250,9 @@ class SessionStartOperator(bpy.types.Operator):
         else:
             if not runtime_settings.admin:
                 utils.clean_scene()
-                # regular session, no password needed
+                # regular session, no admin_password needed nor server_password
                 admin_pass = None
+                server_pass = None
 
             try:
                 porcelain.remote_add(
@@ -256,11 +260,13 @@ class SessionStartOperator(bpy.types.Operator):
                     'origin',
                     settings.ip,
                     settings.port,
+                    server_password=server_pass,
                     admin_password=admin_pass)
                 session.connect(
                     repository= repo,
                     timeout=settings.connection_timeout,
-                    password=admin_pass
+                    server_password=server_pass,
+                    admin_password=admin_pass
                 )
             except Exception as e:
                 self.report({'ERROR'}, str(e))
@@ -865,7 +871,8 @@ class SessionPresetServerAdd(bpy.types.Operator):
         new_server.name = settings.server_name
         new_server.server_ip = settings.ip
         new_server.server_port = settings.port
-        new_server.server_password = settings.password
+        new_server.server_server_password = settings.server_password
+        new_server.server_admin_password = settings.admin_password
 
         settings.server_preset_interface = settings.server_name
 

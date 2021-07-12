@@ -37,11 +37,13 @@ DEFAULT_PRESETS = {
     "localhost" : {
         "server_ip": "localhost",
         "server_port": 5555,
-        "server_password": "admin"
+        "admin_password": "admin",
+        "server_password": ""
     },
     "public session" : {
         "server_ip": "51.75.71.183",
         "server_port": 5555,
+        "admin_password": "",
         "server_password": ""
     },
 }
@@ -82,7 +84,8 @@ def update_server_preset_interface(self, context):
     self.server_name = self.server_preset.get(self.server_preset_interface).name
     self.ip = self.server_preset.get(self.server_preset_interface).server_ip
     self.port = self.server_preset.get(self.server_preset_interface).server_port
-    self.password = self.server_preset.get(self.server_preset_interface).server_password 
+    self.server_password = self.server_preset.get(self.server_preset_interface).server_server_password
+    self.admin_password = self.server_preset.get(self.server_preset_interface).server_admin_password
 
 def update_directory(self, context):
     new_dir = Path(self.cache_directory)
@@ -112,7 +115,8 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 class ServerPreset(bpy.types.PropertyGroup):
     server_ip: bpy.props.StringProperty()
     server_port: bpy.props.IntProperty(default=5555)
-    server_password: bpy.props.StringProperty(default="admin", subtype = "PASSWORD")
+    server_server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    server_admin_password: bpy.props.StringProperty(default="admin", subtype = "PASSWORD")
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -173,6 +177,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     )
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
+        description='User color',
         subtype='COLOR',
         default=randomColor())
     port: bpy.props.IntProperty(
@@ -185,10 +190,16 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Custom name of the server",
         default='localhost',
     )
-    password: bpy.props.StringProperty(
-        name="password",
+    server_password: bpy.props.StringProperty(
+        name="server_password",
         default=random_string_digits(),
         description='Session password',
+        subtype='PASSWORD'
+    )
+    admin_password: bpy.props.StringProperty(
+        name="admin_password",
+        default=random_string_digits(),
+        description='Admin password',
         subtype='PASSWORD'
     )
     sync_flags: bpy.props.PointerProperty(
@@ -230,6 +241,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="Category",
         description="Preferences Category",
         items=[
+            ('PREF', "Preferences", "Preferences of this add-on"),
             ('CONFIG', "Configuration", "Configuration of this add-on"),
             ('UPDATE', "Update", "Update this add-on"),
         ],
@@ -283,16 +295,21 @@ class SessionPrefs(bpy.types.AddonPreferences):
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
         description="Identity",
-        default=True
+        default=False
     )
     conf_session_net_expanded: bpy.props.BoolProperty(
         name="Net",
         description="net",
-        default=True
+        default=False
     )
     conf_session_hosting_expanded: bpy.props.BoolProperty(
         name="Rights",
         description="Rights",
+        default=False
+    )
+    conf_session_rep_expanded: bpy.props.BoolProperty(
+        name="Replication",
+        description="Replication",
         default=False
     )
     conf_session_cache_expanded: bpy.props.BoolProperty(
@@ -303,6 +320,16 @@ class SessionPrefs(bpy.types.AddonPreferences):
     conf_session_ui_expanded: bpy.props.BoolProperty(
         name="Interface",
         description="Interface",
+        default=False
+    )
+    sidebar_repository_shown: bpy.props.BoolProperty(
+        name="sidebar_repository_shown",
+        description="sidebar_repository_shown",
+        default=False
+    )
+    sidebar_advanced_shown: bpy.props.BoolProperty(
+        name="sidebar_advanced_shown",
+        description="sidebar_advanced_shown",
         default=False
     )
     sidebar_advanced_rep_expanded: bpy.props.BoolProperty(
@@ -386,37 +413,24 @@ class SessionPrefs(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-
         layout.row().prop(self, "category", expand=True)
+
+        if self.category == 'PREF':
+            settings=get_preferences()
+            row = layout.row(align = True)
+            # USER SETTINGS
+            row.prop(self, "username", text="User")
+            row.prop(self, "client_color", text="")
+
+            row = layout.row()
+            row.label(text="Hide settings:")
+            row = layout.row()
+            row.prop(self, "sidebar_advanced_shown", text="Hide “Advanced” settings in side pannel (Not in session)")
+            row = layout.row()
+            row.prop(self, "sidebar_repository_shown", text="Hide “Repository” settings in side pannel (In session)")
 
         if self.category == 'CONFIG':
             grid = layout.column()
-
-            # USER INFORMATIONS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_identity_expanded", text="User information",
-                icon=get_expanded_icon(self.conf_session_identity_expanded),
-                emboss=False)
-            if self.conf_session_identity_expanded:
-                box.row().prop(self, "username", text="name")
-                box.row().prop(self, "client_color", text="color")
-
-            # NETWORK SETTINGS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_net_expanded", text="Networking",
-                icon=get_expanded_icon(self.conf_session_net_expanded),
-                emboss=False)
-
-            if self.conf_session_net_expanded:
-                box.row().prop(self, "ip", text="Address")
-                row = box.row()
-                row.label(text="Port:")
-                row.prop(self, "port", text="")
-                row = box.row()
-                row.label(text="Init the session from:")
-                row.prop(self, "init_method", text="")
 
             # HOST SETTINGS
             box = grid.box()
@@ -428,6 +442,46 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
+                row = box.row()
+                row.prop(self, "server_password", text="Server password")
+                row = box.row()
+                row.prop(self, "admin_password", text="Admin password")
+
+            # NETWORKING
+            box = grid.box()
+            box.prop(
+                self, "conf_session_net_expanded", text="Network",
+                icon=get_expanded_icon(self.conf_session_net_expanded), 
+                emboss=False)
+        
+            if self.conf_session_net_expanded:
+                row = box.row()
+                row.label(text="Timeout (ms):")
+                row.prop(self, "connection_timeout", text="")
+
+            # REPLICATION
+            box = grid.box()
+            box.prop(
+                self, "conf_session_rep_expanded", text="Replication",
+                icon=get_expanded_icon(self.conf_session_rep_expanded), 
+                emboss=False)
+
+            if self.conf_session_rep_expanded:
+                box_row = box.row()
+
+                box_row = box.row()
+                box_row.prop(self.sync_flags, "sync_render_settings")
+                box_row = box.row()
+                box_row.prop(self.sync_flags, "sync_active_camera")
+                box_row = box.row()
+
+                box_row.prop(self.sync_flags, "sync_during_editmode")
+                box_row = box.row()
+                if self.sync_flags.sync_during_editmode:
+                    warning = box_row.box()
+                    warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
+                    box_row = box.row()
+                box_row.prop(self, "depsgraph_update_rate", text="Apply delay")
 
             # CACHE SETTINGS
             box = grid.box()
