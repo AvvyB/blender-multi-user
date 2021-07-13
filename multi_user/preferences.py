@@ -25,7 +25,7 @@ import os
 from pathlib import Path
 
 from . import bl_types, environment, addon_updater_ops, presence, ui
-from .utils import get_preferences, get_expanded_icon
+from .utils import get_preferences, get_expanded_icon, get_folder_size
 from replication.constants import RP_COMMON
 from replication.interface import session
 
@@ -192,7 +192,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
     )
     server_password: bpy.props.StringProperty(
         name="server_password",
-        default=random_string_digits(),
         description='Session password',
         subtype='PASSWORD'
     )
@@ -317,6 +316,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="cache",
         default=False
     )
+    conf_session_log_expanded: bpy.props.BoolProperty(
+        name="conf_session_log_expanded",
+        description="conf_session_log_expanded",
+        default=False
+    )
     conf_session_ui_expanded: bpy.props.BoolProperty(
         name="Interface",
         description="Interface",
@@ -416,17 +420,19 @@ class SessionPrefs(bpy.types.AddonPreferences):
         layout.row().prop(self, "category", expand=True)
 
         if self.category == 'PREF':
-            settings=get_preferences()
-            row = layout.row(align = True)
+            grid = layout.column()
+
+            box = grid.box()
+            row = box.row(align = True)
             # USER SETTINGS
             row.prop(self, "username", text="User")
             row.prop(self, "client_color", text="")
 
-            row = layout.row()
+            row = box.row()
             row.label(text="Hide settings:")
-            row = layout.row()
+            row = box.row()
             row.prop(self, "sidebar_advanced_shown", text="Hide “Advanced” settings in side pannel (Not in session)")
-            row = layout.row()
+            row = box.row()
             row.prop(self, "sidebar_repository_shown", text="Hide “Repository” settings in side pannel (In session)")
 
         if self.category == 'CONFIG':
@@ -467,21 +473,21 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 emboss=False)
 
             if self.conf_session_rep_expanded:
-                box_row = box.row()
+                row = box.row()
 
-                box_row = box.row()
-                box_row.prop(self.sync_flags, "sync_render_settings")
-                box_row = box.row()
-                box_row.prop(self.sync_flags, "sync_active_camera")
-                box_row = box.row()
+                row = box.row()
+                row.prop(self.sync_flags, "sync_render_settings")
+                row = box.row()
+                row.prop(self.sync_flags, "sync_active_camera")
+                row = box.row()
 
-                box_row.prop(self.sync_flags, "sync_during_editmode")
-                box_row = box.row()
+                row.prop(self.sync_flags, "sync_during_editmode")
+                row = box.row()
                 if self.sync_flags.sync_during_editmode:
-                    warning = box_row.box()
+                    warning = row.box()
                     warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
-                    box_row = box.row()
-                box_row.prop(self, "depsgraph_update_rate", text="Apply delay")
+                    row = box.row()
+                row.prop(self, "depsgraph_update_rate", text="Apply delay")
 
             # CACHE SETTINGS
             box = grid.box()
@@ -492,25 +498,20 @@ class SessionPrefs(bpy.types.AddonPreferences):
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
                 box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
-
-            # INTERFACE SETTINGS
+                box.row().operator('session.clear_cache', text=f"Clear cache ({get_folder_size(self.cache_directory)})")
+        
+            # LOGGING
             box = grid.box()
             box.prop(
-                self, "conf_session_ui_expanded", text="Interface",
-                icon=get_expanded_icon(self.conf_session_ui_expanded),
+                self, "conf_session_log_expanded", text="Logging",
+                icon=get_expanded_icon(self.conf_session_log_expanded), 
                 emboss=False)
-            if self.conf_session_ui_expanded:
-                box.row().prop(self, "panel_category", text="Panel category", expand=True)
+            if self.conf_session_log_expanded:
                 row = box.row()
-                row.label(text="Session widget:")
+                row.label(text="Log level:")
+                row.prop(self, 'logging_level', text="")
 
-                col = box.column(align=True)
-                col.prop(self, "presence_hud_scale", expand=True)
-                
-                col.prop(self, "presence_hud_hpos", expand=True)
-                col.prop(self, "presence_hud_vpos", expand=True)
 
-                col.prop(self, "presence_mode_distance", expand=True)
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops

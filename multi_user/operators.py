@@ -164,7 +164,7 @@ class SessionStartOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = settings.admin_password
-        server_pass = settings.server_password
+        server_pass = settings.server_password if settings.server_password else None
 
         users.clear()
         deleyables.clear()
