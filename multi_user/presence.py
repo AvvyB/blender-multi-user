@@ -337,9 +337,9 @@ class UserSelectionWidget(Widget):
     @property
     def selected_objects(self):
         user_selection = self.data.get('selected_objects')
-        if user_selection !=  self.current_selection_ids:
-            self.current_selection_ids = user_selection
+        if self.current_selection_ids != user_selection:
             self.current_selected_objects = [find_from_attr("uuid", uid, bpy.data.objects) for uid in user_selection]
+            self.current_selection_ids = user_selection
 
         return self.current_selected_objects
 
@@ -361,11 +361,12 @@ class UserSelectionWidget(Widget):
         vertex_ind = []
         collection_offset = 0
         for obj_index, obj in enumerate(self.selected_objects):
+            if obj is None:
+                continue
             obj_index+=collection_offset
-            logging.info(collection_offset)
             if hasattr(obj, 'instance_collection') and obj.instance_collection:
                 bbox_pos, bbox_ind = bbox_from_instance_collection(obj, index=obj_index)
-                collection_offset+=len(obj.instance_collection.objects)
+                collection_offset+=len(obj.instance_collection.objects)-1
             else :
                 bbox_pos, bbox_ind = bbox_from_obj(obj, index=obj_index)
             vertex_pos += bbox_pos
