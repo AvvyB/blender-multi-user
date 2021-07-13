@@ -472,27 +472,30 @@ class SESSION_PT_presence(bpy.types.Panel):
         layout.active = settings.enable_presence
         
         row = layout.row()
-        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-        row.prop(settings, "presence_show_selected",text="",icon_only=True, icon='CUBE')
-        row.prop(settings, "presence_show_user", text="",icon_only=True, icon='CAMERA_DATA')
-        row.prop(settings, "presence_show_mode", text="",icon_only=True, icon='OBJECT_DATAMODE')
-        row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
-        
+        row.prop(settings, "presence_show_selected",text="Selected Objects")
+
+        row = layout.row(align=True)
+        row.prop(settings, "presence_show_user", text="Users camera")
+        row.prop(settings, "presence_show_mode", text="Users mode")
+
         col = layout.column()
-        if settings.presence_show_mode :
+        if settings.presence_show_mode or settings.presence_show_user:
             row = col.column()
-            row.prop(pref, "presence_mode_distance", expand=True)
+            row.prop(pref, "presence_text_distance", expand=True)
+
+        row = col.column()
+        row.prop(settings, "presence_show_far_user", text="Users on different scenes")  
 
         col.prop(settings, "presence_show_session_status")
         if settings.presence_show_session_status :
-            row = col.column()
-            row.active = settings.presence_show_session_status
-            row.prop(pref, "presence_hud_scale", expand=True)
-            row = col.column(align=True)
-            row.active = settings.presence_show_session_status
-            row.prop(pref, "presence_hud_hpos", expand=True)
-            row.prop(pref, "presence_hud_vpos", expand=True)
-
+            split = layout.split()
+            text_pos = split.column(align=True)
+            text_pos.active = settings.presence_show_session_status
+            text_pos.prop(pref, "presence_hud_hpos", expand=True)
+            text_pos.prop(pref, "presence_hud_vpos", expand=True)
+            text_scale = split.column()
+            text_scale.active = settings.presence_show_session_status
+            text_scale.prop(pref, "presence_hud_scale", expand=True)     
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
@@ -645,26 +648,30 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         layout.active = settings.enable_presence
         
         row = layout.row()
-        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-        row.prop(settings, "presence_show_selected",text="",icon_only=True, icon='CUBE')
-        row.prop(settings, "presence_show_user", text="",icon_only=True, icon='CAMERA_DATA')
-        row.prop(settings, "presence_show_mode", text="",icon_only=True, icon='OBJECT_DATAMODE')
-        row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
-        
+        row.prop(settings, "presence_show_selected",text="Selected Objects")
+
+        row = layout.row(align=True)
+        row.prop(settings, "presence_show_user", text="Users camera")
+        row.prop(settings, "presence_show_mode", text="Users mode")
+
         col = layout.column()
-        if settings.presence_show_mode :
+        if settings.presence_show_mode or settings.presence_show_user:
             row = col.column()
-            row.prop(pref, "presence_mode_distance", expand=True)
-        
+            row.prop(pref, "presence_text_distance", expand=True)
+
+        row = col.column()
+        row.prop(settings, "presence_show_far_user", text="Users on different scenes")  
+
         col.prop(settings, "presence_show_session_status")
         if settings.presence_show_session_status :
-            row = col.column()
-            row.active = settings.presence_show_session_status
-            row.prop(pref, "presence_hud_scale", expand=True)
-            row = col.column(align=True)
-            row.active = settings.presence_show_session_status
-            row.prop(pref, "presence_hud_hpos", expand=True)
-            row.prop(pref, "presence_hud_vpos", expand=True)
+            split = layout.split()
+            text_pos = split.column(align=True)
+            text_pos.active = settings.presence_show_session_status
+            text_pos.prop(pref, "presence_hud_hpos", expand=True)
+            text_pos.prop(pref, "presence_hud_vpos", expand=True)
+            text_scale = split.column()
+            text_scale.active = settings.presence_show_session_status
+            text_scale.prop(pref, "presence_hud_scale", expand=True)   
         
 
 classes = (
