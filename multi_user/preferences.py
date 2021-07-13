@@ -284,11 +284,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         step=1,
         subtype='PERCENTAGE',
     )
-    presence_mode_distance: bpy.props.FloatProperty(
-        name="Distance mode visibilty",
-        description="Adjust the distance visibilty of user's mode",
+    presence_text_distance: bpy.props.FloatProperty(
+        name="Distance text visibilty",
+        description="Adjust the distance visibilty of user's mode/name",
         min=0.1,
-        max=1000,
+        max=10000,
         default=100,
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
