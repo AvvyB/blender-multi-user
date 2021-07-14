@@ -162,7 +162,7 @@ class AnnotationUpdates(Timer):
                         logging.debug(
                             "Getting the right on the annotation GP")
                         porcelain.lock(session.repository,
-                                        registered_gp.uuid,
+                                        [registered_gp.uuid],
                                         ignore_warnings=True,
                                         affect_dependencies=False)
 
@@ -172,9 +172,10 @@ class AnnotationUpdates(Timer):
 
                 elif self._annotating:
                     porcelain.unlock(session.repository,
-                                    registered_gp.uuid,
+                                    [registered_gp.uuid],
                                     ignore_warnings=True,
                                     affect_dependencies=False)
+                    self._annotating = False
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
