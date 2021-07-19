@@ -16,6 +16,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+from logging import log
+import logging
 import bpy
 import bpy.utils.previews
 
@@ -103,7 +105,37 @@ class SESSION_PT_settings(bpy.types.Panel):
             # STATE INITIAL
             if not session \
                or (session and session.state == STATE_INITIAL):
-                pass
+                layout = self.layout
+                settings = get_preferences()
+                server_preset = settings.server_preset
+                selected_server = context.window_manager.server_index if context.window_manager.server_index<=len(server_preset)-1 else 0
+                active_server_name = server_preset[selected_server].name if len(server_preset)>=1 else ""
+                is_server_selected = True if active_server_name else False # TODO : issues when removing the lowest server in the list
+
+                # Create a simple row.
+                row = layout.row()
+                box = row.box()
+                split = box.split(factor=0.7)
+                split.label(text="Server")
+                split.label(text="Online")
+
+                row = layout.row()
+                layout.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index") # TODO: change port to server_index
+
+                row = layout.row() # TODO : active server in template
+                row.operator("session.preset_server_add", text="Add") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
+                col = row.column()
+                col.enabled = is_server_selected
+                col.operator("session.preset_server_edit", text="Edit").target_server_name = active_server_name
+                col = row.column()
+                col.enabled = is_server_selected
+                col.operator("session.preset_server_remove", text="Remove").target_server_name = active_server_name
+
+                row = layout.row()
+                row.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
+                col = row.column()
+                col.enabled =is_server_selected
+                col.operator("session.connect", text="Connect")
             else:
                 progress = session.state_progress           
                 row = layout.row()
@@ -138,99 +170,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                     ))
 
                 layout.row().operator("session.stop", icon='QUIT', text="Exit")
-
-class SESSION_PT_settings_network(bpy.types.Panel):
-    bl_idname = "MULTIUSER_SETTINGS_NETWORK_PT_panel"
-    bl_label = "Network"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
-
-    @classmethod
-    def poll(cls, context):
-        return not session \
-            or (session and session.state == 0)
-
-    def draw_header(self, context):
-        self.layout.label(text="", icon='URL')
-
-    def draw(self, context):
-        layout = self.layout
-
-        runtime_settings = context.window_manager.session
-        settings = get_preferences()
-
-        # USER SETTINGS
-        row = layout.row()
-        row.prop(runtime_settings, "session_mode", expand=True)
-        row = layout.row()
-                     
-        col = row.row(align=True)
-        col.prop(settings, "server_preset_interface", text="")
-        col.operator("session.preset_server_add", icon='ADD', text="")
-        col.operator("session.preset_server_remove", icon='REMOVE', text="")
-
-        row = layout.row()
-        box = row.box()
-
-        if runtime_settings.session_mode == 'HOST':
-            row = box.row()
-            row.label(text="Port:")
-            row.prop(settings, "port", text="")
-            row = box.row()
-            row.label(text="Start from:")
-            row.prop(settings, "init_method", text="")
-            row = box.row()
-            row.label(text="Admin password:")
-            row.prop(settings, "admin_password", text="")
-            row = box.row()
-            row.operator("session.start", text="HOST").host = True
-        else:
-            row = box.row()
-            row.prop(settings, "ip", text="IP")
-            row = box.row()
-            row.label(text="Port:")
-            row.prop(settings, "port", text="")
-
-            row = box.row()
-            row.prop(runtime_settings, "admin", text='Connect as admin', icon='DISCLOSURE_TRI_DOWN' if runtime_settings.admin
-                     else 'DISCLOSURE_TRI_RIGHT')
-            if runtime_settings.admin:
-                row = box.row()
-                row.label(text="Password:")
-                row.prop(settings, "admin_password", text="")
-            row = box.row()
-            row.operator("session.start", text="CONNECT").host = False
-
-class SESSION_PT_settings_user(bpy.types.Panel):
-    bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
-    bl_label = "User info"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
-
-    @classmethod
-    def poll(cls, context):
-        return not session \
-            or (session and session.state == 0)
-    
-    def draw_header(self, context):
-        self.layout.label(text="", icon='USER')
-
-    def draw(self, context):
-        layout = self.layout
-
-        runtime_settings = context.window_manager.session
-        settings = get_preferences()
-
-        row = layout.row()
-        # USER SETTINGS
-        row.prop(settings, "username", text="name")
-
-        row = layout.row()
-        row.prop(settings, "client_color", text="color")
-        row = layout.row()
-
 
 class SESSION_PT_advanced_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
@@ -446,57 +385,6 @@ class SESSION_UL_users(bpy.types.UIList):
         split.label(text=scene_current)
         split.label(text=ping)
 
-
-class SESSION_PT_presence(bpy.types.Panel):
-    bl_idname = "MULTIUSER_MODULE_PT_panel"
-    bl_label = "Presence overlay"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        return not session \
-            or (session and session.state in [STATE_INITIAL, STATE_ACTIVE])
-
-    def draw_header(self, context):
-        self.layout.prop(context.window_manager.session,
-                         "enable_presence", text="",icon='OVERLAY')
-
-    def draw(self, context):
-        layout = self.layout
-
-        settings = context.window_manager.session
-        pref = get_preferences()
-        layout.active = settings.enable_presence
-        
-        row = layout.row()
-        row.prop(settings, "presence_show_selected",text="Selected Objects")
-
-        row = layout.row(align=True)
-        row.prop(settings, "presence_show_user", text="Users camera")
-        row.prop(settings, "presence_show_mode", text="Users mode")
-
-        col = layout.column()
-        if settings.presence_show_mode or settings.presence_show_user:
-            row = col.column()
-            row.prop(pref, "presence_text_distance", expand=True)
-
-        row = col.column()
-        row.prop(settings, "presence_show_far_user", text="Users on different scenes")  
-
-        col.prop(settings, "presence_show_session_status")
-        if settings.presence_show_session_status :
-            split = layout.split()
-            text_pos = split.column(align=True)
-            text_pos.active = settings.presence_show_session_status
-            text_pos.prop(pref, "presence_hud_hpos", expand=True)
-            text_pos.prop(pref, "presence_hud_vpos", expand=True)
-            text_scale = split.column()
-            text_scale.active = settings.presence_show_session_status
-            text_scale.prop(pref, "presence_hud_scale", expand=True)     
-
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
@@ -673,13 +561,36 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
             text_scale.active = settings.presence_show_session_status
             text_scale.prop(pref, "presence_hud_scale", expand=True)   
         
+        
+class SESSION_UL_network(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+        settings = get_preferences()
+        server_name = '-'
+        server_status = 'BLANK1'
+        server_private = 'BLANK1'
+        
+        server_name = item.server_name
+
+        split = layout.split(factor=0.7)
+        # Session with/without password
+        # TODO : ping lock server
+        if settings.server_password != None:
+            server_private = 'LOCKED'
+            split.label(text=server_name, icon=server_private)
+        else:
+            split.label(text=server_name)
+
+        # Session status
+        # TODO : if session online : vert else rouge
+        # TODO : ping
+        from multi_user import icons
+        server_status = icons.icons_col["session_status_offline"]
+        split.label(icon_value=server_status.icon_id)
 
 classes = (
     SESSION_UL_users,
+    SESSION_UL_network,
     SESSION_PT_settings,
-    SESSION_PT_settings_user,
-    SESSION_PT_settings_network,
-    SESSION_PT_presence,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
     SESSION_PT_repository,

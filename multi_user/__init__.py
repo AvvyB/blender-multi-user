@@ -85,6 +85,7 @@ def register():
         type=preferences.SessionUser
     )
     bpy.types.WindowManager.user_index = bpy.props.IntProperty()
+    bpy.types.WindowManager.server_index = bpy.props.IntProperty()
     bpy.types.TOPBAR_MT_file_import.append(operators.menu_func_import)
 
 
@@ -111,5 +112,6 @@ def unregister():
     del bpy.types.ID.uuid
     del bpy.types.WindowManager.online_users
     del bpy.types.WindowManager.user_index
+    del bpy.types.WindowManager.server_index
 
     environment.unregister()

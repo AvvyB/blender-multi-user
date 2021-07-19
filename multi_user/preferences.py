@@ -17,6 +17,7 @@
 
 import random
 import logging
+from uuid import uuid4
 import bpy
 import string
 import re
@@ -35,12 +36,14 @@ HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]
 
 DEFAULT_PRESETS = {
     "localhost" : {
+        "server_name": "localhost",
         "server_ip": "localhost",
         "server_port": 5555,
         "admin_password": "admin",
         "server_password": ""
     },
     "public session" : {
+        "server_name": "public session",
         "server_ip": "51.75.71.183",
         "server_port": 5555,
         "admin_password": "",
@@ -112,7 +115,8 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
-class ServerPreset(bpy.types.PropertyGroup):
+class ServerPreset(bpy.types.PropertyGroup): # TODO: self.uuid = uuid if uuid else str(uuid4())
+    server_name: bpy.props.StringProperty()
     server_ip: bpy.props.StringProperty()
     server_port: bpy.props.IntProperty(default=5555)
     server_server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
@@ -189,6 +193,10 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server_name",
         description="Custom name of the server",
         default='localhost',
+    )
+    server_index: bpy.props.IntProperty(
+        name="server_index",
+        description="index of the server",
     )
     server_password: bpy.props.StringProperty(
         name="server_password",
@@ -540,7 +548,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
             if existing_preset :
                 continue
             new_server = self.server_preset.add()
-            new_server.name = preset_name
+            new_server.name = str(uuid4())
+            new_server.server_name = preset_data.get('server_name')
+            new_server.server_index = preset_data.get('server_index')
             new_server.server_ip = preset_data.get('server_ip')
             new_server.server_port = preset_data.get('server_port')
             new_server.server_password = preset_data.get('server_password',None)
