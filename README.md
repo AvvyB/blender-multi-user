@@ -49,7 +49,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | physics        |   ✔️    |                                                                         |
 | textures       |   ✔️    |                                                                         |
 | curve          |   ❗    |                      Nurbs surfaces not supported                       |
-| armature       |   ❗    |          Only for meshe, planned for GPencils. Not stable yet           |
+| armature       |   ❗    |          Only for Mesh. [Planned for GPencil](https://gitlab.com/slumber/multi-user/-/issues/161). Not stable yet           |
 | particles      |   ❗    |                        The cache isn't syncing.                         |
 | speakers       |   ❗    |      [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)       |
 | vse            |   ❗    |                     Mask and Clip not supported yet                     |
