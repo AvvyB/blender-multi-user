@@ -19,10 +19,12 @@
 import bpy
 import mathutils
 
-from .. import utils
-from .bl_datablock import BlDatablock
-from .dump_anything import Loader, Dumper
+from deepdiff import DeepDiff, Delta
 
+from .. import utils
+from replication.protocol import ReplicatedDatablock
+from .dump_anything import Loader, Dumper
+from .bl_datablock import resolve_datablock_from_uuid
 
 def dump_collection_children(collection):
     collection_children = []
@@ -81,58 +83,82 @@ def resolve_collection_dependencies(collection):
 
     return deps
 
-class BlCollection(BlDatablock):
+class BlCollection(ReplicatedDatablock):
     bl_id = "collections"
     bl_icon = 'FILE_FOLDER'
     bl_class = bpy.types.Collection
     bl_check_common = True
     bl_reload_parent = False
-    
-    def _construct(self, data):
-        if self.is_library:
-            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
-                targetData.collections = [
-                    name for name in sourceData.collections if name == self.data['name']]
 
-            instance = bpy.data.collections[self.data['name']]
+    use_delta = True
 
-            return instance
-
+    @staticmethod
+    def construct(data: dict) -> object:
         instance = bpy.data.collections.new(data["name"])
         return instance
 
-    def _load_implementation(self, data, target):
+
+    @staticmethod
+    def load(data: dict, datablock: object):
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         # Objects
-        load_collection_objects(data['objects'], target)
+        load_collection_objects(data['objects'], datablock)
 
         # Link childrens
-        load_collection_childrens(data['children'], target)
+        load_collection_childrens(data['children'], datablock)
 
         # FIXME: Find a better way after the replication big refacotoring
         # Keep other user from deleting collection object by flushing their history
         utils.flush_history()
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
 
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
             "name",
             "instance_offset"
         ]
-        data = dumper.dump(instance)
+        data = dumper.dump(datablock)
 
         # dump objects
-        data['objects'] = dump_collection_objects(instance)
+        data['objects'] = dump_collection_objects(datablock)
 
         # dump children collections
-        data['children'] = dump_collection_children(instance)
+        data['children'] = dump_collection_children(datablock)
 
         return data
 
-    def _resolve_deps_implementation(self):
-        return resolve_collection_dependencies(self.instance)
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return  resolve_datablock_from_uuid(uuid, bpy.data.collections)
+
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        return resolve_collection_dependencies(datablock)
+
+    @staticmethod
+    def compute_delta(last_data: dict, current_data: dict) -> Delta:
+        diff_params = {
+            'ignore_order': True,
+            'report_repetition': True
+        }
+        delta_params = {
+            # 'mutate': True
+        }
+
+        return Delta(
+            DeepDiff(last_data,
+                     current_data,
+                     cache_size=5000,
+                     **diff_params),
+            **delta_params)
+
+_type = bpy.types.Collection
+_class = BlCollection

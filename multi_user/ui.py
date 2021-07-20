@@ -26,7 +26,7 @@ from replication.constants import (ADDED, ERROR, FETCHED,
                                                      STATE_INITIAL, STATE_SRV_SYNC,
                                                      STATE_WAITING, STATE_QUITTING,
                                                      STATE_LOBBY,
-                                                     STATE_LAUNCHING_SERVICES)
+                                                     CONNECTING)
 from replication import __version__
 from replication.interface import session
 from .timers import registry
@@ -71,9 +71,9 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw_header(self, context):
         layout = self.layout
-        if session and session.state['STATE'] != STATE_INITIAL:
+        if session and session.state != STATE_INITIAL:
             cli_state = session.state
-            state =  session.state.get('STATE')
+            state =  session.state
             connection_icon = "KEYTYPE_MOVING_HOLD_VEC"
 
             if state == STATE_ACTIVE:
@@ -81,7 +81,7 @@ class SESSION_PT_settings(bpy.types.Panel):
             else:
                 connection_icon = 'PROP_CON'
 
-            layout.label(text=f"Session - {get_state_str(cli_state['STATE'])}", icon=connection_icon)
+            layout.label(text=f"Session - {get_state_str(cli_state)}", icon=connection_icon)
         else:
             layout.label(text=f"Session - v{__version__}",icon="PROP_OFF")
 
@@ -94,20 +94,20 @@ class SESSION_PT_settings(bpy.types.Panel):
         if hasattr(context.window_manager, 'session'):
             # STATE INITIAL
             if not session \
-               or (session and session.state['STATE'] == STATE_INITIAL):
+               or (session and session.state == STATE_INITIAL):
                 pass
             else:
-                cli_state = session.state                
+                progress = session.state_progress           
                 row = layout.row()
 
-                current_state = cli_state['STATE']
+                current_state = session.state
                 info_msg = None
 
                 if current_state in [STATE_ACTIVE]:
                     row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
                     row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
                     row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
-                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='OBJECT_DATAMODE')
+                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
 
                 row= layout.row()
 
@@ -124,8 +124,8 @@ class SESSION_PT_settings(bpy.types.Panel):
                 if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
                     info_box = row.box()
                     info_box.row().label(text=printProgressBar(
-                        cli_state['CURRENT'],
-                        cli_state['TOTAL'],
+                        progress['current'],
+                        progress['total'],
                         length=16
                     ))
 
@@ -141,7 +141,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] == 0)
+            or (session and session.state == 0)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='URL')
@@ -156,7 +156,13 @@ class SESSION_PT_settings_network(bpy.types.Panel):
         row = layout.row()
         row.prop(runtime_settings, "session_mode", expand=True)
         row = layout.row()
+                     
+        col = row.row(align=True)
+        col.prop(settings, "server_preset_interface", text="")
+        col.operator("session.preset_server_add", icon='ADD', text="")
+        col.operator("session.preset_server_remove", icon='REMOVE', text="")
 
+        row = layout.row()
         box = row.box()
 
         if runtime_settings.session_mode == 'HOST':
@@ -168,7 +174,7 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             row.prop(settings, "init_method", text="")
             row = box.row()
             row.label(text="Admin password:")
-            row.prop(runtime_settings, "password", text="")
+            row.prop(settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="HOST").host = True
         else:
@@ -184,10 +190,9 @@ class SESSION_PT_settings_network(bpy.types.Panel):
             if runtime_settings.admin:
                 row = box.row()
                 row.label(text="Password:")
-                row.prop(runtime_settings, "password", text="")
+                row.prop(settings, "password", text="")
             row = box.row()
             row.operator("session.start", text="CONNECT").host = False
-
 
 class SESSION_PT_settings_user(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_USER_PT_panel"
@@ -199,7 +204,7 @@ class SESSION_PT_settings_user(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] == 0)
+            or (session and session.state == 0)
     
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -230,7 +235,7 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] == 0)
+            or (session and session.state == 0)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='PREFERENCES')
@@ -251,9 +256,6 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             emboss=False)
         
         if settings.sidebar_advanced_net_expanded:
-            net_section_row = net_section.row()
-            net_section_row.label(text="IPC Port:")
-            net_section_row.prop(settings, "ipc_port", text="")
             net_section_row = net_section.row()
             net_section_row.label(text="Timeout (ms):")
             net_section_row.prop(settings, "connection_timeout", text="")
@@ -322,7 +324,7 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return session and session.state['STATE'] in [STATE_ACTIVE, STATE_LOBBY]
+        return session and session.state in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -341,9 +343,10 @@ class SESSION_PT_user(bpy.types.Panel):
         box = row.box()
         split = box.split(factor=0.35)
         split.label(text="user")
-        split = split.split(factor=0.5)
-        split.label(text="location")
+        split = split.split(factor=0.3)
+        split.label(text="mode")
         split.label(text="frame")
+        split.label(text="location")
         split.label(text="ping")
 
         row = layout.row()
@@ -353,7 +356,7 @@ class SESSION_PT_user(bpy.types.Panel):
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
-            if  session.state['STATE'] == STATE_ACTIVE:
+            if  session.state == STATE_ACTIVE:
                 
                 user_operations.alert = context.window_manager.session.time_snap_running
                 user_operations.operator(
@@ -381,6 +384,8 @@ class SESSION_UL_users(bpy.types.UIList):
         ping = '-'
         frame_current = '-'
         scene_current = '-'
+        mode_current = '-'
+        mode_icon = 'BLANK1'
         status_icon = 'BLANK1'
         if session:
             user = session.online_users.get(item.username)
@@ -390,13 +395,45 @@ class SESSION_UL_users(bpy.types.UIList):
                 if metadata and 'frame_current' in metadata:
                     frame_current = str(metadata.get('frame_current','-'))
                     scene_current = metadata.get('scene_current','-')
+                    mode_current = metadata.get('mode_current','-')
+                    if mode_current == "OBJECT" :
+                        mode_icon = "OBJECT_DATAMODE"
+                    elif mode_current == "EDIT_MESH" :
+                        mode_icon = "EDITMODE_HLT"
+                    elif mode_current == 'EDIT_CURVE':
+                        mode_icon = "CURVE_DATA"
+                    elif mode_current == 'EDIT_SURFACE':
+                        mode_icon = "SURFACE_DATA"
+                    elif mode_current == 'EDIT_TEXT':
+                        mode_icon = "FILE_FONT"
+                    elif mode_current == 'EDIT_ARMATURE':
+                        mode_icon = "ARMATURE_DATA"
+                    elif mode_current == 'EDIT_METABALL':
+                        mode_icon = "META_BALL"
+                    elif mode_current == 'EDIT_LATTICE':
+                        mode_icon = "LATTICE_DATA"
+                    elif mode_current == 'POSE':
+                        mode_icon = "POSE_HLT"
+                    elif mode_current == 'SCULPT':
+                        mode_icon = "SCULPTMODE_HLT"
+                    elif mode_current == 'PAINT_WEIGHT':
+                        mode_icon = "WPAINT_HLT"
+                    elif mode_current == 'PAINT_VERTEX':
+                        mode_icon = "VPAINT_HLT"
+                    elif mode_current == 'PAINT_TEXTURE':
+                        mode_icon = "TPAINT_HLT"
+                    elif mode_current == 'PARTICLE':
+                        mode_icon = "PARTICLES"
+                    elif mode_current == 'PAINT_GPENCIL' or mode_current =='EDIT_GPENCIL' or mode_current =='SCULPT_GPENCIL' or mode_current =='WEIGHT_GPENCIL' or mode_current =='VERTEX_GPENCIL':
+                        mode_icon = "GREASEPENCIL"
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
         split = layout.split(factor=0.35)
         split.label(text=item.username, icon=status_icon)
-        split = split.split(factor=0.5)
-        split.label(text=scene_current)
+        split = split.split(factor=0.3)
+        split.label(icon=mode_icon)
         split.label(text=frame_current)
+        split.label(text=scene_current)
         split.label(text=ping)
 
 
@@ -411,7 +448,7 @@ class SESSION_PT_presence(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         return not session \
-            or (session and session.state['STATE'] in [STATE_INITIAL, STATE_ACTIVE])
+            or (session and session.state in [STATE_INITIAL, STATE_ACTIVE])
 
     def draw_header(self, context):
         self.layout.prop(context.window_manager.session,
@@ -423,26 +460,35 @@ class SESSION_PT_presence(bpy.types.Panel):
         settings = context.window_manager.session
         pref = get_preferences()
         layout.active = settings.enable_presence
+        
+        row = layout.row()
+        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        row.prop(settings, "presence_show_selected",text="",icon_only=True, icon='CUBE')
+        row.prop(settings, "presence_show_user", text="",icon_only=True, icon='CAMERA_DATA')
+        row.prop(settings, "presence_show_mode", text="",icon_only=True, icon='OBJECT_DATAMODE')
+        row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
+        
         col = layout.column()
+        if settings.presence_show_mode :
+            row = col.column()
+            row.prop(pref, "presence_mode_distance", expand=True)
+
         col.prop(settings, "presence_show_session_status")
-        row = col.column()
-        row.active = settings.presence_show_session_status
-        row.prop(pref, "presence_hud_scale", expand=True)
-        row = col.column(align=True)
-        row.active = settings.presence_show_session_status
-        row.prop(pref, "presence_hud_hpos", expand=True)
-        row.prop(pref, "presence_hud_vpos", expand=True)
-        col.prop(settings, "presence_show_selected")
-        col.prop(settings, "presence_show_user")
-        row = layout.column()
-        row.active = settings.presence_show_user
-        row.prop(settings, "presence_show_far_user")
+        if settings.presence_show_session_status :
+            row = col.column()
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_scale", expand=True)
+            row = col.column(align=True)
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_hpos", expand=True)
+            row.prop(pref, "presence_hud_vpos", expand=True)
+
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     runtime_settings = context.window_manager.session
-    item = session.get(uuid=property_uuid)
-
+    item = session.repository.graph.get(property_uuid)
+    type_id = item.data.get('type_id')
     area_msg = parent.row(align=True)
 
     if item.state == ERROR:
@@ -453,11 +499,10 @@ def draw_property(context, parent, property_uuid, level=0):
     line = area_msg.box()
 
     name = item.data['name'] if item.data else item.uuid
-
+    icon = settings.supported_datablocks[type_id].icon if type_id else 'ERROR'
     detail_item_box = line.row(align=True)
 
-    detail_item_box.label(text="",
-                          icon=settings.supported_datablocks[item.str_type].icon)
+    detail_item_box.label(text="", icon=icon)
     detail_item_box.label(text=f"{name}")
 
     # Operations
@@ -519,8 +564,8 @@ class SESSION_PT_repository(bpy.types.Panel):
                 admin = usr['admin']
         return hasattr(context.window_manager, 'session') and \
             session and \
-            (session.state['STATE'] == STATE_ACTIVE or \
-            session.state['STATE'] == STATE_LOBBY and admin)
+            (session.state == STATE_ACTIVE or \
+            session.state == STATE_LOBBY and admin)
 
     def draw_header(self, context):
         self.layout.label(text="", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -536,7 +581,7 @@ class SESSION_PT_repository(bpy.types.Panel):
 
         row = layout.row()
 
-        if session.state['STATE'] == STATE_ACTIVE:
+        if session.state == STATE_ACTIVE:
             if 'SessionBackupTimer' in registry:
                 row.alert = True
                 row.operator('session.cancel_autosave', icon="CANCEL")
@@ -544,42 +589,29 @@ class SESSION_PT_repository(bpy.types.Panel):
             else:
                 row.operator('session.save', icon="FILE_TICK")
 
-            flow = layout.grid_flow(
-                row_major=True,
-                columns=0,
-                even_columns=True,
-                even_rows=False,
-                align=True)
-
-            for item in settings.supported_datablocks:
-                col = flow.column(align=True)
-                col.prop(item, "use_as_filter", text="", icon=item.icon)
-
-            row = layout.row(align=True)
-            row.prop(runtime_settings, "filter_owned", text="Show only owned")
-
-            row = layout.row(align=True)
+            box = layout.box()
+            row = box.row()
+            row.prop(runtime_settings, "filter_owned", text="Show only owned Nodes", icon_only=True, icon="DECORATE_UNLOCKED")
+            row = box.row()
+            row.prop(runtime_settings, "filter_name", text="Filter")
+            row = box.row()
 
             # Properties
-            types_filter = [t.type_name for t in settings.supported_datablocks
-                            if t.use_as_filter]
+            owned_nodes = [k for k, v in  session.repository.graph.items() if v.owner==settings.username]
 
-            key_to_filter = session.list(
-                filter_owner=settings.username) if runtime_settings.filter_owned else session.list()
+            filtered_node = owned_nodes if runtime_settings.filter_owned else list(session.repository.graph.keys())
 
-            client_keys = [key for key in key_to_filter
-                           if session.get(uuid=key).str_type
-                           in types_filter]
+            if runtime_settings.filter_name:
+                filtered_node = [n for n in filtered_node if runtime_settings.filter_name.lower() in session.repository.graph.get(n).data.get('name').lower()]
 
-            if client_keys:
+            if filtered_node:
                 col = layout.column(align=True)
-                for key in client_keys:
+                for key in filtered_node:
                     draw_property(context, col, key)
-
             else:
-                row.label(text="Empty")
+                layout.row().label(text="Empty")
 
-        elif session.state['STATE'] == STATE_LOBBY and usr and usr['admin']:
+        elif session.state == STATE_LOBBY and usr and usr['admin']:
             row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
         else:
             row.label(text="Waiting to start")
@@ -597,23 +629,32 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        view = context.space_data
-        overlay = view.overlay
-        display_all = overlay.show_overlays
-
-        col = layout.column()
-
-        row = col.row(align=True)
         settings = context.window_manager.session
+        pref = get_preferences()
         layout.active = settings.enable_presence
+        
+        row = layout.row()
+        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        row.prop(settings, "presence_show_selected",text="",icon_only=True, icon='CUBE')
+        row.prop(settings, "presence_show_user", text="",icon_only=True, icon='CAMERA_DATA')
+        row.prop(settings, "presence_show_mode", text="",icon_only=True, icon='OBJECT_DATAMODE')
+        row.prop(settings, "presence_show_far_user", text="",icon_only=True, icon='SCENE_DATA')
+        
         col = layout.column()
+        if settings.presence_show_mode :
+            row = col.column()
+            row.prop(pref, "presence_mode_distance", expand=True)
+        
         col.prop(settings, "presence_show_session_status")
-        col.prop(settings, "presence_show_selected")
-        col.prop(settings, "presence_show_user")
-
-        row = layout.column()
-        row.active = settings.presence_show_user
-        row.prop(settings, "presence_show_far_user")
+        if settings.presence_show_session_status :
+            row = col.column()
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_scale", expand=True)
+            row = col.column(align=True)
+            row.active = settings.presence_show_session_status
+            row.prop(pref, "presence_hud_hpos", expand=True)
+            row.prop(pref, "presence_hud_vpos", expand=True)
+        
 
 classes = (
     SESSION_UL_users,

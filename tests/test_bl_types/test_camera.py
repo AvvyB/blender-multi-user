@@ -15,11 +15,11 @@ def test_camera(clear_blend, camera_type):
     datablock.type = camera_type
 
     camera_dumper = BlCamera()
-    expected = camera_dumper._dump(datablock)
+    expected = camera_dumper.dump(datablock)
     bpy.data.cameras.remove(datablock)
 
-    test = camera_dumper._construct(expected)
-    camera_dumper._load(expected, test)
-    result = camera_dumper._dump(test)
+    test = camera_dumper.construct(expected)
+    camera_dumper.load(expected, test)
+    result = camera_dumper.dump(test)
 
     assert not DeepDiff(expected, result)

@@ -12,14 +12,16 @@ def test_scene(clear_blend):
     get_preferences().sync_flags.sync_render_settings = True
 
     datablock = bpy.data.scenes.new("toto")
+    datablock.timeline_markers.new('toto', frame=10)
+    datablock.timeline_markers.new('tata', frame=1)
     datablock.view_settings.use_curve_mapping = True
     # Test
     implementation = BlScene()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.scenes.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)

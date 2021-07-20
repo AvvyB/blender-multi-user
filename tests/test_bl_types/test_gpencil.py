@@ -13,11 +13,11 @@ def test_gpencil(clear_blend):
     datablock = bpy.data.grease_pencils[0]
 
     implementation = BlGpencil()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.grease_pencils.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)

@@ -33,6 +33,19 @@ from replication.interface import session
 IP_REGEX = re.compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
+DEFAULT_PRESETS = {
+    "localhost" : {
+        "server_ip": "localhost",
+        "server_port": 5555,
+        "server_password": "admin"
+    },
+    "public session" : {
+        "server_ip": "51.75.71.183",
+        "server_port": 5555,
+        "server_password": ""
+    },
+}
+
 def randomColor():
     """Generate a random color """
     r = random.random()
@@ -65,16 +78,11 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
-
-def update_port(self, context):
-    max_port = self.port + 3
-
-    if self.ipc_port < max_port and \
-            self['ipc_port'] >= self.port:
-        logging.error(
-            "IPC Port in conflict with the port, assigning a random value")
-        self['ipc_port'] = random.randrange(self.port+4, 10000)
-
+def update_server_preset_interface(self, context):
+    self.server_name = self.server_preset.get(self.server_preset_interface).name
+    self.ip = self.server_preset.get(self.server_preset_interface).server_ip
+    self.port = self.server_preset.get(self.server_preset_interface).server_port
+    self.password = self.server_preset.get(self.server_preset_interface).server_password 
 
 def update_directory(self, context):
     new_dir = Path(self.cache_directory)
@@ -101,6 +109,10 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
+class ServerPreset(bpy.types.PropertyGroup):
+    server_ip: bpy.props.StringProperty()
+    server_port: bpy.props.IntProperty(default=5555)
+    server_password: bpy.props.StringProperty(default="admin", subtype = "PASSWORD")
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -153,7 +165,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     ip: bpy.props.StringProperty(
         name="ip",
         description='Distant host ip',
-        default="127.0.0.1",
+        default="localhost",
         update=update_ip)
     username: bpy.props.StringProperty(
         name="Username",
@@ -168,17 +180,22 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description='Distant host port',
         default=5555
     )
+    server_name: bpy.props.StringProperty(
+        name="server_name",
+        description="Custom name of the server",
+        default='localhost',
+    )
+    password: bpy.props.StringProperty(
+        name="password",
+        default=random_string_digits(),
+        description='Session password',
+        subtype='PASSWORD'
+    )
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
     )
     supported_datablocks: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
-    )
-    ipc_port: bpy.props.IntProperty(
-        name="ipc_port",
-        description='internal ttl port(only useful for multiple local instances)',
-        default=random.randrange(5570, 70000),
-        update=update_port,
     )
     init_method: bpy.props.EnumProperty(
         name='init_method',
@@ -255,6 +272,13 @@ class SessionPrefs(bpy.types.AddonPreferences):
         default=1,
         step=1,
         subtype='PERCENTAGE',
+    )
+    presence_mode_distance: bpy.props.FloatProperty(
+        name="Distance mode visibilty",
+        description="Adjust the distance visibilty of user's mode",
+        min=0.1,
+        max=1000,
+        default=100,
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
@@ -335,6 +359,25 @@ class SessionPrefs(bpy.types.AddonPreferences):
         max=59
     )
 
+    # Server preset
+    def server_list_callback(scene, context):
+        settings = get_preferences()
+        enum = []
+        for i in settings.server_preset:
+            enum.append((i.name, i.name, ""))
+        return enum
+
+    server_preset: bpy.props.CollectionProperty(
+        name="server preset",
+        type=ServerPreset,
+    )
+    server_preset_interface: bpy.props.EnumProperty(
+        name="servers",
+        description="servers enum",
+        items=server_list_callback,
+        update=update_server_preset_interface,
+    )
+
     # Custom panel
     panel_category: bpy.props.StringProperty(
         description="Choose a name for the category of the panel",
@@ -410,9 +453,10 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 col = box.column(align=True)
                 col.prop(self, "presence_hud_scale", expand=True)
                 
-
                 col.prop(self, "presence_hud_hpos", expand=True)
                 col.prop(self, "presence_hud_vpos", expand=True)
+
+                col.prop(self, "presence_mode_distance", expand=True)
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
@@ -421,18 +465,30 @@ class SessionPrefs(bpy.types.AddonPreferences):
     def generate_supported_types(self):
         self.supported_datablocks.clear()
 
-        for type in bl_types.types_to_register():
+        bpy_protocol = bl_types.get_data_translation_protocol()
+
+        # init the factory with supported types
+        for dcc_type_id, impl in bpy_protocol.implementations.items():
             new_db = self.supported_datablocks.add()
 
-            type_module = getattr(bl_types, type)
-            name = [e.capitalize() for e in type.split('_')[1:]]
-            type_impl_name = 'Bl'+''.join(name)
-            type_module_class = getattr(type_module, type_impl_name)
-            new_db.name = type_impl_name
-            new_db.type_name = type_impl_name
+            new_db.name = dcc_type_id
+            new_db.type_name = dcc_type_id
             new_db.use_as_filter = True
-            new_db.icon = type_module_class.bl_icon
-            new_db.bl_name = type_module_class.bl_id
+            new_db.icon = impl.bl_icon
+            new_db.bl_name = impl.bl_id
+
+
+    # custom at launch server preset
+    def generate_default_presets(self): 
+        for preset_name, preset_data in DEFAULT_PRESETS.items():
+            existing_preset = self.server_preset.get(preset_name)
+            if existing_preset :
+                continue
+            new_server = self.server_preset.add()
+            new_server.name = preset_name
+            new_server.server_ip = preset_data.get('server_ip')
+            new_server.server_port = preset_data.get('server_port')
+            new_server.server_password = preset_data.get('server_password',None)
 
 
 def client_list_callback(scene, context):
@@ -490,6 +546,11 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Enable user overlay ',
         default=True,
     )
+    presence_show_mode: bpy.props.BoolProperty(
+        name="Show users current mode",
+        description='Enable user mode overlay ',
+        default=False,
+    )
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show users on different scenes",
         description="Show user on different scenes",
@@ -505,16 +566,15 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Show only owned datablocks',
         default=True
     )
+    filter_name: bpy.props.StringProperty(
+        name="filter_name",
+        default="",
+        description='Node name filter',
+    )
     admin: bpy.props.BoolProperty(
         name="admin",
         description='Connect as admin',
         default=False
-    )
-    password: bpy.props.StringProperty(
-        name="password",
-        default=random_string_digits(),
-        description='Session password',
-        subtype='PASSWORD'
     )
     internet_ip: bpy.props.StringProperty(
         name="internet ip",
@@ -537,6 +597,7 @@ classes = (
     SessionProps,
     ReplicationFlags,
     ReplicatedDatablock,
+    ServerPreset,
     SessionPrefs,
 )
 
@@ -551,6 +612,10 @@ def register():
     if len(prefs.supported_datablocks) == 0:
         logging.debug('Generating bl_types preferences')
         prefs.generate_supported_types()
+    
+    # at launch server presets
+    prefs.generate_default_presets()
+        
 
 
 def unregister():

@@ -28,7 +28,6 @@ __all__ = [
     'bl_light',
     'bl_scene',
     'bl_material',
-    'bl_library',
     'bl_armature',
     'bl_action',
     'bl_world',
@@ -39,7 +38,6 @@ __all__ = [
     'bl_font',
     'bl_sound',
     'bl_file',
-    # 'bl_sequencer',
     'bl_node_group',
     'bl_texture',
     "bl_particle",
@@ -49,8 +47,18 @@ if bpy.app.version[1] >= 91:
     __all__.append('bl_volume')
 
 from . import *
-from replication.data import ReplicatedDataFactory
 
 def types_to_register():
     return __all__
 
+from replication.protocol import DataTranslationProtocol
+
+def get_data_translation_protocol()-> DataTranslationProtocol:
+    """ Return a data translation protocol from implemented bpy types
+    """
+    bpy_protocol = DataTranslationProtocol()
+    for module_name in __all__:
+        impl  = globals().get(module_name)
+        if impl and hasattr(impl, "_type") and hasattr(impl, "_type"):
+            bpy_protocol.register_implementation(impl._type, impl._class)
+    return bpy_protocol

@@ -20,35 +20,42 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
 from .bl_material import (load_node_tree,
                           dump_node_tree,
                           get_node_tree_dependencies)
 
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
-class BlWorld(BlDatablock):
+
+class BlWorld(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "worlds"
     bl_class = bpy.types.World
     bl_check_common = True
     bl_icon = 'WORLD_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    @staticmethod
+    def construct(data: dict) -> object:
         return bpy.data.worlds.new(data["name"])
 
-    def _load_implementation(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
+        load_animation_data(data.get('animation_data'), datablock)
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         if data["use_nodes"]:
-            if target.node_tree is None:
-                target.use_nodes = True
+            if datablock.node_tree is None:
+                datablock.use_nodes = True
 
-            load_node_tree(data['node_tree'], target.node_tree)
+            load_node_tree(data['node_tree'], datablock.node_tree)
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
-
+    @staticmethod
+    def dump(datablock: object) -> dict:
         world_dumper = Dumper()
         world_dumper.depth = 1
         world_dumper.include_filter = [
@@ -56,17 +63,27 @@ class BlWorld(BlDatablock):
             "name",
             "color"
         ]
-        data = world_dumper.dump(instance)
-        if instance.use_nodes:
-            data['node_tree'] = dump_node_tree(instance.node_tree)
+        data = world_dumper.dump(datablock)
+        if datablock.use_nodes:
+            data['node_tree'] = dump_node_tree(datablock.node_tree)
 
+        data['animation_data'] = dump_animation_data(datablock)
         return data
+    
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return resolve_datablock_from_uuid(uuid, bpy.data.worlds)
 
-    def _resolve_deps_implementation(self):
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
-        if self.instance.use_nodes:
-            deps.extend(get_node_tree_dependencies(self.instance.node_tree))
-        if self.is_library:
-            deps.append(self.instance.library)
+        if datablock.use_nodes:
+            deps.extend(get_node_tree_dependencies(datablock.node_tree))
+
+        deps.extend(resolve_animation_dependencies(datablock))
         return deps
+
+_type = bpy.types.World
+_class = BlWorld

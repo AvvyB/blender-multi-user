@@ -14,11 +14,11 @@ def test_texture(clear_blend, texture_type):
     datablock = bpy.data.textures.new('test', texture_type)
 
     implementation = BlTexture()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.textures.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)

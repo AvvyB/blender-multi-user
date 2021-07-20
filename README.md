@@ -11,9 +11,8 @@ This tool aims to allow multiple users to work on the same scene over the networ
 
 ## Quick installation
 
-1. Download latest release [multi_user.zip](https://gitlab.com/slumber/multi-user/-/jobs/artifacts/master/download?job=build).
-2. Run blender as administrator (dependencies installation).
-3. Install last_version.zip from your addon preferences.
+1. Download [latest build](https://gitlab.com/slumber/multi-user/-/jobs/artifacts/develop/download?job=build) or [stable build](https://gitlab.com/slumber/multi-user/-/jobs/artifacts/master/download?job=build).
+2. Install last_version.zip from your addon preferences.
 
 [Dependencies](#dependencies) will be automatically added to your blender python during installation.
 
@@ -29,35 +28,35 @@ See the [troubleshooting guide](https://slumber.gitlab.io/multi-user/getting_sta
 
 Currently, not all data-block are supported for replication over the wire. The following list summarizes the status for each ones.
 
-| Name           | Status |                           Comment                            |
-| -------------- | :----: | :----------------------------------------------------------: |
-| action         |   ✔️    |                                                              |
-| armature       |   ❗    |                          Not stable                          |
-| camera         |   ✔️    |                                                              |
-| collection     |   ✔️    |                                                              |
-| curve          |   ❗    |                 Nurbs surfaces not supported                 |
-| gpencil        |   ✔️    |                                                              |
-| image          |   ✔️    |                                                              |
-| mesh           |   ✔️    |                                                              |
-| material       |   ✔️    |                                                              |
-| node_groups    |   ❗    |                   Material & Geometry only                   |
-| geometry nodes |   ✔️    |                                                              |
-| metaball       |   ✔️    |                                                              |
-| object         |   ✔️    |                                                              |
-| textures       |   ❗    |       Supported for modifiers/materials/geo nodes only       |
-| texts          |   ✔️    |                                                              |
-| scene          |   ✔️    |                                                              |
-| world          |   ✔️    |                                                              |
-| lightprobes    |   ✔️    |                                                              |
-| compositing    |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/46) |
-| texts          |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/81) |
-| nla            |   ❌    |                                                              |
-| volumes        |   ✔️    |                                                              |
-| particles      |   ❗    |                   The cache isn't syncing.                   |
-| speakers       |   ❗    | [Partial](https://gitlab.com/slumber/multi-user/-/issues/65) |
-| vse            |   ❗    |               Mask and Clip not supported yet                |
-| physics        |   ❌    | [Planned](https://gitlab.com/slumber/multi-user/-/issues/45) |
-| libraries      |   ❗    |                           Partial                            |
+| Name           | Status |                                 Comment                                 |
+| -------------- | :----: | :---------------------------------------------------------------------: |
+| action         |   ✔️    |                                                                         |
+| camera         |   ✔️    |                                                                         |
+| collection     |   ✔️    |                                                                         |
+| gpencil        |   ✔️    |                                                                         |
+| image          |   ✔️    |                                                                         |
+| mesh           |   ✔️    |                                                                         |
+| material       |   ✔️    |                                                                         |
+| node_groups    |   ✔️    |                        Material & Geometry only                         |
+| geometry nodes |   ✔️    |                                                                         |
+| metaball       |   ✔️    |                                                                         |
+| object         |   ✔️    |                                                                         |
+| texts          |   ✔️    |                                                                         |
+| scene          |   ✔️    |                                                                         |
+| world          |   ✔️    |                                                                         |
+| volumes        |   ✔️    |                                                                         |
+| lightprobes    |   ✔️    |                                                                         |
+| physics        |   ✔️    |                                                                         |
+| textures       |   ✔️    |                                                                         |
+| curve          |   ❗    |                      Nurbs surfaces not supported                       |
+| armature       |   ❗    |          Only for Mesh. [Planned for GPencil](https://gitlab.com/slumber/multi-user/-/issues/161). Not stable yet           |
+| particles      |   ❗    |                        The cache isn't syncing.                         |
+| speakers       |   ❗    |      [Partial](https://gitlab.com/slumber/multi-user/-/issues/65)       |
+| vse            |   ❗    |                     Mask and Clip not supported yet                     |
+| libraries      |   ❌    |                                                                         |
+| nla            |   ❌    |                                                                         |
+| texts          |   ❌    | [Planned for v0.5.0](https://gitlab.com/slumber/multi-user/-/issues/81) |
+| compositing    |   ❌    | [Planned for v0.5.0](https://gitlab.com/slumber/multi-user/-/issues/46) |
 
 
 

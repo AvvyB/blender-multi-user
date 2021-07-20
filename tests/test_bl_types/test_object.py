@@ -65,11 +65,11 @@ def test_object(clear_blend):
     datablock.shape_key_add(name='shape2')
 
     implementation = BlObject()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.objects.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
     print(DeepDiff(expected, result))
     assert not DeepDiff(expected, result)

@@ -22,8 +22,11 @@ import bpy
 import mathutils
 from replication.exception import ContextError
 
-from .bl_datablock import BlDatablock, get_datablock_from_uuid
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_material import IGNORED_SOCKETS
+from ..utils import get_preferences
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 from .dump_anything import (
     Dumper,
     Loader,
@@ -37,12 +40,21 @@ SKIN_DATA = [
     'use_root'
 ]
 
+SHAPEKEY_BLOCK_ATTR = [
+    'mute',
+    'value',
+    'slider_min',
+    'slider_max',
+]
+
+
 if bpy.app.version[1] >= 93:
     SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
 else:
     SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str)
     logging.warning("Geometry node Float parameter not supported in \
                     blender 2.92.")
+
 
 def get_node_group_inputs(node_group):
     inputs = []
@@ -82,6 +94,7 @@ def dump_physics(target: bpy.types.Object)->dict:
 
     return physics_data
 
+
 def load_physics(dumped_settings: dict, target: bpy.types.Object):
     """  Load all physics settings from a given object excluding modifier 
         related physics settings (such as softbody, cloth, dynapaint and fluid) 
@@ -107,7 +120,8 @@ def load_physics(dumped_settings: dict, target: bpy.types.Object):
         loader.load(target.rigid_body_constraint, dumped_settings['rigid_body_constraint'])
     elif target.rigid_body_constraint:
         bpy.ops.rigidbody.constraint_remove({"object": target})
-    
+
+
 def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
     """ Dump geometry node modifier input properties
 
@@ -289,115 +303,282 @@ def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Obje
             vertex_group.add([index], weight, 'REPLACE')
 
 
-class BlObject(BlDatablock):
+def dump_shape_keys(target_key: bpy.types.Key)->dict:
+    """ Dump the target shape_keys datablock to a dict using numpy
+
+        :param dumped_key: target key datablock
+        :type dumped_key: bpy.types.Key
+        :return: dict
+    """
+
+    dumped_key_blocks = []
+    dumper = Dumper()
+    dumper.include_filter = [
+        'name',
+        'mute',
+        'value',
+        'slider_min',
+        'slider_max',
+    ]
+    for key in target_key.key_blocks:
+        dumped_key_block = dumper.dump(key)
+        dumped_key_block['data'] = np_dump_collection(key.data, ['co'])
+        dumped_key_block['relative_key'] = key.relative_key.name
+        dumped_key_blocks.append(dumped_key_block)
+
+    return {
+        'reference_key': target_key.reference_key.name,
+        'use_relative': target_key.use_relative,
+        'key_blocks': dumped_key_blocks,
+        'animation_data': dump_animation_data(target_key)
+    }
+
+
+def load_shape_keys(dumped_shape_keys: dict, target_object: bpy.types.Object):
+    """ Load the target shape_keys datablock to a dict using numpy
+
+        :param dumped_key: src key data
+        :type dumped_key: bpy.types.Key
+        :param target_object: object used to load the shapekeys data onto
+        :type target_object: bpy.types.Object
+    """
+    loader = Loader()
+    # Remove existing ones
+    target_object.shape_key_clear()
+
+    # Create keys and load vertices coords
+    dumped_key_blocks = dumped_shape_keys.get('key_blocks')
+    for dumped_key_block in dumped_key_blocks:
+        key_block = target_object.shape_key_add(name=dumped_key_block['name'])
+
+        loader.load(key_block, dumped_key_block)
+        np_load_collection(dumped_key_block['data'], key_block.data, ['co'])
+
+    # Load relative key after all
+    for dumped_key_block in dumped_key_blocks:
+        relative_key_name = dumped_key_block.get('relative_key')
+        key_name = dumped_key_block.get('name')
+
+        target_keyblock = target_object.data.shape_keys.key_blocks[key_name]
+        relative_key = target_object.data.shape_keys.key_blocks[relative_key_name]
+
+        target_keyblock.relative_key = relative_key
+
+    # Shape keys animation data
+    anim_data = dumped_shape_keys.get('animation_data')
+
+    if anim_data:
+        load_animation_data(anim_data, target_object.data.shape_keys)
+
+
+def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
+    """ Dump all modifiers of a modifier collection into a dict
+
+        :param modifiers: modifiers
+        :type modifiers: bpy.types.bpy_prop_collection
+        :return: dict
+    """
+    dumped_modifiers = []
+    dumper = Dumper()
+    dumper.depth = 1
+    dumper.exclude_filter = ['is_active']
+
+    for modifier in modifiers:
+        dumped_modifier = dumper.dump(modifier)
+        # hack to dump geometry nodes inputs
+        if modifier.type == 'NODES':
+            dumped_inputs = dump_modifier_geometry_node_inputs(
+                modifier)
+            dumped_modifier['inputs'] = dumped_inputs
+
+        elif modifier.type == 'PARTICLE_SYSTEM':
+            dumper.exclude_filter = [
+                "is_edited",
+                "is_editable",
+                "is_global_hair"
+            ]
+            dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
+            dumped_modifier['particle_system']['settings_uuid'] = modifier.particle_system.settings.uuid
+
+        elif modifier.type in ['SOFT_BODY', 'CLOTH']:
+            dumped_modifier['settings'] = dumper.dump(modifier.settings)
+        elif modifier.type == 'UV_PROJECT':
+            dumped_modifier['projectors'] =[p.object.name for p in modifier.projectors if p and p.object]
+
+        dumped_modifiers.append(dumped_modifier)
+    return dumped_modifiers
+
+def dump_constraints(constraints: bpy.types.bpy_prop_collection)->list:
+    """Dump all constraints to a list
+
+        :param constraints: constraints
+        :type constraints: bpy.types.bpy_prop_collection
+        :return: dict
+    """
+    dumper = Dumper()
+    dumper.depth = 2
+    dumper.include_filter = None
+    dumped_constraints = []
+    for constraint in constraints:
+        dumped_constraints.append(dumper.dump(constraint))
+    return dumped_constraints
+
+def load_constraints(dumped_constraints: list, constraints: bpy.types.bpy_prop_collection):
+    """ Load dumped constraints
+
+        :param dumped_constraints: list of constraints to load
+        :type dumped_constraints: list
+        :param constraints: constraints
+        :type constraints: bpy.types.bpy_prop_collection
+    """
+    loader = Loader()
+    constraints.clear()
+    for dumped_constraint in dumped_constraints:
+        constraint_type = dumped_constraint.get('type')
+        new_constraint = constraints.new(constraint_type)
+        loader.load(new_constraint, dumped_constraint)
+
+def load_modifiers(dumped_modifiers: list, modifiers: bpy.types.bpy_prop_collection):
+    """ Dump all modifiers of a modifier collection into a dict
+
+        :param dumped_modifiers: list of modifiers to load
+        :type dumped_modifiers: list
+        :param modifiers: modifiers
+        :type modifiers: bpy.types.bpy_prop_collection
+    """
+    loader = Loader()
+    modifiers.clear()
+    for dumped_modifier in dumped_modifiers:
+        name = dumped_modifier.get('name')
+        mtype = dumped_modifier.get('type')
+        loaded_modifier = modifiers.new(name, mtype)
+        loader.load(loaded_modifier, dumped_modifier)
+
+        if loaded_modifier.type == 'NODES':
+            load_modifier_geometry_node_inputs(dumped_modifier, loaded_modifier)
+        elif loaded_modifier.type == 'PARTICLE_SYSTEM':
+            default =  loaded_modifier.particle_system.settings
+            dumped_particles = dumped_modifier['particle_system']
+            loader.load(loaded_modifier.particle_system, dumped_particles)
+
+            settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
+            if settings:
+                loaded_modifier.particle_system.settings = settings
+                # Hack to remove the default generated particle settings
+                if not default.uuid:
+                    bpy.data.particles.remove(default)
+        elif loaded_modifier.type in ['SOFT_BODY', 'CLOTH']:
+            loader.load(loaded_modifier.settings, dumped_modifier['settings'])
+        elif loaded_modifier.type == 'UV_PROJECT':
+            for projector_index, projector_object in enumerate(dumped_modifier['projectors']):
+                target_object = bpy.data.objects.get(projector_object)
+                if target_object:
+                    loaded_modifier.projectors[projector_index].object = target_object
+                else:
+                    logging.error("Could't load projector target object {projector_object}")
+
+
+def load_modifiers_custom_data(dumped_modifiers: dict, modifiers: bpy.types.bpy_prop_collection):
+    """ Load modifiers custom data not managed by the dump_anything loader
+
+        :param dumped_modifiers: modifiers to load
+        :type dumped_modifiers: dict
+        :param modifiers: target modifiers collection 
+        :type modifiers: bpy.types.bpy_prop_collection
+    """
+    loader = Loader()
+
+    for modifier in modifiers:
+        dumped_modifier = dumped_modifiers.get(modifier.name)
+        
+            
+class BlObject(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "objects"
     bl_class = bpy.types.Object
     bl_check_common = False
     bl_icon = 'OBJECT_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    @staticmethod
+    def construct(data: dict) -> object:
         instance = None
-
-        if self.is_library:
-            with bpy.data.libraries.load(filepath=bpy.data.libraries[self.data['library']].filepath, link=True) as (sourceData, targetData):
-                targetData.objects = [
-                    name for name in sourceData.objects if name == self.data['name']]
-
-            instance = bpy.data.objects[self.data['name']]
-            instance.uuid = self.uuid
-            return instance
 
         # TODO: refactoring
         object_name = data.get("name")
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
+        data_type = data.get("type")
 
         object_data = get_datablock_from_uuid(
             data_uuid,
             find_data_from_name(data_id),
             ignore=['images'])  # TODO: use resolve_from_id
 
-        if object_data is None and data_uuid:
-            raise Exception(f"Fail to load object {data['name']}({self.uuid})")
+        if data_type != 'EMPTY' and object_data is None:
+            raise Exception(f"Fail to load object {data['name']})")
 
-        instance = bpy.data.objects.new(object_name, object_data)
-        instance.uuid = self.uuid
+        return bpy.data.objects.new(object_name, object_data)
 
-        return instance
-
-    def _load_implementation(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
         loader = Loader()
-
+        load_animation_data(data.get('animation_data'), datablock)
         data_uuid = data.get("data_uuid")
         data_id = data.get("data")
 
-        if target.data and (target.data.name != data_id):
-            target.data = get_datablock_from_uuid(
+        if datablock.data and (datablock.data.name != data_id):
+            datablock.data = get_datablock_from_uuid(
                 data_uuid, find_data_from_name(data_id), ignore=['images'])
 
         # vertex groups
         vertex_groups = data.get('vertex_groups', None)
         if vertex_groups:
-            load_vertex_groups(vertex_groups, target)
+            load_vertex_groups(vertex_groups, datablock)
 
-        object_data = target.data
+        object_data = datablock.data
 
         # SHAPE KEYS
-        if 'shape_keys' in data:
-            target.shape_key_clear()
-
-            # Create keys and load vertices coords
-            for key_block in data['shape_keys']['key_blocks']:
-                key_data = data['shape_keys']['key_blocks'][key_block]
-                target.shape_key_add(name=key_block)
-
-                loader.load(
-                    target.data.shape_keys.key_blocks[key_block], key_data)
-                for vert in key_data['data']:
-                    target.data.shape_keys.key_blocks[key_block].data[vert].co = key_data['data'][vert]['co']
-
-            # Load relative key after all
-            for key_block in data['shape_keys']['key_blocks']:
-                reference = data['shape_keys']['key_blocks'][key_block]['relative_key']
-
-                target.data.shape_keys.key_blocks[key_block].relative_key = target.data.shape_keys.key_blocks[reference]
+        shape_keys = data.get('shape_keys')
+        if shape_keys:
+            load_shape_keys(shape_keys, datablock)
 
         # Load transformation data
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         #  Object display fields
         if 'display' in data:
-            loader.load(target.display, data['display'])
+            loader.load(datablock.display, data['display'])
 
         #  Parenting
         parent_id = data.get('parent_uid')
         if parent_id:
             parent = get_datablock_from_uuid(parent_id[0], bpy.data.objects[parent_id[1]])
             # Avoid reloading
-            if target.parent != parent and parent is not None:
-                target.parent = parent
-        elif target.parent:
-            target.parent = None
+            if datablock.parent != parent and parent is not None:
+                datablock.parent = parent
+        elif datablock.parent:
+            datablock.parent = None
 
         # Pose
         if 'pose' in data:
-            if not target.pose:
+            if not datablock.pose:
                 raise Exception('No pose data yet (Fixed in a near futur)')
             # Bone groups
             for bg_name in data['pose']['bone_groups']:
                 bg_data = data['pose']['bone_groups'].get(bg_name)
-                bg_target = target.pose.bone_groups.get(bg_name)
+                bg_target = datablock.pose.bone_groups.get(bg_name)
 
                 if not bg_target:
-                    bg_target = target.pose.bone_groups.new(name=bg_name)
+                    bg_target = datablock.pose.bone_groups.new(name=bg_name)
 
                 loader.load(bg_target, bg_data)
-                # target.pose.bone_groups.get
+                # datablock.pose.bone_groups.get
 
             # Bones
             for bone in data['pose']['bones']:
-                target_bone = target.pose.bones.get(bone)
+                target_bone = datablock.pose.bones.get(bone)
                 bone_data = data['pose']['bones'].get(bone)
 
                 if 'constraints' in bone_data.keys():
@@ -406,13 +587,13 @@ class BlObject(BlDatablock):
                 load_pose(target_bone, bone_data)
 
                 if 'bone_index' in bone_data.keys():
-                    target_bone.bone_group = target.pose.bone_group[bone_data['bone_group_index']]
+                    target_bone.bone_group = datablock.pose.bone_group[bone_data['bone_group_index']]
 
         # TODO: find another way...
-        if target.empty_display_type == "IMAGE":
+        if datablock.empty_display_type == "IMAGE":
             img_uuid = data.get('data_uuid')
-            if target.data is None and img_uuid:
-                target.data = get_datablock_from_uuid(img_uuid, None)
+            if datablock.data is None and img_uuid:
+                datablock.data = get_datablock_from_uuid(img_uuid, None)
 
         if hasattr(object_data, 'skin_vertices') \
                 and object_data.skin_vertices\
@@ -423,56 +604,31 @@ class BlObject(BlDatablock):
                     skin_data.data,
                     SKIN_DATA)
 
-        if hasattr(target, 'cycles_visibility') \
+        if hasattr(datablock, 'cycles_visibility') \
                 and 'cycles_visibility' in data:
-            loader.load(target.cycles_visibility, data['cycles_visibility'])
+            loader.load(datablock.cycles_visibility, data['cycles_visibility'])
 
-        # TODO: handle geometry nodes input from dump_anything
-        if hasattr(target, 'modifiers'):
-            nodes_modifiers = [
-                mod for mod in target.modifiers if mod.type == 'NODES']
-            for modifier in nodes_modifiers:
-                load_modifier_geometry_node_inputs(
-                    data['modifiers'][modifier.name], modifier)
+        if hasattr(datablock, 'modifiers'):
+            load_modifiers(data['modifiers'], datablock.modifiers)
 
-            particles_modifiers = [
-                mod for mod in target.modifiers if mod.type == 'PARTICLE_SYSTEM']
-
-            for mod in particles_modifiers:
-                default =  mod.particle_system.settings
-                dumped_particles = data['modifiers'][mod.name]['particle_system']
-                loader.load(mod.particle_system, dumped_particles)
-
-                settings = get_datablock_from_uuid(dumped_particles['settings_uuid'], None)
-                if settings:
-                    mod.particle_system.settings = settings
-                    # Hack to remove the default generated particle settings
-                    if not default.uuid:
-                        bpy.data.particles.remove(default)
-
-            phys_modifiers = [
-                mod for mod in target.modifiers if mod.type in ['SOFT_BODY', 'CLOTH']]
-            
-            for mod in phys_modifiers:
-                loader.load(mod.settings, data['modifiers'][mod.name]['settings'])
+        constraints = data.get('constraints')
+        if constraints:
+            load_constraints(constraints, datablock.constraints)
 
         # PHYSICS
-        load_physics(data, target)
+        load_physics(data, datablock)
 
         transform = data.get('transforms', None)
         if transform:
-            target.matrix_parent_inverse = mathutils.Matrix(
-                transform['matrix_parent_inverse'])
-            target.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
-            target.matrix_local = mathutils.Matrix(transform['matrix_local'])
+            datablock.matrix_parent_inverse = mathutils.Matrix(transform['matrix_parent_inverse'])
+            datablock.matrix_basis = mathutils.Matrix(transform['matrix_basis'])
 
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
-
-        if _is_editmode(instance):
-            if self.preferences.sync_flags.sync_during_editmode:
-                instance.update_from_editmode()
+    @staticmethod
+    def dump(datablock: object) -> dict:
+        if _is_editmode(datablock):
+            if get_preferences().sync_flags.sync_during_editmode:
+                datablock.update_from_editmode()
             else:
                 raise ContextError("Object is in edit-mode.")
 
@@ -508,60 +664,37 @@ class BlObject(BlDatablock):
             'show_all_edges',
             'show_texture_space',
             'show_in_front',
-            'type'
+            'type',
+            'parent_type',
+            'parent_bone',
+            'track_axis',
+            'up_axis',
         ]
 
-        data = dumper.dump(instance)
-
+        data = dumper.dump(datablock)
+        data['animation_data'] = dump_animation_data(datablock)
         dumper.include_filter = [
             'matrix_parent_inverse',
             'matrix_local',
             'matrix_basis']
-        data['transforms'] = dumper.dump(instance)
+        data['transforms'] = dumper.dump(datablock)
         dumper.include_filter = [
             'show_shadows',
         ]
-        data['display'] = dumper.dump(instance.display)
+        data['display'] = dumper.dump(datablock.display)
 
-        data['data_uuid'] = getattr(instance.data, 'uuid', None)
-        if self.is_library:
-            return data
+        data['data_uuid'] = getattr(datablock.data, 'uuid', None)
 
         # PARENTING
-        if instance.parent:
-            data['parent_uid'] = (instance.parent.uuid, instance.parent.name)
+        if datablock.parent:
+            data['parent_uid'] = (datablock.parent.uuid, datablock.parent.name)
 
         # MODIFIERS
-        if hasattr(instance, 'modifiers'):
-            data["modifiers"] = {}
-            modifiers = getattr(instance, 'modifiers', None)
-            if modifiers:
-                dumper.include_filter = None
-                dumper.depth = 1
-                dumper.exclude_filter = ['is_active']
-                for index, modifier in enumerate(modifiers):
-                    dumped_modifier = dumper.dump(modifier)
-                    # hack to dump geometry nodes inputs
-                    if modifier.type == 'NODES':
-                        dumped_inputs = dump_modifier_geometry_node_inputs(
-                            modifier)
-                        dumped_modifier['inputs'] = dumped_inputs
+        modifiers = getattr(datablock, 'modifiers', None)
+        if hasattr(datablock, 'modifiers'):
+            data['modifiers'] = dump_modifiers(modifiers)
 
-                    elif modifier.type == 'PARTICLE_SYSTEM':
-                        dumper.exclude_filter = [
-                            "is_edited",
-                            "is_editable",
-                            "is_global_hair"
-                        ]
-                        dumped_modifier['particle_system'] = dumper.dump(modifier.particle_system)
-                        dumped_modifier['particle_system']['settings_uuid'] = modifier.particle_system.settings.uuid
-
-                    elif modifier.type in ['SOFT_BODY', 'CLOTH']:
-                        dumped_modifier['settings'] = dumper.dump(modifier.settings)
-
-                    data["modifiers"][modifier.name] = dumped_modifier
-
-        gp_modifiers = getattr(instance, 'grease_pencil_modifiers', None)
+        gp_modifiers = getattr(datablock, 'grease_pencil_modifiers', None)
 
         if gp_modifiers:
             dumper.include_filter = None
@@ -584,16 +717,14 @@ class BlObject(BlDatablock):
 
 
         # CONSTRAINTS
-        if hasattr(instance, 'constraints'):
-            dumper.include_filter = None
-            dumper.depth = 3
-            data["constraints"] = dumper.dump(instance.constraints)
+        if hasattr(datablock, 'constraints'):
+            data["constraints"] = dump_constraints(datablock.constraints)
 
         # POSE
-        if hasattr(instance, 'pose') and instance.pose:
+        if hasattr(datablock, 'pose') and datablock.pose:
             # BONES
             bones = {}
-            for bone in instance.pose.bones:
+            for bone in datablock.pose.bones:
                 bones[bone.name] = {}
                 dumper.depth = 1
                 rotation = 'rotation_quaternion' if bone.rotation_mode == 'QUATERNION' else 'rotation_euler'
@@ -618,7 +749,7 @@ class BlObject(BlDatablock):
 
             # GROUPS
             bone_groups = {}
-            for group in instance.pose.bone_groups:
+            for group in datablock.pose.bone_groups:
                 dumper.depth = 3
                 dumper.include_filter = [
                     'name',
@@ -628,36 +759,13 @@ class BlObject(BlDatablock):
             data['pose']['bone_groups'] = bone_groups
 
         # VERTEx GROUP
-        if len(instance.vertex_groups) > 0:
-            data['vertex_groups'] = dump_vertex_groups(instance)
+        if len(datablock.vertex_groups) > 0:
+            data['vertex_groups'] = dump_vertex_groups(datablock)
 
         #  SHAPE KEYS
-        object_data = instance.data
+        object_data = datablock.data
         if hasattr(object_data, 'shape_keys') and object_data.shape_keys:
-            dumper = Dumper()
-            dumper.depth = 2
-            dumper.include_filter = [
-                'reference_key',
-                'use_relative'
-            ]
-            data['shape_keys'] = dumper.dump(object_data.shape_keys)
-            data['shape_keys']['reference_key'] = object_data.shape_keys.reference_key.name
-            key_blocks = {}
-            for key in object_data.shape_keys.key_blocks:
-                dumper.depth = 3
-                dumper.include_filter = [
-                    'name',
-                    'data',
-                    'mute',
-                    'value',
-                    'slider_min',
-                    'slider_max',
-                    'data',
-                    'co'
-                ]
-                key_blocks[key.name] = dumper.dump(key)
-                key_blocks[key.name]['relative_key'] = key.relative_key.name
-            data['shape_keys']['key_blocks'] = key_blocks
+            data['shape_keys'] = dump_shape_keys(object_data.shape_keys)
 
         #  SKIN VERTICES
         if hasattr(object_data, 'skin_vertices') and object_data.skin_vertices:
@@ -668,7 +776,7 @@ class BlObject(BlDatablock):
             data['skin_vertices'] = skin_vertices
 
         # CYCLE SETTINGS
-        if hasattr(instance, 'cycles_visibility'):
+        if hasattr(datablock, 'cycles_visibility'):
             dumper.include_filter = [
                 'camera',
                 'diffuse',
@@ -677,36 +785,48 @@ class BlObject(BlDatablock):
                 'scatter',
                 'shadow',
             ]
-            data['cycles_visibility'] = dumper.dump(instance.cycles_visibility)
+            data['cycles_visibility'] = dumper.dump(datablock.cycles_visibility)
 
         # PHYSICS
-        data.update(dump_physics(instance))
+        data.update(dump_physics(datablock))
 
         return data
 
-    def _resolve_deps_implementation(self):
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
         # Avoid Empty case
-        if self.instance.data:
-            deps.append(self.instance.data)
+        if datablock.data:
+            deps.append(datablock.data)
 
         # Particle systems
-        for particle_slot in self.instance.particle_systems:
+        for particle_slot in datablock.particle_systems:
             deps.append(particle_slot.settings)
 
-        if self.is_library:
-            deps.append(self.instance.library)
+        if datablock.parent:
+            deps.append(datablock.parent)
 
-        if self.instance.parent:
-            deps.append(self.instance.parent)
-
-        if self.instance.instance_type == 'COLLECTION':
+        if datablock.instance_type == 'COLLECTION':
             # TODO: uuid based
-            deps.append(self.instance.instance_collection)
+            deps.append(datablock.instance_collection)
 
-        if self.instance.modifiers:
-            deps.extend(find_textures_dependencies(self.instance.modifiers))
-            deps.extend(find_geometry_nodes_dependencies(self.instance.modifiers))
+        if datablock.modifiers:
+            deps.extend(find_textures_dependencies(datablock.modifiers))
+            deps.extend(find_geometry_nodes_dependencies(datablock.modifiers))
+
+        if hasattr(datablock.data, 'shape_keys') and datablock.data.shape_keys:
+            deps.extend(resolve_animation_dependencies(datablock.data.shape_keys))
+
+        deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
+
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return  resolve_datablock_from_uuid(uuid, bpy.data.objects)
+
+_type = bpy.types.Object
+_class = BlObject

@@ -23,7 +23,9 @@ from .dump_anything import (
     Dumper, Loader, np_dump_collection_primitive, np_load_collection_primitives,
     np_dump_collection, np_load_collection)
 
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 
 ELEMENT = [
@@ -62,29 +64,35 @@ def load_metaball_elements(elements_data, elements):
     np_load_collection(elements_data, elements, ELEMENT)
 
 
-class BlMetaball(BlDatablock):
+class BlMetaball(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "metaballs"
     bl_class = bpy.types.MetaBall
     bl_check_common = False
     bl_icon = 'META_BALL'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    @staticmethod
+    def construct(data: dict) -> object:
         return bpy.data.metaballs.new(data["name"])
 
-    def _load_implementation(self, data, target):
-        loader = Loader()
-        loader.load(target, data)
+    @staticmethod
+    def load(data: dict, datablock: object):
+        load_animation_data(data.get('animation_data'), datablock)
 
-        target.elements.clear()
+        loader = Loader()
+        loader.load(datablock, data)
+
+        datablock.elements.clear()
 
         for mtype in data["elements"]['type']:
-            new_element = target.elements.new()
+            new_element = datablock.elements.new()
 
-        load_metaball_elements(data['elements'], target.elements)
+        load_metaball_elements(data['elements'], datablock.elements)
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
@@ -98,7 +106,24 @@ class BlMetaball(BlDatablock):
             'texspace_size'
         ]
 
-        data = dumper.dump(instance)
-        data['elements'] = dump_metaball_elements(instance.elements)
+        data = dumper.dump(datablock)
+        data['animation_data'] = dump_animation_data(datablock)
+        data['elements'] = dump_metaball_elements(datablock.elements)
 
         return data
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return resolve_datablock_from_uuid(uuid, bpy.data.metaballs)
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
+        deps = []
+
+        deps.extend(resolve_animation_dependencies(datablock))
+
+        return deps
+
+_type = bpy.types.MetaBall
+_class = BlMetaball

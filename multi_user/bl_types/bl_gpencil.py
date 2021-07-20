@@ -24,10 +24,12 @@ from .dump_anything import  (Dumper,
                                     Loader,
                                     np_dump_collection,
                                     np_load_collection)
-from .bl_datablock import BlDatablock
-
-# GPencil data api is structured as it follow: 
-# GP-Object --> GP-Layers --> GP-Frames --> GP-Strokes --> GP-Stroke-Points
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from ..utils import get_preferences
+from ..timers import is_annotating
+from .bl_material import load_materials_slots, dump_materials_slots
 
 STROKE_POINT = [
     'co',
@@ -64,36 +66,9 @@ def dump_stroke(stroke):
 
         :param stroke: target grease pencil stroke
         :type stroke: bpy.types.GPencilStroke
-        :return: dict
+        :return: (p_count, p_data)
     """
-
-    assert(stroke)
-
-    dumper = Dumper()
-    dumper.include_filter = [
-        "aspect",
-        "display_mode",
-        "draw_cyclic",
-        "end_cap_mode",
-        "hardeness",
-        "line_width",
-        "material_index",
-        "start_cap_mode",
-        "uv_rotation",
-        "uv_scale",
-        "uv_translation",
-        "vertex_color_fill",
-    ]
-    dumped_stroke = dumper.dump(stroke)
-
-    # Stoke points
-    p_count = len(stroke.points)
-    dumped_stroke['p_count'] = p_count
-    dumped_stroke['points'] = np_dump_collection(stroke.points, STROKE_POINT)
-
-    # TODO: uv_factor, uv_rotation
-
-    return dumped_stroke
+    return (len(stroke.points), np_dump_collection(stroke.points, STROKE_POINT))
 
 
 def load_stroke(stroke_data, stroke):
@@ -106,12 +81,13 @@ def load_stroke(stroke_data, stroke):
     """
     assert(stroke and stroke_data)
 
-    stroke.points.add(stroke_data["p_count"])
-    np_load_collection(stroke_data['points'], stroke.points, STROKE_POINT)
+    stroke.points.add(stroke_data[0])
+    np_load_collection(stroke_data[1], stroke.points, STROKE_POINT)
 
     # HACK: Temporary fix to trigger a BKE_gpencil_stroke_geometry_update to 
     # fix fill issues
-    stroke.uv_scale = stroke_data["uv_scale"]
+    stroke.uv_scale = 1.0
+
 
 def dump_frame(frame):
     """ Dump a grease pencil frame to a dict
@@ -145,11 +121,14 @@ def load_frame(frame_data, frame):
 
     assert(frame and frame_data)
 
+    # Load stroke points
     for stroke_data in frame_data['strokes_points']:
         target_stroke = frame.strokes.new()
         load_stroke(stroke_data, target_stroke)
 
+    # Load stroke metadata
     np_load_collection(frame_data['strokes'], frame.strokes, STROKE)
+
 
 def dump_layer(layer):
     """ Dump a grease pencil layer
@@ -167,7 +146,6 @@ def dump_layer(layer):
         'opacity',
         'channel_color',
         'color',
-        # 'thickness', #TODO: enabling only for annotation
         'tint_color',
         'tint_factor',
         'vertex_paint_opacity',
@@ -184,7 +162,7 @@ def dump_layer(layer):
         'hide',
         'annotation_hide',
         'lock',
-        # 'lock_frame',
+        'lock_frame',
         # 'lock_material',
         # 'use_mask_layer',
         'use_lights',
@@ -192,12 +170,13 @@ def dump_layer(layer):
         'select',
         'show_points',
         'show_in_front',
+        # 'thickness'
         # 'parent',
         # 'parent_type',
         # 'parent_bone',
         # 'matrix_inverse',
     ]
-    if layer.id_data.is_annotation:
+    if layer.thickness != 0:
         dumper.include_filter.append('thickness')
 
     dumped_layer = dumper.dump(layer)
@@ -228,87 +207,99 @@ def load_layer(layer_data, layer):
         load_frame(frame_data, target_frame)
 
 
-class BlGpencil(BlDatablock):
+def layer_changed(datablock: object, data: dict) -> bool:
+    if datablock.layers.active and \
+            datablock.layers.active.info != data["active_layers"]:
+        return True
+    else:
+        return False
+
+
+def frame_changed(data: dict) -> bool:
+    return bpy.context.scene.frame_current != data["eval_frame"]
+
+class BlGpencil(ReplicatedDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
     bl_check_common = False
     bl_icon = 'GREASEPENCIL'
     bl_reload_parent = False
 
-    def _construct(self, data):
+    @staticmethod
+    def construct(data: dict) -> object:
         return bpy.data.grease_pencils.new(data["name"])
 
-    def _load_implementation(self, data, target):
-        target.materials.clear()
-        if "materials" in data.keys():
-            for mat in data['materials']:
-                target.materials.append(bpy.data.materials[mat])
+    @staticmethod
+    def load(data: dict, datablock: object):
+        # MATERIAL SLOTS
+        src_materials = data.get('materials', None)
+        if src_materials:
+            load_materials_slots(src_materials, datablock.materials)
 
         loader = Loader()
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         # TODO: reuse existing layer
-        for layer in target.layers:
-            target.layers.remove(layer)
+        for layer in datablock.layers:
+            datablock.layers.remove(layer)
 
         if "layers" in data.keys():
             for layer in data["layers"]:
                 layer_data = data["layers"].get(layer)
 
-                # if layer not in target.layers.keys():
-                target_layer = target.layers.new(data["layers"][layer]["info"])
+                # if layer not in datablock.layers.keys():
+                target_layer = datablock.layers.new(data["layers"][layer]["info"])
                 # else:
                 #     target_layer = target.layers[layer]
                 #     target_layer.clear()
 
                 load_layer(layer_data, target_layer)
 
-            target.layers.update()
+            datablock.layers.update()
 
-
-
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 2
         dumper.include_filter = [
-            'materials',
             'name',
             'zdepth_offset',
             'stroke_thickness_space',
             'pixel_factor',
             'stroke_depth_order'
         ]
-        data = dumper.dump(instance)
-
+        data = dumper.dump(datablock)
+        data['materials'] = dump_materials_slots(datablock.materials)
         data['layers'] = {}
 
-        for layer in instance.layers:
+        for layer in datablock.layers:
             data['layers'][layer.info] = dump_layer(layer)
 
-        data["active_layers"] = instance.layers.active.info
+        data["active_layers"] = datablock.layers.active.info if datablock.layers.active else "None"
         data["eval_frame"] = bpy.context.scene.frame_current
         return data
 
-    def _resolve_deps_implementation(self):
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return resolve_datablock_from_uuid(uuid, bpy.data.grease_pencils)
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
 
-        for material in self.instance.materials:
+        for material in datablock.materials:
             deps.append(material)
 
         return deps
 
-    def layer_changed(self):
-        return self.instance.layers.active.info != self.data["active_layers"]
+    @staticmethod
+    def needs_update(datablock: object, data: dict) -> bool:
+        return bpy.context.mode == 'OBJECT' \
+            or layer_changed(datablock, data) \
+            or frame_changed(data) \
+            or get_preferences().sync_flags.sync_during_editmode \
+            or is_annotating(bpy.context)
 
-    def frame_changed(self):
-        return  bpy.context.scene.frame_current != self.data["eval_frame"]
-
-    def diff(self):
-        if self.layer_changed() \
-                or self.frame_changed() \
-                or bpy.context.mode == 'OBJECT' \
-                or self.preferences.sync_flags.sync_during_editmode:
-            return super().diff()
-        else:
-            return False
+_type = bpy.types.GreasePencil
+_class = BlGpencil

@@ -30,7 +30,7 @@ import mathutils
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from replication.constants import (STATE_ACTIVE, STATE_AUTH, STATE_CONFIG,
-                                   STATE_INITIAL, STATE_LAUNCHING_SERVICES,
+                                   STATE_INITIAL, CONNECTING,
                                    STATE_LOBBY, STATE_QUITTING, STATE_SRV_SYNC,
                                    STATE_SYNCING, STATE_WAITING)
 from replication.interface import session
@@ -94,15 +94,41 @@ def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, 
     return [target.x, target.y, target.z]
 
 
-def bbox_from_obj(obj: bpy.types.Object, radius: float) -> list:
+def bbox_from_obj(obj: bpy.types.Object, index: int = 1) -> list:
     """ Generate a bounding box for a given object by using its world matrix
 
         :param obj: target object
         :type obj: bpy.types.Object
-        :param radius: bounding box radius
-        :type radius: float
-        :return: list of 8 points [(x,y,z),...]
+        :param index: indice offset
+        :type index: int 
+        :return: list of 8 points [(x,y,z),...], list of 12 link between these points [(1,2),...]
     """
+    radius = 1.0 # Radius of the bounding box
+    index = 8*index
+    vertex_indices = (
+            (0+index, 1+index), (0+index, 2+index), (1+index, 3+index), (2+index, 3+index),
+            (4+index, 5+index), (4+index, 6+index), (5+index, 7+index), (6+index, 7+index),
+            (0+index, 4+index), (1+index, 5+index), (2+index, 6+index), (3+index, 7+index))
+
+    if obj.type == 'EMPTY':
+        radius = obj.empty_display_size
+    elif obj.type == 'LIGHT':
+        radius = obj.data.shadow_soft_size
+    elif obj.type == 'LIGHT_PROBE':
+        radius = obj.data.influence_distance
+    elif obj.type == 'CAMERA':
+        radius = obj.data.display_size
+    elif hasattr(obj, 'bound_box'):
+        vertex_indices = (
+            (0+index, 1+index), (1+index, 2+index),
+            (2+index, 3+index), (0+index, 3+index),
+            (4+index, 5+index), (5+index, 6+index),
+            (6+index, 7+index), (4+index, 7+index),
+            (0+index, 4+index), (1+index, 5+index),
+            (2+index, 6+index), (3+index, 7+index))
+        vertex_pos = get_bb_coords_from_obj(obj)
+        return vertex_pos, vertex_indices
+
     coords = [
         (-radius, -radius, -radius), (+radius, -radius, -radius),
         (-radius, +radius, -radius), (+radius, +radius, -radius),
@@ -112,9 +138,32 @@ def bbox_from_obj(obj: bpy.types.Object, radius: float) -> list:
     base = obj.matrix_world
     bbox_corners = [base @ mathutils.Vector(corner) for corner in coords]
 
-    return [(point.x, point.y, point.z)
-            for point in bbox_corners]
+    vertex_pos = [(point.x, point.y, point.z) for point in bbox_corners]
 
+    return vertex_pos, vertex_indices
+
+def bbox_from_instance_collection(ic: bpy.types.Object, index: int = 0) -> list:
+    """ Generate a bounding box for a given instance collection by using its objects
+
+        :param ic: target instance collection
+        :type ic: bpy.types.Object
+        :param index: indice offset
+        :type index: int
+        :return: list of 8*objs points [(x,y,z),...], tuple of 12*objs link between these points [(1,2),...]
+    """
+    vertex_pos = []
+    vertex_indices = ()
+
+    for obj_index, obj in enumerate(ic.instance_collection.objects):
+        vertex_pos_temp, vertex_indices_temp = bbox_from_obj(obj, index=index+obj_index)
+        vertex_pos += vertex_pos_temp
+        vertex_indices += vertex_indices_temp
+
+    bbox_corners = [ic.matrix_world @ mathutils.Vector(vertex) for vertex in vertex_pos]
+
+    vertex_pos = [(point.x, point.y, point.z) for point in bbox_corners]
+
+    return vertex_pos, vertex_indices
 
 def generate_user_camera() -> list:
     """ Generate a basic camera represention of the user point of view
@@ -175,7 +224,7 @@ def get_bb_coords_from_obj(object: bpy.types.Object, instance: bpy.types.Object 
 
     bbox_corners = [base @ mathutils.Vector(
         corner) for corner in object.bound_box]
-    
+
 
     return [(point.x, point.y, point.z) for point in bbox_corners]
 
@@ -202,6 +251,13 @@ class Widget(object):
         :return: bool
         """
         return True
+
+    def configure_bgl(self):
+        bgl.glLineWidth(2.)
+        bgl.glEnable(bgl.GL_DEPTH_TEST)
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+
 
     def draw(self):
         """How to draw the widget
@@ -256,11 +312,6 @@ class UserFrustumWidget(Widget):
             {"pos": positions},
             indices=self.indices)
 
-        bgl.glLineWidth(2.)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
-
         shader.bind()
         shader.uniform_float("color", self.data.get('color'))
         batch.draw(shader)
@@ -272,6 +323,8 @@ class UserSelectionWidget(Widget):
             username):
         self.username = username
         self.settings = bpy.context.window_manager.session
+        self.current_selection_ids = []
+        self.current_selected_objects = []
 
     @property
     def data(self):
@@ -280,6 +333,15 @@ class UserSelectionWidget(Widget):
             return user.get('metadata')
         else:
             return None
+
+    @property
+    def selected_objects(self):
+        user_selection = self.data.get('selected_objects')
+        if self.current_selection_ids != user_selection:
+            self.current_selected_objects = [find_from_attr("uuid", uid, bpy.data.objects) for uid in user_selection]
+            self.current_selection_ids = user_selection
+
+        return self.current_selected_objects
 
     def poll(self):
         if self.data is None:
@@ -295,48 +357,31 @@ class UserSelectionWidget(Widget):
             self.settings.enable_presence
 
     def draw(self):
-        user_selection = self.data.get('selected_objects')
-        for select_ob in user_selection:
-            ob = find_from_attr("uuid", select_ob, bpy.data.objects)
-            if not ob:
-                return
+        vertex_pos = []
+        vertex_ind = []
+        collection_offset = 0
+        for obj_index, obj in enumerate(self.selected_objects):
+            if obj is None:
+                continue
+            obj_index+=collection_offset
+            if hasattr(obj, 'instance_collection') and obj.instance_collection:
+                bbox_pos, bbox_ind = bbox_from_instance_collection(obj, index=obj_index)
+                collection_offset+=len(obj.instance_collection.objects)-1
+            else :
+                bbox_pos, bbox_ind = bbox_from_obj(obj, index=obj_index)
+            vertex_pos += bbox_pos
+            vertex_ind += bbox_ind
 
-            vertex_pos = bbox_from_obj(ob, 1.0)
-            vertex_indices = ((0, 1), (0, 2), (1, 3), (2, 3),
-                              (4, 5), (4, 6), (5, 7), (6, 7),
-                              (0, 4), (1, 5), (2, 6), (3, 7))
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        batch = batch_for_shader(
+            shader,
+            'LINES',
+            {"pos": vertex_pos},
+            indices=vertex_ind)
 
-            if ob.instance_collection:
-                for obj in ob.instance_collection.objects:
-                    if obj.type == 'MESH' and  hasattr(obj, 'bound_box'):
-                        vertex_pos = get_bb_coords_from_obj(obj, instance=ob)
-                        break
-            elif ob.type == 'EMPTY':
-                vertex_pos = bbox_from_obj(ob, ob.empty_display_size)
-            elif ob.type == 'LIGHT':
-                vertex_pos = bbox_from_obj(ob, ob.data.shadow_soft_size)
-            elif ob.type == 'LIGHT_PROBE':
-                vertex_pos = bbox_from_obj(ob, ob.data.influence_distance)
-            elif ob.type == 'CAMERA':
-                vertex_pos = bbox_from_obj(ob, ob.data.display_size)
-            elif hasattr(ob, 'bound_box'):
-                vertex_indices = (
-                    (0, 1), (1, 2), (2, 3), (0, 3),
-                    (4, 5), (5, 6), (6, 7), (4, 7),
-                    (0, 4), (1, 5), (2, 6), (3, 7))
-                vertex_pos = get_bb_coords_from_obj(ob)
-
-            shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-            batch = batch_for_shader(
-                shader,
-                'LINES',
-                {"pos": vertex_pos},
-                indices=vertex_indices)
-
-            shader.bind()
-            shader.uniform_float("color", self.data.get('color'))
-            batch.draw(shader)
-
+        shader.bind()
+        shader.uniform_float("color", self.data.get('color'))
+        batch.draw(shader)
 
 class UserNameWidget(Widget):
     draw_type = 'POST_PIXEL'
@@ -380,6 +425,62 @@ class UserNameWidget(Widget):
             blf.color(0, color[0], color[1], color[2], color[3])
             blf.draw(0,  self.username)
 
+class UserModeWidget(Widget):
+    draw_type = 'POST_PIXEL'
+    
+    def __init__(
+            self,
+            username):
+        self.username = username
+        self.settings = bpy.context.window_manager.session
+        self.preferences = get_preferences()
+
+    @property
+    def data(self):
+        user = session.online_users.get(self.username)
+        if user:
+            return user.get('metadata')
+        else:
+            return None
+
+    def poll(self):
+        if self.data is None:
+            return False
+
+        scene_current = self.data.get('scene_current')
+        mode_current = self.data.get('mode_current')
+        user_selection = self.data.get('selected_objects')
+
+        return (scene_current == bpy.context.scene.name or
+                mode_current == bpy.context.mode or
+                self.settings.presence_show_far_user) and \
+            user_selection and \
+            self.settings.presence_show_mode and \
+            self.settings.enable_presence
+
+    def draw(self):
+        user_selection = self.data.get('selected_objects')
+        area, region, rv3d = view3d_find()
+        viewport_coord = project_to_viewport(region, rv3d, (0, 0))
+            
+        obj = find_from_attr("uuid", user_selection[0], bpy.data.objects)
+        if not obj:
+            return
+        mode_current = self.data.get('mode_current')      
+        color = self.data.get('color')
+        origin_coord = project_to_screen(obj.location)
+
+        distance_viewport_object = math.sqrt((viewport_coord[0]-obj.location[0])**2+(viewport_coord[1]-obj.location[1])**2+(viewport_coord[2]-obj.location[2])**2)
+
+        if distance_viewport_object > self.preferences.presence_mode_distance :
+            return
+
+        if origin_coord :
+            blf.position(0, origin_coord[0]+8, origin_coord[1]-15, 0)
+            blf.size(0, 16, 72)
+            blf.color(0, color[0], color[1], color[2], color[3])
+            blf.draw(0,  mode_current)        
+
 
 class SessionStatusWidget(Widget):
     draw_type = 'POST_PIXEL'
@@ -399,7 +500,7 @@ class SessionStatusWidget(Widget):
         text_scale = self.preferences.presence_hud_scale
         ui_scale = bpy.context.preferences.view.ui_scale
         color = [1, 1, 0, 1]
-        state = session.state.get('STATE')
+        state = session.state
         state_str = f"{get_state_str(state)}"
 
         if state == STATE_ACTIVE:
@@ -462,6 +563,7 @@ class DrawFactory(object):
         try:
             for widget in self.widgets.values():
                 if widget.draw_type == 'POST_VIEW' and widget.poll():
+                    widget.configure_bgl()
                     widget.draw()
         except Exception as e:
             logging.error(
@@ -471,6 +573,7 @@ class DrawFactory(object):
         try:
             for widget in self.widgets.values():
                 if widget.draw_type == 'POST_PIXEL' and widget.poll():
+                    widget.configure_bgl()
                     widget.draw()
         except Exception as e:
             logging.error(
@@ -483,6 +586,7 @@ this.renderer = DrawFactory()
 
 def register():
     this.renderer.register_handlers()
+    
 
     this.renderer.add_widget("session_status", SessionStatusWidget())
 

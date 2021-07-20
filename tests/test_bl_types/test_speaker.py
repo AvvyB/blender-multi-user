@@ -12,11 +12,11 @@ def test_speaker(clear_blend):
     datablock = bpy.data.speakers[0]
     
     implementation = BlSpeaker()
-    expected = implementation._dump(datablock)
+    expected = implementation.dump(datablock)
     bpy.data.speakers.remove(datablock)
 
-    test = implementation._construct(expected)
-    implementation._load(expected, test)
-    result = implementation._dump(test)
+    test = implementation.construct(expected)
+    implementation.load(expected, test)
+    result = implementation.dump(test)
 
     assert not DeepDiff(expected, result)

@@ -20,47 +20,58 @@ import bpy
 import mathutils
 
 from .dump_anything import Loader, Dumper
-from .bl_datablock import BlDatablock
+from replication.protocol import ReplicatedDatablock
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 
-class BlCamera(BlDatablock):
+class BlCamera(ReplicatedDatablock):
+    use_delta = True
+
     bl_id = "cameras"
     bl_class = bpy.types.Camera
     bl_check_common = False
     bl_icon = 'CAMERA_DATA'
     bl_reload_parent = False
 
-    def _construct(self, data):
+
+    @staticmethod
+    def construct(data: dict) -> object:
         return bpy.data.cameras.new(data["name"])
 
 
-    def _load_implementation(self, data, target):
+    @staticmethod
+    def load(data: dict, datablock: object):
         loader = Loader()       
-        loader.load(target, data)
+        loader.load(datablock, data)
 
         dof_settings = data.get('dof')
-        
+
+        load_animation_data(data.get('animation_data'), datablock)
+
         # DOF settings
         if dof_settings:
-            loader.load(target.dof, dof_settings)
+            loader.load(datablock.dof, dof_settings)
 
         background_images = data.get('background_images')
 
-        target.background_images.clear()
-        
+        datablock.background_images.clear()
+        # TODO: Use image uuid
         if background_images:
             for img_name, img_data in background_images.items():
                 img_id = img_data.get('image')
                 if img_id:
-                    target_img = target.background_images.new()
+                    target_img = datablock.background_images.new()
                     target_img.image = bpy.data.images[img_id]
                     loader.load(target_img, img_data)
 
-    def _dump_implementation(self, data, instance=None):
-        assert(instance)
+                    img_user = img_data.get('image_user')
+                    if img_user:
+                        loader.load(target_img.image_user, img_user)
 
-        # TODO: background image support
-        
+
+    @staticmethod
+    def dump(datablock: object) -> dict:
         dumper = Dumper()
         dumper.depth = 3
         dumper.include_filter = [
@@ -101,14 +112,37 @@ class BlCamera(BlDatablock):
             'scale',
             'use_flip_x',
             'use_flip_y',
-            'image'
+            'image_user',
+            'image',
+            'frame_duration',
+            'frame_start',
+            'frame_offset',
+            'use_cyclic',
+            'use_auto_refresh'
         ]
-        return dumper.dump(instance)
-    
-    def _resolve_deps_implementation(self):
+        data =  dumper.dump(datablock)
+        data['animation_data'] = dump_animation_data(datablock)
+
+        for index, image in enumerate(datablock.background_images):
+            if image.image_user:
+                data['background_images'][index]['image_user'] = dumper.dump(image.image_user)
+        return data
+
+    @staticmethod
+    def resolve(data: dict) -> object:
+        uuid = data.get('uuid')
+        return resolve_datablock_from_uuid(uuid, bpy.data.cameras)
+
+    @staticmethod
+    def resolve_deps(datablock: object) -> [object]:
         deps = []
-        for background in self.instance.background_images:
+        for background in datablock.background_images:
             if background.image:
                 deps.append(background.image)
-        
+
+        deps.extend(resolve_animation_dependencies(datablock))
+
         return deps
+
+_type = bpy.types.Camera
+_class = BlCamera
