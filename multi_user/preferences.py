@@ -115,12 +115,14 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
-class ServerPreset(bpy.types.PropertyGroup): # TODO: self.uuid = uuid if uuid else str(uuid4())
-    server_name: bpy.props.StringProperty()
-    server_ip: bpy.props.StringProperty()
+class ServerPreset(bpy.types.PropertyGroup):
+    server_name: bpy.props.StringProperty(default="")
+    server_ip: bpy.props.StringProperty(default="127.0.0.1")
     server_port: bpy.props.IntProperty(default=5555)
+    use_server_password: bpy.props.BoolProperty(default=False)
     server_server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
-    server_admin_password: bpy.props.StringProperty(default="admin", subtype = "PASSWORD")
+    use_admin_password: bpy.props.BoolProperty(default=False)
+    server_admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -198,16 +200,30 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server_index",
         description="index of the server",
     )
+    use_server_password: bpy.props.BoolProperty(
+        name="use_server_password",
+        description='Use session password',
+        default=False
+    )
     server_password: bpy.props.StringProperty(
         name="server_password",
         description='Session password',
         subtype='PASSWORD'
     )
+    use_admin_password: bpy.props.BoolProperty(
+        name="use_admin_password",
+        description='Use admin password',
+        default=False
+    )
     admin_password: bpy.props.StringProperty(
         name="admin_password",
-        default=random_string_digits(),
         description='Admin password',
         subtype='PASSWORD'
+    )
+    is_first_launch: bpy.props.BoolProperty(
+        name="is_first_launch",
+        description="First time lauching the addon",
+        default=True
     )
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
@@ -354,6 +370,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="sidebar_advanced_log_expanded",
         default=False
     )
+    sidebar_advanced_hosting_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_hosting_expanded",
+        description="sidebar_advanced_hosting_expanded",
+        default=False
+    )
     sidebar_advanced_net_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_net_expanded",
         description="sidebar_advanced_net_expanded",
@@ -431,10 +452,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
             grid = layout.column()
 
             box = grid.box()
-            row = box.row(align = True)
+            row = box.row()
             # USER SETTINGS
-            row.prop(self, "username", text="User")
-            row.prop(self, "client_color", text="")
+            split = row.split(factor=0.7, align=True)
+            split.prop(self, "username", text="User")
+            split.prop(self, "client_color", text="")
 
             row = box.row()
             row.label(text="Hide settings:")
@@ -457,9 +479,17 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
                 row = box.row()
-                row.prop(self, "server_password", text="Server password")
+                col = row.column()
+                col.prop(self, "use_server_password", text="Server password:")
+                col = row.column()
+                col.enabled = True if self.use_server_password else False
+                col.prop(self, "server_password", text="")
                 row = box.row()
-                row.prop(self, "admin_password", text="Admin password")
+                col = row.column()
+                col.prop(self, "use_admin_password", text="Admin password:")
+                col = row.column()
+                col.enabled = True if self.use_admin_password else False
+                col.prop(self, "admin_password", text="")
 
             # NETWORKING
             box = grid.box()
@@ -467,7 +497,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 self, "conf_session_net_expanded", text="Network",
                 icon=get_expanded_icon(self.conf_session_net_expanded), 
                 emboss=False)
-        
             if self.conf_session_net_expanded:
                 row = box.row()
                 row.label(text="Timeout (ms):")
@@ -479,16 +508,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 self, "conf_session_rep_expanded", text="Replication",
                 icon=get_expanded_icon(self.conf_session_rep_expanded), 
                 emboss=False)
-
             if self.conf_session_rep_expanded:
-                row = box.row()
-
                 row = box.row()
                 row.prop(self.sync_flags, "sync_render_settings")
                 row = box.row()
                 row.prop(self.sync_flags, "sync_active_camera")
                 row = box.row()
-
                 row.prop(self.sync_flags, "sync_during_editmode")
                 row = box.row()
                 if self.sync_flags.sync_during_editmode:
@@ -519,8 +544,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row.label(text="Log level:")
                 row.prop(self, 'logging_level', text="")
 
-
-
         if self.category == 'UPDATE':
             from . import addon_updater_ops
             addon_updater_ops.update_settings_ui(self, context)
@@ -540,11 +563,19 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.icon = impl.bl_icon
             new_db.bl_name = impl.bl_id
 
+    def get_server_preset(self, name):
+        existing_preset = None
+
+        for server_preset in self.server_preset : 
+            if server_preset.server_name == name :
+                existing_preset = server_preset
+
+        return existing_preset
 
     # custom at launch server preset
     def generate_default_presets(self): 
         for preset_name, preset_data in DEFAULT_PRESETS.items():
-            existing_preset = self.server_preset.get(preset_name)
+            existing_preset = self.get_server_preset(preset_name)
             if existing_preset :
                 continue
             new_server = self.server_preset.add()

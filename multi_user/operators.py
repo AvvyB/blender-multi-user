@@ -20,6 +20,7 @@ import asyncio
 import copy
 import gzip
 import logging
+from multi_user.preferences import ServerPreset
 import os
 import queue
 import random
@@ -57,7 +58,7 @@ from replication.repository import Repository
 
 from . import bl_types, environment, shared_data, timers, ui, utils
 from .handlers import on_scene_update, sanitize_deps_graph
-from .presence import SessionStatusWidget, renderer, view3d_find
+from .presence import SessionStatusWidget, renderer, view3d_find, refresh_sidebar_view
 from .timers import registry
 
 background_execution_queue = Queue()
@@ -928,20 +929,26 @@ class SessionPresetServerAdd(bpy.types.Operator):
     bl_description = "add a server to the server preset list"
     bl_options = {"REGISTER"}
 
-    target_server_name: bpy.props.StringProperty(default="None")
+    server_name: bpy.props.StringProperty(default="")
+    server_ip: bpy.props.StringProperty(default="127.0.0.1")
+    server_port: bpy.props.IntProperty(default=5555)
+    use_server_password: bpy.props.BoolProperty(default=False)
+    server_server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    use_admin_password: bpy.props.BoolProperty(default=False)
+    server_admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
 
     @classmethod
     def poll(cls, context):
         return True
 
     def invoke(self, context, event):
-        settings = utils.get_preferences()
-
-        settings.server_name = ""
-        settings.ip = "127.0.0.1"
-        settings.port = 5555
-        settings.server_password = ""
-        settings.admin_password = ""
+        self.server_name = ""
+        self.server_ip = "127.0.0.1"
+        self.server_port = 5555
+        self.use_server_password = False
+        self.server_server_password = ""
+        self.use_admin_password = False
+        self.server_admin_password = ""
 
         assert(context)
         return context.window_manager.invoke_props_dialog(self)
@@ -951,34 +958,45 @@ class SessionPresetServerAdd(bpy.types.Operator):
         settings = utils.get_preferences()
 
         row = layout.row() 
-        row.prop(settings, "server_name", text="Server name")
+        row.prop(self, "server_name", text="Server name")
         row = layout.row(align = True)
-        row.prop(settings, "ip", text="IP+port")
-        row.prop(settings, "port", text="")
+        row.prop(self, "server_ip", text="IP+port")
+        row.prop(self, "server_port", text="")
         row = layout.row()
-        row.prop(settings, "server_password", text="Server password")
+        col = row.column()
+        col.prop(self, "use_server_password", text="Server password:")
+        col = row.column()
+        col.enabled = True if self.use_server_password else False
+        col.prop(self, "server_server_password", text="")
         row = layout.row()
-        row.prop(settings, "admin_password", text="Admin password")
+        col = row.column()
+        col.prop(self, "use_admin_password", text="Admin password:")
+        col = row.column()
+        col.enabled = True if self.use_admin_password else False
+        col.prop(self, "server_admin_password", text="")
         
     def execute(self, context):
         assert(context)
 
         settings = utils.get_preferences()
-
-        existing_preset = settings.server_preset.get(settings.server_name)
+        existing_preset = settings.get_server_preset(self.server_name)
 
         new_server = existing_preset if existing_preset else settings.server_preset.add()
         new_server.name = str(uuid4())
-        new_server.server_name = settings.server_name
-        new_server.server_ip = settings.ip
-        new_server.server_port = settings.port
-        new_server.server_server_password = settings.server_password
-        new_server.server_admin_password = settings.admin_password
+        new_server.server_name = self.server_name
+        new_server.server_ip = self.server_ip
+        new_server.server_port = self.server_port
+        new_server.use_server_password = self.use_server_password
+        new_server.server_server_password = self.server_server_password
+        new_server.use_admin_password = self.use_admin_password
+        new_server.server_admin_password = self.server_admin_password
+
+        refresh_sidebar_view()
 
         if new_server == existing_preset :
-            self.report({'INFO'}, "Server '" + settings.server_name + "' override")
+            self.report({'INFO'}, "Server '" + self.server_name + "' override")
         else :
-            self.report({'INFO'}, "New '" + settings.server_name + "' server preset")
+            self.report({'INFO'}, "New '" + self.server_name + "' server preset")
 
         return {'FINISHED'}
 
@@ -1020,9 +1038,17 @@ class SessionPresetServerEdit(bpy.types.Operator):
         row.prop(settings, "ip", text="IP+port")
         row.prop(settings, "port", text="")
         row = layout.row()
-        row.prop(settings, "server_password", text="Server password")
+        col = row.column()
+        col.prop(settings, "use_server_password", text="Server password:")
+        col = row.column()
+        col.enabled = True if settings.use_server_password else False
+        col.prop(settings, "server_password", text="")
         row = layout.row()
-        row.prop(settings, "admin_password", text="Admin password")
+        col = row.column()
+        col.prop(settings, "use_admin_password", text="Admin password:")
+        col = row.column()
+        col.enabled = True if settings.use_admin_password else False
+        col.prop(settings, "admin_password", text="")
         
     def execute(self, context):
         assert(context)
@@ -1036,6 +1062,8 @@ class SessionPresetServerEdit(bpy.types.Operator):
         server.server_port = settings.port
         server.server_server_password = settings.server_password
         server.server_admin_password = settings.admin_password
+
+        refresh_sidebar_view()
 
         self.report({'INFO'}, "Server '" + settings.server_name + "' override")
 
@@ -1064,6 +1092,37 @@ class SessionPresetServerRemove(bpy.types.Operator):
         return {'FINISHED'}
         
 
+class GetDoc(bpy.types.Operator):
+    """Get the documentation of the addon"""
+    bl_idname = "doc.get"
+    bl_label = "Multi-user's doc"
+    bl_description = "Go to the doc of the addon"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        assert(context)
+        bpy.ops.wm.url_open(url="https://multi-user.readthedocs.io/en/develop/index.html")
+
+        return {'FINISHED'}
+
+class FirstLaunch(bpy.types.Operator):
+    """First time lauching the addon"""
+    bl_idname = "firstlaunch.verify"
+    bl_label = "First launch"
+    bl_description = "First time lauching the addon"
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        assert(context)
+        settings = utils.get_preferences()
+        settings.is_first_launch = False
+        return {'FINISHED'}
 
 def menu_func_import(self, context):
     self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
@@ -1090,6 +1149,8 @@ classes = (
     SessionPresetServerAdd,
     SessionPresetServerEdit,
     SessionPresetServerRemove,
+    GetDoc,
+    FirstLaunch,
 )
 
 

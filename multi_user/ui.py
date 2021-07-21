@@ -97,79 +97,103 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        row = layout.row()
         runtime_settings = context.window_manager.session
         settings = get_preferences()
 
-        if hasattr(context.window_manager, 'session'):
-            # STATE INITIAL
-            if not session \
-               or (session and session.state == STATE_INITIAL):
-                layout = self.layout
-                settings = get_preferences()
-                server_preset = settings.server_preset
-                selected_server = context.window_manager.server_index if context.window_manager.server_index<=len(server_preset)-1 else 0
-                active_server_name = server_preset[selected_server].name if len(server_preset)>=1 else ""
-                is_server_selected = True if active_server_name else False # TODO : issues when removing the lowest server in the list
+        if settings.is_first_launch:
+            # USER SETTINGS
+            row = layout.row()
+            row.label(text="1. Enter your username and color:")
+            row = layout.row()
+            split = row.split(factor=0.7, align=True)
+            split.prop(settings, "username", text="")
+            split.prop(settings, "client_color", text="")
 
-                # Create a simple row.
-                row = layout.row()
-                box = row.box()
-                split = box.split(factor=0.7)
-                split.label(text="Server")
-                split.label(text="Online")
+            # DOC
+            row = layout.row()
+            row.label(text="2. New here ? See the doc:")
+            row = layout.row()
+            row.operator("doc.get", text="Documentation", icon="HELP")
+        
+            # START
+            row = layout.row()
+            row.label(text="3: Start the Multi-user:")
+            row = layout.row()
+            row.scale_y = 2
+            row.operator("firstlaunch.verify", text="Continue")
+        
+        if not settings.is_first_launch:
+            if hasattr(context.window_manager, 'session'):
+                # STATE INITIAL
+                if not session \
+                or (session and session.state == STATE_INITIAL):
+                    layout = self.layout
+                    settings = get_preferences()
+                    server_preset = settings.server_preset
+                    selected_server = context.window_manager.server_index if context.window_manager.server_index<=len(server_preset)-1 else 0
+                    active_server_name = server_preset[selected_server].name if len(server_preset)>=1 else ""
+                    is_server_selected = True if active_server_name else False # TODO : issues when removing the lowest server in the list
 
-                row = layout.row()
-                layout.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index") # TODO: change port to server_index
+                    # SERVER LIST
+                    row = layout.row()
+                    box = row.box()
+                    split = box.split(factor=0.7)
+                    split.label(text="Server")
+                    split.label(text="Online")
 
-                row = layout.row() # TODO : active server in template
-                row.operator("session.preset_server_add", text="Add") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
-                col = row.column()
-                col.enabled = is_server_selected
-                col.operator("session.preset_server_edit", text="Edit").target_server_name = active_server_name
-                col = row.column()
-                col.enabled = is_server_selected
-                col.operator("session.preset_server_remove", text="Remove").target_server_name = active_server_name
+                    row = layout.row()
+                    layout.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
 
-                row = layout.row()
-                row.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
-                col = row.column()
-                col.enabled =is_server_selected
-                col.operator("session.connect", text="Connect")
-            else:
-                progress = session.state_progress           
-                row = layout.row()
+                    row = layout.row() # TODO : active server in template
+                    row.operator("session.preset_server_add", text="Add") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
+                    col = row.column()
+                    col.enabled = is_server_selected
+                    col.operator("session.preset_server_edit", text="Edit").target_server_name = active_server_name
+                    col = row.column()
+                    col.enabled = is_server_selected
+                    col.operator("session.preset_server_remove", text="Remove").target_server_name = active_server_name
 
-                current_state = session.state
-                info_msg = None
+                    row = layout.row()
+                    row.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
+                    col = row.column()
+                    col.enabled =is_server_selected
+                    col.operator("session.connect", text="Connect")
 
-                if current_state in [STATE_ACTIVE]:
-                    row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-                    row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
-                    row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
-                    row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
+                else:
+                    progress = session.state_progress           
+                    row = layout.row()
 
-                row= layout.row()
+                    current_state = session.state
+                    info_msg = None
 
-                if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
-                    info_msg = f"LAN: {runtime_settings.internet_ip}" 
-                if current_state == STATE_LOBBY:
-                    info_msg = "Waiting for the session to start."
+                    # STATE IN SESSION
+                    if current_state in [STATE_ACTIVE]:
+                        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+                        row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
+                        row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
+                        row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
 
-                if info_msg:
-                    info_box = row.box()
-                    info_box.row().label(text=info_msg,icon='INFO')
+                    row= layout.row()
 
-                # Progress bar
-                if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
-                    info_box = row.box()
-                    info_box.row().label(text=printProgressBar(
-                        progress['current'],
-                        progress['total'],
-                        length=16
-                    ))
+                    if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
+                        info_msg = f"LAN: {runtime_settings.internet_ip}" 
+                    if current_state == STATE_LOBBY:
+                        info_msg = "Waiting for the session to start."
 
-                layout.row().operator("session.stop", icon='QUIT', text="Exit")
+                    if info_msg:
+                        info_box = row.box()
+                        info_box.row().label(text=info_msg,icon='INFO')
+
+                    # PROGRESS BAR
+                    if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
+                        info_box = row.box()
+                        info_box.row().label(text=printProgressBar(
+                            progress['current'],
+                            progress['total'],
+                            length=16
+                        ))
+
+                    layout.row().operator("session.stop", icon='QUIT', text="Exit")
 
 class SESSION_PT_advanced_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
@@ -184,17 +208,40 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         settings = get_preferences()
         return not session \
             or (session and session.state == 0) \
-            and not settings.sidebar_advanced_shown
+            and not settings.sidebar_advanced_shown \
+            and not settings.is_first_launch
 
     def draw_header(self, context):
         self.layout.label(text="", icon='PREFERENCES')
         
     def draw(self, context):
         layout = self.layout
-
-        runtime_settings = context.window_manager.session
         settings = get_preferences()
 
+        #ADVANCED HOST
+        host_selection = layout.row().box()
+        host_selection.prop(
+            settings, "sidebar_advanced_hosting_expanded", text="Hosting",
+            icon=get_expanded_icon(settings.sidebar_advanced_hosting_expanded),
+            emboss=False)
+        if settings.sidebar_advanced_hosting_expanded:
+            host_selection_row = host_selection.row()
+            host_selection_row.label(text="Init the session from:")
+            host_selection_row.prop(settings, "init_method", text="")
+            host_selection_row = host_selection.row()
+            host_selection_col = host_selection_row.column()
+            host_selection_col.prop(settings, "use_server_password", text="Server password:")
+            host_selection_col = host_selection_row.column()
+            host_selection_col.enabled = True if settings.use_server_password else False
+            host_selection_col.prop(settings, "server_password", text="")
+            host_selection_row = host_selection.row()
+            host_selection_col = host_selection_row.column()
+            host_selection_col.prop(settings, "use_admin_password", text="Admin password:")
+            host_selection_col = host_selection_row.column()
+            host_selection_col.enabled = True if settings.use_admin_password else False
+            host_selection_col.prop(settings, "admin_password", text="")
+
+        #ADVANCED NET
         net_section = layout.row().box()
         net_section.prop(
             settings,
@@ -202,12 +249,12 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             text="Network",
             icon=get_expanded_icon(settings.sidebar_advanced_net_expanded), 
             emboss=False)
-        
         if settings.sidebar_advanced_net_expanded:
             net_section_row = net_section.row()
             net_section_row.label(text="Timeout (ms):")
             net_section_row.prop(settings, "connection_timeout", text="")
 
+        #ADVANCED REPLICATION
         replication_section = layout.row().box()
         replication_section.prop(
             settings,
@@ -215,16 +262,12 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             text="Replication",
             icon=get_expanded_icon(settings.sidebar_advanced_rep_expanded), 
             emboss=False)
-
         if settings.sidebar_advanced_rep_expanded:
-            replication_section_row = replication_section.row()
-
             replication_section_row = replication_section.row()
             replication_section_row.prop(settings.sync_flags, "sync_render_settings")
             replication_section_row = replication_section.row()
             replication_section_row.prop(settings.sync_flags, "sync_active_camera")
             replication_section_row = replication_section.row()
-
             replication_section_row.prop(settings.sync_flags, "sync_during_editmode")
             replication_section_row = replication_section.row()
             if settings.sync_flags.sync_during_editmode:
@@ -233,7 +276,7 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
                 replication_section_row = replication_section.row()
             replication_section_row.prop(settings, "depsgraph_update_rate", text="Apply delay")
 
-        
+        #ADVANCED CACHE
         cache_section = layout.row().box()
         cache_section.prop(
             settings,
@@ -251,6 +294,8 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             cache_section_row.prop(settings, "clear_memory_filecache", text="")
             cache_section_row = cache_section.row()
             cache_section_row.operator('session.clear_cache', text=f"Clear cache ({get_folder_size(settings.cache_directory)})")
+        
+        #ADVANCED LOG
         log_section = layout.row().box()
         log_section.prop(
             settings,
@@ -258,7 +303,6 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             text="Logging",
             icon=get_expanded_icon(settings.sidebar_advanced_log_expanded), 
             emboss=False)
-
         if settings.sidebar_advanced_log_expanded:
             log_section_row = log_section.row()
             log_section_row.label(text="Log level:")
@@ -273,7 +317,8 @@ class SESSION_PT_user(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return session and session.state in [STATE_ACTIVE, STATE_LOBBY]
+        return session \
+            and session.state in [STATE_ACTIVE, STATE_LOBBY]
 
     def draw_header(self, context):
         self.layout.label(text="", icon='USER')
@@ -285,9 +330,8 @@ class SESSION_PT_user(bpy.types.Panel):
         settings = get_preferences()
         active_user = online_users[selected_user] if len(
             online_users)-1 >= selected_user else 0
-        runtime_settings = context.window_manager.session
 
-        # Create a simple row.
+        #USER LIST
         row = layout.row()
         box = row.box()
         split = box.split(factor=0.35)
@@ -302,6 +346,7 @@ class SESSION_PT_user(bpy.types.Panel):
         layout.template_list("SESSION_UL_users",  "",  context.window_manager,
                              "online_users", context.window_manager,  "user_index")
 
+        #OPERATOR ON USER
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
@@ -387,7 +432,6 @@ class SESSION_UL_users(bpy.types.UIList):
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
-    runtime_settings = context.window_manager.session
     item = session.repository.graph.get(property_uuid)
     type_id = item.data.get('type_id')
     area_msg = parent.row(align=True)
@@ -561,7 +605,7 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
             text_scale.active = settings.presence_show_session_status
             text_scale.prop(pref, "presence_hud_scale", expand=True)   
         
-        
+
 class SESSION_UL_network(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
         settings = get_preferences()
@@ -584,7 +628,7 @@ class SESSION_UL_network(bpy.types.UIList):
         # TODO : if session online : vert else rouge
         # TODO : ping
         from multi_user import icons
-        server_status = icons.icons_col["session_status_offline"]
+        server_status = icons.icons_col["server_offline"]
         split.label(icon_value=server_status.icon_id)
 
 classes = (
