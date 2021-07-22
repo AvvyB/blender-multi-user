@@ -162,7 +162,7 @@ class AnnotationUpdates(Timer):
                         logging.debug(
                             "Getting the right on the annotation GP")
                         porcelain.lock(session.repository,
-                                        registered_gp.uuid,
+                                        [registered_gp.uuid],
                                         ignore_warnings=True,
                                         affect_dependencies=False)
 
@@ -172,14 +172,15 @@ class AnnotationUpdates(Timer):
 
                 elif self._annotating:
                     porcelain.unlock(session.repository,
-                                    registered_gp.uuid,
+                                    [registered_gp.uuid],
                                     ignore_warnings=True,
                                     affect_dependencies=False)
+                    self._annotating = False
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
         super().__init__(timeout)
-        self._last_selection = []
+        self._last_selection = set()
         self._user = None
 
     def execute(self):
@@ -191,52 +192,46 @@ class DynamicRightSelectTimer(Timer):
                 self._user = session.online_users.get(settings.username)
 
             if self._user:
-                current_selection = utils.get_selected_objects(
+                current_selection = set(utils.get_selected_objects(
                     bpy.context.scene,
                     bpy.data.window_managers['WinMan'].windows[0].view_layer
-                )
+                ))
                 if current_selection != self._last_selection:
-                    obj_common = [
-                        o for o in self._last_selection if o not in current_selection]
-                    obj_ours = [
-                        o for o in current_selection if o not in self._last_selection]
+                    to_lock = list(current_selection.difference(self._last_selection))
+                    to_release = list(self._last_selection.difference(current_selection))
+                    instances_to_lock = list()
 
-                    # change old selection right to common
-                    for obj in obj_common:
-                        node = session.repository.graph.get(obj)
+                    for node_id in to_lock:
+                        node = session.repository.graph.get(node_id)
+                        instance_mode = node.data.get('instance_type')
+                        if instance_mode and instance_mode == 'COLLECTION':
+                            to_lock.remove(node_id)
+                            instances_to_lock.append(node_id)
+                    if instances_to_lock:
+                        try:
+                            porcelain.lock(session.repository,
+                                            instances_to_lock,
+                                            ignore_warnings=True,
+                                            affect_dependencies=False)
+                        except NonAuthorizedOperationError as e:
+                            logging.warning(e)
 
-                        if node and (node.owner == settings.username or node.owner == RP_COMMON):
-                            recursive = True
-                            if node.data and 'instance_type' in node.data.keys():
-                                recursive = node.data['instance_type'] != 'COLLECTION'
-                            try:
-                                porcelain.unlock(session.repository,
-                                                node.uuid,
-                                                ignore_warnings=True,
-                                                affect_dependencies=recursive)
-                            except NonAuthorizedOperationError:
-                                logging.warning(
-                                    f"Not authorized to change {node} owner")
-
-                    # change new selection to our
-                    for obj in obj_ours:
-                        node = session.repository.graph.get(obj)
-
-                        if node and node.owner == RP_COMMON:
-                            recursive = True
-                            if node.data and 'instance_type' in node.data.keys():
-                                recursive = node.data['instance_type'] != 'COLLECTION'
-
-                            try:
-                                porcelain.lock(session.repository,
-                                               node.uuid,
-                                               ignore_warnings=True,
-                                               affect_dependencies=recursive)
-                            except NonAuthorizedOperationError:
-                                logging.warning(
-                                    f"Not authorized to change {node} owner")
-                        else:
-                            return
+                    if to_release:
+                        try:
+                            porcelain.unlock(session.repository,
+                                            to_release,
+                                            ignore_warnings=True,
+                                            affect_dependencies=True)
+                        except NonAuthorizedOperationError as e:
+                            logging.warning(e)
+                    if to_lock:
+                        try:
+                            porcelain.lock(session.repository,
+                                            to_lock,
+                                            ignore_warnings=True,
+                                            affect_dependencies=True)
+                        except NonAuthorizedOperationError as e:
+                            logging.warning(e)
 
                     self._last_selection = current_selection
 
@@ -250,17 +245,16 @@ class DynamicRightSelectTimer(Timer):
                     # Fix deselection until right managment refactoring (with Roles concepts)
                     if len(current_selection) == 0 :
                         owned_keys = [k for k, v in session.repository.graph.items() if v.owner==settings.username]
-                        for key in owned_keys:
-                            node = session.repository.graph.get(key)
+                        if owned_keys:
                             try:
                                 porcelain.unlock(session.repository,
-                                                key,
+                                                owned_keys,
                                                 ignore_warnings=True,
                                                 affect_dependencies=True)
-                            except NonAuthorizedOperationError:
-                                logging.warning(
-                                    f"Not authorized to change {key} owner")
+                            except NonAuthorizedOperationError as e:
+                                logging.warning(e)
 
+            # Objects selectability
             for obj in bpy.data.objects:
                 object_uuid = getattr(obj, 'uuid', None)
                 if object_uuid:

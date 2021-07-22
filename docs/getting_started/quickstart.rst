@@ -215,8 +215,10 @@ One of the most vital tools is the **Online user panel**. It lists all connected
 users' information including your own:
 
 * **Role** : if a user is an admin or a regular user.
-* **Location**: Where the user is actually working.
+* **Username** : Name of the user.
+* **Mode** : User's active editing mode (edit_mesh, paint,etc.).
 * **Frame**: When (on which frame) the user is working.
+* **Location**: Where the user is actually working.
 * **Ping**: user's connection delay in milliseconds
 
 .. figure:: img/quickstart_users.png
@@ -273,6 +275,7 @@ it draw users' related information in your viewport such as:
 
 * Username
 * User point of view
+* User active mode
 * User selection
 
 .. figure:: img/quickstart_presence.png

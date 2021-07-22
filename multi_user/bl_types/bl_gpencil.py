@@ -162,7 +162,7 @@ def dump_layer(layer):
         'hide',
         'annotation_hide',
         'lock',
-        # 'lock_frame',
+        'lock_frame',
         # 'lock_material',
         # 'use_mask_layer',
         'use_lights',
@@ -170,12 +170,13 @@ def dump_layer(layer):
         'select',
         'show_points',
         'show_in_front',
+        # 'thickness'
         # 'parent',
         # 'parent_type',
         # 'parent_bone',
         # 'matrix_inverse',
     ]
-    if layer.id_data.is_annotation:
+    if layer.thickness != 0:
         dumper.include_filter.append('thickness')
 
     dumped_layer = dumper.dump(layer)

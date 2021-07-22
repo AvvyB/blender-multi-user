@@ -94,18 +94,21 @@ def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, 
     return [target.x, target.y, target.z]
 
 
-def bbox_from_obj(obj: bpy.types.Object) -> list:
+def bbox_from_obj(obj: bpy.types.Object, index: int = 1) -> list:
     """ Generate a bounding box for a given object by using its world matrix
 
         :param obj: target object
         :type obj: bpy.types.Object
+        :param index: indice offset
+        :type index: int 
         :return: list of 8 points [(x,y,z),...], list of 12 link between these points [(1,2),...]
     """
     radius = 1.0 # Radius of the bounding box
+    index = 8*index
     vertex_indices = (
-            (0, 1), (0, 2), (1, 3), (2, 3),
-            (4, 5), (4, 6), (5, 7), (6, 7),
-            (0, 4), (1, 5), (2, 6), (3, 7))
+            (0+index, 1+index), (0+index, 2+index), (1+index, 3+index), (2+index, 3+index),
+            (4+index, 5+index), (4+index, 6+index), (5+index, 7+index), (6+index, 7+index),
+            (0+index, 4+index), (1+index, 5+index), (2+index, 6+index), (3+index, 7+index))
 
     if obj.type == 'EMPTY':
         radius = obj.empty_display_size
@@ -117,9 +120,12 @@ def bbox_from_obj(obj: bpy.types.Object) -> list:
         radius = obj.data.display_size
     elif hasattr(obj, 'bound_box'):
         vertex_indices = (
-            (0, 1), (1, 2), (2, 3), (0, 3),
-            (4, 5), (5, 6), (6, 7), (4, 7),
-            (0, 4), (1, 5), (2, 6), (3, 7))
+            (0+index, 1+index), (1+index, 2+index),
+            (2+index, 3+index), (0+index, 3+index),
+            (4+index, 5+index), (5+index, 6+index),
+            (6+index, 7+index), (4+index, 7+index),
+            (0+index, 4+index), (1+index, 5+index),
+            (2+index, 6+index), (3+index, 7+index))
         vertex_pos = get_bb_coords_from_obj(obj)
         return vertex_pos, vertex_indices
 
@@ -136,26 +142,21 @@ def bbox_from_obj(obj: bpy.types.Object) -> list:
 
     return vertex_pos, vertex_indices
 
-def bbox_from_instance_collection(ic: bpy.types.Object) -> list:
+def bbox_from_instance_collection(ic: bpy.types.Object, index: int = 0) -> list:
     """ Generate a bounding box for a given instance collection by using its objects
 
         :param ic: target instance collection
         :type ic: bpy.types.Object
-        :param radius: bounding box radius
-        :type radius: float
+        :param index: indice offset
+        :type index: int
         :return: list of 8*objs points [(x,y,z),...], tuple of 12*objs link between these points [(1,2),...]
     """
     vertex_pos = []
     vertex_indices = ()
 
     for obj_index, obj in enumerate(ic.instance_collection.objects):
-        vertex_pos_temp, vertex_indices_temp = bbox_from_obj(obj)
+        vertex_pos_temp, vertex_indices_temp = bbox_from_obj(obj, index=index+obj_index)
         vertex_pos += vertex_pos_temp
-        vertex_indices_list_temp = list(list(indice) for indice in vertex_indices_temp)
-        for indice in vertex_indices_list_temp:
-            indice[0] += 8*obj_index
-            indice[1] += 8*obj_index
-        vertex_indices_temp = tuple(tuple(indice) for indice in vertex_indices_list_temp)
         vertex_indices += vertex_indices_temp
 
     bbox_corners = [ic.matrix_world @ mathutils.Vector(vertex) for vertex in vertex_pos]
@@ -223,7 +224,7 @@ def get_bb_coords_from_obj(object: bpy.types.Object, instance: bpy.types.Object 
 
     bbox_corners = [base @ mathutils.Vector(
         corner) for corner in object.bound_box]
-    
+
 
     return [(point.x, point.y, point.z) for point in bbox_corners]
 
@@ -322,6 +323,8 @@ class UserSelectionWidget(Widget):
             username):
         self.username = username
         self.settings = bpy.context.window_manager.session
+        self.current_selection_ids = []
+        self.current_selected_objects = []
 
     @property
     def data(self):
@@ -330,6 +333,15 @@ class UserSelectionWidget(Widget):
             return user.get('metadata')
         else:
             return None
+
+    @property
+    def selected_objects(self):
+        user_selection = self.data.get('selected_objects')
+        if self.current_selection_ids != user_selection:
+            self.current_selected_objects = [find_from_attr("uuid", uid, bpy.data.objects) for uid in user_selection]
+            self.current_selection_ids = user_selection
+
+        return self.current_selected_objects
 
     def poll(self):
         if self.data is None:
@@ -344,27 +356,32 @@ class UserSelectionWidget(Widget):
             self.settings.presence_show_selected and \
             self.settings.enable_presence
 
-    def draw(self):        
-        user_selection = self.data.get('selected_objects')
-        for select_obj in user_selection:
-            obj = find_from_attr("uuid", select_obj, bpy.data.objects)
-            if not obj:
-                return
-            if obj.instance_collection:
-                vertex_pos, vertex_indices = bbox_from_instance_collection(obj)
+    def draw(self):
+        vertex_pos = []
+        vertex_ind = []
+        collection_offset = 0
+        for obj_index, obj in enumerate(self.selected_objects):
+            if obj is None:
+                continue
+            obj_index+=collection_offset
+            if hasattr(obj, 'instance_collection') and obj.instance_collection:
+                bbox_pos, bbox_ind = bbox_from_instance_collection(obj, index=obj_index)
+                collection_offset+=len(obj.instance_collection.objects)-1
             else :
-                vertex_pos, vertex_indices = bbox_from_obj(obj)
+                bbox_pos, bbox_ind = bbox_from_obj(obj, index=obj_index)
+            vertex_pos += bbox_pos
+            vertex_ind += bbox_ind
 
-            shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
-            batch = batch_for_shader(
-                shader,
-                'LINES',
-                {"pos": vertex_pos},
-                indices=vertex_indices)
+        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        batch = batch_for_shader(
+            shader,
+            'LINES',
+            {"pos": vertex_pos},
+            indices=vertex_ind)
 
-            shader.bind()
-            shader.uniform_float("color", self.data.get('color'))
-            batch.draw(shader)
+        shader.bind()
+        shader.uniform_float("color", self.data.get('color'))
+        batch.draw(shader)
 
 class UserNameWidget(Widget):
     draw_type = 'POST_PIXEL'

@@ -187,3 +187,33 @@ All notable changes to this project will be documented in this file.
 - Sync missing armature bone Roll
 - Sync missing driver data_path
 - Constraint replication
+
+## [0.4.0] - 2021-07-20
+
+### Added
+
+- Connection preset system (@Kysios)
+- Display connected users active mode (users pannel and viewport) (@Kysios)
+- Delta-based replication
+- Sync timeline marker
+- Sync images settings (@Kysios)
+- Sync parent relation type (@Kysios)
+- Sync uv project modifier
+- Sync FCurves modifiers
+
+### Changed
+
+- User selection optimizations (draw and sync) (@Kysios)
+- Improved shapekey syncing performances
+- Improved gpencil syncing performances
+- Integrate replication as a submodule
+- The dependencies are now installed in a folder(blender addon folder) that no longer requires administrative rights
+- Presence overlay UI optimization (@Kysios)
+
+### Fixed
+
+- User selection bounding box glitches for non-mesh objects (@Kysios)
+- Transforms replication for animated objects
+- GPencil fill stroke
+- Sculpt and GPencil brushes deleted when joining a session (@Kysios)
+- Auto-updater doesn't work for master and develop builds
