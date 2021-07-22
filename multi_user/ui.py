@@ -143,7 +143,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     split.label(text="Online")
 
                     col = row.column(align=True)
-                    col.operator("session.preset_server_add", icon="FILE_REFRESH", text="") # TODO : Replace add by refresh operator
+                    col.operator("session.get_info", icon="FILE_REFRESH", text="") # TODO : Replace add by refresh operator
 
                     row = layout.row()
                     col = row.column(align=True)
@@ -156,7 +156,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     connectopcol.operator("session.connect", text="Connect")
 
                     col = row.column(align=True)
-                    col.operator("session.preset_server_add", icon="ADD", text="") # TODO : Replace add by refresh operator
+                    col.operator("session.preset_server_add", icon="ADD", text="")
                     row_visible = col.row(align=True)
                     col_visible = row_visible.column(align=True)
                     col_visible.enabled = is_server_selected
@@ -669,6 +669,8 @@ class SESSION_UL_network(bpy.types.UIList):
         # Session status
         # TODO : if session online : vert else rouge
         # TODO : ping
+        
+
         from multi_user import icons
         server_status = icons.icons_col["server_offline"]
         split.label(icon_value=server_status.icon_id)

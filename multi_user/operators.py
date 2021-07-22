@@ -877,7 +877,6 @@ class SessionStopAutoSaveOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
 class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     bl_idname = "session.load"
     bl_label = "Load session save"
@@ -1091,6 +1090,22 @@ class SessionPresetServerRemove(bpy.types.Operator):
 
         return {'FINISHED'}
         
+class SessionGetInfo(bpy.types.Operator):
+    bl_idname = "session.get_info"
+    bl_label = "Get session info"
+    bl_description = "Get session info"
+
+    target_server: bpy.props.StringProperty(default="127.0.0.1:5555")
+
+    @classmethod
+    def poll(cls, context):
+        return (session.state != STATE_ACTIVE)
+
+    def execute(self, context):
+        infos = porcelain.request_session_info(self.target_server, timeout=100)
+        logging.info(f"Session info: {infos}")
+
+        return {'FINISHED'}
 
 class GetDoc(bpy.types.Operator):
     """Get the documentation of the addon"""
@@ -1152,6 +1167,7 @@ classes = (
     SessionPresetServerAdd,
     SessionPresetServerEdit,
     SessionPresetServerRemove,
+    SessionGetInfo,
     GetDoc,
     FirstLaunch,
 )
