@@ -87,6 +87,7 @@ def register():
     bpy.types.WindowManager.user_index = bpy.props.IntProperty()
     bpy.types.WindowManager.server_index = bpy.props.IntProperty()
     bpy.types.TOPBAR_MT_file_import.append(operators.menu_func_import)
+    bpy.types.TOPBAR_MT_file_export.append(operators.menu_func_export)
 
 
 def unregister():
@@ -99,6 +100,7 @@ def unregister():
     from . import addon_updater_ops
 
     bpy.types.TOPBAR_MT_file_import.remove(operators.menu_func_import)
+    bpy.types.TOPBAR_MT_file_export.remove(operators.menu_func_export)
 
     presence.unregister()
     addon_updater_ops.unregister()

@@ -1127,6 +1127,9 @@ class FirstLaunch(bpy.types.Operator):
 def menu_func_import(self, context):
     self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
 
+def menu_func_export(self, context):
+    self.layout.operator(SessionSaveBackupOperator.bl_idname, text='Multi-user session snapshot (.db)')
+
 
 classes = (
     SessionConnectOperator,

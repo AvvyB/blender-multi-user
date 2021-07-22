@@ -672,7 +672,7 @@ class SessionProps(bpy.types.PropertyGroup):
         description='Connect as admin',
         default=False
     )
-    internet_ip: bpy.props.StringProperty(
+    internet_ip: bpy.props.StringProperty( # TODO: to remove
         name="internet ip",
         default="no found",
         description='Internet interface ip',

@@ -137,47 +137,59 @@ class SESSION_PT_settings(bpy.types.Panel):
                     # SERVER LIST
                     row = layout.row()
                     box = row.box()
+                    box.scale_y = 0.7
                     split = box.split(factor=0.7)
                     split.label(text="Server")
                     split.label(text="Online")
 
-                    row = layout.row()
-                    layout.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
-
-                    row = layout.row() # TODO : active server in template
-                    row.operator("session.preset_server_add", text="Add") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
-                    col = row.column()
-                    col.enabled = is_server_selected
-                    col.operator("session.preset_server_edit", text="Edit").target_server_name = active_server_name
-                    col = row.column()
-                    col.enabled = is_server_selected
-                    col.operator("session.preset_server_remove", text="Remove").target_server_name = active_server_name
+                    col = row.column(align=True)
+                    col.operator("session.preset_server_add", icon="FILE_REFRESH", text="") # TODO : Replace add by refresh operator
 
                     row = layout.row()
-                    row.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
-                    col = row.column()
-                    col.enabled =is_server_selected
-                    col.operator("session.connect", text="Connect")
+                    col = row.column(align=True)
+                    col.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
+                    col.separator()
+                    connectOp = col.row()
+                    connectOp.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
+                    connectopcol = connectOp.column()
+                    connectopcol.enabled =is_server_selected
+                    connectopcol.operator("session.connect", text="Connect")
+
+                    col = row.column(align=True)
+                    col.operator("session.preset_server_add", icon="ADD", text="") # TODO : Replace add by refresh operator
+                    row_visible = col.row(align=True)
+                    col_visible = row_visible.column(align=True)
+                    col_visible.enabled = is_server_selected
+                    col_visible.operator("session.preset_server_remove", icon="REMOVE", text="").target_server_name = active_server_name
+                    col_visible.separator()
+                    col_visible.operator("session.preset_server_edit", icon="GREASEPENCIL", text="").target_server_name = active_server_name
+                    
+                    # row = layout.row() # TODO : active server in template
+                    # row.operator("session.preset_server_add", text="Add") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
+                    # col = row.column()
+                    # col.enabled = is_server_selected
+                    # col.operator("session.preset_server_edit", text="Edit").target_server_name = active_server_name
+                    # col = row.column()
+                    # col.enabled = is_server_selected
+                    # col.operator("session.preset_server_remove", text="Remove").target_server_name = active_server_name
+
+                    # row = layout.row()
+                    # row.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
+                    # col = row.column()
+                    # col.enabled =is_server_selected
+                    # col.operator("session.connect", text="Connect")
 
                 else:
-                    progress = session.state_progress           
-                    row = layout.row()
+                    exitbutton = layout.row()
+                    exitbutton.scale_y = 1.5
+                    exitbutton.operator("session.stop", icon='QUIT', text="Disconnect")
 
+                    progress = session.state_progress
                     current_state = session.state
                     info_msg = None
-
-                    # STATE IN SESSION
-                    if current_state in [STATE_ACTIVE]:
-                        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-                        row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
-                        row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
-                        row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
-
-                    row= layout.row()
-
-                    if current_state in [STATE_ACTIVE] and runtime_settings.is_host:
-                        info_msg = f"LAN: {runtime_settings.internet_ip}" 
+                    
                     if current_state == STATE_LOBBY:
+                        row= layout.row()
                         info_msg = "Waiting for the session to start."
 
                     if info_msg:
@@ -186,14 +198,17 @@ class SESSION_PT_settings(bpy.types.Panel):
 
                     # PROGRESS BAR
                     if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
+                        row= layout.row()
+                        row.label(text=f"Status: {get_state_str(current_state)}")
+                        row= layout.row()
                         info_box = row.box()
-                        info_box.row().label(text=printProgressBar(
+                        info_box.label(text=printProgressBar(
                             progress['current'],
                             progress['total'],
                             length=16
                         ))
 
-                    layout.row().operator("session.stop", icon='QUIT', text="Exit")
+                    
 
 class SESSION_PT_advanced_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
@@ -491,12 +506,40 @@ def draw_property(context, parent, property_uuid, level=0):
     else:
         detail_item_box.label(text="", icon="DECORATE_LOCKED")
 
+class SESSION_PT_sync(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SYNC_PT_panel"
+    bl_label = "Synchronize"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return session \
+            and session.state in [STATE_ACTIVE]
+
+    def draw_header(self, context):
+        self.layout.label(text="", icon='UV_SYNC_SELECT')
+
+    def draw(self, context):
+        layout = self.layout
+        settings = get_preferences()
+
+        row= layout.row()
+        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
+        row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
+        row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
+        row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
+
+
 class SESSION_PT_repository(bpy.types.Panel):
     bl_idname = "MULTIUSER_PROPERTIES_PT_panel"
     bl_label = "Repository"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
@@ -525,19 +568,18 @@ class SESSION_PT_repository(bpy.types.Panel):
 
         usr = session.online_users.get(settings.username)
 
-        row = layout.row()
-
         if session.state == STATE_ACTIVE:
             if 'SessionBackupTimer' in registry:
+                row = layout.row()
                 row.alert = True
                 row.operator('session.cancel_autosave', icon="CANCEL")
                 row.alert = False
-            else:
-                row.operator('session.save', icon="FILE_TICK")
+            # else:
+            #     row.operator('session.save', icon="FILE_TICK")
 
             box = layout.box()
             row = box.row()
-            row.prop(runtime_settings, "filter_owned", text="Show only owned Nodes", icon_only=True, icon="DECORATE_UNLOCKED")
+            row.prop(runtime_settings, "filter_owned", text="Show only owned data blocks", icon_only=True, icon="DECORATE_UNLOCKED")
             row = box.row()
             row.prop(runtime_settings, "filter_name", text="Filter")
             row = box.row()
@@ -637,6 +679,7 @@ classes = (
     SESSION_PT_settings,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
+    SESSION_PT_sync,
     SESSION_PT_repository,
     VIEW3D_PT_overlay_session,
 )
