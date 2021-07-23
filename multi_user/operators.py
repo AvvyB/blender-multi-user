@@ -1084,12 +1084,10 @@ class RefreshServerStatus(bpy.types.Operator):
         settings = utils.get_preferences()
 
         for server in settings.server_preset:
-            infos = porcelain.request_session_info(f"{server.ip}:{server.port}", timeout=1000)
+            infos = porcelain.request_session_info(f"{server.ip}:{server.port}", timeout=500) # TODO: timeout in a settings
             server.is_online = True if infos else False
             if server.is_online:
                 server.is_private = infos.get("private")
-
-            logging.info(f"{server.server_name} status: {infos}")
 
         return {'FINISHED'}
 
@@ -1123,8 +1121,7 @@ class FirstLaunch(bpy.types.Operator):
         assert(context)
         settings = utils.get_preferences()
         settings.is_first_launch = False
-        for i in range(len(settings.server_preset)): # TODO: Try to empty the server list preset in a cleaner way
-            settings.server_preset.remove(i)
+        settings.server_preset.clear()
         prefs = bpy.context.preferences.addons[__package__].preferences
         prefs.generate_default_presets()
         return {'FINISHED'}

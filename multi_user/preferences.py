@@ -113,7 +113,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 
 class ServerPreset(bpy.types.PropertyGroup):
     server_name: bpy.props.StringProperty(default="")
-    ip: bpy.props.StringProperty(default="127.0.0.1")
+    ip: bpy.props.StringProperty(default="127.0.0.1", update=update_ip)
     port: bpy.props.IntProperty(default=5555)
     use_server_password: bpy.props.BoolProperty(default=False)
     server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
@@ -191,12 +191,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server_index",
         description="index of the server",
     )
+    # User host session settings
     host_port: bpy.props.IntProperty(
         name="host_port",
         description='Distant host port',
         default=5555
     )
-    # User host session settings
     host_use_server_password: bpy.props.BoolProperty(
         name="use_server_password",
         description='Use session password',
@@ -210,16 +210,17 @@ class SessionPrefs(bpy.types.AddonPreferences):
     host_use_admin_password: bpy.props.BoolProperty(
         name="use_admin_password",
         description='Use admin password',
-        default=False
+        default=True
     )
     host_admin_password: bpy.props.StringProperty(
         name="admin_password",
         description='Admin password',
-        subtype='PASSWORD'
+        subtype='PASSWORD',
+        default='admin'
     )
     # Other
     is_first_launch: bpy.props.BoolProperty(
-        name="is_first_launch",
+        name="is_fnirst_launch",
         description="First time lauching the addon",
         default=True
     )
