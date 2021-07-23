@@ -34,18 +34,20 @@ from replication.interface import session
 IP_REGEX = re.compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
+#SERVER PRESETS AT LAUNCH
 DEFAULT_PRESETS = {
     "localhost" : {
         "server_name": "localhost",
-        "server_ip": "localhost",
-        "server_port": 5555,
+        "ip": "localhost",
+        "port": 5555,
+        "use_admin_password": True,
         "admin_password": "admin",
         "server_password": ""
     },
     "public session" : {
         "server_name": "public session",
-        "server_ip": "51.75.71.183",
-        "server_port": 5555,
+        "ip": "51.75.71.183",
+        "port": 5555,
         "admin_password": "",
         "server_password": ""
     },
@@ -83,12 +85,6 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
-def update_server_preset_interface(self, context):
-    self.server_name = self.server_preset.get(self.server_preset_interface).name
-    self.ip = self.server_preset.get(self.server_preset_interface).server_ip
-    self.port = self.server_preset.get(self.server_preset_interface).server_port
-    self.server_password = self.server_preset.get(self.server_preset_interface).server_server_password
-    self.admin_password = self.server_preset.get(self.server_preset_interface).server_admin_password
 
 def update_directory(self, context):
     new_dir = Path(self.cache_directory)
@@ -117,12 +113,14 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
 
 class ServerPreset(bpy.types.PropertyGroup):
     server_name: bpy.props.StringProperty(default="")
-    server_ip: bpy.props.StringProperty(default="127.0.0.1")
-    server_port: bpy.props.IntProperty(default=5555)
+    ip: bpy.props.StringProperty(default="127.0.0.1")
+    port: bpy.props.IntProperty(default=5555)
     use_server_password: bpy.props.BoolProperty(default=False)
-    server_server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
     use_admin_password: bpy.props.BoolProperty(default=False)
-    server_admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    is_online: bpy.props.BoolProperty(default=False)
+    is_private: bpy.props.BoolProperty(default=False)
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -172,11 +170,7 @@ class ReplicationFlags(bpy.types.PropertyGroup):
 class SessionPrefs(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    ip: bpy.props.StringProperty(
-        name="ip",
-        description='Distant host ip',
-        default="localhost",
-        update=update_ip)
+    # User settings
     username: bpy.props.StringProperty(
         name="Username",
         default=f"user_{random_string_digits()}"
@@ -185,12 +179,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="client_instance_color",
         description='User color',
         subtype='COLOR',
-        default=randomColor())
-    port: bpy.props.IntProperty(
-        name="port",
-        description='Distant host port',
-        default=5555
+        default=randomColor()
     )
+    # Current server settings
     server_name: bpy.props.StringProperty(
         name="server_name",
         description="Custom name of the server",
@@ -200,26 +191,33 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server_index",
         description="index of the server",
     )
-    use_server_password: bpy.props.BoolProperty(
+    host_port: bpy.props.IntProperty(
+        name="host_port",
+        description='Distant host port',
+        default=5555
+    )
+    # User host session settings
+    host_use_server_password: bpy.props.BoolProperty(
         name="use_server_password",
         description='Use session password',
         default=False
     )
-    server_password: bpy.props.StringProperty(
+    host_server_password: bpy.props.StringProperty(
         name="server_password",
         description='Session password',
         subtype='PASSWORD'
     )
-    use_admin_password: bpy.props.BoolProperty(
+    host_use_admin_password: bpy.props.BoolProperty(
         name="use_admin_password",
         description='Use admin password',
         default=False
     )
-    admin_password: bpy.props.StringProperty(
+    host_admin_password: bpy.props.StringProperty(
         name="admin_password",
         description='Admin password',
         subtype='PASSWORD'
     )
+    # Other
     is_first_launch: bpy.props.BoolProperty(
         name="is_first_launch",
         description="First time lauching the addon",
@@ -259,7 +257,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Remove filecache from memory",
         default=False
     )
-    # for UI
+    # For UI
     category: bpy.props.EnumProperty(
         name="Category",
         description="Preferences Category",
@@ -431,12 +429,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server preset",
         type=ServerPreset,
     )
-    server_preset_interface: bpy.props.EnumProperty(
-        name="servers",
-        description="servers enum",
-        items=server_list_callback,
-        update=update_server_preset_interface,
-    )
 
     # Custom panel
     panel_category: bpy.props.StringProperty(
@@ -476,20 +468,22 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 emboss=False)
             if self.conf_session_hosting_expanded:
                 row = box.row()
+                row.prop(self, "host_port", text="Port: ")
+                row = box.row()
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
                 row = box.row()
                 col = row.column()
-                col.prop(self, "use_server_password", text="Server password:")
+                col.prop(self, "host_use_server_password", text="Server password:")
                 col = row.column()
-                col.enabled = True if self.use_server_password else False
-                col.prop(self, "server_password", text="")
+                col.enabled = True if self.host_use_server_password else False
+                col.prop(self, "host_server_password", text="")
                 row = box.row()
                 col = row.column()
-                col.prop(self, "use_admin_password", text="Admin password:")
+                col.prop(self, "host_use_admin_password", text="Admin password:")
                 col = row.column()
-                col.enabled = True if self.use_admin_password else False
-                col.prop(self, "admin_password", text="")
+                col.enabled = True if self.host_use_admin_password else False
+                col.prop(self, "host_admin_password", text="")
 
             # NETWORKING
             box = grid.box()
@@ -563,6 +557,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.icon = impl.bl_icon
             new_db.bl_name = impl.bl_id
 
+    # Get a server preset through its name
     def get_server_preset(self, name):
         existing_preset = None
 
@@ -572,7 +567,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
 
         return existing_preset
 
-    # custom at launch server preset
+    # Custom at launch server preset
     def generate_default_presets(self): 
         for preset_name, preset_data in DEFAULT_PRESETS.items():
             existing_preset = self.get_server_preset(preset_name)
@@ -581,10 +576,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_server = self.server_preset.add()
             new_server.name = str(uuid4())
             new_server.server_name = preset_data.get('server_name')
-            new_server.server_index = preset_data.get('server_index')
-            new_server.server_ip = preset_data.get('server_ip')
-            new_server.server_port = preset_data.get('server_port')
+            new_server.ip = preset_data.get('ip')
+            new_server.port = preset_data.get('port')
+            new_server.use_server_password = preset_data.get('use_server_password',False)
             new_server.server_password = preset_data.get('server_password',None)
+            new_server.use_admin_password = preset_data.get('use_admin_password',False)
+            new_server.admin_password = preset_data.get('admin_password',None)
 
 
 def client_list_callback(scene, context):

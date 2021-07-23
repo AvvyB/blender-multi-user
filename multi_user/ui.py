@@ -150,34 +150,19 @@ class SESSION_PT_settings(bpy.types.Panel):
                     col.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
                     col.separator()
                     connectOp = col.row()
-                    connectOp.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
+                    connectOp.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ? add port
                     connectopcol = connectOp.column()
                     connectopcol.enabled =is_server_selected
                     connectopcol.operator("session.connect", text="Connect")
 
                     col = row.column(align=True)
-                    col.operator("session.preset_server_add", icon="ADD", text="")
+                    col.operator("session.preset_server_add", icon="ADD", text="") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
                     row_visible = col.row(align=True)
                     col_visible = row_visible.column(align=True)
                     col_visible.enabled = is_server_selected
                     col_visible.operator("session.preset_server_remove", icon="REMOVE", text="").target_server_name = active_server_name
                     col_visible.separator()
                     col_visible.operator("session.preset_server_edit", icon="GREASEPENCIL", text="").target_server_name = active_server_name
-                    
-                    # row = layout.row() # TODO : active server in template
-                    # row.operator("session.preset_server_add", text="Add") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
-                    # col = row.column()
-                    # col.enabled = is_server_selected
-                    # col.operator("session.preset_server_edit", text="Edit").target_server_name = active_server_name
-                    # col = row.column()
-                    # col.enabled = is_server_selected
-                    # col.operator("session.preset_server_remove", text="Remove").target_server_name = active_server_name
-
-                    # row = layout.row()
-                    # row.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ?
-                    # col = row.column()
-                    # col.enabled =is_server_selected
-                    # col.operator("session.connect", text="Connect")
 
                 else:
                     exitbutton = layout.row()
@@ -208,7 +193,6 @@ class SESSION_PT_settings(bpy.types.Panel):
                             length=16
                         ))
 
-                    
 
 class SESSION_PT_advanced_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
@@ -241,20 +225,22 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             emboss=False)
         if settings.sidebar_advanced_hosting_expanded:
             host_selection_row = host_selection.row()
+            host_selection_row.prop(settings, "host_port", text="Port:")
+            host_selection_row = host_selection.row()
             host_selection_row.label(text="Init the session from:")
             host_selection_row.prop(settings, "init_method", text="")
             host_selection_row = host_selection.row()
             host_selection_col = host_selection_row.column()
-            host_selection_col.prop(settings, "use_server_password", text="Server password:")
+            host_selection_col.prop(settings, "host_use_server_password", text="Server password:")
             host_selection_col = host_selection_row.column()
-            host_selection_col.enabled = True if settings.use_server_password else False
-            host_selection_col.prop(settings, "server_password", text="")
+            host_selection_col.enabled = True if settings.host_use_server_password else False
+            host_selection_col.prop(settings, "host_server_password", text="")
             host_selection_row = host_selection.row()
             host_selection_col = host_selection_row.column()
-            host_selection_col.prop(settings, "use_admin_password", text="Admin password:")
+            host_selection_col.prop(settings, "host_use_admin_password", text="Admin password:")
             host_selection_col = host_selection_row.column()
-            host_selection_col.enabled = True if settings.use_admin_password else False
-            host_selection_col.prop(settings, "admin_password", text="")
+            host_selection_col.enabled = True if settings.host_use_admin_password else False
+            host_selection_col.prop(settings, "host_admin_password", text="")
 
         #ADVANCED NET
         net_section = layout.row().box()
@@ -466,15 +452,18 @@ def draw_property(context, parent, property_uuid, level=0):
     detail_item_box.label(text=f"{name}")
 
     # Operations
-
     have_right_to_modify = (item.owner == settings.username or \
         item.owner == RP_COMMON) and item.state != ERROR
+
+    from multi_user import icons
+    sync_status = icons.icons_col["repository_push"] #TODO: Link all icons to the right sync (push/merge/issue). For issue use "UNLINKED" for icon
+    # sync_status = icons.icons_col["repository_merge"]
 
     if have_right_to_modify:
         detail_item_box.operator(
             "session.commit",
             text="",
-            icon='TRIA_UP').target = item.uuid
+            icon_value=sync_status.icon_id).target = item.uuid
         detail_item_box.separator()
 
     if item.state in [FETCHED, UP]:
@@ -579,7 +568,7 @@ class SESSION_PT_repository(bpy.types.Panel):
 
             box = layout.box()
             row = box.row()
-            row.prop(runtime_settings, "filter_owned", text="Show only owned data blocks", icon_only=True, icon="DECORATE_UNLOCKED")
+            row.prop(runtime_settings, "filter_owned", text="Only show owned data blocks", icon_only=True, icon="DECORATE_UNLOCKED")
             row = box.row()
             row.prop(runtime_settings, "filter_name", text="Filter")
             row = box.row()
@@ -600,8 +589,10 @@ class SESSION_PT_repository(bpy.types.Panel):
                 layout.row().label(text="Empty")
 
         elif session.state == STATE_LOBBY and usr and usr['admin']:
+            row = layout.row()
             row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
         else:
+            row = layout.row()
             row.label(text="Waiting to start")
 
 class VIEW3D_PT_overlay_session(bpy.types.Panel):
@@ -658,21 +649,16 @@ class SESSION_UL_network(bpy.types.UIList):
         server_name = item.server_name
 
         split = layout.split(factor=0.7)
-        # Session with/without password
-        # TODO : ping lock server
-        if settings.server_password != None:
+        if item.is_private:
             server_private = 'LOCKED'
             split.label(text=server_name, icon=server_private)
         else:
             split.label(text=server_name)
 
-        # Session status
-        # TODO : if session online : vert else rouge
-        # TODO : ping
-        
-
         from multi_user import icons
         server_status = icons.icons_col["server_offline"]
+        if item.is_online:
+            server_status = icons.icons_col["server_online"]
         split.label(icon_value=server_status.icon_id)
 
 classes = (
