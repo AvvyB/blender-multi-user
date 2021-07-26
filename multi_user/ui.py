@@ -131,7 +131,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     server_preset = settings.server_preset
                     selected_server = context.window_manager.server_index if context.window_manager.server_index<=len(server_preset)-1 else 0
                     active_server_name = server_preset[selected_server].name if len(server_preset)>=1 else ""
-                    is_server_selected = True if active_server_name else False # TODO : issues when removing the lowest server in the list
+                    is_server_selected = True if active_server_name else False
 
                     # SERVER LIST
                     row = layout.row()
@@ -142,20 +142,20 @@ class SESSION_PT_settings(bpy.types.Panel):
                     split.label(text="Online")
 
                     col = row.column(align=True)
-                    col.operator("session.get_info", icon="FILE_REFRESH", text="") # TODO : Replace add by refresh operator
+                    col.operator("session.get_info", icon="FILE_REFRESH", text="")
 
                     row = layout.row()
                     col = row.column(align=True)
                     col.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
                     col.separator()
                     connectOp = col.row()
-                    connectOp.operator("session.host", text="Host") # TODO : add a pop-up for admin and server password ? add port
+                    connectOp.operator("session.host", text="Host")
                     connectopcol = connectOp.column()
                     connectopcol.enabled =is_server_selected
                     connectopcol.operator("session.connect", text="Connect")
 
                     col = row.column(align=True)
-                    col.operator("session.preset_server_add", icon="ADD", text="") # TODO : add conditions (need a name, etc..) + add a checkbox for password without creating preferences
+                    col.operator("session.preset_server_add", icon="ADD", text="") # TODO : add conditions (need a name, etc..)
                     row_visible = col.row(align=True)
                     col_visible = row_visible.column(align=True)
                     col_visible.enabled = is_server_selected
@@ -253,6 +253,9 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             net_section_row = net_section.row()
             net_section_row.label(text="Timeout (ms):")
             net_section_row.prop(settings, "connection_timeout", text="")
+            net_section_row = net_section.row()
+            net_section_row.label(text="Server ping (ms):")
+            net_section_row.prop(settings, "ping_timeout", text="")
 
         #ADVANCED REPLICATION
         replication_section = layout.row().box()

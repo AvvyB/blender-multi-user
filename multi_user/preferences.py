@@ -247,6 +247,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description='connection timeout before disconnection',
         default=5000
     )
+    ping_timeout: bpy.props.IntProperty(
+        name='ping timeout',
+        description='check if servers are online',
+        default=500
+    )
     # Replication update settings
     depsgraph_update_rate: bpy.props.FloatProperty(
         name='depsgraph update rate (s)',
@@ -496,6 +501,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.label(text="Timeout (ms):")
                 row.prop(self, "connection_timeout", text="")
+                row = box.row()
+                row.label(text="Server ping (ms):")
+                row.prop(self, "ping_timeout", text="")
 
             # REPLICATION
             box = grid.box()

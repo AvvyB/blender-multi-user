@@ -1059,7 +1059,7 @@ class RefreshServerStatus(bpy.types.Operator):
         settings = utils.get_preferences()
 
         for server in settings.server_preset:
-            infos = porcelain.request_session_info(f"{server.ip}:{server.port}", timeout=500) # TODO: timeout in a settings
+            infos = porcelain.request_session_info(f"{server.ip}:{server.port}", timeout=settings.ping_timeout)
             server.is_online = True if infos else False
             if server.is_online:
                 server.is_private = infos.get("private")
