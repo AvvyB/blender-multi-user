@@ -83,7 +83,6 @@ def session_callback(name):
 def initialize_session():
     """Session connection init hander 
     """
-    settings = utils.get_preferences()
     runtime_settings = bpy.context.window_manager.session
 
     if not runtime_settings.is_host:
@@ -145,6 +144,64 @@ def on_connection_end(reason="none"):
     if reason != "user":
         bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ") #TODO: change op session.notify to add ui + change reason (in replication->interface)
 
+def setup_logging():
+    """ Session setup logging (host/connect)
+    """
+    settings = utils.get_preferences()
+    logger = logging.getLogger()
+    if len(logger.handlers) == 1:
+        formatter = logging.Formatter(
+            fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
+            datefmt='%H:%M:%S'
+        )
+
+        start_time = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+        log_directory = os.path.join(
+            settings.cache_directory,
+            f"multiuser_{start_time}.log")
+
+        os.makedirs(settings.cache_directory, exist_ok=True)
+
+        handler = logging.FileHandler(log_directory, mode='w')
+        logger.addHandler(handler)
+
+        for handler in logger.handlers:
+            if isinstance(handler, logging.NullHandler):
+                continue
+
+            handler.setFormatter(formatter)
+
+def setup_timer():
+    """ Session setup timer (host/connect)
+    """
+    settings = utils.get_preferences()
+    deleyables.append(timers.ClientUpdate())
+    deleyables.append(timers.DynamicRightSelectTimer())
+    deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
+
+    session_update = timers.SessionStatusUpdate()
+    session_user_sync = timers.SessionUserSync()
+    session_background_executor = timers.MainThreadExecutor(execution_queue=background_execution_queue)
+    session_listen = timers.SessionListenTimer(timeout=0.001)
+
+    session_listen.register()
+    session_update.register()
+    session_user_sync.register()
+    session_background_executor.register()
+
+    deleyables.append(session_background_executor)
+    deleyables.append(session_update)
+    deleyables.append(session_user_sync)
+    deleyables.append(session_listen)
+    deleyables.append(timers.AnnotationUpdates())
+
+def get_active_server_preset(context):
+    active_index = context.window_manager.server_index
+    server_presets = utils.get_preferences().server_preset
+
+    active_index = active_index if active_index <= len(server_presets)-1 else 0
+
+    return server_presets[active_index]
 
 # OPERATORS
 class SessionConnectOperator(bpy.types.Operator):
@@ -161,36 +218,14 @@ class SessionConnectOperator(bpy.types.Operator):
 
         settings = utils.get_preferences()
         users = bpy.data.window_managers['WinMan'].online_users
-        active_server_index = context.window_manager.server_index if context.window_manager.server_index<=len(settings.server_preset)-1 else 0
-        active_server = settings.server_preset[active_server_index]
+        active_server = get_active_server_preset()
         admin_pass = active_server.admin_password if active_server.use_admin_password else None
         server_pass = active_server.server_password if active_server.use_server_password else None
 
         users.clear()
         deleyables.clear()
 
-        logger = logging.getLogger()
-        if len(logger.handlers) == 1:
-            formatter = logging.Formatter(
-                fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
-                datefmt='%H:%M:%S'
-            )
-
-            start_time = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
-            log_directory = os.path.join(
-                settings.cache_directory,
-                f"multiuser_{start_time}.log")
-
-            os.makedirs(settings.cache_directory, exist_ok=True)
-
-            handler = logging.FileHandler(log_directory, mode='w')
-            logger.addHandler(handler)
-
-            for handler in logger.handlers:
-                if isinstance(handler, logging.NullHandler):
-                    continue
-
-                handler.setFormatter(formatter)
+        setup_logging()
 
         bpy_protocol = bl_types.get_data_translation_protocol()
 
@@ -235,25 +270,7 @@ class SessionConnectOperator(bpy.types.Operator):
             logging.error(str(e))
 
         # Background client updates service
-        deleyables.append(timers.ClientUpdate())
-        deleyables.append(timers.DynamicRightSelectTimer())
-        deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
-
-        session_update = timers.SessionStatusUpdate()
-        session_user_sync = timers.SessionUserSync()
-        session_background_executor = timers.MainThreadExecutor(execution_queue=background_execution_queue)
-        session_listen = timers.SessionListenTimer(timeout=0.001)
-
-        session_listen.register()
-        session_update.register()
-        session_user_sync.register()
-        session_background_executor.register()
-
-        deleyables.append(session_background_executor)
-        deleyables.append(session_update)
-        deleyables.append(session_user_sync)
-        deleyables.append(session_listen)
-        deleyables.append(timers.AnnotationUpdates())
+        setup_timer()
 
         return {"FINISHED"}
 
@@ -279,28 +296,7 @@ class SessionHostOperator(bpy.types.Operator):
         users.clear()
         deleyables.clear()
 
-        logger = logging.getLogger()
-        if len(logger.handlers) == 1:
-            formatter = logging.Formatter(
-                fmt='%(asctime)s CLIENT %(levelname)-8s %(message)s',
-                datefmt='%H:%M:%S'
-            )
-
-            start_time = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
-            log_directory = os.path.join(
-                settings.cache_directory,
-                f"multiuser_{start_time}.log")
-
-            os.makedirs(settings.cache_directory, exist_ok=True)
-
-            handler = logging.FileHandler(log_directory, mode='w')
-            logger.addHandler(handler)
-
-            for handler in logger.handlers:
-                if isinstance(handler, logging.NullHandler):
-                    continue
-
-                handler.setFormatter(formatter)
+        setup_logging()
 
         bpy_protocol = bl_types.get_data_translation_protocol()
 
@@ -325,9 +321,6 @@ class SessionHostOperator(bpy.types.Operator):
         # Host a session
         if settings.init_method == 'EMPTY':
             utils.clean_scene()
-
-        runtime_settings.is_host = True
-        runtime_settings.internet_ip = environment.get_ip()
 
         try:
             # Init repository
@@ -357,25 +350,7 @@ class SessionHostOperator(bpy.types.Operator):
             traceback.print_exc()
 
         # Background client updates service
-        deleyables.append(timers.ClientUpdate())
-        deleyables.append(timers.DynamicRightSelectTimer())
-        deleyables.append(timers.ApplyTimer(timeout=settings.depsgraph_update_rate))
-
-        session_update = timers.SessionStatusUpdate()
-        session_user_sync = timers.SessionUserSync()
-        session_background_executor = timers.MainThreadExecutor(execution_queue=background_execution_queue)
-        session_listen = timers.SessionListenTimer(timeout=0.001)
-
-        session_listen.register()
-        session_update.register()
-        session_user_sync.register()
-        session_background_executor.register()
-
-        deleyables.append(session_background_executor)
-        deleyables.append(session_update)
-        deleyables.append(session_user_sync)
-        deleyables.append(session_listen)
-        deleyables.append(timers.AnnotationUpdates())
+        setup_timer()
 
         return {"FINISHED"}
 
@@ -989,7 +964,7 @@ class SessionPresetServerAdd(bpy.types.Operator):
         refresh_sidebar_view()
 
         if new_server == existing_preset :
-            self.report({'INFO'}, "Server '" + self.server_name + "' override")
+            self.report({'INFO'}, "Server '" + self.server_name + "' edited")
         else :
             self.report({'INFO'}, "New '" + self.server_name + "' server preset")
 
@@ -1044,7 +1019,7 @@ class SessionPresetServerEdit(bpy.types.Operator): # TODO : use preset, not sett
 
         refresh_sidebar_view()
 
-        self.report({'INFO'}, "Server '" + settings_active_server.server_name + "' override")
+        self.report({'INFO'}, "Server '" + settings_active_server.server_name + "' edited")
 
         return {'FINISHED'}
 
@@ -1103,7 +1078,7 @@ class GetDoc(bpy.types.Operator):
 
     def execute(self, context):
         assert(context)
-        bpy.ops.wm.url_open(url="https://multi-user.readthedocs.io/en/develop/index.html")
+        bpy.ops.wm.url_open(url="https://slumber.gitlab.io/multi-user/index.html")
 
         return {'FINISHED'}
 

@@ -17,7 +17,6 @@
 
 
 from logging import log
-import logging
 import bpy
 import bpy.utils.previews
 
@@ -671,8 +670,6 @@ classes = (
     SESSION_PT_repository,
     VIEW3D_PT_overlay_session,
 )
-
-preview_collections = {}
 
 register, unregister = bpy.utils.register_classes_factory(classes)
 
