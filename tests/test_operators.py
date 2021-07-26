@@ -8,7 +8,7 @@ import random
 
 
 def test_start_session():
-    result = bpy.ops.session.start()
+    result = bpy.ops.session.host()
 
 
     assert 'FINISHED' in result
