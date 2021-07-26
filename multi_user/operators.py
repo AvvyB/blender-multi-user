@@ -754,7 +754,6 @@ class SessionPurgeOperator(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            sanitize_deps_graph(remove_nodes=True)
             porcelain.purge_orphan_nodes(session.repository)
         except Exception as e:
             self.report({'ERROR'}, repr(e))

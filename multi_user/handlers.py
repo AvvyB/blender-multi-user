@@ -79,8 +79,6 @@ def on_scene_update(scene):
             logging.debug(f"Ignoring distant update of {dependency_updates[0].id.name}")
             return
 
-        update_external_dependencies()
-
         # NOTE: maybe we don't need to check each update but only the first
         for update in reversed(dependency_updates):
             update_uuid = getattr(update.id, 'uuid', None)
@@ -109,6 +107,11 @@ def on_scene_update(scene):
                 porcelain.commit(session.repository, scn_uuid)
                 porcelain.push(session.repository, 'origin', scn_uuid)
 
+        scene_graph_changed = [u for u in reversed(dependency_updates) if getattr(u.id, 'uuid', None) and isinstance(u.id,(bpy.types.Scene,bpy.types.Collection))] 
+        if scene_graph_changed:
+            porcelain.purge_orphan_nodes(session.repository)
+
+        update_external_dependencies()
 
 @persistent
 def resolve_deps_graph(dummy):
