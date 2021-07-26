@@ -1,6 +1,6 @@
 build:
   stage: build
-  needs: ["test"]
+  # needs: ["test"]
   image: debian:stable-slim
   script:
     - rm -rf tests .git .gitignore script
