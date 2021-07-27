@@ -218,7 +218,7 @@ class SessionConnectOperator(bpy.types.Operator):
 
         settings = utils.get_preferences()
         users = bpy.data.window_managers['WinMan'].online_users
-        active_server = get_active_server_preset()
+        active_server = get_active_server_preset(context)
         admin_pass = active_server.admin_password if active_server.use_admin_password else None
         server_pass = active_server.server_password if active_server.use_server_password else None
 
