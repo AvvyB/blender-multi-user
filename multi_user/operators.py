@@ -220,7 +220,7 @@ class SessionConnectOperator(bpy.types.Operator):
         users = bpy.data.window_managers['WinMan'].online_users
         active_server = get_active_server_preset(context)
         admin_pass = active_server.admin_password if active_server.use_admin_password else None
-        server_pass = active_server.server_password if active_server.use_server_password else None
+        server_pass = active_server.server_password if active_server.use_server_password else ''
 
         users.clear()
         deleyables.clear()
@@ -291,7 +291,7 @@ class SessionHostOperator(bpy.types.Operator):
         runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = settings.host_admin_password if settings.host_use_admin_password else None
-        server_pass = settings.host_server_password if settings.host_use_server_password else None
+        server_pass = settings.host_server_password if settings.host_use_server_password else ''
 
         users.clear()
         deleyables.clear()
