@@ -212,14 +212,14 @@ You can run the dedicated server on any platform by following these steps:
 
     .. code-block:: bash
 
-        replication.server
+        replication.serve
 
 .. hint::
     You can also specify a custom **port** (-p), **timeout** (-t), **admin password** (-pwd), **log level (ERROR, WARNING, INFO or DEBUG)** (-l) and **log file** (-lf) with the following optional arguments
 
     .. code-block:: bash
 
-        replication.server -p 5555 -pwd admin -t 5000 -l INFO -lf server.log
+        replication.serve -p 5555 -pwd admin -t 5000 -l INFO -lf server.log
 
 Here, for example, a server is instantiated on port 5555, with password 'admin', a 5 second timeout, and logging enabled.
 
@@ -562,7 +562,7 @@ The default Docker image essentially runs the equivalent of:
 
     .. code-block:: bash
 
-        replication.server -pwd admin -p 5555 -t 5000 -l DEBUG -lf multiuser_server.log
+        replication.serve -pwd admin -p 5555 -t 5000 -l DEBUG -lf multiuser_server.log
 
 This means the server will be launched with 'admin' as the administrator password, run on ports 5555:5558, use a timeout of 5 seconds, verbose 'DEBUG' log level, and with log files written to 'multiuser_server.log'. See :ref:`cmd-line` for a description of optional parameters.
 
@@ -572,7 +572,7 @@ For example, I would like to launch my server with a different administrator pas
 
     .. code-block:: bash
         
-        python3 -m replication.server -pwd supersecretpassword -p 5555 -t 3000 -l DEBUG -lf logname.log
+        replication.serve -pwd supersecretpassword -p 5555 -t 3000 -l DEBUG -lf logname.log
 
 Now, my configuration should look like this:
 
@@ -691,7 +691,7 @@ We're finally ready to launch the server. Simply run:
 
     .. code-block:: bash
         
-        python3 -m replication.server -p 5555 -pwd admin -t 5000 -l INFO -lf server.log
+        replication.serve -p 5555 -pwd admin -t 5000 -l INFO -lf server.log
 
 See :ref:`cmd-line` for a description of optional parameters
 
