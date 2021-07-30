@@ -1,7 +1,7 @@
 # Download base image debian jessie
 FROM python:slim
 
-ARG replication_version=0.1.13
+ARG replication_version=0.9.1
 ARG version=0.1.1
 
 # Infos
@@ -11,8 +11,7 @@ LABEL description="Blender multi-user addon  \
     dedicated server image."
 
 # Argument
-ENV admin_password='admin'
-ENV server_password=''
+ENV password='admin'
 ENV port=5555
 ENV timeout=5000
 ENV log_level=DEBUG
@@ -23,4 +22,4 @@ RUN pip install replication==$replication_version
 
 # Run the server with parameters
 ENTRYPOINT ["/bin/sh", "-c"]
-CMD  ["python3 -m replication.server -apwd ${admin_password} -spwd ${server_password}} -p ${port} -t ${timeout} -l ${log_level} -lf ${log_file}"]
+CMD  ["python3 -m replication.server -apwd ${password} -p ${port} -t ${timeout} -l ${log_level} -lf ${log_file}"]
