@@ -171,12 +171,18 @@ class SESSION_PT_settings(bpy.types.Panel):
                     info_msg = None
                     
                     if current_state == STATE_LOBBY:
+                        usr = session.online_users.get(settings.username)
                         row= layout.row()
                         info_msg = "Waiting for the session to start."
-
-                    if info_msg:
-                        info_box = row.box()
-                        info_box.row().label(text=info_msg,icon='INFO')
+                        if usr and usr['admin']:
+                            info_msg = "Init the session to start."
+                            info_box = layout.row()
+                            info_box.label(text=info_msg,icon='INFO')
+                            init_row = layout.row()
+                            init_row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
+                        else:
+                            info_box = layout.row()
+                            info_box.row().label(text=info_msg,icon='INFO')
 
                     # PROGRESS BAR
                     if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
@@ -563,8 +569,7 @@ class SESSION_PT_repository(bpy.types.Panel):
                 admin = usr['admin']
         return hasattr(context.window_manager, 'session') and \
             session and \
-            (session.state == STATE_ACTIVE or \
-            session.state == STATE_LOBBY and admin) and \
+            session.state == STATE_ACTIVE and \
             not settings.sidebar_repository_shown
 
     def draw_header(self, context):
@@ -610,12 +615,6 @@ class SESSION_PT_repository(bpy.types.Panel):
             else:
                 layout.row().label(text="Empty")
 
-        elif session.state == STATE_LOBBY and usr and usr['admin']:
-            row = layout.row()
-            row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
-        else:
-            row = layout.row()
-            row.label(text="Waiting to start")
 
 class VIEW3D_PT_overlay_session(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
