@@ -149,10 +149,8 @@ class SESSION_PT_settings(bpy.types.Panel):
                     col.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
                     col.separator()
                     connectOp = col.row()
-                    connectOp.operator("session.host", text="Host")
-                    connectopcol = connectOp.column()
-                    connectopcol.enabled =is_server_selected
-                    connectopcol.operator("session.connect", text="Connect")
+                    connectOp.enabled =is_server_selected
+                    connectOp.operator("session.connect", text="Connect")
 
                     col = row.column(align=True)
                     col.operator("session.preset_server_add", icon="ADD", text="") # TODO : add conditions (need a name, etc..)
@@ -192,10 +190,57 @@ class SESSION_PT_settings(bpy.types.Panel):
                             length=16
                         ))
 
+class SESSION_PT_host_settings(bpy.types.Panel):
+    bl_idname = "MULTIUSER_SETTINGS_HOST_PT_panel"
+    bl_label = "Hosting"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        settings = get_preferences()
+        return not session \
+            or (session and session.state == 0) \
+            and not settings.sidebar_advanced_shown \
+            and not settings.is_first_launch
+
+    def draw_header(self, context):
+        self.layout.label(text="", icon='NETWORK_DRIVE')
+        
+    def draw(self, context):
+        layout = self.layout
+        settings = get_preferences()
+
+        #HOST
+        host_selection = layout.row().box()
+        host_selection_row = host_selection.row()
+        host_selection_row.label(text="Init the session from:")
+        host_selection_row.prop(settings, "init_method", text="")
+        host_selection_row = host_selection.row()
+        host_selection_row.label(text="Port:")
+        host_selection_row.prop(settings, "host_port", text="")
+        host_selection_row = host_selection.row()
+        host_selection_col = host_selection_row.column()
+        host_selection_col.prop(settings, "host_use_server_password", text="Server password:")
+        host_selection_col = host_selection_row.column()
+        host_selection_col.enabled = True if settings.host_use_server_password else False
+        host_selection_col.prop(settings, "host_server_password", text="")
+        host_selection_row = host_selection.row()
+        host_selection_col = host_selection_row.column()
+        host_selection_col.prop(settings, "host_use_admin_password", text="Admin password:")
+        host_selection_col = host_selection_row.column()
+        host_selection_col.enabled = True if settings.host_use_admin_password else False
+        host_selection_col.prop(settings, "host_admin_password", text="")
+
+        host_selection = layout.column()
+        host_selection.operator("session.host", text="Host")
+
 
 class SESSION_PT_advanced_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_REPLICATION_PT_panel"
-    bl_label = "Advanced"
+    bl_label = "General Settings"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_parent_id = 'MULTIUSER_SETTINGS_PT_panel'
@@ -215,31 +260,6 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         settings = get_preferences()
-
-        #ADVANCED HOST
-        host_selection = layout.row().box()
-        host_selection.prop(
-            settings, "sidebar_advanced_hosting_expanded", text="Hosting",
-            icon=get_expanded_icon(settings.sidebar_advanced_hosting_expanded),
-            emboss=False)
-        if settings.sidebar_advanced_hosting_expanded:
-            host_selection_row = host_selection.row()
-            host_selection_row.prop(settings, "host_port", text="Port:")
-            host_selection_row = host_selection.row()
-            host_selection_row.label(text="Init the session from:")
-            host_selection_row.prop(settings, "init_method", text="")
-            host_selection_row = host_selection.row()
-            host_selection_col = host_selection_row.column()
-            host_selection_col.prop(settings, "host_use_server_password", text="Server password:")
-            host_selection_col = host_selection_row.column()
-            host_selection_col.enabled = True if settings.host_use_server_password else False
-            host_selection_col.prop(settings, "host_server_password", text="")
-            host_selection_row = host_selection.row()
-            host_selection_col = host_selection_row.column()
-            host_selection_col.prop(settings, "host_use_admin_password", text="Admin password:")
-            host_selection_col = host_selection_row.column()
-            host_selection_col.enabled = True if settings.host_use_admin_password else False
-            host_selection_col.prop(settings, "host_admin_password", text="")
 
         #ADVANCED NET
         net_section = layout.row().box()
@@ -667,6 +687,7 @@ classes = (
     SESSION_UL_users,
     SESSION_UL_network,
     SESSION_PT_settings,
+    SESSION_PT_host_settings,
     SESSION_PT_advanced_settings,
     SESSION_PT_user,
     SESSION_PT_sync,
