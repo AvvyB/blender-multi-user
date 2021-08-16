@@ -14,6 +14,30 @@ In this guide, you will quickly learn how to use the collaborative session manag
 - :ref:`how-to-join`
 - :ref:`how-to-manage`
 
+First launch
+============
+
+Welcome to the Multi-User manual.
+You will find here all the documentation necessary for the good use of the addon: :ref:`index-manual`
+
+First of all, let's have a quick look at the Multi-User features.
+
+Username and color
+------------------
+
+When you launch the addon for the first time you can find this panel in the Sidebar of your View3D:
+
+.. figure:: img/first_time_menu.png
+   :align: center
+
+1. Choose a **name** and a **color** that will be specific to you and that will allow others to identify you easily once in session. Don't worry, they can be changed at any time in *Edit >> Prerecences >> Add-ons >> Multi-user*.
+2. Press **Continue**
+
+Server list
+-----------
+
+
+
 .. _how-to-host:
 
 How to host a session
