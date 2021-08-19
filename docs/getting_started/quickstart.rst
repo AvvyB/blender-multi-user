@@ -30,87 +30,67 @@ When you launch the addon for the first time you can find this panel in the Side
 .. figure:: img/first_time_menu.png
    :align: center
 
-1. Choose a **name** and a **color** that will be specific to you and that will allow others to identify you easily once in session. Don't worry, they can be changed at any time in *Edit >> Prerecences >> Add-ons >> Multi-user*.
+1. Choose a **name** and a **color** that will be specific to you and that will allow others to identify you easily once in session. Don't worry, they can be changed at any time in *Edit >> Prerecences >> Add-ons >> Multi-user* or in *Multi-User Pannel >> General Settings*
 2. Press **Continue**
 
-Server list
------------
+Multi-User menu
+---------------
 
+Once the Multi-User is launched you will arrive directly on the main menu:
 
+.. figure:: img/first_time_server_list.png
+   :align: center
+
+Three panels are at your disposal:
+
+- **Server list**: You can add, delete and edit server presets according to your preferences. At first launch two servers will already be in your preferences: *Public Session*, the public server of the Multi-User Discord, *Localhost*, to connect locally to your server. See :ref:`how-to-join`
+- **Hosting**: To locally host a session with a Blender instance. See :ref:`how-to-host`
+- **Advanced Settings**: Include advanced addon settings like *user info*, *server ping*, *cache*, etc. See See :ref:`advanced-settings`
 
 .. _how-to-host:
 
 How to host a session
 =====================
 
+Local server
+------------
+
 The multi-user add-on relies on a Client-Server architecture. 
 The server is the heart of the collaborative session.
 It is what allows user's blender instances to communicate with each other.  
 In simple terms, *Hosting a session* means *run a local server and connect the local client to it*. 
-When I say **local server** I mean a server which is accessible from the LAN (Local Area Network) without requiring an internet connection. 
+When we say **local server** we mean a server which is accessible from the LAN (Local Area Network) without requiring an internet connection. 
 
 However, there are times when you will need to host a session over the internet.
-In this case, I strongly recommend that you read the :ref:`internet-guide` tutorial.
+In this case, we strongly recommend that you read the :ref:`internet-guide` tutorial.
 
-.. _user-info:
+.. _local-setup:
 
---------------------------------
-1. Fill in your user information
---------------------------------
-
-The **User Info** panel (See image below) allows you to customise your online identity.
-
-.. figure:: img/quickstart_user_info.png
-   :align: center
-
-   User info panel
-
-
-Let's fill in those two fields:
-
-- **name**: your online name.
-- **color**: a color used to represent you in other users' workspaces (see image below).
-
-
-During online sessions, other users will see your selected object and camera highlighted in your profile color.
-
-.. _user-representation:
-
-.. figure:: img/quickstart_user_representation.png
-   :align: center
-
-   User viewport representation aka 'User Presence'
-
----------------------
-2. Set up the network
+Set up a local server
 ---------------------
 
 When the hosting process starts, the multi-user addon will launch a local server instance.
-In the network panel, select **HOST**.
-The **Host sub-panel** (see image below) allows you to configure the server according to:
+In the **Hosting** panel configure your server according to:
 
-* **Port**: Port on which the server is listening.
-* **Start from**: The session initialisation method.
-
-   * **current scenes**: Start with the data loaded in the current blend file.
-   * **an empty scene**: Clear the blend file's data and start over.
-   
-   .. danger::
-      By starting from an empty scene, all of the blend data will be removed!
-      Be sure to save your existing work before launching the session.
-
-* **Admin password**: The session administration password.
-
-.. figure:: img/quickstart_host.png 
+.. figure:: img/first_time_server_host.png
    :align: center
-   :alt: host menu
 
-   Host network panel
+   Hosting panel
 
+* **Init the session from**: The session initialisation method.
+  
+  * **current scenes**: Start with the data loaded in the current blend file.
+  * **an empty scene**: Clear the blend file's data and start over.
+  
+* **Port**: Port on which the server is listening.
+* **Server password**: (*optional*) The server password.
+* **Admin password**: (*optional*) The session administration password.
 
-.. note:: Additional configuration setting can be found in the :ref:`advanced` section.
+.. danger::
+   By starting from an empty scene, all of the blend data will be removed!
+   Be sure to save your existing work before launching the session.
 
-Once everything is set up, you can hit the **HOST** button to launch the session!
+Once everything is set up, you can hit the **Host** button to launch the session!
 
 This will do two things:
 

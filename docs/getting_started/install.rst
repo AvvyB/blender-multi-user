@@ -4,8 +4,8 @@ Installing Multi-User
 
 Multi-User is often updated. You can keep up to date with the latest changes through the release notes on our `Discord Server <https://discord.com/invite/aBPvGws>`_.
 
-Download Multi-User
-===================
+Download
+========
 
 `Stable Release <https://gitlab.com/slumber/multi-user/-/jobs/artifacts/master/download?job=build>`__
     **Recommended**. A package packed with the latest features and is considered stable without regressions.
