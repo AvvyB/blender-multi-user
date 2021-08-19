@@ -267,6 +267,20 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
         layout = self.layout
         settings = get_preferences()
 
+        #ADVANCED USER INFO
+        uinfo_section = layout.row().box()
+        uinfo_section.prop(
+            settings,
+            "sidebar_advanced_uinfo_expanded",
+            text="User Info",
+            icon=get_expanded_icon(settings.sidebar_advanced_uinfo_expanded), 
+            emboss=False)
+        if settings.sidebar_advanced_uinfo_expanded:
+            uinfo_section_row = uinfo_section.row()
+            uinfo_section_split = uinfo_section_row.split(factor=0.7, align=True)
+            uinfo_section_split.prop(settings, "username", text="")
+            uinfo_section_split.prop(settings, "client_color", text="")
+
         #ADVANCED NET
         net_section = layout.row().box()
         net_section.prop(
@@ -633,6 +647,9 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         pref = get_preferences()
         layout.active = settings.enable_presence
         
+        row = layout.row()
+        row.prop(settings, "enable_presence",text="Presence Overlay")
+
         row = layout.row()
         row.prop(settings, "presence_show_selected",text="Selected Objects")
 
