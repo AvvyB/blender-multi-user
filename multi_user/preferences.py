@@ -374,9 +374,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="sidebar_advanced_log_expanded",
         default=False
     )
-    sidebar_advanced_hosting_expanded: bpy.props.BoolProperty(
-        name="sidebar_advanced_hosting_expanded",
-        description="sidebar_advanced_hosting_expanded",
+    sidebar_advanced_uinfo_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_uinfo_expanded",
+        description="sidebar_advanced_uinfo_expanded",
         default=False
     )
     sidebar_advanced_net_expanded: bpy.props.BoolProperty(
