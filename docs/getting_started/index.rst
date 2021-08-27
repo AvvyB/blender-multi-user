@@ -7,6 +7,7 @@ Getting started
 
    install
    update
+   firstlaunch
    quickstart
    troubleshooting
    glossary

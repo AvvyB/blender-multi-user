@@ -10,42 +10,121 @@ Quick start
 The multi-user addon provides a session management system.
 In this guide, you will quickly learn how to use the collaborative session management system in three parts:
 
-- :ref:`how-to-host`
 - :ref:`how-to-join`
+- :ref:`how-to-host`
 - :ref:`how-to-manage`
 
-First launch
-============
+.. _how-to-join:
 
-Welcome to the Multi-User manual.
-You will find here all the documentation necessary for the good use of the addon: :ref:`index-manual`
+How to join a session
+=====================
 
-First of all, let's have a quick look at the Multi-User features.
+This section describes how to join a launched session. 
+Before starting make sure that you have access to the session **IP address**, **port number** and that you have filled in your **user information** (name and color).
 
-Username and color
-------------------
+-----------
+Server List
+-----------
 
-When you launch the addon for the first time you can find this panel in the Sidebar of your View3D:
+The server list allows you to manage your servers.
 
-.. figure:: img/first_time_menu.png
+.. figure:: img/quickstart_serverlist.png
+    :align: center
+    :width: 200px
+
+    Server List
+
+To connect to a server, select the one you want to join in the list and click on **Connect**.
+
+To know if the server you want to join is online, you can refresh your server list with the button on the top right corner. 
+Online status:
+
+- **Red**: server is offline
+- **Green**: server is online
+
+.. note:: 
+
+   If a server is secured with a password, a lock will be displayed next to the server name.
+
+   .. figure:: img/quickstart_serverlist_private.png
+    :align: center
+    :width: 200px
+
+It is possible to add, delete and even modify a server preset with the buttons located on the top right of the server list.
+
+.. figure:: img/quickstart_serverlist_manage_buttons.png
+    :align: center
+    :width: 200px
+
+    Add, Remove, Edit Server Preset
+
+.. note:: 
+
+   Two server presets are already present when the addon is launched:
+
+   - The 'localhost' preset, to join a local session quickly
+   - The 'public session' preset, to join the public sessions of the multi-user server (official discord to participate : https://discord.gg/aBPvGws)
+
+-------------------
+Add a Server Preset
+-------------------
+
+To add a server, you must first register it in the server list. Click on the **+** icon and fill in the window with the server settings: 
+
+.. figure:: img/quickstart_server_edit.png
+    :align: center
+    :width: 350px
+
+    Server Preset pop-up
+
+- **Server name**: the name of the server.
+- **IP**: the host's IP address.
+- **Port**: the host's port number.
+- **Server password**: (*optional*) The server password.
+- **Admin password**: (*optional*) The session administration password.
+
+Once you've configured every field, you can save the server preset by clicking **OK**.
+You can now select it in the server list to join the session !
+
+.. warning:: Be careful, if you don't rename your new preset, or if it has the same name as an existing preset, the old preset will be overwritten.
+
+    .. figure:: img/server_preset_image_report.png
+        :align: center
+        :width: 200px
+
+.. note::
+   Additional configuration settings can be found in the :ref:`advanced` section.
+
+----------------
+Joining a server
+----------------
+
+CONNECT
+-------
+
+When joining a session that have already be initialise, the session status screen will be **CONNECT**.
+You are now connected and can start creating.
+
+
+During an online session, various actions are available to you. Go to :ref:`how-to-manage` to 
+learn more about them.
+
+LOBBY
+-----
+
+When starting a **dedicated server**, the session status screen will take you to the **LOBBY** (see side-panel header).
+
+If the session status is set to **LOBBY** and you are a regular user, you need to wait for the admin to launch the scene.
+If you are the admin, you just need to initialise the session to start it (see image below).
+
+.. figure:: img/quickstart_session_init.png
    :align: center
 
-1. Choose a **name** and a **color** that will be specific to you and that will allow others to identify you easily once in session. Don't worry, they can be changed at any time in *Edit >> Prerecences >> Add-ons >> Multi-user* or in *Multi-User Pannel >> General Settings*
-2. Press **Continue**
+   Session initialisation for dedicated server
 
-Multi-User menu
----------------
+During an online session, various actions are available to you. Go to :ref:`how-to-manage` to 
+learn more about them.
 
-Once the Multi-User is launched you will arrive directly on the main menu:
-
-.. figure:: img/first_time_server_list.png
-   :align: center
-
-Three panels are at your disposal:
-
-- **Server list**: You can add, delete and edit server presets according to your preferences. At first launch two servers will already be in your preferences: *Public Session*, the public server of the Multi-User Discord, *Localhost*, to connect locally to your server. See :ref:`how-to-join`
-- **Hosting**: To locally host a session with a Blender instance. See :ref:`how-to-host`
-- **Advanced Settings**: Include advanced addon settings like *user info*, *server ping*, *cache*, etc. See See :ref:`advanced-settings`
 
 .. _how-to-host:
 
@@ -100,94 +179,7 @@ This will do two things:
 During an online session, various actions are available to you, go to :ref:`how-to-manage` section to 
 learn more about them.
 
-.. _how-to-join:
 
-How to join a session
-=====================
-
-This section describes how join a launched session. 
-Before starting make sure that you have access to the session IP address and port number.
-
---------------------------------
-1. Fill in your user information
---------------------------------
-
-Joining a server 
-=======================
-
---------------
-Network setup
---------------
-
-In the network panel, select **JOIN**.
-The **join sub-panel** (see image below) allows you to configure your client to join a
-collaborative session which is already hosted.
-
-.. figure:: img/server_preset_image_normal_server.png
-    :align: center
-    :width: 200px
-
-    Connection pannel
-
-Fill in the fields with your information:
-
-- **IP**: the host's IP address.
-- **Port**: the host's port number.
-
-Once you've configured every field, hit the button **CONNECT** to join the session !
-When the :ref:`session-status` is **ONLINE** you are online and ready to start co-creating.
-
-.. note::
-   
-   If you want to have **administrator rights** (see :ref:`admin` ) on the server, just enter the password created by the host in the **Connect as admin** section
-
-    .. figure:: img/server_preset_image_admin.png
-        :align: center
-        :width: 200px
-
-        Admin password
-
----------------
-Server presets
----------------
-
-You can save your server presets in a preset list below the 'JOIN' and 'HOST' buttons. This allows you to quickly access and manage your servers.
-
-To add a server, first enter the ip address and the port (plus the password if needed), then click on the + icon to add a name to your preset. To remove a server from the list, select it and click on the - icon.
-
-.. figure:: img/server_preset_exemple.gif
-    :align: center
-    :width: 200px
-
-.. warning:: Be careful, if you don't rename your new preset, or if it has the same name as an existing preset, the old preset will be overwritten.
-
-    .. figure:: img/server_preset_image_report.png
-        :align: center
-        :width: 200px
-
-.. note:: 
-   
-   Two presets are already present when the addon is launched:
-
-  - The 'localhost' preset, to host and join a local session quickly
-  - The 'public session' preset, to join the public sessions of the multi-user server (official discord to participate : https://discord.gg/aBPvGws)
-
-.. note::
-   Additional configuration settings can be found in the :ref:`advanced` section.
-
-.. note::
-   When starting a **dedicated server**, the session status screen will take you to the **LOBBY**, awaiting an admin to start the session.
-
-   If the session status is set to **LOBBY** and you are a regular user, you need to wait for the admin to launch the scene.
-   If you are the admin, you just need to initialise the repository to start the session (see image below).
-
-   .. figure:: img/quickstart_session_init.png
-      :align: center
-
-      Session initialisation for dedicated server
-
-During an online session, various actions are available to you. Go to :ref:`how-to-manage` to 
-learn more about them.
 
 .. _how-to-manage:
 
