@@ -7,7 +7,9 @@ Getting started
 
    install
    update
-   firstlaunch
    quickstart
+   how-to-join
+   how-to-host
+   how-to-manage
    troubleshooting
    glossary

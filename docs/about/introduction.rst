@@ -1,7 +1,4 @@
-===============
-About Multi-user
-===============
-
+========
 The idea
 ========
 
@@ -15,8 +12,3 @@ A film is an idea carved along the whole production process by many different pe
 Nowadays it's a known fact that real-time rendering technologies allows to speedup traditional linear production by reducing drastically the iteration time across different steps. All majors industrial CG solutions are moving toward real-time horizons to bring innovative interactive workflows. But this is a microscopic, per-task/solution vision of real-time rendering benefits for the animation production. What if we step-back, get a macroscopic picture of an animation movie pipeline and ask ourself how real-time could change our global workflow ? Could-it bring better ways of working together by giving more visibility between departments during the whole production ?
 
 The multi-user addon is an attempt to experiment real-time parallelism between different production stage. By replicating blender data blocks over the networks, it allows different artists to collaborate on a same scene in real-time.
-
-Others ?
-========
-
-What it is/Key Features/Creator/Community

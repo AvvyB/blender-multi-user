@@ -1,17 +1,17 @@
-###############
-User Interface
-###############
+.. _troubleshooting:
 
-Side Pannel
-===========
+===============
+Troubleshooting
+===============
 
-.. toctree::
-    :maxdepth: 1
- 
-    Introduction <server/introduction.rst>
-    server/splash.rst
+The majority of issues new users experience when first using Multi-User can be solved with a few quick checks.
 
-Presence
-=========
+- Update the multi-user addon to the latest version
+- Make sure to allow Blender through your firewall
+    
+    .. hint:: Your firewall may have additional settings like Ransomware protection, or you may need to enable both Blender and Python on private and/or public Networks
 
-ui
+- Solve problems with your connection quality
+- Minimise the use of large textures or file sizes
+
+Use the #support channel on the multi-user `discord server <https://discord.gg/aBPvGws>`_ to chat, seek help and contribute.

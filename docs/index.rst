@@ -6,9 +6,9 @@ Multi-user 0.5.0 Reference Manual
 
 Welcome to the manual of the Multi-user, a free and open source blender addon. It tool aims to bring multiple users to work on the same .blend over the network.
 
-.. image:: img/homepage_ban.png
+Join our `discord server <https://discord.gg/aBPvGws>`_ to get help and join collaborative creation sessions.
 
-.. warning::  Under development, use it at your own risks.
+.. image:: img/homepage_ban.png
 
 
 Getting started
@@ -20,7 +20,7 @@ Getting started
 
         .. container:: descr
 
-            :doc:`about/introduction`
+            :doc:`about/index`
 
         .. container:: descr
    
@@ -32,7 +32,7 @@ Getting started
         
         .. container:: descr
        
-            :doc:`getting_started/troubleshooting`
+            :doc:`troubleshooting/index`
 
 
 Sections
@@ -80,64 +80,13 @@ Sections
     .. toctree::
         :maxdepth: 1
     
+        about/index.rst
         getting_started/index.rst
         ui/index.rst
         advanced/index.rst
         hosting_internet/index.rst
         workflow/index.rst
+        troubleshooting/index.rst
+        ways_to_contribute/index.rst
+        glossary/index.rst
 
-
-.. Main Features
-.. =============
-
-.. - Collaborative workflow in blender
-.. - Viewport users presence (active selection, POV)
-.. - Datablocks right managment
-.. - Tested under Windows 
-
-.. Community
-.. =========
-
-.. A `discord server <https://discord.gg/aBPvGws>`_ have been created to provide help for new users and 
-.. organize collaborative creation sessions.
-
-.. Status
-.. ======
-
-.. .. image:: img/homepage_roadmap.png
-
-
-.. Follow the `roadmap <https://gitlab.com/slumber/multi-user/-/boards/929107>`_ to be aware of last news.
-
-.. Documentation is organized into the following sections:
-
-.. .. toctree::
-..     :maxdepth: 1
-..     :caption: About
-..     :name: sec-about
-
-..     about/introduction
-
-.. .. toctree::
-..     :maxdepth: 1
-..     :caption: Getting started
-..     :name: sec-learn
-    
-..     getting_started/install
-..     getting_started/quickstart
-..     getting_started/glossary
-..     getting_started/troubleshooting
-
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Tutorials
-..    :name: sec-tutorials
-
-..    tutorials/hosting_guide
-
-.. .. toctree::
-..     :maxdepth: 1
-..     :caption: Community
-..     :name: sec-community
-    
-..     ways_to_contribute

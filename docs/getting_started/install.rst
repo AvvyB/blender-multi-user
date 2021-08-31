@@ -2,6 +2,8 @@
 Installing Multi-User
 =====================
 
+.. warning::  Under development, use it at your own risks.
+
 Multi-User is often updated. You can keep up to date with the latest changes through the release notes on our `Discord Server <https://discord.com/invite/aBPvGws>`_.
 
 Download
@@ -22,7 +24,7 @@ Install
 
 1. Download the addon zip file
 2. Run blender as administrator (to allow python dependencies auto-installation).
-3. Install **multi-user.zip** from your addon preferences (Edit >> Preferences >> Add-ons >> Install).
+3. Install **multi-user.zip** from your addon preferences in :menuselection:`Edit --> Preferences --> Add-ons --> Install`.
 
 .. figure:: img/settings.png
     :align: center

@@ -16,7 +16,7 @@ import sys
 
 # -- Project information -----------------------------------------------------
 
-project = 'multi-user'
+project = 'Multi-User 0.5.0 Documentation'
 copyright = '2020, Swann Martinez'
 author = 'Swann Martinez, Poochy, Fabian'
 
@@ -100,15 +100,13 @@ if html_theme == "sphinx_rtd_theme":
 # "<project> v<release> documentation" by default.
 html_title = "Multi-User Doc"
 
-# The name of an image file (relative to this directory) to place at the top
-# of the sidebar.
-#
-# html_logo = "resources/theme/multi-user-logo.svg"
-
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+html_logo = "resources/logo.png"
+html_favicon = "ressources/favicon.ico"
 html_static_path = ["resources"]
+
 
 if html_theme == "sphinx_rtd_theme":
     html_css_files = ["css/theme_overrides.css"]
