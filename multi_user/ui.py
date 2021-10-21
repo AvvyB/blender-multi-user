@@ -62,7 +62,41 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
     bar = fill * filledLength + fill_empty * (length - filledLength)
     return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
 
-
+def get_mode_icon(mode_name: str) -> str:
+    """ given a mode name retrieve a built-in icon 
+    """
+    mode_icon = "NONE"
+    if mode_name == "OBJECT" :
+        mode_icon = "OBJECT_DATAMODE"
+    elif mode_name == "EDIT_MESH" :
+        mode_icon = "EDITMODE_HLT"
+    elif mode_name == 'EDIT_CURVE':
+        mode_icon = "CURVE_DATA"
+    elif mode_name == 'EDIT_SURFACE':
+        mode_icon = "SURFACE_DATA"
+    elif mode_name == 'EDIT_TEXT':
+        mode_icon = "FILE_FONT"
+    elif mode_name == 'EDIT_ARMATURE':
+        mode_icon = "ARMATURE_DATA"
+    elif mode_name == 'EDIT_METABALL':
+        mode_icon = "META_BALL"
+    elif mode_name == 'EDIT_LATTICE':
+        mode_icon = "LATTICE_DATA"
+    elif mode_name == 'POSE':
+        mode_icon = "POSE_HLT"
+    elif mode_name == 'SCULPT':
+        mode_icon = "SCULPTMODE_HLT"
+    elif mode_name == 'PAINT_WEIGHT':
+        mode_icon = "WPAINT_HLT"
+    elif mode_name == 'PAINT_VERTEX':
+        mode_icon = "VPAINT_HLT"
+    elif mode_name == 'PAINT_TEXTURE':
+        mode_icon = "TPAINT_HLT"
+    elif mode_name == 'PARTICLE':
+        mode_icon = "PARTICLES"
+    elif mode_name == 'PAINT_GPENCIL' or mode_name =='EDIT_GPENCIL' or mode_name =='SCULPT_GPENCIL' or mode_name =='WEIGHT_GPENCIL' or mode_name =='VERTEX_GPENCIL':
+        mode_icon = "GREASEPENCIL"
+    return mode_icon
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
@@ -375,18 +409,31 @@ class SESSION_PT_user(bpy.types.Panel):
             online_users)-1 >= selected_user else 0
 
         #USER LIST
-        row = layout.row()
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row = row.split(factor=0.35, align=True)
+        
         box = row.box()
-        split = box.split(factor=0.35)
-        split.label(text="user")
-        split = split.split(factor=0.3)
-        split.label(text="mode")
-        split.label(text="frame")
-        split.label(text="location")
-        split.label(text="ping")
+        brow = box.row(align=True)
+        brow.label(text="user")
 
-        row = layout.row()
-        layout.template_list("SESSION_UL_users",  "",  context.window_manager,
+        row = row.split(factor=0.25, align=True)
+        
+        box = row.box()
+        brow = box.row(align=True)
+        brow.label(text="mode")
+        box = row.box()
+        brow = box.row(align=True)
+        brow.label(text="frame")
+        box = row.box()
+        brow = box.row(align=True)
+        brow.label(text="scene")
+        box = row.box()
+        brow = box.row(align=True)
+        brow.label(text="ping")
+
+        row = col.row(align=True)
+        row.template_list("SESSION_UL_users",  "",  context.window_manager,
                              "online_users", context.window_manager,  "user_index")
 
         #OPERATOR ON USER
@@ -433,45 +480,39 @@ class SESSION_UL_users(bpy.types.UIList):
                     frame_current = str(metadata.get('frame_current','-'))
                     scene_current = metadata.get('scene_current','-')
                     mode_current = metadata.get('mode_current','-')
-                    if mode_current == "OBJECT" :
-                        mode_icon = "OBJECT_DATAMODE"
-                    elif mode_current == "EDIT_MESH" :
-                        mode_icon = "EDITMODE_HLT"
-                    elif mode_current == 'EDIT_CURVE':
-                        mode_icon = "CURVE_DATA"
-                    elif mode_current == 'EDIT_SURFACE':
-                        mode_icon = "SURFACE_DATA"
-                    elif mode_current == 'EDIT_TEXT':
-                        mode_icon = "FILE_FONT"
-                    elif mode_current == 'EDIT_ARMATURE':
-                        mode_icon = "ARMATURE_DATA"
-                    elif mode_current == 'EDIT_METABALL':
-                        mode_icon = "META_BALL"
-                    elif mode_current == 'EDIT_LATTICE':
-                        mode_icon = "LATTICE_DATA"
-                    elif mode_current == 'POSE':
-                        mode_icon = "POSE_HLT"
-                    elif mode_current == 'SCULPT':
-                        mode_icon = "SCULPTMODE_HLT"
-                    elif mode_current == 'PAINT_WEIGHT':
-                        mode_icon = "WPAINT_HLT"
-                    elif mode_current == 'PAINT_VERTEX':
-                        mode_icon = "VPAINT_HLT"
-                    elif mode_current == 'PAINT_TEXTURE':
-                        mode_icon = "TPAINT_HLT"
-                    elif mode_current == 'PARTICLE':
-                        mode_icon = "PARTICLES"
-                    elif mode_current == 'PAINT_GPENCIL' or mode_current =='EDIT_GPENCIL' or mode_current =='SCULPT_GPENCIL' or mode_current =='WEIGHT_GPENCIL' or mode_current =='VERTEX_GPENCIL':
-                        mode_icon = "GREASEPENCIL"
+                    mode_current = metadata.get('mode_current','-')
+                    mode_icon = get_mode_icon(mode_current)
+                    user_color = metadata.get('color',[1.0,1.0,1.0,1.0])
+                    item.color[0] = user_color[0]
+                    item.color[1] = user_color[1]
+                    item.color[2] = user_color[2]
+                    item.color[3] = user_color[3]
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
-        split = layout.split(factor=0.35)
-        split.label(text=item.username, icon=status_icon)
-        split = split.split(factor=0.3)
-        split.label(icon=mode_icon)
-        split.label(text=frame_current)
-        split.label(text=scene_current)
-        split.label(text=ping)
+        row = layout.split(factor=0.35, align=True)
+        entry = row.row(align=True)
+        entry.scale_x = 0.05
+        entry.enabled = False
+        entry.prop(item, 'color', text="", event=False, full_event=False)
+        entry.enabled = True
+        entry.scale_x = 1.0
+        entry.label(icon=status_icon, text="")
+        entry.label(text=item.username)
+
+        row = row.split(factor=0.25, align=True)
+        
+        entry = row.row()
+        entry.alignment = 'CENTER'
+        entry.label(icon=mode_icon)
+        entry = row.row()
+        entry.scale_x = .7
+        entry.alignment = 'CENTER'
+        entry.label(text=frame_current)
+        entry = row.row()
+        entry.label(text=scene_current)
+        entry = row.row()
+        entry.scale_x = .5
+        entry.label(text=ping)
 
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
