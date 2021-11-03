@@ -203,10 +203,11 @@ class DynamicRightSelectTimer(Timer):
 
                     for node_id in to_lock:
                         node = session.repository.graph.get(node_id)
-                        instance_mode = node.data.get('instance_type')
-                        if instance_mode and instance_mode == 'COLLECTION':
-                            to_lock.remove(node_id)
-                            instances_to_lock.append(node_id)
+                        if node and hasattr(node,'data'):
+                            instance_mode = node.data.get('instance_type')
+                            if instance_mode and instance_mode == 'COLLECTION':
+                                to_lock.remove(node_id)
+                                instances_to_lock.append(node_id)
                     if instances_to_lock:
                         try:
                             porcelain.lock(session.repository,
