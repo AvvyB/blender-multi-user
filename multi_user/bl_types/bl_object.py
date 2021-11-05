@@ -48,7 +48,7 @@ SHAPEKEY_BLOCK_ATTR = [
 ]
 
 
-if bpy.app.version[1] >= 93:
+if bpy.app.version >= (2,93,0):
     SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
 else:
     SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str)
@@ -198,12 +198,12 @@ def find_data_from_name(name=None):
         instance = bpy.data.speakers[name]
     elif name in bpy.data.lightprobes.keys():
         # Only supported since 2.83
-        if bpy.app.version[1] >= 83:
+        if bpy.app.version >= (2,83,0):
             instance = bpy.data.lightprobes[name]
         else:
             logging.warning(
                 "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
-    elif bpy.app.version[1] >= 91 and name in bpy.data.volumes.keys():
+    elif bpy.app.version >= (2,91,0) and name in bpy.data.volumes.keys():
         # Only supported since 2.91
         instance = bpy.data.volumes[name]
     return instance
