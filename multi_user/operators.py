@@ -238,7 +238,7 @@ class SessionConnectOperator(bpy.types.Operator):
                 settings.generate_supported_types()
 
 
-        if bpy.app.version[1] >= 91:
+        if bpy.app.version >= (2,91,0):
             python_binary_path = sys.executable
         else:
             python_binary_path = bpy.app.binary_path_python
@@ -309,7 +309,7 @@ class SessionHostOperator(bpy.types.Operator):
                 settings.generate_supported_types()
 
 
-        if bpy.app.version[1] >= 91:
+        if bpy.app.version >= (2,91,0):
             python_binary_path = sys.executable
         else:
             python_binary_path = bpy.app.binary_path_python
