@@ -64,7 +64,6 @@ def get_node_group_properties_identifiers(node_group):
             continue
         else:
             props_ids.append((inpt.identifier, inpt.type))
-            logging.info(inpt.type)
 
         if inpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
             props_ids.append((f"{inpt.identifier}_attribute_name",'STR'))

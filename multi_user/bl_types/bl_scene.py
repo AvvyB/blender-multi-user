@@ -440,7 +440,7 @@ class BlScene(ReplicatedDatablock):
                 if seq.name not in sequences:
                     vse.sequences.remove(seq)
             # Load existing sequences
-            for seq_data in sequences.value():
+            for seq_data in sequences.values():
                 load_sequence(seq_data, vse)
         # If the sequence is no longer used, clear it
         elif datablock.sequence_editor and not sequences:
