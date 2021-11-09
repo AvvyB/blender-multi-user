@@ -56,14 +56,25 @@ else:
                     blender 2.92.")
 
 
-def get_node_group_inputs(node_group):
-    inputs = []
+def get_node_group_properties_identifiers(node_group):
+    props_ids = []
+    # Inputs
     for inpt in node_group.inputs:
         if inpt.type in IGNORED_SOCKETS:
             continue
         else:
-            inputs.append(inpt)
-    return inputs
+            props_ids.append((inpt.identifier, inpt.type))
+            logging.info(inpt.type)
+
+        if inpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
+            props_ids.append((f"{inpt.identifier}_attribute_name",'STR'))
+            props_ids.append((f"{inpt.identifier}_use_attribute", 'BOOL'))
+
+    for outpt in node_group.outputs:
+        if outpt.type not in IGNORED_SOCKETS and  outpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
+            props_ids.append((f"{outpt.identifier}_attribute_name", 'STR'))
+
+    return props_ids
     # return [inpt.identifer for inpt in node_group.inputs if  inpt.type not in IGNORED_SOCKETS]
 
 
@@ -122,29 +133,35 @@ def load_physics(dumped_settings: dict, target: bpy.types.Object):
         bpy.ops.rigidbody.constraint_remove({"object": target})
 
 
-def dump_modifier_geometry_node_inputs(modifier: bpy.types.Modifier) -> list:
+def dump_modifier_geometry_node_props(modifier: bpy.types.Modifier) -> list:
     """ Dump geometry node modifier input properties
 
         :arg modifier: geometry node modifier to dump
         :type modifier: bpy.type.Modifier
     """
-    dumped_inputs = []
-    for inpt in get_node_group_inputs(modifier.node_group):
-        input_value = modifier[inpt.identifier]
+    dumped_props = []
+    
+    for prop_value, prop_type in get_node_group_properties_identifiers(modifier.node_group):
+        try:
+            prop_value = modifier[prop_value]
+        except KeyError as e:
+            logging.error(f"fail to dump geomety node modifier property : {prop_value} ({e})")
+        else:
+            dump = None
+            if isinstance(prop_value, bpy.types.ID):
+                dump = prop_value.uuid
+            elif isinstance(prop_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
+                dump = prop_value
+            elif hasattr(prop_value, 'to_list'):
+                dump = prop_value.to_list()
 
-        dumped_input = None
-        if isinstance(input_value, bpy.types.ID):
-            dumped_input = input_value.uuid
-        elif isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
-            dumped_input = input_value
-        elif hasattr(input_value, 'to_list'):
-            dumped_input = input_value.to_list()
-        dumped_inputs.append(dumped_input)
+            dumped_props.append((dump, prop_type))
+            # logging.info(prop_value)
 
-    return dumped_inputs
+    return dumped_props
 
 
-def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: bpy.types.Modifier):
+def load_modifier_geometry_node_props(dumped_modifier: dict, target_modifier: bpy.types.Modifier):
     """ Load geometry node modifier inputs
 
         :arg dumped_modifier: source dumped modifier to load
@@ -153,17 +170,17 @@ def load_modifier_geometry_node_inputs(dumped_modifier: dict, target_modifier: b
         :type target_modifier: bpy.type.Modifier
     """
 
-    for input_index, inpt in enumerate(get_node_group_inputs(target_modifier.node_group)):
-        dumped_value = dumped_modifier['inputs'][input_index]
-        input_value = target_modifier[inpt.identifier]
-        if isinstance(input_value, SUPPORTED_GEOMETRY_NODE_PARAMETERS):
-            target_modifier[inpt.identifier] = dumped_value
-        elif hasattr(input_value, 'to_list'):
+    for input_index, inpt in enumerate(get_node_group_properties_identifiers(target_modifier.node_group)):
+        dumped_value, dumped_type = dumped_modifier['props'][input_index]
+        input_value = target_modifier[inpt[0]]
+        if dumped_type in ['INT', 'VALUE', 'STR']:
+            logging.info(f"{inpt[0]}/{dumped_value}")
+            target_modifier[inpt[0]] = dumped_value
+        elif dumped_type in ['RGBA', 'VECTOR']:
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
-        elif inpt.type in ['COLLECTION', 'OBJECT']:
-            target_modifier[inpt.identifier] = get_datablock_from_uuid(
-                dumped_value, None)
+        elif dumped_type in ['COLLECTION', 'OBJECT', 'IMAGE', 'TEXTURE', 'MATERIAL']:
+            target_modifier[inpt[0]] = get_datablock_from_uuid(dumped_value, None)
 
 
 def load_pose(target_bone, data):
@@ -250,10 +267,11 @@ def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -
     for mod in modifiers:
         if mod.type == 'NODES' and mod.node_group:
             dependencies.append(mod.node_group)
-            # for inpt in get_node_group_inputs(mod.node_group):
-            #     parameter = mod.get(inpt.identifier)
-            #     if parameter and isinstance(parameter, bpy.types.ID):
-            #         dependencies.append(parameter)
+            for inpt, inpt_type in get_node_group_properties_identifiers(mod.node_group):
+                inpt_value = mod.get(inpt)
+                # Avoid to handle 'COLLECTION', 'OBJECT' to avoid circular dependencies
+                if inpt_type in ['IMAGE', 'TEXTURE', 'MATERIAL'] and inpt_value:  
+                    dependencies.append(inpt_value)
 
     return dependencies
 
@@ -387,10 +405,7 @@ def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
         dumped_modifier = dumper.dump(modifier)
         # hack to dump geometry nodes inputs
         if modifier.type == 'NODES':
-            dumped_inputs = dump_modifier_geometry_node_inputs(
-                modifier)
-            dumped_modifier['inputs'] = dumped_inputs
-
+            dumped_modifier['props'] = dump_modifier_geometry_node_props(modifier)
         elif modifier.type == 'PARTICLE_SYSTEM':
             dumper.exclude_filter = [
                 "is_edited",
@@ -455,7 +470,7 @@ def load_modifiers(dumped_modifiers: list, modifiers: bpy.types.bpy_prop_collect
         loader.load(loaded_modifier, dumped_modifier)
 
         if loaded_modifier.type == 'NODES':
-            load_modifier_geometry_node_inputs(dumped_modifier, loaded_modifier)
+            load_modifier_geometry_node_props(dumped_modifier, loaded_modifier)
         elif loaded_modifier.type == 'PARTICLE_SYSTEM':
             default =  loaded_modifier.particle_system.settings
             dumped_particles = dumped_modifier['particle_system']
