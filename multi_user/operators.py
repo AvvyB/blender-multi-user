@@ -863,9 +863,13 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
 
+    draw_users: bpy.props.BoolProperty(
+        default=False,
+    )
+
     def execute(self, context):
         from replication.repository import Repository
-
+        import bmesh 
         # init the factory with supported types
         bpy_protocol = bl_types.get_data_translation_protocol()
         repo = Repository(bpy_protocol)
@@ -884,7 +888,47 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         # Step 2: Load nodes
         for node in nodes:
             porcelain.apply(repo, node.uuid)
+        
+        if self.draw_users:
+            f = gzip.open(self.filepath, "rb")
+            db = pickle.load(f)
 
+            users = db.get("users")
+
+            for username, user_data in users.items():
+                points =  user_data['metadata'].get('view_corners')
+                # Create user mesh and object
+                user_mesh = bpy.data.meshes.new(username)
+                user_obj = bpy.data.objects.new(username, user_mesh)
+
+                # Get a BMesh representation
+                frustum_bm = bmesh.new()   # create an empty BMesh
+                frustum_bm.from_mesh(user_mesh)   # fill it in from a Mesh
+
+
+                # Modify the BMesh, can do anything here...
+                for p in points:
+                    frustum_bm.verts.new(p)
+                frustum_bm.verts.ensure_lookup_table()
+
+                frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[2]))
+                frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[1]))
+                frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[3]))
+                frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[0]))
+
+                frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[6]))
+                frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[6]))
+                frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[6]))
+                frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[6]))
+
+                frustum_bm.edges.new((frustum_bm.verts[4], frustum_bm.verts[5]))
+
+
+                # Finish up, write the bmesh back to the mesh
+                frustum_bm.to_mesh(user_mesh)
+                frustum_bm.free()  # free and prevent further access
+
+                bpy.context.scene.collection.objects.link(user_obj)
 
         return {'FINISHED'}
 
