@@ -43,7 +43,7 @@ __all__ = [
     "bl_particle",
 ]  # Order here defines execution order
 
-if bpy.app.version[1] >= 91:
+if bpy.app.version >= (2,91,0):
     __all__.append('bl_volume')
 
 from . import *

@@ -134,7 +134,7 @@ def install_modules(dependencies: list, python_path: str, install_dir: str):
             module_can_be_imported(package_name)
 
 def register():
-    if bpy.app.version[1] >= 91:
+    if bpy.app.version >= (2,91,0):
             python_binary_path = sys.executable
     else:
         python_binary_path = bpy.app.binary_path_python

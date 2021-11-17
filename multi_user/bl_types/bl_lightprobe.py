@@ -37,7 +37,7 @@ class BlLightprobe(ReplicatedDatablock):
     def construct(data: dict) -> object:
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
         # See https://developer.blender.org/D6396
-        if bpy.app.version[1] >= 83:
+        if bpy.app.version >= (2,83,0):
             return bpy.data.lightprobes.new(data["name"], type)
         else:
             logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
@@ -49,7 +49,7 @@ class BlLightprobe(ReplicatedDatablock):
 
     @staticmethod
     def dump(datablock: object) -> dict:
-        if bpy.app.version[1] < 83:
+        if bpy.app.version < (2,83,0):
             logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
 
         dumper = Dumper()
