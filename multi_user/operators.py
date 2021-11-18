@@ -37,6 +37,7 @@ from queue import Queue
 from time import gmtime, strftime
 
 from bpy.props import FloatProperty
+import bmesh
 
 try:
     import _pickle as pickle
@@ -58,12 +59,125 @@ from replication.repository import Repository
 
 from . import bl_types, environment, shared_data, timers, ui, utils
 from .handlers import on_scene_update, sanitize_deps_graph
-from .presence import SessionStatusWidget, renderer, view3d_find, refresh_sidebar_view
+from .presence import SessionStatusWidget, renderer, view3d_find, refresh_sidebar_view, bbox_from_obj
 from .timers import registry
 
 background_execution_queue = Queue()
 deleyables = []
 stop_modal_executor = False
+
+
+def draw_user(username, metadata, radius=0.01, intensity=10.0):
+    view_corners =  metadata.get('view_corners')
+    color =  metadata.get('color', (1,1,1,0))
+    objects = metadata.get('selected_objects', None)
+
+    user_collection = bpy.data.collections.new(username)
+
+    # User Color
+    user_mat = bpy.data.materials.new(username)
+    user_mat.use_nodes = True
+    nodes = user_mat.node_tree.nodes
+    nodes.remove(nodes['Principled BSDF'])
+    emission_node = nodes.new('ShaderNodeEmission')
+    emission_node.inputs['Color'].default_value = color
+    emission_node.inputs['Strength'].default_value = intensity
+
+    output_node = nodes['Material Output']
+    user_mat.node_tree.links.new(
+        emission_node.outputs['Emission'], output_node.inputs['Surface'])
+
+    # Generate camera mesh
+    camera_vertices = view_corners[:4]
+    camera_vertices.append(view_corners[6])
+    camera_mesh = bpy.data.meshes.new(f"{username}_camera")
+    camera_obj = bpy.data.objects.new(f"{username}_camera", camera_mesh)
+    frustum_bm = bmesh.new()
+    frustum_bm.from_mesh(camera_mesh)
+
+    for p in camera_vertices:
+        frustum_bm.verts.new(p)
+    frustum_bm.verts.ensure_lookup_table()
+
+    frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[2]))
+    frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[1]))
+    frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[3]))
+    frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[0]))
+
+    frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[4]))
+    frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[4]))
+    frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[4]))
+    frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[4]))
+    frustum_bm.edges.ensure_lookup_table()
+
+    frustum_bm.to_mesh(camera_mesh)
+    frustum_bm.free()  # free and prevent further access
+
+    camera_obj.modifiers.new("wireframe", "SKIN")
+    camera_obj.data.skin_vertices[0].data[0].use_root = True
+    for v in camera_mesh.skin_vertices[0].data:
+        v.radius = [radius, radius]
+
+    camera_mesh.materials.append(user_mat)
+    user_collection.objects.link(camera_obj)
+
+    # Generate sight mesh
+    sight_mesh = bpy.data.meshes.new(f"{username}_sight")
+    sight_obj = bpy.data.objects.new(f"{username}_sight", sight_mesh)
+    sight_verts = view_corners[4:6]
+    sight_bm = bmesh.new()
+    sight_bm.from_mesh(sight_mesh)
+
+    for p in sight_verts:
+        sight_bm.verts.new(p)
+    sight_bm.verts.ensure_lookup_table()
+
+    sight_bm.edges.new((sight_bm.verts[0], sight_bm.verts[1]))
+    sight_bm.edges.ensure_lookup_table()
+    sight_bm.to_mesh(sight_mesh)
+    sight_bm.free()
+
+    sight_obj.modifiers.new("wireframe", "SKIN")
+    sight_obj.data.skin_vertices[0].data[0].use_root = True
+    for v in sight_mesh.skin_vertices[0].data:
+        v.radius = [radius, radius]
+
+    sight_mesh.materials.append(user_mat)
+    user_collection.objects.link(sight_obj)
+
+    # Draw selected objects
+    if objects:
+        for o in list(objects):
+            instance = bl_types.bl_datablock.get_datablock_from_uuid(o, None)
+            if instance:
+                bbox_mesh = bpy.data.meshes.new(f"{instance.name}_bbox")
+                bbox_obj = bpy.data.objects.new(
+                    f"{instance.name}_bbox", bbox_mesh)
+                bbox_verts, bbox_ind = bbox_from_obj(instance, index=0)
+                bbox_bm = bmesh.new()
+                bbox_bm.from_mesh(bbox_mesh)
+
+                for p in bbox_verts:
+                    bbox_bm.verts.new(p)
+                bbox_bm.verts.ensure_lookup_table()
+
+                for e in bbox_ind:
+                    bbox_bm.edges.new(
+                        (bbox_bm.verts[e[0]], bbox_bm.verts[e[1]]))
+
+                bbox_bm.to_mesh(bbox_mesh)
+                bbox_bm.free()
+                bpy.data.collections[username].objects.link(bbox_obj)
+
+                bbox_obj.modifiers.new("wireframe", "SKIN")
+                bbox_obj.data.skin_vertices[0].data[0].use_root = True
+                for v in bbox_mesh.skin_vertices[0].data:
+                    v.radius = [radius, radius]
+
+                bbox_mesh.materials.append(user_mat)
+
+    bpy.context.scene.collection.children.link(user_collection)
+
 
 def session_callback(name):
     """ Session callback wrapper
@@ -863,9 +977,28 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
 
+    draw_users: bpy.props.BoolProperty(
+        name="Load users",
+        description="Draw users in the scene",
+        default=False,
+    )
+    user_skin_radius: bpy.props.FloatProperty(
+        name="Wireframe radius",
+        description="Wireframe radius",
+        default=0.005,
+    )
+    user_color_intensity: bpy.props.FloatProperty(
+        name="Shading intensity",
+        description="Shading intensity",
+        default=10.0,
+    )
+
+    def draw(self, context):
+        pass
+
     def execute(self, context):
         from replication.repository import Repository
-
+    
         # init the factory with supported types
         bpy_protocol = bl_types.get_data_translation_protocol()
         repo = Repository(bpy_protocol)
@@ -884,13 +1017,57 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         # Step 2: Load nodes
         for node in nodes:
             porcelain.apply(repo, node.uuid)
+        
+        if self.draw_users:
+            f = gzip.open(self.filepath, "rb")
+            db = pickle.load(f)
 
+            users = db.get("users")
+
+            for username, user_data in users.items():
+                metadata = user_data['metadata']
+
+                if metadata:
+                    draw_user(username, metadata, radius=self.user_skin_radius, intensity=self.user_color_intensity)
 
         return {'FINISHED'}
-
+    
     @classmethod
     def poll(cls, context):
         return True
+
+class SessionImportUser(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Users"
+    bl_parent_id = "FILE_PT_operator"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "SESSION_OT_load"
+
+    def draw_header(self, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        self.layout.prop(operator, "draw_users", text="")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.enabled = operator.draw_users
+
+        layout.prop(operator, "user_skin_radius")
+        layout.prop(operator, "user_color_intensity")
 
 class SessionPresetServerAdd(bpy.types.Operator):
     """Add a server to the server list preset"""
@@ -1123,6 +1300,7 @@ classes = (
     SessionNotifyOperator, 
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
+    SessionImportUser,
     SessionStopAutoSaveOperator,
     SessionPurgeOperator,
     SessionPresetServerAdd,
