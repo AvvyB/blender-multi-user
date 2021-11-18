@@ -979,7 +979,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
                 points =  metadata.get('view_corners')
                 color =  metadata.get('color', (1,1,1,0))
 
-                draw_user(username, points,color=color)
+                loard_users(username, points,color=color)
 
         return {'FINISHED'}
 
