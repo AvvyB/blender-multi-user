@@ -983,15 +983,18 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         default=False,
     )
     user_skin_radius: bpy.props.FloatProperty(
-        name="User radius",
-        description="User skin radius",
+        name="Wireframe radius",
+        description="Wireframe radius",
         default=0.005,
     )
     user_color_intensity: bpy.props.FloatProperty(
-        name="User emission intensity",
-        description="User emission intensity",
+        name="Shading intensity",
+        description="Shading intensity",
         default=10.0,
     )
+
+    def draw(self, context):
+        pass
 
     def execute(self, context):
         from replication.repository import Repository
@@ -1027,12 +1030,44 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
                 if metadata:
                     draw_user(username, metadata, radius=self.user_skin_radius, intensity=self.user_color_intensity)
 
-
         return {'FINISHED'}
-
+    
     @classmethod
     def poll(cls, context):
         return True
+
+class SessionImportUser(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Users"
+    bl_parent_id = "FILE_PT_operator"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        return operator.bl_idname == "SESSION_OT_load"
+
+    def draw_header(self, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        self.layout.prop(operator, "draw_users", text="")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False  # No animation.
+
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout.enabled = operator.draw_users
+
+        layout.prop(operator, "user_skin_radius")
+        layout.prop(operator, "user_color_intensity")
 
 class SessionPresetServerAdd(bpy.types.Operator):
     """Add a server to the server list preset"""
@@ -1265,6 +1300,7 @@ classes = (
     SessionNotifyOperator, 
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
+    SessionImportUser,
     SessionStopAutoSaveOperator,
     SessionPurgeOperator,
     SessionPresetServerAdd,
