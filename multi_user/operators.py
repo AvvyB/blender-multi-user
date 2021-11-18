@@ -59,16 +59,21 @@ from replication.repository import Repository
 
 from . import bl_types, environment, shared_data, timers, ui, utils
 from .handlers import on_scene_update, sanitize_deps_graph
-from .presence import SessionStatusWidget, renderer, view3d_find, refresh_sidebar_view
+from .presence import SessionStatusWidget, renderer, view3d_find, refresh_sidebar_view, bbox_from_obj
 from .timers import registry
 
 background_execution_queue = Queue()
 deleyables = []
 stop_modal_executor = False
 
-def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0), intensity=10.0):
+
+def draw_user(username, metadata, radius=0.01, intensity=10.0):
+    view_corners =  metadata.get('view_corners')
+    color =  metadata.get('color', (1,1,1,0))
+    objects = metadata.get('selected_objects', None)
+
     user_collection = bpy.data.collections.new(username)
-    
+
     # User Color
     user_mat = bpy.data.materials.new(username)
     user_mat.use_nodes = True
@@ -78,8 +83,9 @@ def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0), intensity=
     emission_node.inputs['Color'].default_value = color
     emission_node.inputs['Strength'].default_value = intensity
 
-    output_node =  nodes['Material Output']
-    user_mat.node_tree.links.new(emission_node.outputs['Emission'], output_node.inputs['Surface'])
+    output_node = nodes['Material Output']
+    user_mat.node_tree.links.new(
+        emission_node.outputs['Emission'], output_node.inputs['Surface'])
 
     # Generate camera mesh
     camera_vertices = view_corners[:4]
@@ -88,7 +94,6 @@ def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0), intensity=
     camera_obj = bpy.data.objects.new(f"{username}_camera", camera_mesh)
     frustum_bm = bmesh.new()
     frustum_bm.from_mesh(camera_mesh)
-
 
     for p in camera_vertices:
         frustum_bm.verts.new(p)
@@ -108,9 +113,9 @@ def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0), intensity=
     frustum_bm.to_mesh(camera_mesh)
     frustum_bm.free()  # free and prevent further access
 
-    camera_obj.modifiers.new("wireframe","SKIN")
+    camera_obj.modifiers.new("wireframe", "SKIN")
     camera_obj.data.skin_vertices[0].data[0].use_root = True
-    for v in camera_mesh.skin_vertices[0].data : 
+    for v in camera_mesh.skin_vertices[0].data:
         v.radius = [radius, radius]
 
     camera_mesh.materials.append(user_mat)
@@ -130,15 +135,46 @@ def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0), intensity=
     sight_bm.edges.new((sight_bm.verts[0], sight_bm.verts[1]))
     sight_bm.edges.ensure_lookup_table()
     sight_bm.to_mesh(sight_mesh)
-    sight_bm.free() 
+    sight_bm.free()
 
-    sight_obj.modifiers.new("wireframe","SKIN")
+    sight_obj.modifiers.new("wireframe", "SKIN")
     sight_obj.data.skin_vertices[0].data[0].use_root = True
-    for v in sight_mesh.skin_vertices[0].data : 
+    for v in sight_mesh.skin_vertices[0].data:
         v.radius = [radius, radius]
 
     sight_mesh.materials.append(user_mat)
     user_collection.objects.link(sight_obj)
+
+    # Draw selected objects
+    if objects:
+        for o in list(objects):
+            instance = bl_types.bl_datablock.get_datablock_from_uuid(o, None)
+            if instance:
+                bbox_mesh = bpy.data.meshes.new(f"{instance.name}_bbox")
+                bbox_obj = bpy.data.objects.new(
+                    f"{instance.name}_bbox", bbox_mesh)
+                bbox_verts, bbox_ind = bbox_from_obj(instance, index=0)
+                bbox_bm = bmesh.new()
+                bbox_bm.from_mesh(bbox_mesh)
+
+                for p in bbox_verts:
+                    bbox_bm.verts.new(p)
+                bbox_bm.verts.ensure_lookup_table()
+
+                for e in bbox_ind:
+                    bbox_bm.edges.new(
+                        (bbox_bm.verts[e[0]], bbox_bm.verts[e[1]]))
+
+                bbox_bm.to_mesh(bbox_mesh)
+                bbox_bm.free()
+                bpy.data.collections[username].objects.link(bbox_obj)
+
+                bbox_obj.modifiers.new("wireframe", "SKIN")
+                bbox_obj.data.skin_vertices[0].data[0].use_root = True
+                for v in bbox_mesh.skin_vertices[0].data:
+                    v.radius = [radius, radius]
+
+                bbox_mesh.materials.append(user_mat)
 
     bpy.context.scene.collection.children.link(user_collection)
 
@@ -949,7 +985,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     user_skin_radius: bpy.props.FloatProperty(
         name="User radius",
         description="User skin radius",
-        default=0.01,
+        default=0.005,
     )
     user_color_intensity: bpy.props.FloatProperty(
         name="User emission intensity",
@@ -988,15 +1024,9 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
             for username, user_data in users.items():
                 metadata = user_data['metadata']
 
-                points =  metadata.get('view_corners')
-                color =  metadata.get('color', (1,1,1,0))
+                if metadata:
+                    draw_user(username, metadata, radius=self.user_skin_radius, intensity=self.user_color_intensity)
 
-                loard_users(
-                    username,
-                    points,
-                    radius=self.user_skin_radius,
-                    color=color,
-                    intensity=self.user_color_intensity)
 
         return {'FINISHED'}
 
