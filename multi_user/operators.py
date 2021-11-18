@@ -37,6 +37,7 @@ from queue import Queue
 from time import gmtime, strftime
 
 from bpy.props import FloatProperty
+import bmesh
 
 try:
     import _pickle as pickle
@@ -64,6 +65,83 @@ from .timers import registry
 background_execution_queue = Queue()
 deleyables = []
 stop_modal_executor = False
+
+def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0)):
+    user_collection = bpy.data.collections.new(username)
+    
+    # User Color
+    user_mat = bpy.data.materials.new(username)
+    user_mat.use_nodes = True
+    nodes = user_mat.node_tree.nodes
+    nodes.remove(nodes['Principled BSDF'])
+    emission_node = nodes.new('ShaderNodeEmission')
+    emission_node.inputs['Color'].default_value = color
+    emission_node.inputs['Strength'].default_value = 10
+
+    output_node =  nodes['Material Output']
+    user_mat.node_tree.links.new(emission_node.outputs['Emission'], output_node.inputs['Surface'])
+
+    # Generate camera mesh
+    camera_vertices = view_corners[:4]
+    camera_vertices.append(view_corners[6])
+    camera_mesh = bpy.data.meshes.new(f"{username}_camera")
+    camera_obj = bpy.data.objects.new(f"{username}_camera", camera_mesh)
+    frustum_bm = bmesh.new()
+    frustum_bm.from_mesh(camera_mesh)
+
+
+    for p in camera_vertices:
+        frustum_bm.verts.new(p)
+    frustum_bm.verts.ensure_lookup_table()
+
+    frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[2]))
+    frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[1]))
+    frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[3]))
+    frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[0]))
+
+    frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[4]))
+    frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[4]))
+    frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[4]))
+    frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[4]))
+    frustum_bm.edges.ensure_lookup_table()
+
+    frustum_bm.to_mesh(camera_mesh)
+    frustum_bm.free()  # free and prevent further access
+
+    camera_obj.modifiers.new("wireframe","SKIN")
+    camera_obj.data.skin_vertices[0].data[0].use_root = True
+    for v in camera_mesh.skin_vertices[0].data : 
+        v.radius = [radius, radius]
+
+    camera_mesh.materials.append(user_mat)
+    user_collection.objects.link(camera_obj)
+
+    # Generate sight mesh
+    sight_mesh = bpy.data.meshes.new(f"{username}_sight")
+    sight_obj = bpy.data.objects.new(f"{username}_sight", sight_mesh)
+    sight_verts = view_corners[4:6]
+    sight_bm = bmesh.new()
+    sight_bm.from_mesh(sight_mesh)
+
+    for p in sight_verts:
+        sight_bm.verts.new(p)
+    sight_bm.verts.ensure_lookup_table()
+
+    sight_bm.edges.new((sight_bm.verts[0], sight_bm.verts[1]))
+    sight_bm.edges.ensure_lookup_table()
+    sight_bm.to_mesh(sight_mesh)
+    sight_bm.free() 
+
+    sight_obj.modifiers.new("wireframe","SKIN")
+    sight_obj.data.skin_vertices[0].data[0].use_root = True
+    for v in sight_mesh.skin_vertices[0].data : 
+        v.radius = [radius, radius]
+
+    sight_mesh.materials.append(user_mat)
+    user_collection.objects.link(sight_obj)
+
+    bpy.context.scene.collection.children.link(user_collection)
+
 
 def session_callback(name):
     """ Session callback wrapper
@@ -869,7 +947,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         from replication.repository import Repository
-        import bmesh 
+    
         # init the factory with supported types
         bpy_protocol = bl_types.get_data_translation_protocol()
         repo = Repository(bpy_protocol)
@@ -896,39 +974,12 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
             users = db.get("users")
 
             for username, user_data in users.items():
-                points =  user_data['metadata'].get('view_corners')
-                # Create user mesh and object
-                user_mesh = bpy.data.meshes.new(username)
-                user_obj = bpy.data.objects.new(username, user_mesh)
+                metadata = user_data['metadata']
 
-                # Get a BMesh representation
-                frustum_bm = bmesh.new()   # create an empty BMesh
-                frustum_bm.from_mesh(user_mesh)   # fill it in from a Mesh
+                points =  metadata.get('view_corners')
+                color =  metadata.get('color', (1,1,1,0))
 
-
-                # Modify the BMesh, can do anything here...
-                for p in points:
-                    frustum_bm.verts.new(p)
-                frustum_bm.verts.ensure_lookup_table()
-
-                frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[2]))
-                frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[1]))
-                frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[3]))
-                frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[0]))
-
-                frustum_bm.edges.new((frustum_bm.verts[0], frustum_bm.verts[6]))
-                frustum_bm.edges.new((frustum_bm.verts[2], frustum_bm.verts[6]))
-                frustum_bm.edges.new((frustum_bm.verts[1], frustum_bm.verts[6]))
-                frustum_bm.edges.new((frustum_bm.verts[3], frustum_bm.verts[6]))
-
-                frustum_bm.edges.new((frustum_bm.verts[4], frustum_bm.verts[5]))
-
-
-                # Finish up, write the bmesh back to the mesh
-                frustum_bm.to_mesh(user_mesh)
-                frustum_bm.free()  # free and prevent further access
-
-                bpy.context.scene.collection.objects.link(user_obj)
+                draw_user(username, points,color=color)
 
         return {'FINISHED'}
 
