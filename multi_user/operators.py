@@ -66,7 +66,7 @@ background_execution_queue = Queue()
 deleyables = []
 stop_modal_executor = False
 
-def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0)):
+def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0), intensity=10.0):
     user_collection = bpy.data.collections.new(username)
     
     # User Color
@@ -76,7 +76,7 @@ def loard_users(username, view_corners, radius=0.01, color=(1,1,1,0)):
     nodes.remove(nodes['Principled BSDF'])
     emission_node = nodes.new('ShaderNodeEmission')
     emission_node.inputs['Color'].default_value = color
-    emission_node.inputs['Strength'].default_value = 10
+    emission_node.inputs['Strength'].default_value = intensity
 
     output_node =  nodes['Material Output']
     user_mat.node_tree.links.new(emission_node.outputs['Emission'], output_node.inputs['Surface'])
@@ -942,7 +942,19 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     )
 
     draw_users: bpy.props.BoolProperty(
+        name="Load users",
+        description="Draw users in the scene",
         default=False,
+    )
+    user_skin_radius: bpy.props.FloatProperty(
+        name="User radius",
+        description="User skin radius",
+        default=0.01,
+    )
+    user_color_intensity: bpy.props.FloatProperty(
+        name="User emission intensity",
+        description="User emission intensity",
+        default=10.0,
     )
 
     def execute(self, context):
@@ -979,7 +991,12 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
                 points =  metadata.get('view_corners')
                 color =  metadata.get('color', (1,1,1,0))
 
-                loard_users(username, points,color=color)
+                loard_users(
+                    username,
+                    points,
+                    radius=self.user_skin_radius,
+                    color=color,
+                    intensity=self.user_color_intensity)
 
         return {'FINISHED'}
 
