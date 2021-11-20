@@ -57,8 +57,8 @@ Sections
          .. figure:: /img/index_advanced.png
             :target: advanced/index.html
 
-         :doc:`/advanced/index`
-            Overview of the advanced settings.
+         :doc:`/general_settings/index`
+            Overview of the general settings.
 
       .. container:: descr
 
@@ -85,7 +85,7 @@ Sections
         about/index.rst
         getting_started/index.rst
         ui/index.rst
-        advanced/index.rst
+        general_settings/index.rst
         hosting_internet/index.rst
         workflow/index.rst
         troubleshooting/index.rst

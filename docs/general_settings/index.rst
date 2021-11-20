@@ -1,37 +1,33 @@
-###############
-Advanced
-###############
+################
+General Settings
+################
 
-Side Pannel
-===========
+This section contains optional settings to configure before a session.
 
-.. toctree::
-    :maxdepth: 1
- 
-    Introduction <server/introduction.rst>
-    server/splash.rst
+.. figure:: img/sidepannel_general_settings.png
+   :align: center
+   
+   General Settings pannel
 
-Presence
-=========
+---------
+User info
+---------
 
-Advanced settings
-=================
-
-This section contains optional settings to configure the session behavior.
-
-.. figure:: img/quickstart_advanced.png
+.. figure:: img/sidepannel_userinfo.png
    :align: center
 
-   Advanced configuration panel
+   User Info settings
+
+The **User Info** pannel is here to change your user name and use color.
 
 -------
 Network
 -------
 
-.. figure:: img/quickstart_advanced_network.png
+.. figure:: img/sidepannel_network.png
    :align: center
 
-   Advanced network settings
+   Network settings
 
 **Timeout (in milliseconds)** is the maximum ping authorized before auto-disconnecting.
 You should only increase it if you have a bad connection.
@@ -40,15 +36,18 @@ You should only increase it if you have a bad connection.
 Cache
 -----
 
+.. figure:: img/sidepannel_cache.png
+   :align: center
+
+   Cache settings
+
+
 Multi-user allows you to replicate external dependencies such as images (textures, hdris, etc...), movies, and sounds. 
 On each client, the files will be stored in the multi-user cache folder.
 
-.. figure:: img/quickstart_advanced_cache.png
-   :align: center
 
-   Advanced cache settings
 
-**cache_directory** choose where cached files (images, sound, movies) will be saved.
+**Cache directory** choose where cached files (images, sound, movies) will be saved.
 
 **Clear memory filecache** will save memory space at runtime by removing the file content from memory as soon as it has been written to the disk.
 
@@ -56,11 +55,11 @@ On each client, the files will be stored in the multi-user cache folder.
 
 .. warning:: Clearing the cache could break your scene images/movies/sounds if they are used in a blend file! Try saving the blend file and choosing 'Pack all into blend' before clearing the cache.
 
----
-Log
----
+-------
+Logging
+-------
 
-.. figure:: img/quickstart_advanced_logging.png
+.. figure:: img/sidepannel_logging.png
    :align: center
 
    Advanced log settings
