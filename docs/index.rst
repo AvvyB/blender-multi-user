@@ -8,6 +8,8 @@ Welcome to the manual of the Multi-user, a free and open source blender addon. I
 
 Join our `discord server <https://discord.gg/aBPvGws>`_ to get help and join collaborative creation sessions.
 
+.. warning:: Still under development
+
 .. image:: img/homepage_ban.png
 
 

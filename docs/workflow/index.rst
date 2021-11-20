@@ -2,16 +2,6 @@
 Workflow
 ########
 
-Side Pannel
-===========
+Exemple
+=======
 
-.. toctree::
-    :maxdepth: 1
- 
-    Introduction <server/introduction.rst>
-    server/splash.rst
-
-Presence
-=========
-
-ui
