@@ -2,20 +2,14 @@
 User Interface
 ###############
 
-Side Pannel
-===========
+General Pannels
+===============
 
-.. toctree::
-    :maxdepth: 1
- 
-    Introduction <server/introduction.rst>
-    server/splash.rst
+To understand the UI of the addon's pannels, see: :ref:`quickstart` (+how to join/host/manage).
+In addition to presenting the UI, it explains how to use it.
 
 Presence
 =========
-
-Change users display 
---------------------
 
 *Presence* is the multi-user module responsible for displaying user presence. During the session,
 it draw users' related information in your viewport such as:
@@ -28,19 +22,27 @@ it draw users' related information in your viewport such as:
 .. figure:: img/ui_presence.png
    :align: center
 
-   Presence show flags
+   Presence overlay
+
+Presence settings
+-----------------
 
 The presence overlay panel allows you to enable/disable 
 various drawn parts via the following flags:
 
-- **Show session status**: display the session status in the viewport 
-   
-   .. figure:: img/ui_presence_settings.png
-      :align: center
+.. figure:: img/ui_presence_settings.png
+   :align: center
 
-   - **Text scale**: session status text size
-   - **Vertical/Horizontal position**: session position in the viewport
-   
-- **Show selected objects**: display other users' current selections
-- **Show users**: display users' current viewpoint 
-- **Show different scenes**: display users working on other scenes
+   Presence overlay settings
+
+- **Presence Overlay**: display presence overlay
+- **Selected objects**: display other users' current selections
+- **Users camera**: display users' current viewpoint 
+- **Users mode**: display users' current mode
+- **Distance text visibility**: display text of the overlay at this maximal distance
+- **Users on different scenes**: display users working on other scenes
+- **Show session status**: display the session status in the viewport 
+  
+    * **Vertical/Horizontal position**: session position in the viewport
+    * **Text scale**: session status text size
+
