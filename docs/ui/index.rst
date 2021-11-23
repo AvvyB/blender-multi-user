@@ -17,7 +17,7 @@ Presence
 Change users display 
 --------------------
 
-Presence is the multi-user module responsible for displaying user presence. During the session,
+*Presence* is the multi-user module responsible for displaying user presence. During the session,
 it draw users' related information in your viewport such as:
 
 * Username
@@ -25,17 +25,17 @@ it draw users' related information in your viewport such as:
 * User active mode
 * User selection
 
-.. figure:: img/quickstart_presence.png
+.. figure:: img/ui_presence.png
    :align: center
 
    Presence show flags
 
-The presence overlay panel (see image above) allows you to enable/disable 
+The presence overlay panel allows you to enable/disable 
 various drawn parts via the following flags:
 
 - **Show session status**: display the session status in the viewport 
    
-   .. figure:: img/quickstart_status.png
+   .. figure:: img/ui_presence_settings.png
       :align: center
 
    - **Text scale**: session status text size

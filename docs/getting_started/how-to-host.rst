@@ -48,7 +48,7 @@ Online server
 -------------
 
 However, there are times when you will need to host a session over the internet.
-In this case, we strongly recommend that you read the :ref:`internet-guide` tutorial.
+In this case, we strongly recommend that you read the :ref:`hosting_on_internet` tutorial.
 
 During an online session, various actions are available to you, go to :ref:`how-to-manage` section to 
 learn more about them.

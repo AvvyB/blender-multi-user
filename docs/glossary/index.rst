@@ -19,11 +19,6 @@ Glossary
       *Located in the title of the multi-user panel, the session status shows 
       you the connection state.*
 
-      .. figure:: img/quickstart_session_status.png
-         :align: center
-
-         Session status in panel title bar
-
       All possible connection states are listed here with their meaning:*
 
       +--------------------+---------------------------------------------------------------------------------------------+
