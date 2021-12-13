@@ -483,10 +483,7 @@ class SESSION_UL_users(bpy.types.UIList):
                     mode_current = metadata.get('mode_current','-')
                     mode_icon = get_mode_icon(mode_current)
                     user_color = metadata.get('color',[1.0,1.0,1.0,1.0])
-                    item.color[0] = user_color[0]
-                    item.color[1] = user_color[1]
-                    item.color[2] = user_color[2]
-                    item.color[3] = user_color[3]
+                    item.color = user_color
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
         row = layout.split(factor=0.35, align=True)
@@ -502,16 +499,12 @@ class SESSION_UL_users(bpy.types.UIList):
         row = row.split(factor=0.25, align=True)
         
         entry = row.row()
-        entry.alignment = 'CENTER'
         entry.label(icon=mode_icon)
         entry = row.row()
-        entry.scale_x = .7
-        entry.alignment = 'CENTER'
         entry.label(text=frame_current)
         entry = row.row()
         entry.label(text=scene_current)
         entry = row.row()
-        entry.scale_x = .5
         entry.label(text=ping)
 
 def draw_property(context, parent, property_uuid, level=0):
