@@ -619,6 +619,11 @@ class SessionUser(bpy.types.PropertyGroup):
     """
     username: bpy.props.StringProperty(name="username")
     current_frame: bpy.props.IntProperty(name="current_frame")
+    color: bpy.props.FloatVectorProperty(name="color", subtype="COLOR",
+        min=0.0,
+        max=1.0,
+        size=4,
+        default=(1.0, 1.0, 1.0, 1.0))
 
 
 class SessionProps(bpy.types.PropertyGroup):
