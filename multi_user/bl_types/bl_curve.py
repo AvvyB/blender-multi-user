@@ -178,10 +178,10 @@ class BlCurve(ReplicatedDatablock):
 
             loader.load(new_spline, spline)
 
-            # MATERIAL SLOTS
-            src_materials = data.get('materials', None)
-            if src_materials:
-                load_materials_slots(src_materials, datablock.materials)
+        # MATERIAL SLOTS
+        src_materials = data.get('materials', None)
+        if src_materials:
+            load_materials_slots(src_materials, datablock.materials)
 
     @staticmethod
     def dump(datablock: object) -> dict:
