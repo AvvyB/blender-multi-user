@@ -609,6 +609,13 @@ class BlObject(ReplicatedDatablock):
             if datablock.data is None and img_uuid:
                 datablock.data = get_datablock_from_uuid(img_uuid, None)
 
+        if hasattr(datablock, 'cycles_visibility') \
+                and 'cycles_visibility' in data:
+            loader.load(datablock.cycles_visibility, data['cycles_visibility'])
+
+        if hasattr(datablock, 'modifiers'):
+            load_modifiers(data['modifiers'], datablock.modifiers)
+
         if hasattr(object_data, 'skin_vertices') \
                 and object_data.skin_vertices\
                 and 'skin_vertices' in data:
@@ -617,13 +624,6 @@ class BlObject(ReplicatedDatablock):
                     data['skin_vertices'][index],
                     skin_data.data,
                     SKIN_DATA)
-
-        if hasattr(datablock, 'cycles_visibility') \
-                and 'cycles_visibility' in data:
-            loader.load(datablock.cycles_visibility, data['cycles_visibility'])
-
-        if hasattr(datablock, 'modifiers'):
-            load_modifiers(data['modifiers'], datablock.modifiers)
 
         constraints = data.get('constraints')
         if constraints:
