@@ -68,13 +68,13 @@ Sections
          :doc:`/hosting_internet/index`
             A tutorial to host a collaborative Multi-User session on the internet.
 
-      .. container:: descr
+      .. .. container:: descr
 
-         .. figure:: /img/index_workflow.png
-            :target: workflow/index.html
+      ..    .. figure:: /img/index_workflow.png
+      ..       :target: workflow/index.html
 
-         :doc:`/workflow/index`
-            A guide to understand collaborative workflow in 3D.
+      ..    :doc:`/workflow/index`
+      ..       A guide to understand collaborative workflow in 3D.
 
 
 .. only:: latex or epub or singlehtml
@@ -87,7 +87,6 @@ Sections
         ui/index.rst
         general_settings/index.rst
         hosting_internet/index.rst
-        workflow/index.rst
         troubleshooting/index.rst
         ways_to_contribute/index.rst
         glossary/index.rst
