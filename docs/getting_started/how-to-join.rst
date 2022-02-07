@@ -72,10 +72,6 @@ You can now select it in the server list to join the session !
 
 .. warning:: Be careful, if you don't rename your new preset, or if it has the same name as an existing preset, the old preset will be overwritten.
 
-    .. figure:: img/server_preset_image_report.png
-        :align: center
-        :width: 200px
-
 ----------------
 Joining a server
 ----------------
