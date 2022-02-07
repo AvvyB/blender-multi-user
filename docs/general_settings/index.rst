@@ -84,7 +84,7 @@ Save session data
 -----------------
 
 .. danger::
-   This is an experimental feature, until the stable release it is highly recommended to use regular .blend save.
+   This is an experimental feature, it is still recommended to use regular .blend save.
 
 The save session data allows you to create a backup of the session data.
 
