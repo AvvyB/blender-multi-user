@@ -89,5 +89,4 @@ Sections
         hosting_internet/index.rst
         troubleshooting/index.rst
         ways_to_contribute/index.rst
-        glossary/index.rst
 

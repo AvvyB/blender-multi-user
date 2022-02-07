@@ -12,4 +12,4 @@ Getting started
    how-to-host
    how-to-manage
    troubleshooting
-   glossary
+
