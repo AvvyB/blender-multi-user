@@ -217,3 +217,25 @@ All notable changes to this project will be documented in this file.
 - GPencil fill stroke
 - Sculpt and GPencil brushes deleted when joining a session (@Kysios)
 - Auto-updater doesn't work for master and develop builds
+
+## [0.5.0] - 2022-02-10
+
+### Added
+
+- New overall UI and UX (@Kysios)
+- Documentation overall update (@Kysios)
+- Server presets (@Kysios)
+- Server online status (@Kysios)
+- Draw connected user color in the user list
+
+### Changed
+
+- Dependencies are now installed in the addon folder and correctly cleaned during the addon removal process
+
+### Fixed
+
+- Python 3.10 compatibility (@notfood)
+- Blender 3.x compatibility
+- Skin vertex radius synchronization (@kromar)
+- Sequencer audio strip synchronization
+- Crash with empty after a reconnection
