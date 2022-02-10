@@ -17,6 +17,7 @@
 
 import random
 import logging
+from uuid import uuid4
 import bpy
 import string
 import re
@@ -25,7 +26,7 @@ import os
 from pathlib import Path
 
 from . import bl_types, environment, addon_updater_ops, presence, ui
-from .utils import get_preferences, get_expanded_icon
+from .utils import get_preferences, get_expanded_icon, get_folder_size
 from replication.constants import RP_COMMON
 from replication.interface import session
 
@@ -33,15 +34,21 @@ from replication.interface import session
 IP_REGEX = re.compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
+#SERVER PRESETS AT LAUNCH
 DEFAULT_PRESETS = {
     "localhost" : {
-        "server_ip": "localhost",
-        "server_port": 5555,
-        "server_password": "admin"
+        "server_name": "localhost",
+        "ip": "localhost",
+        "port": 5555,
+        "use_admin_password": True,
+        "admin_password": "admin",
+        "server_password": ""
     },
     "public session" : {
-        "server_ip": "51.75.71.183",
-        "server_port": 5555,
+        "server_name": "public session",
+        "ip": "51.75.71.183",
+        "port": 5555,
+        "admin_password": "",
         "server_password": ""
     },
 }
@@ -78,11 +85,6 @@ def update_ip(self, context):
         logging.error("Wrong IP format")
         self['ip'] = "127.0.0.1"
 
-def update_server_preset_interface(self, context):
-    self.server_name = self.server_preset.get(self.server_preset_interface).name
-    self.ip = self.server_preset.get(self.server_preset_interface).server_ip
-    self.port = self.server_preset.get(self.server_preset_interface).server_port
-    self.password = self.server_preset.get(self.server_preset_interface).server_password 
 
 def update_directory(self, context):
     new_dir = Path(self.cache_directory)
@@ -110,9 +112,15 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     icon: bpy.props.StringProperty()
 
 class ServerPreset(bpy.types.PropertyGroup):
-    server_ip: bpy.props.StringProperty()
-    server_port: bpy.props.IntProperty(default=5555)
-    server_password: bpy.props.StringProperty(default="admin", subtype = "PASSWORD")
+    server_name: bpy.props.StringProperty(default="")
+    ip: bpy.props.StringProperty(default="127.0.0.1", update=update_ip)
+    port: bpy.props.IntProperty(default=5555)
+    use_server_password: bpy.props.BoolProperty(default=False)
+    server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    use_admin_password: bpy.props.BoolProperty(default=False)
+    admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    is_online: bpy.props.BoolProperty(default=False)
+    is_private: bpy.props.BoolProperty(default=False)
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -162,34 +170,59 @@ class ReplicationFlags(bpy.types.PropertyGroup):
 class SessionPrefs(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    ip: bpy.props.StringProperty(
-        name="ip",
-        description='Distant host ip',
-        default="localhost",
-        update=update_ip)
+    # User settings
     username: bpy.props.StringProperty(
         name="Username",
         default=f"user_{random_string_digits()}"
     )
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
+        description='User color',
         subtype='COLOR',
-        default=randomColor())
-    port: bpy.props.IntProperty(
-        name="port",
-        description='Distant host port',
-        default=5555
+        default=randomColor()
     )
+    # Current server settings
     server_name: bpy.props.StringProperty(
         name="server_name",
         description="Custom name of the server",
         default='localhost',
     )
-    password: bpy.props.StringProperty(
-        name="password",
-        default=random_string_digits(),
+    server_index: bpy.props.IntProperty(
+        name="server_index",
+        description="index of the server",
+    )
+    # User host session settings
+    host_port: bpy.props.IntProperty(
+        name="host_port",
+        description='Distant host port',
+        default=5555
+    )
+    host_use_server_password: bpy.props.BoolProperty(
+        name="use_server_password",
+        description='Use session password',
+        default=False
+    )
+    host_server_password: bpy.props.StringProperty(
+        name="server_password",
         description='Session password',
         subtype='PASSWORD'
+    )
+    host_use_admin_password: bpy.props.BoolProperty(
+        name="use_admin_password",
+        description='Use admin password',
+        default=True
+    )
+    host_admin_password: bpy.props.StringProperty(
+        name="admin_password",
+        description='Admin password',
+        subtype='PASSWORD',
+        default='admin'
+    )
+    # Other
+    is_first_launch: bpy.props.BoolProperty(
+        name="is_fnirst_launch",
+        description="First time lauching the addon",
+        default=True
     )
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
@@ -214,6 +247,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description='connection timeout before disconnection',
         default=5000
     )
+    ping_timeout: bpy.props.IntProperty(
+        name='ping timeout',
+        description='check if servers are online',
+        default=500
+    )
     # Replication update settings
     depsgraph_update_rate: bpy.props.FloatProperty(
         name='depsgraph update rate (s)',
@@ -225,11 +263,12 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="Remove filecache from memory",
         default=False
     )
-    # for UI
+    # For UI
     category: bpy.props.EnumProperty(
         name="Category",
         description="Preferences Category",
         items=[
+            ('PREF', "Preferences", "Preferences of this add-on"),
             ('CONFIG', "Configuration", "Configuration of this add-on"),
             ('UPDATE', "Update", "Update this add-on"),
         ],
@@ -273,26 +312,31 @@ class SessionPrefs(bpy.types.AddonPreferences):
         step=1,
         subtype='PERCENTAGE',
     )
-    presence_mode_distance: bpy.props.FloatProperty(
-        name="Distance mode visibilty",
-        description="Adjust the distance visibilty of user's mode",
+    presence_text_distance: bpy.props.FloatProperty(
+        name="Distance text visibilty",
+        description="Adjust the distance visibilty of user's mode/name",
         min=0.1,
-        max=1000,
+        max=10000,
         default=100,
     )
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
         description="Identity",
-        default=True
+        default=False
     )
     conf_session_net_expanded: bpy.props.BoolProperty(
         name="Net",
         description="net",
-        default=True
+        default=False
     )
     conf_session_hosting_expanded: bpy.props.BoolProperty(
         name="Rights",
         description="Rights",
+        default=False
+    )
+    conf_session_rep_expanded: bpy.props.BoolProperty(
+        name="Replication",
+        description="Replication",
         default=False
     )
     conf_session_cache_expanded: bpy.props.BoolProperty(
@@ -300,9 +344,24 @@ class SessionPrefs(bpy.types.AddonPreferences):
         description="cache",
         default=False
     )
+    conf_session_log_expanded: bpy.props.BoolProperty(
+        name="conf_session_log_expanded",
+        description="conf_session_log_expanded",
+        default=False
+    )
     conf_session_ui_expanded: bpy.props.BoolProperty(
         name="Interface",
         description="Interface",
+        default=False
+    )
+    sidebar_repository_shown: bpy.props.BoolProperty(
+        name="sidebar_repository_shown",
+        description="sidebar_repository_shown",
+        default=False
+    )
+    sidebar_advanced_shown: bpy.props.BoolProperty(
+        name="sidebar_advanced_shown",
+        description="sidebar_advanced_shown",
         default=False
     )
     sidebar_advanced_rep_expanded: bpy.props.BoolProperty(
@@ -313,6 +372,11 @@ class SessionPrefs(bpy.types.AddonPreferences):
     sidebar_advanced_log_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_log_expanded",
         description="sidebar_advanced_log_expanded",
+        default=False
+    )
+    sidebar_advanced_uinfo_expanded: bpy.props.BoolProperty(
+        name="sidebar_advanced_uinfo_expanded",
+        description="sidebar_advanced_uinfo_expanded",
         default=False
     )
     sidebar_advanced_net_expanded: bpy.props.BoolProperty(
@@ -371,12 +435,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
         name="server preset",
         type=ServerPreset,
     )
-    server_preset_interface: bpy.props.EnumProperty(
-        name="servers",
-        description="servers enum",
-        items=server_list_callback,
-        update=update_server_preset_interface,
-    )
 
     # Custom panel
     panel_category: bpy.props.StringProperty(
@@ -386,37 +444,27 @@ class SessionPrefs(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-
         layout.row().prop(self, "category", expand=True)
+
+        if self.category == 'PREF':
+            grid = layout.column()
+
+            box = grid.box()
+            row = box.row()
+            # USER SETTINGS
+            split = row.split(factor=0.7, align=True)
+            split.prop(self, "username", text="User")
+            split.prop(self, "client_color", text="")
+
+            row = box.row()
+            row.label(text="Hide settings:")
+            row = box.row()
+            row.prop(self, "sidebar_advanced_shown", text="Hide “Advanced” settings in side pannel (Not in session)")
+            row = box.row()
+            row.prop(self, "sidebar_repository_shown", text="Hide “Repository” settings in side pannel (In session)")
 
         if self.category == 'CONFIG':
             grid = layout.column()
-
-            # USER INFORMATIONS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_identity_expanded", text="User information",
-                icon=get_expanded_icon(self.conf_session_identity_expanded),
-                emboss=False)
-            if self.conf_session_identity_expanded:
-                box.row().prop(self, "username", text="name")
-                box.row().prop(self, "client_color", text="color")
-
-            # NETWORK SETTINGS
-            box = grid.box()
-            box.prop(
-                self, "conf_session_net_expanded", text="Networking",
-                icon=get_expanded_icon(self.conf_session_net_expanded),
-                emboss=False)
-
-            if self.conf_session_net_expanded:
-                box.row().prop(self, "ip", text="Address")
-                row = box.row()
-                row.label(text="Port:")
-                row.prop(self, "port", text="")
-                row = box.row()
-                row.label(text="Init the session from:")
-                row.prop(self, "init_method", text="")
 
             # HOST SETTINGS
             box = grid.box()
@@ -426,8 +474,56 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 emboss=False)
             if self.conf_session_hosting_expanded:
                 row = box.row()
+                row.prop(self, "host_port", text="Port: ")
+                row = box.row()
                 row.label(text="Init the session from:")
                 row.prop(self, "init_method", text="")
+                row = box.row()
+                col = row.column()
+                col.prop(self, "host_use_server_password", text="Server password:")
+                col = row.column()
+                col.enabled = True if self.host_use_server_password else False
+                col.prop(self, "host_server_password", text="")
+                row = box.row()
+                col = row.column()
+                col.prop(self, "host_use_admin_password", text="Admin password:")
+                col = row.column()
+                col.enabled = True if self.host_use_admin_password else False
+                col.prop(self, "host_admin_password", text="")
+
+            # NETWORKING
+            box = grid.box()
+            box.prop(
+                self, "conf_session_net_expanded", text="Network",
+                icon=get_expanded_icon(self.conf_session_net_expanded), 
+                emboss=False)
+            if self.conf_session_net_expanded:
+                row = box.row()
+                row.label(text="Timeout (ms):")
+                row.prop(self, "connection_timeout", text="")
+                row = box.row()
+                row.label(text="Server ping (ms):")
+                row.prop(self, "ping_timeout", text="")
+
+            # REPLICATION
+            box = grid.box()
+            box.prop(
+                self, "conf_session_rep_expanded", text="Replication",
+                icon=get_expanded_icon(self.conf_session_rep_expanded), 
+                emboss=False)
+            if self.conf_session_rep_expanded:
+                row = box.row()
+                row.prop(self.sync_flags, "sync_render_settings")
+                row = box.row()
+                row.prop(self.sync_flags, "sync_active_camera")
+                row = box.row()
+                row.prop(self.sync_flags, "sync_during_editmode")
+                row = box.row()
+                if self.sync_flags.sync_during_editmode:
+                    warning = row.box()
+                    warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
+                    row = box.row()
+                row.prop(self, "depsgraph_update_rate", text="Apply delay")
 
             # CACHE SETTINGS
             box = grid.box()
@@ -438,25 +534,18 @@ class SessionPrefs(bpy.types.AddonPreferences):
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
                 box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
-
-            # INTERFACE SETTINGS
+                box.row().operator('session.clear_cache', text=f"Clear cache ({get_folder_size(self.cache_directory)})")
+        
+            # LOGGING
             box = grid.box()
             box.prop(
-                self, "conf_session_ui_expanded", text="Interface",
-                icon=get_expanded_icon(self.conf_session_ui_expanded),
+                self, "conf_session_log_expanded", text="Logging",
+                icon=get_expanded_icon(self.conf_session_log_expanded), 
                 emboss=False)
-            if self.conf_session_ui_expanded:
-                box.row().prop(self, "panel_category", text="Panel category", expand=True)
+            if self.conf_session_log_expanded:
                 row = box.row()
-                row.label(text="Session widget:")
-
-                col = box.column(align=True)
-                col.prop(self, "presence_hud_scale", expand=True)
-                
-                col.prop(self, "presence_hud_hpos", expand=True)
-                col.prop(self, "presence_hud_vpos", expand=True)
-
-                col.prop(self, "presence_mode_distance", expand=True)
+                row.label(text="Log level:")
+                row.prop(self, 'logging_level', text="")
 
         if self.category == 'UPDATE':
             from . import addon_updater_ops
@@ -477,18 +566,31 @@ class SessionPrefs(bpy.types.AddonPreferences):
             new_db.icon = impl.bl_icon
             new_db.bl_name = impl.bl_id
 
+    # Get a server preset through its name
+    def get_server_preset(self, name):
+        existing_preset = None
 
-    # custom at launch server preset
+        for server_preset in self.server_preset : 
+            if server_preset.server_name == name :
+                existing_preset = server_preset
+
+        return existing_preset
+
+    # Custom at launch server preset
     def generate_default_presets(self): 
         for preset_name, preset_data in DEFAULT_PRESETS.items():
-            existing_preset = self.server_preset.get(preset_name)
+            existing_preset = self.get_server_preset(preset_name)
             if existing_preset :
                 continue
             new_server = self.server_preset.add()
-            new_server.name = preset_name
-            new_server.server_ip = preset_data.get('server_ip')
-            new_server.server_port = preset_data.get('server_port')
+            new_server.name = str(uuid4())
+            new_server.server_name = preset_data.get('server_name')
+            new_server.ip = preset_data.get('ip')
+            new_server.port = preset_data.get('port')
+            new_server.use_server_password = preset_data.get('use_server_password',False)
             new_server.server_password = preset_data.get('server_password',None)
+            new_server.use_admin_password = preset_data.get('use_admin_password',False)
+            new_server.admin_password = preset_data.get('admin_password',None)
 
 
 def client_list_callback(scene, context):
@@ -517,6 +619,11 @@ class SessionUser(bpy.types.PropertyGroup):
     """
     username: bpy.props.StringProperty(name="username")
     current_frame: bpy.props.IntProperty(name="current_frame")
+    color: bpy.props.FloatVectorProperty(name="color", subtype="COLOR",
+        min=0.0,
+        max=1.0,
+        size=4,
+        default=(1.0, 1.0, 1.0, 1.0))
 
 
 class SessionProps(bpy.types.PropertyGroup):
@@ -575,11 +682,6 @@ class SessionProps(bpy.types.PropertyGroup):
         name="admin",
         description='Connect as admin',
         default=False
-    )
-    internet_ip: bpy.props.StringProperty(
-        name="internet ip",
-        default="no found",
-        description='Internet interface ip',
     )
     user_snap_running: bpy.props.BoolProperty(
         default=False

@@ -1,7 +1,7 @@
 # Download base image debian jessie
 FROM python:slim
 
-ARG replication_version=0.1.13
+ARG replication_version=0.9.1
 ARG version=0.1.1
 
 # Infos
@@ -22,4 +22,4 @@ RUN pip install replication==$replication_version
 
 # Run the server with parameters
 ENTRYPOINT ["/bin/sh", "-c"]
-CMD  ["python3 -m replication.server -pwd ${password} -p ${port} -t ${timeout} -l ${log_level} -lf ${log_file}"]
+CMD  ["replication.serve -apwd ${password} -spwd '' -p ${port} -t ${timeout} -l ${log_level} -lf ${log_file}"]

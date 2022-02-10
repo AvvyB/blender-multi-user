@@ -1,8 +1,10 @@
-About
-=====
+================
+About Multi-User
+================
 
 .. toctree::
-   :maxdepth: 1
-   :name: toc-about
+   :maxdepth: 2
 
    introduction
+   features
+   community

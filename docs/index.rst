@@ -1,66 +1,92 @@
+.. _index-manual:
+
 =====================================
-Welcome to Multi-user's documentation
+Multi-user 0.5.0 Reference Manual
 =====================================
+
+Welcome to the manual of the Multi-user, a free and open source blender addon. It tool aims to bring multiple users to work on the same .blend over the network.
+
+Join our `discord server <https://discord.gg/aBPvGws>`_ to get help and join collaborative creation sessions.
+
+.. warning:: Still under development
 
 .. image:: img/homepage_ban.png
 
-The multi-user addon is a free and open source blender plugin. It tool aims to bring multiple users to work on the same .blend over the network.
 
-.. warning::  Under development, use it at your own risks.
+Getting started
+===============
+
+.. only:: builder_html and (not singlehtml)
+
+    .. container:: tocdescr
+
+        .. container:: descr
+
+            :doc:`about/index`
+
+        .. container:: descr
+   
+            :doc:`getting_started/install`
+
+        .. container:: descr
+       
+            :doc:`getting_started/quickstart`
+        
+        .. container:: descr
+       
+            :doc:`troubleshooting/index`
 
 
-
-Main Features
-=============
-
-- Collaborative workflow in blender
-- Viewport users presence (active selection, POV)
-- Datablocks right managment
-- Tested under Windows 
-
-Community
+Sections
 =========
 
-A `discord server <https://discord.gg/aBPvGws>`_ have been created to provide help for new users and 
-organize collaborative creation sessions.
+.. only:: builder_html and (not singlehtml)
 
-Status
-======
+   .. container:: tocdescr
 
-.. image:: img/homepage_roadmap.png
+      .. container:: descr
+
+         .. figure:: /img/index_ui.png
+            :target: ui/index.html
+
+         :doc:`/ui/index`
+            An introduction to Multi-User's interface.
+
+      .. container:: descr
+
+         .. figure:: /img/index_advanced.png
+            :target: advanced/index.html
+
+         :doc:`/general_settings/index`
+            Overview of the general settings.
+
+      .. container:: descr
+
+         .. figure:: /img/index_hosting_internet.png
+            :target: hosting_internet/index.html
+
+         :doc:`/hosting_internet/index`
+            A tutorial to host a collaborative Multi-User session on the internet.
+
+      .. .. container:: descr
+
+      ..    .. figure:: /img/index_workflow.png
+      ..       :target: workflow/index.html
+
+      ..    :doc:`/workflow/index`
+      ..       A guide to understand collaborative workflow in 3D.
 
 
-Follow the `roadmap <https://gitlab.com/slumber/multi-user/-/boards/929107>`_ to be aware of last news.
+.. only:: latex or epub or singlehtml
 
-Documentation is organized into the following sections:
-
-.. toctree::
-    :maxdepth: 1
-    :caption: About
-    :name: sec-about
-
-    about/introduction
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Getting started
-    :name: sec-learn
+    .. toctree::
+        :maxdepth: 1
     
-    getting_started/install
-    getting_started/quickstart
-    getting_started/glossary
-    getting_started/troubleshooting
+        about/index.rst
+        getting_started/index.rst
+        ui/index.rst
+        general_settings/index.rst
+        hosting_internet/index.rst
+        troubleshooting/index.rst
+        ways_to_contribute/index.rst
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
-   :name: sec-tutorials
-
-   tutorials/hosting_guide
-
-.. toctree::
-    :maxdepth: 1
-    :caption: Community
-    :name: sec-community
-    
-    ways_to_contribute

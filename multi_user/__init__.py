@@ -19,7 +19,7 @@
 bl_info = {
     "name": "Multi-User",
     "author": "Swann Martinez",
-    "version": (0, 4, 0),
+    "version": (0, 5, 0),
     "description": "Enable real-time collaborative workflow inside blender",
     "blender": (2, 82, 0),
     "location": "3D View > Sidebar > Multi-User tab",
@@ -61,6 +61,7 @@ def register():
         from . import operators
         from . import handlers
         from . import ui
+        from . import icons
         from . import preferences
         from . import addon_updater_ops
 
@@ -70,6 +71,7 @@ def register():
         operators.register()
         handlers.register()
         ui.register()
+        icons.register()
     except ModuleNotFoundError as e:
         raise Exception(module_error_msg)
         logging.error(module_error_msg)
@@ -83,7 +85,9 @@ def register():
         type=preferences.SessionUser
     )
     bpy.types.WindowManager.user_index = bpy.props.IntProperty()
+    bpy.types.WindowManager.server_index = bpy.props.IntProperty()
     bpy.types.TOPBAR_MT_file_import.append(operators.menu_func_import)
+    bpy.types.TOPBAR_MT_file_export.append(operators.menu_func_export)
 
 
 def unregister():
@@ -91,14 +95,17 @@ def unregister():
     from . import operators
     from . import handlers
     from . import ui
+    from . import icons
     from . import preferences
     from . import addon_updater_ops
 
     bpy.types.TOPBAR_MT_file_import.remove(operators.menu_func_import)
+    bpy.types.TOPBAR_MT_file_export.remove(operators.menu_func_export)
 
     presence.unregister()
     addon_updater_ops.unregister()
     ui.unregister()
+    icons.unregister()
     handlers.unregister()
     operators.unregister()
     preferences.unregister()
@@ -107,5 +114,6 @@ def unregister():
     del bpy.types.ID.uuid
     del bpy.types.WindowManager.online_users
     del bpy.types.WindowManager.user_index
+    del bpy.types.WindowManager.server_index
 
     environment.unregister()

@@ -53,12 +53,12 @@ STROKE = [
     "uv_translation",
     "vertex_color_fill",
 ]
-if bpy.app.version[1] >= 91:
+if bpy.app.version >= (2,91,0):
     STROKE.append('use_cyclic')
 else:
     STROKE.append('draw_cyclic')
 
-if bpy.app.version[1] >= 83:
+if bpy.app.version >= (2,83,0):
     STROKE_POINT.append('vertex_color')
 
 def dump_stroke(stroke):

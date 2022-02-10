@@ -1,7 +1,6 @@
-============
-Introduction
-============
-
+========
+The idea
+========
 
 A film is an idea carved along the whole production process by many different peoples. A traditional animation pipeline involve a linear succession of tasks. From storyboard to compositing by passing upon different step, its fundamental work flow is similar to an industrial assembly line. Since each step is almost a department, its common that one person on department B doesn't know what another person did on a previous step in a department A. This lack of visibility/communication could be a source of problems which could produce a bad impact on the final production result.
 
