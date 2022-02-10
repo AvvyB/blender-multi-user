@@ -562,7 +562,7 @@ The default Docker image essentially runs the equivalent of:
 
     .. code-block:: bash
 
-        replication.serve -pwd admin -p 5555 -t 5000 -l DEBUG -lf multiuser_server.log
+        replication.server -pwd admin -p 5555 -t 5000 -l DEBUG -lf multiuser_server.log
 
 This means the server will be launched with 'admin' as the administrator password, run on ports 5555:5558, use a timeout of 5 seconds, verbose 'DEBUG' log level, and with log files written to 'multiuser_server.log'. See :ref:`cmd-line` for a description of optional parameters.
 
