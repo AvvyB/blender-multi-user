@@ -267,7 +267,7 @@ class addon_updater_update_now(bpy.types.Operator):
 	clean_install: bpy.props.BoolProperty(
 		name="Clean install",
 		description="If enabled, completely clear the addon's folder before installing new update, creating a fresh install",
-		default=False,
+		default=True,
 		options={'HIDDEN'}
 	)
 

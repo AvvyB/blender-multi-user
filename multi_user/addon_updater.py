@@ -1015,16 +1015,18 @@ class Singleton_updater(object):
 		for path, dirs, files in os.walk(base):
 			# prune ie skip updater folder
 			dirs[:] = [d for d in dirs if os.path.join(path,d) not in [self._updater_path]]
+
+			for directory in dirs:
+				shutil.rmtree(os.path.join(path,directory))
+
 			for file in files:
-				for ptrn in self.remove_pre_update_patterns:
-					if fnmatch.filter([file],ptrn):
-						try:
-							fl = os.path.join(path,file)
-							os.remove(fl)
-							if self._verbose: print("Pre-removed file "+file)
-						except OSError:
-							print("Failed to pre-remove "+file)
-							self.print_trace()
+				try:
+					fl = os.path.join(path,file)
+					os.remove(fl)
+					if self._verbose: print("Pre-removed file "+file)
+				except OSError:
+					print("Failed to pre-remove "+file)
+					self.print_trace()
 
 		# Walk through the temp addon sub folder for replacements
 		# this implements the overwrite rules, which apply after
@@ -1701,7 +1703,7 @@ class GitlabEngine(object):
 	def parse_tags(self, response, updater):
 		if response == None:
 			return []
-		return [{"name": tag["name"], "zipball_url": self.get_zip_url(tag["commit"]["id"], updater)} for tag in response]
+		return [{"name": tag["name"], "zipball_url": f"https://gitlab.com/slumber/multi-user/-/jobs/artifacts/{tag['name']}/download?job=build"} for tag in response]
 
 
 # -----------------------------------------------------------------------------
