@@ -206,9 +206,9 @@ You can run the dedicated server on any platform by following these steps:
 
     .. code-block:: bash
 
-        python -m pip install replication==0.1.13
+        python -m pip install replication
 
-4. Launch the server with:
+3. Launch the server with:
 
     .. code-block:: bash
 
