@@ -1703,7 +1703,7 @@ class GitlabEngine(object):
 	def parse_tags(self, response, updater):
 		if response == None:
 			return []
-		return [{"name": tag["name"], "zipball_url": self.get_zip_url(tag["commit"]["id"], updater)} for tag in response]
+		return [{"name": tag["name"], "zipball_url": f"https://gitlab.com/slumber/multi-user/-/jobs/artifacts/{tag['name']}/download?job=build"} for tag in response]
 
 
 # -----------------------------------------------------------------------------
