@@ -1036,7 +1036,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
     def poll(cls, context):
         return True
 
-class SessionImportUser(bpy.types.Panel):
+class SESSION_PT_ImportUser(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOL_PROPS'
     bl_label = "Users"
@@ -1300,7 +1300,7 @@ classes = (
     SessionNotifyOperator, 
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
-    SessionImportUser,
+    SESSION_PT_ImportUser,
     SessionStopAutoSaveOperator,
     SessionPurgeOperator,
     SessionPresetServerAdd,
