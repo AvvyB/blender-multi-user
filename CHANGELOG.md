@@ -240,3 +240,10 @@ All notable changes to this project will be documented in this file.
 - Skin vertex radius synchronization (@kromar)
 - Sequencer audio strip synchronization
 - Crash with empty after a reconnection
+
+## [0.5.1] - 2022-02-10
+
+### Fixed
+
+- Auto updater breaks dependency auto installer
+- Auto updater update from tag
