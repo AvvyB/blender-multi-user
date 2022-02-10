@@ -227,6 +227,7 @@ All notable changes to this project will be documented in this file.
 - Server presets (@Kysios)
 - Server online status (@Kysios)
 - Draw connected user color in the user list
+- Private session (access protected with a password) (@Kysios)
 
 ### Changed
 
