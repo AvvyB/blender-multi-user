@@ -172,7 +172,7 @@ def load_modifier_geometry_node_props(dumped_modifier: dict, target_modifier: bp
     for input_index, inpt in enumerate(get_node_group_properties_identifiers(target_modifier.node_group)):
         dumped_value, dumped_type = dumped_modifier['props'][input_index]
         input_value = target_modifier[inpt[0]]
-        if dumped_type in ['INT', 'VALUE', 'STR']:
+        if dumped_type in ['INT', 'VALUE', 'STR', 'BOOL']:
             logging.info(f"{inpt[0]}/{dumped_value}")
             target_modifier[inpt[0]] = dumped_value
         elif dumped_type in ['RGBA', 'VECTOR']:
