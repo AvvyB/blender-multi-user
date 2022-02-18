@@ -247,3 +247,10 @@ All notable changes to this project will be documented in this file.
 
 - Auto updater breaks dependency auto installer
 - Auto updater update from tag
+
+## [0.5.2] - 2022-02-18
+
+### Fixed
+
+- Objects not selectable after user leaves session
+- Geometry nodes attribute toogle doesn't sync
