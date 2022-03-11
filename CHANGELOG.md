@@ -254,3 +254,14 @@ All notable changes to this project will be documented in this file.
 
 - Objects not selectable after user leaves session
 - Geometry nodes attribute toogle doesn't sync
+
+## [0.5.3] - 2022-03-11
+
+### Changed
+
+- Snapshots logs
+### Fixed
+
+- Server crashing during snapshots
+- Blender 3.1 numpy loading error during early connection process
+- Server docker arguments
