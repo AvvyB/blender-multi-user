@@ -26,7 +26,8 @@ import numpy as np
 BPY_TO_NUMPY_TYPES = {
     'FLOAT': np.float32,
     'INT': np.int32,
-    'BOOL': np.bool}
+    'BOOL': np.bool,
+    'BOOLEAN': np.bool}
 
 PRIMITIVE_TYPES = ['FLOAT', 'INT', 'BOOLEAN']
 

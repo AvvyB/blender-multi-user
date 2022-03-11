@@ -22,4 +22,4 @@ RUN pip install replication==$replication_version
 
 # Run the server with parameters
 ENTRYPOINT ["/bin/sh", "-c"]
-CMD  ["replication.serve -apwd ${password} -spwd '' -p ${port} -t ${timeout} -l ${log_level} -lf ${log_file}"]
+CMD  ["replication.server -apwd ${password} -spwd '' -p ${port} -t ${timeout} -l ${log_level} -lf ${log_file}"]
