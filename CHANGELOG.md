@@ -265,3 +265,9 @@ All notable changes to this project will be documented in this file.
 - Server crashing during snapshots
 - Blender 3.1 numpy loading error during early connection process
 - Server docker arguments
+
+## [0.5.5] - 2022-06-12
+
+### Fixed
+
+- Numpy mesh serialization error
