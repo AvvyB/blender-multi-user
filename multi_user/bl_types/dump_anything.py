@@ -24,8 +24,8 @@ import numpy as np
 
 
 BPY_TO_NUMPY_TYPES = {
-    'FLOAT': np.float32,
-    'INT': np.int32,
+    'FLOAT': np.float,
+    'INT': np.int,
     'BOOL': np.bool,
     'BOOLEAN': np.bool}
 
