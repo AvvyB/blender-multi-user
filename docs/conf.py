@@ -16,12 +16,12 @@ import sys
 
 # -- Project information -----------------------------------------------------
 
-project = 'Multi-User 0.5.0 Documentation'
+project = 'Multi-User 0.5.x Documentation'
 copyright = '2020, Swann Martinez'
 author = 'Swann Martinez, Poochy, Fabian'
 
 # The full version, including alpha/beta/rc tags
-version_release = '0.5.1-develop'
+version_release = '0.5.5'
 
 
 # -- General configuration ---------------------------------------------------
