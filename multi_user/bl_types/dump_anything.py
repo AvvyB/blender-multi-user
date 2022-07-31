@@ -24,10 +24,10 @@ import numpy as np
 
 
 BPY_TO_NUMPY_TYPES = {
-    'FLOAT': float,
-    'INT': int,
-    'BOOL': bool,
-    'BOOLEAN': bool}
+    'FLOAT': np.float32,
+    'INT': np.int32,
+    'BOOL': np.bool,
+    'BOOLEAN': np.bool}
 
 PRIMITIVE_TYPES = ['FLOAT', 'INT', 'BOOLEAN']
 
