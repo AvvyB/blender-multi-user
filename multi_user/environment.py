@@ -31,7 +31,7 @@ DEFAULT_CACHE_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "cache")
 REPLICATION_DEPENDENCIES = {
     "zmq",
-    "deepdiff"
+    "deepdiff==5.7.0"
 }
 LIBS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 REPLICATION = os.path.join(LIBS,"replication")
