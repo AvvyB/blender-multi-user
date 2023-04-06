@@ -44,13 +44,6 @@ DEFAULT_PRESETS = {
         "admin_password": "admin",
         "server_password": ""
     },
-    "public session" : {
-        "server_name": "public session",
-        "ip": "51.75.71.183",
-        "port": 5555,
-        "admin_password": "",
-        "server_password": ""
-    },
 }
 
 def randomColor():
