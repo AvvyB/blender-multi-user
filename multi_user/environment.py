@@ -31,13 +31,11 @@ DEFAULT_CACHE_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "cache")
 REPLICATION_DEPENDENCIES = {
     "zmq",
-    "deepdiff==5.7.0"
+    "deepdiff"
 }
 LIBS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
 REPLICATION = os.path.join(LIBS,"replication")
 
-PYTHON_PATH = None
-SUBPROCESS_DIR = None
 
 rtypes = []
 
@@ -50,13 +48,13 @@ def module_can_be_imported(name: str) -> bool:
         return False
 
 
-def install_pip():
+def install_pip(python_path):
     # pip can not necessarily be imported into Blender after this
-    subprocess.run([str(PYTHON_PATH), "-m", "ensurepip"])
+    subprocess.run([str(python_path), "-m", "ensurepip"])
 
 
-def install_package(name: str, install_dir: str):
-    logging.info(f"installing {name} version...")
+def install_requirements(python_path:str, module_requirement: str, install_dir: str):
+    logging.info(f"Installing {module_requirement} dependencies in {install_dir}")
     env = os.environ
     if "PIP_REQUIRE_VIRTUALENV" in env:
         # PIP_REQUIRE_VIRTUALENV is an env var to ensure pip cannot install packages outside a virtual env
@@ -65,23 +63,7 @@ def install_package(name: str, install_dir: str):
         # env var for the subprocess.
         env = os.environ.copy()
         del env["PIP_REQUIRE_VIRTUALENV"]
-    subprocess.run([str(PYTHON_PATH), "-m", "pip", "install", f"{name}", "-t", install_dir], env=env)
-
-    if name in sys.modules:
-        del sys.modules[name]
-
-
-def check_package_version(name: str, required_version: str):
-    logging.info(f"Checking {name} version...")
-    out = subprocess.run([str(PYTHON_PATH), "-m", "pip", "show", name], capture_output=True)
-
-    version = VERSION_EXPR.search(out.stdout.decode())
-    if version and version.group() == required_version:
-        logging.info(f"{name} is up to date")
-        return True
-    else:
-        logging.info(f"{name} need an update")
-        return False
+    subprocess.run([str(python_path), "-m", "pip", "install", "-r", f"{install_dir}/{module_requirement}/requirements.txt", "-t", install_dir], env=env)
 
 
 def get_ip():
@@ -117,21 +99,7 @@ def remove_paths(paths: list):
         if path in sys.path:
             logging.debug(f"Removing {path} dir from the path.")
             sys.path.remove(path)
-
-
-def install_modules(dependencies: list, python_path: str, install_dir: str):
-    global PYTHON_PATH, SUBPROCESS_DIR
-
-    PYTHON_PATH = Path(python_path)
-    SUBPROCESS_DIR = PYTHON_PATH.parent
-
-    if not module_can_be_imported("pip"):
-        install_pip()
-
-    for package_name in dependencies:
-        if not module_can_be_imported(package_name):
-            install_package(package_name, install_dir=install_dir)
-            module_can_be_imported(package_name)
+      
 
 def register():
     if bpy.app.version >= (2,91,0):
@@ -139,12 +107,21 @@ def register():
     else:
         python_binary_path = bpy.app.binary_path_python
 
+    python_path = Path(python_binary_path)
+
     for module_name in list(sys.modules.keys()):
         if 'replication' in module_name:
             del sys.modules[module_name]
 
     setup_paths([LIBS, REPLICATION])
-    install_modules(REPLICATION_DEPENDENCIES, python_binary_path, install_dir=LIBS)
+
+    if not module_can_be_imported("pip"):
+        install_pip(python_path)
+
+    deps_not_installed = [package_name for package_name in REPLICATION_DEPENDENCIES if not module_can_be_imported(package_name)]
+    if any(deps_not_installed):
+        install_requirements(python_path, module_requirement='replication', install_dir=LIBS)
+    
 
 def unregister():
     remove_paths([REPLICATION, LIBS])
