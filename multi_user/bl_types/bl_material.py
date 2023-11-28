@@ -245,10 +245,8 @@ def dump_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
         'type': type(node_tree).__name__
     }
 
-    for socket_id in ['inputs', 'outputs']:
-        if hasattr(node_tree, socket_id):
-            socket_collection = getattr(node_tree, socket_id)
-            node_tree_data[socket_id] = dump_node_tree_sockets(socket_collection)
+    sockets = [item for item in node_tree.interface.items_tree if item.item_type == 'SOCKET']
+    node_tree_data['interface'] = dump_node_tree_sockets(sockets)
 
     return node_tree_data
 
@@ -264,18 +262,18 @@ def dump_node_tree_sockets(sockets: bpy.types.Collection) -> dict:
     """
     sockets_data = []
     for socket in sockets:
-        try:
-            socket_uuid = socket['uuid']
-        except Exception:
-            socket_uuid = str(uuid4())
-            socket['uuid'] = socket_uuid
-
-        sockets_data.append((socket.name, socket.bl_socket_idname, socket_uuid))
+        sockets_data.append(
+            (
+                socket.name, 
+                socket.socket_type,
+                socket.in_out
+            )
+        )
 
     return sockets_data
 
 
-def load_node_tree_sockets(sockets: bpy.types.Collection,
+def load_node_tree_sockets(interface: bpy.types.NodeTreeInterface,
                            sockets_data: dict):
     """ load sockets of a shader_node_tree
 
@@ -286,20 +284,17 @@ def load_node_tree_sockets(sockets: bpy.types.Collection,
         :arg socket_data: dumped socket data
         :type socket_data: dict
     """
-    # Check for removed sockets
-    for socket in sockets:
-        if not [s for s in sockets_data if 'uuid' in socket and socket['uuid'] == s[2]]:
-            sockets.remove(socket)
+    # Remove old sockets
+    interface.clear()    
 
     # Check for new sockets
-    for idx, socket_data in enumerate(sockets_data):
-        try:
-            checked_socket = sockets[idx]
-            if checked_socket.name != socket_data[0]:
-                checked_socket.name = socket_data[0]
-        except Exception:
-            s = sockets.new(socket_data[1], socket_data[0])
-            s['uuid'] = socket_data[2]
+    for name, socket_type, in_out  in sockets_data:
+        socket = interface.new_socket(
+            name,
+            in_out=in_out,
+            socket_type=socket_type
+        )
+  
 
 
 def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeTree) -> dict:
@@ -316,13 +311,8 @@ def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeT
     if not target_node_tree.is_property_readonly('name'):
         target_node_tree.name = node_tree_data['name']
 
-    if 'inputs' in node_tree_data:
-        socket_collection = getattr(target_node_tree, 'inputs')
-        load_node_tree_sockets(socket_collection, node_tree_data['inputs'])
-
-    if 'outputs' in node_tree_data:
-        socket_collection = getattr(target_node_tree,  'outputs')
-        load_node_tree_sockets(socket_collection, node_tree_data['outputs'])
+    if 'interface' in node_tree_data:
+        load_node_tree_sockets(target_node_tree.interface, node_tree_data['interface'])
 
     # Load nodes
     for node in node_tree_data["nodes"]:
