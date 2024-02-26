@@ -29,13 +29,6 @@ import bpy
 VERSION_EXPR = re.compile('\d+.\d+.\d+')
 DEFAULT_CACHE_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "cache")
-REPLICATION_DEPENDENCIES = {
-    "zmq",
-    "deepdiff"
-}
-LIBS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libs")
-REPLICATION = os.path.join(LIBS,"replication")
-
 
 rtypes = []
 
@@ -53,17 +46,14 @@ def install_pip(python_path):
     subprocess.run([str(python_path), "-m", "ensurepip"])
 
 
-def install_requirements(python_path:str, module_requirement: str, install_dir: str):
-    logging.info(f"Installing {module_requirement} dependencies in {install_dir}")
-    env = os.environ
-    if "PIP_REQUIRE_VIRTUALENV" in env:
-        # PIP_REQUIRE_VIRTUALENV is an env var to ensure pip cannot install packages outside a virtual env
-        # https://docs.python-guide.org/dev/pip-virtualenv/
-        # But since Blender's pip is outside of a virtual env, it can block our packages installation, so we unset the
-        # env var for the subprocess.
-        env = os.environ.copy()
-        del env["PIP_REQUIRE_VIRTUALENV"]
-    subprocess.run([str(python_path), "-m", "pip", "install", "-r", f"{install_dir}/{module_requirement}/requirements.txt", "-t", install_dir], env=env)
+def preload_modules():
+    from . import wheels
+
+    wheels.load_wheel_global("ordered_set", "ordered_set")
+    wheels.load_wheel_global("deepdiff", "deepdiff")
+    wheels.load_wheel_global("replication", "replication")
+    wheels.load_wheel_global("zmq", "pyzmq")
+
 
 
 def get_ip():
@@ -102,26 +92,7 @@ def remove_paths(paths: list):
       
 
 def register():
-    if bpy.app.version >= (2,91,0):
-            python_binary_path = sys.executable
-    else:
-        python_binary_path = bpy.app.binary_path_python
-
-    python_path = Path(python_binary_path)
-
-    for module_name in list(sys.modules.keys()):
-        if 'replication' in module_name:
-            del sys.modules[module_name]
-
-    setup_paths([LIBS, REPLICATION])
-
-    if not module_can_be_imported("pip"):
-        install_pip(python_path)
-
-    deps_not_installed = [package_name for package_name in REPLICATION_DEPENDENCIES if not module_can_be_imported(package_name)]
-    if any(deps_not_installed):
-        install_requirements(python_path, module_requirement='replication', install_dir=LIBS)
-    
+    check_dir(DEFAULT_CACHE_DIR)
 
 def unregister():
-    remove_paths([REPLICATION, LIBS])
+    pass

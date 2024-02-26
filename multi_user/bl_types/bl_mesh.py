@@ -37,8 +37,6 @@ VERTICE = ['co']
 
 EDGE = [
     'vertices',
-    'crease',
-    'bevel_weight',
     'use_seam',
     'use_edge_sharp',
 ]
@@ -149,6 +147,10 @@ class BlMesh(ReplicatedDatablock):
         # EDGES
         data["egdes_count"] = len(mesh.edges)
         data["edges"] = np_dump_collection(mesh.edges, EDGE)
+
+        # TODO 4.0: use bevel_weight_vertex, bevel_weight_edge, crease_edge, crease_vert
+        # https://developer.blender.org/docs/release_notes/4.0/python_api/
+        # ex: C.object.data.attributes['crease_edge'].data[1].value = 0.5
 
         # POLYGONS
         data["poly_count"] = len(mesh.polygons)

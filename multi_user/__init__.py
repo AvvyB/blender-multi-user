@@ -43,6 +43,8 @@ from bpy.app.handlers import persistent
 from . import environment
 
 
+environment.preload_modules()
+
 module_error_msg = "Insufficient rights to install the multi-user \
                 dependencies, aunch blender with administrator rights."
 

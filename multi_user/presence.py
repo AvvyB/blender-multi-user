@@ -253,10 +253,9 @@ class Widget(object):
         return True
 
     def configure_bgl(self):
-        bgl.glLineWidth(2.)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_LINE_SMOOTH)
+        gpu.state.line_width_set(2.0)
+        gpu.state.depth_test_set("LESS")
+        gpu.state.blend_set("ALPHA")
 
 
     def draw(self):
@@ -300,7 +299,8 @@ class UserFrustumWidget(Widget):
 
     def draw(self):
         location = self.data.get('view_corners')
-        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+        # 'FLAT_COLOR', 'IMAGE', 'IMAGE_COLOR', 'SMOOTH_COLOR', 'UNIFORM_COLOR', 'POLYLINE_FLAT_COLOR', 'POLYLINE_SMOOTH_COLOR', 'POLYLINE_UNIFORM_COLOR'
         positions = [tuple(coord) for coord in location]
 
         if len(positions) != 7:
@@ -372,7 +372,7 @@ class UserSelectionWidget(Widget):
             vertex_pos += bbox_pos
             vertex_ind += bbox_ind
 
-        shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+        shader = gpu.shader.from_builtin('UNIFORM_COLOR')
         batch = batch_for_shader(
             shader,
             'LINES',
@@ -421,7 +421,7 @@ class UserNameWidget(Widget):
 
         if coords:
             blf.position(0, coords[0], coords[1]+10, 0)
-            blf.size(0, 16, 72)
+            blf.size(0, 16)
             blf.color(0, color[0], color[1], color[2], color[3])
             blf.draw(0,  self.username)
 
@@ -477,7 +477,7 @@ class UserModeWidget(Widget):
 
         if origin_coord :
             blf.position(0, origin_coord[0]+8, origin_coord[1]-15, 0)
-            blf.size(0, 16, 72)
+            blf.size(0, 16)
             blf.color(0, color[0], color[1], color[2], color[3])
             blf.draw(0,  mode_current)        
 
@@ -511,7 +511,7 @@ class SessionStatusWidget(Widget):
         vpos = (self.preferences.presence_hud_vpos*bpy.context.area.height)/100
 
         blf.position(0, hpos, vpos, 0)
-        blf.size(0, int(text_scale*ui_scale), 72)
+        blf.size(0, int(text_scale*ui_scale))
         blf.color(0, color[0], color[1], color[2], color[3])
         blf.draw(0,  state_str)
 

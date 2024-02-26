@@ -1,3 +1,0 @@
-[submodule "multi_user/libs/replication"]
-	path = multi_user/libs/replication
-	url = https://gitlab.com/slumber/replication.git

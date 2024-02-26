@@ -32,6 +32,7 @@ from replication.constants import (ADDED, ERROR, FETCHED,
 from replication import __version__
 from replication.interface import session
 from .timers import registry
+from . import icons
 
 ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
                      'TRIA_UP',  # COMMITED
@@ -109,7 +110,6 @@ class SESSION_PT_settings(bpy.types.Panel):
         layout = self.layout
         settings = get_preferences()
 
-        from multi_user import icons
         offline_icon = icons.icons_col["session_status_offline"]
         waiting_icon = icons.icons_col["session_status_waiting"]
         online_icon = icons.icons_col["session_status_online"]
@@ -531,7 +531,7 @@ def draw_property(context, parent, property_uuid, level=0):
     have_right_to_modify = (item.owner == settings.username or \
         item.owner == RP_COMMON) and item.state != ERROR
 
-    from multi_user import icons
+    
     sync_status = icons.icons_col["repository_push"] #TODO: Link all icons to the right sync (push/merge/issue). For issue use "UNLINKED" for icon
     # sync_status = icons.icons_col["repository_merge"]
 
@@ -727,7 +727,7 @@ class SESSION_UL_network(bpy.types.UIList):
         else:
             split.label(text=server_name)
 
-        from multi_user import icons
+        from . import icons
         server_status = icons.icons_col["server_offline"]
         if item.is_online:
             server_status = icons.icons_col["server_online"]

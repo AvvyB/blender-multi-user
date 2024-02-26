@@ -235,7 +235,7 @@ def dump_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
     """ Dump a shader node_tree to a dict including links and nodes
 
         :arg node_tree: dumped shader node tree
-        :type node_tree: bpy.types.ShaderNodeTree
+        :type node_tree: bpy.types.ShaderNodeTree`
         :return: dict
     """
     node_tree_data = {
@@ -246,8 +246,9 @@ def dump_node_tree(node_tree: bpy.types.ShaderNodeTree) -> dict:
     }
 
     for socket_id in ['inputs', 'outputs']:
-        socket_collection = getattr(node_tree, socket_id)
-        node_tree_data[socket_id] = dump_node_tree_sockets(socket_collection)
+        if hasattr(node_tree, socket_id):
+            socket_collection = getattr(node_tree, socket_id)
+            node_tree_data[socket_id] = dump_node_tree_sockets(socket_collection)
 
     return node_tree_data
 
