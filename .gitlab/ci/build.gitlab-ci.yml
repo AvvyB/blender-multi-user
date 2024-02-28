@@ -7,5 +7,3 @@ build:
     name: multi_user
     paths: 
      - multi_user
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
