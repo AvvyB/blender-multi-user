@@ -5,8 +5,11 @@ import importlib
 from pathlib import Path
 import sys
 import logging
+import sysconfig
 from types import ModuleType
 from typing import Iterator, Iterable
+import zipfile
+
 
 _my_dir = Path(__file__).parent
 _log = logging.getLogger(__name__)
@@ -77,10 +80,10 @@ def load_wheel_global(module_name: str, fname_prefix: str = "", match_platform: 
         )
         return module
 
-    wheel = _wheel_filename(fname_prefix)
+    wheel = _wheel_filename(fname_prefix, match_platform=match_platform)
 
     wheel_filepath = str(wheel)
-    import zipfile
+
 
     wheel_archive = zipfile.ZipFile(wheel_filepath)
 
@@ -123,8 +126,12 @@ def _sys_path_mod_backup(wheel_file: Path) -> Iterator[None]:
         sys.modules.update(old_sysmod)
 
 
-def _wheel_filename(fname_prefix: str) -> Path:
-    path_pattern = "%s*.whl" % fname_prefix
+def _wheel_filename(fname_prefix: str, match_platform: bool = False) -> Path:
+    if match_platform:
+        platform_tag = sysconfig.get_platform().replace('-','_').replace('.','_')
+        path_pattern = f"{fname_prefix}*{platform_tag}.whl"
+    else:
+        path_pattern = f"{fname_prefix}*.whl"
     wheels: list[Path] = list(_my_dir.glob(path_pattern))
     if not wheels:
         raise RuntimeError("Unable to find wheel at %r" % path_pattern)

@@ -52,7 +52,7 @@ def preload_modules():
     wheels.load_wheel_global("ordered_set", "ordered_set")
     wheels.load_wheel_global("deepdiff", "deepdiff")
     wheels.load_wheel_global("replication", "replication")
-    wheels.load_wheel_global("zmq", "pyzmq")
+    wheels.load_wheel_global("zmq", "pyzmq", match_platform=True)
 
 
 
