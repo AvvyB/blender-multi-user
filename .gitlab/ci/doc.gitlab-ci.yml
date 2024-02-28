@@ -1,6 +1,5 @@
 pages:
   stage: doc
-  needs: ["deploy"]
   image: python
   script:
   - pip install -U sphinx sphinx_rtd_theme sphinx-material
