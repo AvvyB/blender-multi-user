@@ -51,7 +51,7 @@ def load_wheel(module_name: str, submodules: Iterable[str]) -> list[ModuleType]:
     return loaded_modules
 
 
-def load_wheel_global(module_name: str, fname_prefix: str = "") -> ModuleType:
+def load_wheel_global(module_name: str, fname_prefix: str = "", match_platform: bool = False) -> ModuleType:
     """Loads a wheel from 'fname_prefix*.whl', unless the named module can be imported.
 
     This allows us to use system-installed packages before falling back to the shipped wheels.
