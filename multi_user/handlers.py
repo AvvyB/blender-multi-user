@@ -81,9 +81,9 @@ def on_scene_update(scene):
 
         # NOTE: maybe we don't need to check each update but only the first
         for update in reversed(dependency_updates):
-            update_uuid = getattr(update.id, 'uuid', None)
+            update_uuid = getattr(update.id.original, 'uuid', None)
             if update_uuid:
-                node = session.repository.graph.get(update.id.uuid)
+                node = session.repository.graph.get(update_uuid)
                 check_common = session.repository.rdp.get_implementation(update.id).bl_check_common
 
                 if node and (node.owner == session.repository.username or check_common):

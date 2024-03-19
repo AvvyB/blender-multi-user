@@ -58,20 +58,16 @@ else:
 
 def get_node_group_properties_identifiers(node_group):
     props_ids = []
-    # Inputs
-    for inpt in node_group.inputs:
-        if inpt.type in IGNORED_SOCKETS:
+    
+    for socket in node_group.interface.items_tree:
+        if socket.socket_type in IGNORED_SOCKETS:
             continue
         else:
-            props_ids.append((inpt.identifier, inpt.type))
+            props_ids.append((socket.identifier, socket.socket_type))
 
-        if inpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
-            props_ids.append((f"{inpt.identifier}_attribute_name",'STR'))
-            props_ids.append((f"{inpt.identifier}_use_attribute", 'BOOL'))
-
-    for outpt in node_group.outputs:
-        if outpt.type not in IGNORED_SOCKETS and  outpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
-            props_ids.append((f"{outpt.identifier}_attribute_name", 'STR'))
+    # for outpt in node_group.outputs:
+    #     if outpt.type not in IGNORED_SOCKETS and  outpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
+    #         props_ids.append((f"{outpt.identifier}_attribute_name", 'STR'))
 
     return props_ids
     # return [inpt.identifer for inpt in node_group.inputs if  inpt.type not in IGNORED_SOCKETS]
@@ -172,13 +168,13 @@ def load_modifier_geometry_node_props(dumped_modifier: dict, target_modifier: bp
     for input_index, inpt in enumerate(get_node_group_properties_identifiers(target_modifier.node_group)):
         dumped_value, dumped_type = dumped_modifier['props'][input_index]
         input_value = target_modifier[inpt[0]]
-        if dumped_type in ['INT', 'VALUE', 'STR', 'BOOL']:
+        if dumped_type in ['NodeSocketInt', 'NodeSocketFloat', 'NodeSocketString', 'NodeSocketBool']:
             logging.info(f"{inpt[0]}/{dumped_value}")
             target_modifier[inpt[0]] = dumped_value
         elif dumped_type in ['RGBA', 'VECTOR']:
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
-        elif dumped_type in ['COLLECTION', 'OBJECT', 'IMAGE', 'TEXTURE', 'MATERIAL']:
+        elif dumped_type in ['NodeSocketCollection', 'NodeSocketObject', 'NodeSocketImage', 'NodeSocketTexture', 'NodeSocketMaterial']:
             target_modifier[inpt[0]] = get_datablock_from_uuid(dumped_value, None)
 
 

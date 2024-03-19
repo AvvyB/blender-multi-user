@@ -30,7 +30,7 @@ from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
-IGNORED_SOCKETS = ['GEOMETRY', 'SHADER', 'CUSTOM']
+IGNORED_SOCKETS = ['NodeSocketGeometry', 'NodeSocketShader', 'CUSTOM']
 
 def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
