@@ -28,9 +28,11 @@ from replication.protocol import ReplicatedDatablock
 
 from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from bpy.types import (NodeSocketGeometry, NodeSocketShader, NodeSocketVirtual, NodeSocketCollection, NodeSocketObject)
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
-IGNORED_SOCKETS = ['NodeSocketGeometry', 'NodeSocketShader', 'CUSTOM']
+IGNORED_SOCKETS = ['NodeSocketGeometry', 'NodeSocketShader', 'CUSTOM', 'NodeSocketVirtual']
+IGNORED_SOCKETS_TYPES = (NodeSocketGeometry, NodeSocketShader, NodeSocketVirtual)
 
 def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
@@ -59,15 +61,16 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
 
     inputs_data = node_data.get('inputs')
     if inputs_data:
-        inputs = [i for i in target_node.inputs if i.type not in IGNORED_SOCKETS]
+        inputs = [i for i in target_node.inputs if not isinstance(i, IGNORED_SOCKETS_TYPES)]
         for idx, inpt in enumerate(inputs):
             if idx < len(inputs_data) and hasattr(inpt, "default_value"):
                 loaded_input = inputs_data[idx]
                 try:
-                    if inpt.type in ['OBJECT', 'COLLECTION']:
+                    if isinstance(inpt, (NodeSocketObject, NodeSocketCollection)):
                         inpt.default_value = get_datablock_from_uuid(loaded_input, None)
                     else:
                         inpt.default_value = loaded_input
+                        setattr(inpt, 'default_value', loaded_input)
                 except Exception as e:
                     logging.warning(f"Node {target_node.name} input {inpt.name} parameter not supported, skipping ({e})")
             else:
@@ -75,12 +78,12 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
 
     outputs_data = node_data.get('outputs')
     if outputs_data:
-        outputs = [o for o in target_node.outputs if o.type not in IGNORED_SOCKETS]
+        outputs = [o for o in target_node.outputs if not isinstance(o, IGNORED_SOCKETS_TYPES)]
         for idx, output in enumerate(outputs):
             if idx < len(outputs_data) and hasattr(output, "default_value"):
                 loaded_output = outputs_data[idx]
                 try:
-                    if output.type in ['OBJECT', 'COLLECTION']:
+                    if isinstance(output, (NodeSocketObject, NodeSocketCollection)):
                         output.default_value = get_datablock_from_uuid(loaded_output, None)
                     else:
                         output.default_value = loaded_output
@@ -141,7 +144,7 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
 
         if hasattr(node, 'inputs'):
             dumped_node['inputs'] = []
-            inputs = [i for i in node.inputs if i.type not in IGNORED_SOCKETS]
+            inputs = [i for i in node.inputs if not isinstance(i, IGNORED_SOCKETS_TYPES)]
             for idx, inpt in enumerate(inputs):
                 if hasattr(inpt, 'default_value'):
                     if isinstance(inpt.default_value, bpy.types.ID):
@@ -154,7 +157,7 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
         if hasattr(node, 'outputs'):
             dumped_node['outputs'] = []
             for idx, output in enumerate(node.outputs):
-                if output.type not in IGNORED_SOCKETS:
+                if not isinstance(output, IGNORED_SOCKETS_TYPES):
                     if hasattr(output, 'default_value'):
                         dumped_node['outputs'].append(
                             io_dumper.dump(output.default_value))
@@ -289,6 +292,9 @@ def load_node_tree_sockets(interface: bpy.types.NodeTreeInterface,
 
     # Check for new sockets
     for name, socket_type, in_out  in sockets_data:
+        if not socket_type:
+            logging.error(f"Socket {name} has no type, skipping")
+            continue
         socket = interface.new_socket(
             name,
             in_out=in_out,

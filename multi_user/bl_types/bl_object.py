@@ -64,13 +64,11 @@ def get_node_group_properties_identifiers(node_group):
             continue
         else:
             props_ids.append((socket.identifier, socket.socket_type))
-
-    # for outpt in node_group.outputs:
-    #     if outpt.type not in IGNORED_SOCKETS and  outpt.type in ['INT', 'VALUE', 'BOOLEAN', 'RGBA', 'VECTOR']:
-    #         props_ids.append((f"{outpt.identifier}_attribute_name", 'STR'))
+        
+        props_ids.append((f"{socket.identifier}_attribute_name",'NodeSocketString'))
+        props_ids.append((f"{socket.identifier}_use_attribute", 'NodeSocketBool'))
 
     return props_ids
-    # return [inpt.identifer for inpt in node_group.inputs if  inpt.type not in IGNORED_SOCKETS]
 
 
 def dump_physics(target: bpy.types.Object)->dict:
@@ -136,11 +134,11 @@ def dump_modifier_geometry_node_props(modifier: bpy.types.Modifier) -> list:
     """
     dumped_props = []
     
-    for prop_value, prop_type in get_node_group_properties_identifiers(modifier.node_group):
+    for prop_id, prop_type in get_node_group_properties_identifiers(modifier.node_group):
         try:
-            prop_value = modifier[prop_value]
+            prop_value = modifier[prop_id]
         except KeyError as e:
-            logging.error(f"fail to dump geomety node modifier property : {prop_value} ({e})")
+            logging.error(f"fail to dump geomety node modifier property : {prop_id} ({e})")
         else:
             dump = None
             if isinstance(prop_value, bpy.types.ID):
@@ -151,7 +149,6 @@ def dump_modifier_geometry_node_props(modifier: bpy.types.Modifier) -> list:
                 dump = prop_value.to_list()
 
             dumped_props.append((dump, prop_type))
-            # logging.info(prop_value)
 
     return dumped_props
 
@@ -169,9 +166,8 @@ def load_modifier_geometry_node_props(dumped_modifier: dict, target_modifier: bp
         dumped_value, dumped_type = dumped_modifier['props'][input_index]
         input_value = target_modifier[inpt[0]]
         if dumped_type in ['NodeSocketInt', 'NodeSocketFloat', 'NodeSocketString', 'NodeSocketBool']:
-            logging.info(f"{inpt[0]}/{dumped_value}")
             target_modifier[inpt[0]] = dumped_value
-        elif dumped_type in ['RGBA', 'VECTOR']:
+        elif dumped_type in ['NodeSocketColor', 'NodeSocketVector']:
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
         elif dumped_type in ['NodeSocketCollection', 'NodeSocketObject', 'NodeSocketImage', 'NodeSocketTexture', 'NodeSocketMaterial']:
