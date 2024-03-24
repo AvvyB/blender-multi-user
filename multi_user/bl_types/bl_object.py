@@ -575,16 +575,6 @@ class BlObject(ReplicatedDatablock):
         if 'pose' in data:
             if not datablock.pose:
                 raise Exception('No pose data yet (Fixed in a near futur)')
-            # Bone groups
-            for bg_name in data['pose']['bone_groups']:
-                bg_data = data['pose']['bone_groups'].get(bg_name)
-                bg_target = datablock.pose.bone_groups.get(bg_name)
-
-                if not bg_target:
-                    bg_target = datablock.pose.bone_groups.new(name=bg_name)
-
-                loader.load(bg_target, bg_data)
-                # datablock.pose.bone_groups.get
 
             # Bones
             for bone in data['pose']['bones']:
@@ -595,9 +585,6 @@ class BlObject(ReplicatedDatablock):
                     loader.load(target_bone, bone_data['constraints'])
 
                 load_pose(target_bone, bone_data)
-
-                if 'bone_index' in bone_data.keys():
-                    target_bone.bone_group = datablock.pose.bone_group[bone_data['bone_group_index']]
 
         # TODO: find another way...
         if datablock.empty_display_type == "IMAGE":
@@ -738,7 +725,6 @@ class BlObject(ReplicatedDatablock):
                 bones[bone.name] = {}
                 dumper.depth = 1
                 rotation = 'rotation_quaternion' if bone.rotation_mode == 'QUATERNION' else 'rotation_euler'
-                group_index = 'bone_group_index' if bone.bone_group else None
                 dumper.include_filter = [
                     'rotation_mode',
                     'location',
@@ -746,7 +732,6 @@ class BlObject(ReplicatedDatablock):
                     'custom_shape',
                     'use_custom_shape_bone_size',
                     'custom_shape_scale',
-                    group_index,
                     rotation
                 ]
                 bones[bone.name] = dumper.dump(bone)
@@ -756,17 +741,6 @@ class BlObject(ReplicatedDatablock):
                 bones[bone.name]["constraints"] = dumper.dump(bone.constraints)
 
             data['pose'] = {'bones': bones}
-
-            # GROUPS
-            bone_groups = {}
-            for group in datablock.pose.bone_groups:
-                dumper.depth = 3
-                dumper.include_filter = [
-                    'name',
-                    'color_set'
-                ]
-                bone_groups[group.name] = dumper.dump(group)
-            data['pose']['bone_groups'] = bone_groups
 
         # VERTEx GROUP
         if len(datablock.vertex_groups) > 0:
