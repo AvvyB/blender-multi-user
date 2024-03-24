@@ -28,11 +28,14 @@ from replication.protocol import ReplicatedDatablock
 
 from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
-from bpy.types import (NodeSocketGeometry, NodeSocketShader, NodeSocketVirtual, NodeSocketCollection, NodeSocketObject)
+from bpy.types import (NodeSocketGeometry, NodeSocketShader, 
+                       NodeSocketVirtual, NodeSocketCollection,
+                       NodeSocketObject, NodeSocketMaterial)
 
 NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
 IGNORED_SOCKETS = ['NodeSocketGeometry', 'NodeSocketShader', 'CUSTOM', 'NodeSocketVirtual']
 IGNORED_SOCKETS_TYPES = (NodeSocketGeometry, NodeSocketShader, NodeSocketVirtual)
+ID_NODE_SOCKETS = (NodeSocketObject, NodeSocketCollection, NodeSocketMaterial)
 
 def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
@@ -59,6 +62,11 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     if node_tree_uuid:
         target_node.node_tree = get_datablock_from_uuid(node_tree_uuid, None)
 
+    if target_node.bl_idname == 'GeometryNodeRepeatOutput':
+        target_node.repeat_items.clear()
+        for sock_name, sock_type in node_data['repeat_items'].items():
+            target_node.repeat_items.new(sock_type, sock_name)
+
     inputs_data = node_data.get('inputs')
     if inputs_data:
         inputs = [i for i in target_node.inputs if not isinstance(i, IGNORED_SOCKETS_TYPES)]
@@ -66,7 +74,7 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
             if idx < len(inputs_data) and hasattr(inpt, "default_value"):
                 loaded_input = inputs_data[idx]
                 try:
-                    if isinstance(inpt, (NodeSocketObject, NodeSocketCollection)):
+                    if isinstance(inpt, ID_NODE_SOCKETS):
                         inpt.default_value = get_datablock_from_uuid(loaded_input, None)
                     else:
                         inpt.default_value = loaded_input
@@ -83,7 +91,7 @@ def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
             if idx < len(outputs_data) and hasattr(output, "default_value"):
                 loaded_output = outputs_data[idx]
                 try:
-                    if isinstance(output, (NodeSocketObject, NodeSocketCollection)):
+                    if isinstance(output, ID_NODE_SOCKETS):
                         output.default_value = get_datablock_from_uuid(loaded_output, None)
                     else:
                         output.default_value = loaded_output
@@ -188,6 +196,12 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
         dumped_node['image_uuid'] = node.image.uuid
     if hasattr(node, 'node_tree') and getattr(node, 'node_tree'):
         dumped_node['node_tree_uuid'] = node.node_tree.uuid
+    
+    if node.bl_idname == 'GeometryNodeRepeatInput':
+        dumped_node['paired_output'] = node.paired_output.name
+
+    if node.bl_idname == 'GeometryNodeRepeatOutput':
+        dumped_node['repeat_items'] = {item.name: item.socket_type for item in node.repeat_items}
     return dumped_node
 
 
@@ -202,10 +216,8 @@ def load_links(links_data, node_tree):
     """
 
     for link in links_data:
-        input_socket = node_tree.nodes[link['to_node']
-                                       ].inputs[int(link['to_socket'])]
-        output_socket = node_tree.nodes[link['from_node']].outputs[int(
-            link['from_socket'])]
+        input_socket = node_tree.nodes[link['to_node']].inputs[int(link['to_socket'])]
+        output_socket = node_tree.nodes[link['from_node']].outputs[int(link['from_socket'])]
         node_tree.links.new(input_socket, output_socket)
 
 
@@ -265,6 +277,9 @@ def dump_node_tree_sockets(sockets: bpy.types.Collection) -> dict:
     """
     sockets_data = []
     for socket in sockets:
+        if not socket.socket_type:
+            logging.error(f"Socket {socket.name} has no type, skipping")
+            raise ValueError(f"Socket {socket.name} has no type, skipping")
         sockets_data.append(
             (
                 socket.name, 
@@ -332,6 +347,15 @@ def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeT
             target_node.parent =  target_node_tree.nodes[node_data['parent']]
         else:
             target_node.parent = None
+
+    # Load geo node repeat zones
+    zone_input_to_pair = [node_data for node_data in node_tree_data["nodes"].values() if node_data['bl_idname'] == 'GeometryNodeRepeatInput']
+    for node_input_data in zone_input_to_pair:
+        zone_input = target_node_tree.nodes.get(node_input_data['name'])
+        zone_output = target_node_tree.nodes.get(node_input_data['paired_output'])
+
+        zone_input.pair_with_output(zone_output)
+
     # TODO: load only required nodes links
     # Load nodes links
     target_node_tree.links.clear()

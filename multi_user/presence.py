@@ -67,9 +67,10 @@ def refresh_sidebar_view():
     """
     area, region, rv3d = view3d_find()
 
-    for region in area.regions:
-        if region.type == "UI":
-            region.tag_redraw()
+    if area is not None :
+        for region in area.regions:
+            if region.type == "UI":
+                region.tag_redraw()
 
 
 def project_to_viewport(region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coords: list, distance: float = 1.0) -> list:
