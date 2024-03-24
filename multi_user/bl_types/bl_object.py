@@ -113,17 +113,21 @@ def load_physics(dumped_settings: dict, target: bpy.types.Object):
 
     if 'rigid_body' in dumped_settings:
         if not target.rigid_body:
-            bpy.ops.rigidbody.object_add({"object": target})
+            with bpy.context.temp_override(object=target):
+                bpy.ops.rigidbody.object_add()
         loader.load(target.rigid_body, dumped_settings['rigid_body'])
     elif target.rigid_body:
-        bpy.ops.rigidbody.object_remove({"object": target})
+        with bpy.context.temp_override(object=target):
+            bpy.ops.rigidbody.object_remove()
 
     if 'rigid_body_constraint' in dumped_settings:
         if not target.rigid_body_constraint:
-            bpy.ops.rigidbody.constraint_add({"object": target})
+            with bpy.context.temp_override(object=target):
+                bpy.ops.rigidbody.constraint_add()
         loader.load(target.rigid_body_constraint, dumped_settings['rigid_body_constraint'])
     elif target.rigid_body_constraint:
-        bpy.ops.rigidbody.constraint_remove({"object": target})
+        with bpy.context.temp_override(object=target):
+            bpy.ops.rigidbody.constraint_remove()
 
 
 def dump_modifier_geometry_node_props(modifier: bpy.types.Modifier) -> list:
