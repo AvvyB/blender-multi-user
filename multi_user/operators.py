@@ -238,6 +238,9 @@ def on_connection_end(reason="none"):
 
     if on_scene_update in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(on_scene_update)
+    
+    renderer.clear_widgets()
+    renderer.add_widget("session_status", SessionStatusWidget())
 
     # Step 3: remove file handled
     logger = logging.getLogger()
