@@ -52,6 +52,18 @@ POLYGON = [
     'material_index',
 ]
 
+GENERIC_ATTRIBUTES =[
+    'crease_vert',
+    'crease_edge',
+    'bevel_weight_vert',
+    'bevel_weight_edge'
+]
+
+GENERIC_ATTRIBUTES_ENSURE = {
+    'crease_vert': 'vertex_crease_ensure',
+    'crease_edge': 'edge_crease_ensure'
+}
+
 class BlMesh(ReplicatedDatablock):
     use_delta = True
 
@@ -116,7 +128,17 @@ class BlMesh(ReplicatedDatablock):
                         datablock.vertex_colors[color_layer].data, 
                         'color', 
                         data["vertex_colors"][color_layer]['data'])
-
+            
+            # Generic attibutes
+            for attribute_name, attribute_data_type, attribute_domain, attribute_data in data["attributes"]:
+                if attribute_name not in datablock.attributes:
+                    datablock.attributes.new(
+                        attribute_name,
+                        attribute_data_type,
+                        attribute_domain
+                    )
+                np_load_collection(attribute_data, datablock.attributes[attribute_name].data ,['value'])
+                    
             datablock.validate()
             datablock.update()
 
@@ -133,7 +155,6 @@ class BlMesh(ReplicatedDatablock):
             'use_auto_smooth',
             'auto_smooth_angle',
             'use_customdata_edge_bevel',
-            'use_customdata_edge_crease'
         ]
 
         data = dumper.dump(mesh)
@@ -148,10 +169,21 @@ class BlMesh(ReplicatedDatablock):
         data["egdes_count"] = len(mesh.edges)
         data["edges"] = np_dump_collection(mesh.edges, EDGE)
 
-        # TODO 4.0: use bevel_weight_vertex, bevel_weight_edge, crease_edge, crease_vert
-        # https://developer.blender.org/docs/release_notes/4.0/python_api/
-        # ex: C.object.data.attributes['crease_edge'].data[1].value = 0.5
+        # ATTIBUTES
+        data["attributes"] = []
+        for attribute_name in GENERIC_ATTRIBUTES:
+            if attribute_name in datablock.attributes:
+                attribute_data = datablock.attributes.get(attribute_name)
+                dumped_attr_data = np_dump_collection(attribute_data.data, ['value'])
 
+                data["attributes"].append(
+                    (
+                        attribute_name,
+                        attribute_data.data_type,
+                        attribute_data.domain,
+                        dumped_attr_data
+                    )
+                )
         # POLYGONS
         data["poly_count"] = len(mesh.polygons)
         data["polygons"] = np_dump_collection(mesh.polygons, POLYGON)
