@@ -138,6 +138,10 @@ def dump_modifier_geometry_node_props(modifier: bpy.types.Modifier) -> list:
     """
     dumped_props = []
     
+    if not modifier.node_group:
+        logging.warning(f"No geometry node group property found for modifier ({modifier.name})")
+        return dumped_props
+
     for prop_id, prop_type in get_node_group_properties_identifiers(modifier.node_group):
         try:
             prop_value = modifier[prop_id]
