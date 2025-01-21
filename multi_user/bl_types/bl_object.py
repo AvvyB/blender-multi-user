@@ -62,10 +62,11 @@ def get_node_group_properties_identifiers(node_group):
     for socket in node_group.interface.items_tree:
         if socket.socket_type in IGNORED_SOCKETS:
             continue
-        else:
-            props_ids.append((socket.identifier, socket.socket_type))
         
         props_ids.append((f"{socket.identifier}_attribute_name",'NodeSocketString'))
+        if socket.in_out == 'OUTPUT':
+            continue
+        props_ids.append((socket.identifier, socket.socket_type))
         props_ids.append((f"{socket.identifier}_use_attribute", 'NodeSocketBool'))
 
     return props_ids
@@ -172,10 +173,10 @@ def load_modifier_geometry_node_props(dumped_modifier: dict, target_modifier: bp
 
     for input_index, inpt in enumerate(get_node_group_properties_identifiers(target_modifier.node_group)):
         dumped_value, dumped_type = dumped_modifier['props'][input_index]
-        input_value = target_modifier[inpt[0]]
         if dumped_type in ['NodeSocketInt', 'NodeSocketFloat', 'NodeSocketString', 'NodeSocketBool']:
             target_modifier[inpt[0]] = dumped_value
         elif dumped_type in ['NodeSocketColor', 'NodeSocketVector']:
+            input_value = target_modifier[inpt[0]]
             for index in range(len(input_value)):
                 input_value[index] = dumped_value[index]
         elif dumped_type in ['NodeSocketCollection', 'NodeSocketObject', 'NodeSocketImage', 'NodeSocketTexture', 'NodeSocketMaterial']:
