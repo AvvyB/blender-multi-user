@@ -16,31 +16,38 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from logging import log
 import bpy
 import bpy.utils.previews
 
 from .utils import get_preferences, get_expanded_icon, get_folder_size, get_state_str
-from replication.constants import (ADDED, ERROR, FETCHED,
-                                                     MODIFIED, RP_COMMON, UP,
-                                                     STATE_ACTIVE, STATE_AUTH,
-                                                     STATE_CONFIG, STATE_SYNCING,
-                                                     STATE_INITIAL, STATE_SRV_SYNC,
-                                                     STATE_WAITING, STATE_QUITTING,
-                                                     STATE_LOBBY,
-                                                     CONNECTING)
+from replication.constants import (
+    ADDED,
+    ERROR,
+    FETCHED,
+    MODIFIED,
+    RP_COMMON,
+    UP,
+    STATE_ACTIVE,
+    STATE_SYNCING,
+    STATE_INITIAL,
+    STATE_SRV_SYNC,
+    STATE_WAITING,
+    STATE_LOBBY,
+)
 from replication import __version__
 from replication.interface import session
 from .timers import registry
 from . import icons
 
-ICONS_PROP_STATES = ['TRIA_DOWN',  # ADDED
-                     'TRIA_UP',  # COMMITED
-                     'KEYTYPE_KEYFRAME_VEC',  # PUSHED
-                     'TRIA_DOWN',  # FETCHED
-                     'RECOVER_LAST',   # RESET
-                     'TRIA_UP', # CHANGED
-                     'ERROR']  # ERROR
+ICONS_PROP_STATES = [
+    "TRIA_DOWN",  # ADDED
+    "TRIA_UP",  # COMMITED
+    "KEYTYPE_KEYFRAME_VEC",  # PUSHED
+    "TRIA_DOWN",  # FETCHED
+    "RECOVER_LAST",  # RESET
+    "TRIA_UP",  # CHANGED
+    "ERROR",  # ERROR
+]
 
 
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', fill_empty='  '):
@@ -54,7 +61,7 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         decimals    - Optional  : positive number of decimals in percent complete (Int)
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
-    From here:    
+    From here:
     https://gist.github.com/greenstick/b23e475d2bfdc3a82e34eaa1f6781ee4
     """
     if total == 0:
@@ -63,41 +70,49 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
     bar = fill * filledLength + fill_empty * (length - filledLength)
     return f"{prefix} |{bar}| {iteration}/{total}{suffix}"
 
+
 def get_mode_icon(mode_name: str) -> str:
-    """ given a mode name retrieve a built-in icon 
-    """
+    """given a mode name retrieve a built-in icon"""
     mode_icon = "NONE"
-    if mode_name == "OBJECT" :
+    if mode_name == "OBJECT":
         mode_icon = "OBJECT_DATAMODE"
-    elif mode_name == "EDIT_MESH" :
+    elif mode_name == "EDIT_MESH":
         mode_icon = "EDITMODE_HLT"
-    elif mode_name == 'EDIT_CURVE':
+    elif mode_name == "EDIT_CURVE":
         mode_icon = "CURVE_DATA"
-    elif mode_name == 'EDIT_SURFACE':
+    elif mode_name == "EDIT_SURFACE":
         mode_icon = "SURFACE_DATA"
-    elif mode_name == 'EDIT_TEXT':
+    elif mode_name == "EDIT_TEXT":
         mode_icon = "FILE_FONT"
-    elif mode_name == 'EDIT_ARMATURE':
+    elif mode_name == "EDIT_ARMATURE":
         mode_icon = "ARMATURE_DATA"
-    elif mode_name == 'EDIT_METABALL':
+    elif mode_name == "EDIT_METABALL":
         mode_icon = "META_BALL"
-    elif mode_name == 'EDIT_LATTICE':
+    elif mode_name == "EDIT_LATTICE":
         mode_icon = "LATTICE_DATA"
-    elif mode_name == 'POSE':
+    elif mode_name == "POSE":
         mode_icon = "POSE_HLT"
-    elif mode_name == 'SCULPT':
+    elif mode_name == "SCULPT":
         mode_icon = "SCULPTMODE_HLT"
-    elif mode_name == 'PAINT_WEIGHT':
+    elif mode_name == "PAINT_WEIGHT":
         mode_icon = "WPAINT_HLT"
-    elif mode_name == 'PAINT_VERTEX':
+    elif mode_name == "PAINT_VERTEX":
         mode_icon = "VPAINT_HLT"
-    elif mode_name == 'PAINT_TEXTURE':
+    elif mode_name == "PAINT_TEXTURE":
         mode_icon = "TPAINT_HLT"
-    elif mode_name == 'PARTICLE':
+    elif mode_name == "PARTICLE":
         mode_icon = "PARTICLES"
-    elif mode_name == 'PAINT_GPENCIL' or mode_name =='EDIT_GPENCIL' or mode_name =='SCULPT_GPENCIL' or mode_name =='WEIGHT_GPENCIL' or mode_name =='VERTEX_GPENCIL':
+    elif (
+        mode_name == "PAINT_GPENCIL"
+        or mode_name == "EDIT_GPENCIL"
+        or mode_name == "SCULPT_GPENCIL"
+        or mode_name == "WEIGHT_GPENCIL"
+        or mode_name == "VERTEX_GPENCIL"
+    ):
         mode_icon = "GREASEPENCIL"
     return mode_icon
+
+
 class SESSION_PT_settings(bpy.types.Panel):
     """Settings panel"""
     bl_idname = "MULTIUSER_SETTINGS_PT_panel"
@@ -116,7 +131,7 @@ class SESSION_PT_settings(bpy.types.Panel):
 
         if session and session.state != STATE_INITIAL:
             cli_state = session.state
-            state =  session.state
+            state = session.state
             connection_icon = offline_icon
 
             if state == STATE_ACTIVE:
@@ -130,7 +145,6 @@ class SESSION_PT_settings(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        runtime_settings = context.window_manager.session
         settings = get_preferences()
 
         if settings.is_first_launch:
@@ -147,24 +161,31 @@ class SESSION_PT_settings(bpy.types.Panel):
             row.label(text="2. New here ? See the doc:")
             row = layout.row()
             row.operator("doc.get", text="Documentation", icon="HELP")
-        
+
             # START
             row = layout.row()
             row.label(text="3: Start the Multi-user:")
             row = layout.row()
             row.scale_y = 2
             row.operator("firstlaunch.verify", text="Continue")
-        
+
         if not settings.is_first_launch:
             if hasattr(context.window_manager, 'session'):
                 # STATE INITIAL
-                if not session \
-                or (session and session.state == STATE_INITIAL):
+                if not session or (session and session.state == STATE_INITIAL):
                     layout = self.layout
                     settings = get_preferences()
                     server_preset = settings.server_preset
-                    selected_server = context.window_manager.server_index if context.window_manager.server_index<=len(server_preset)-1 else 0
-                    active_server_name = server_preset[selected_server].name if len(server_preset)>=1 else ""
+                    selected_server = (
+                        context.window_manager.server_index
+                        if context.window_manager.server_index <= len(server_preset) - 1
+                        else 0
+                    )
+                    active_server_name = (
+                        server_preset[selected_server].name
+                        if len(server_preset) >= 1
+                        else ""
+                    )
                     is_server_selected = True if active_server_name else False
 
                     # SERVER LIST
@@ -183,11 +204,11 @@ class SESSION_PT_settings(bpy.types.Panel):
                     col.template_list("SESSION_UL_network",  "",  settings, "server_preset", context.window_manager, "server_index")
                     col.separator()
                     connectOp = col.row()
-                    connectOp.enabled =is_server_selected
+                    connectOp.enabled = is_server_selected
                     connectOp.operator("session.connect", text="Connect")
 
                     col = row.column(align=True)
-                    col.operator("session.preset_server_add", icon="ADD", text="") # TODO : add conditions (need a name, etc..)
+                    col.operator("session.preset_server_add", icon="ADD", text="")  # TODO : add conditions (need a name, etc..)
                     row_visible = col.row(align=True)
                     col_visible = row_visible.column(align=True)
                     col_visible.enabled = is_server_selected
@@ -203,32 +224,33 @@ class SESSION_PT_settings(bpy.types.Panel):
                     progress = session.state_progress
                     current_state = session.state
                     info_msg = None
-                    
+
                     if current_state == STATE_LOBBY:
                         usr = session.online_users.get(settings.username)
-                        row= layout.row()
+                        row = layout.row()
                         info_msg = "Waiting for the session to start."
                         if usr and usr['admin']:
                             info_msg = "Init the session to start."
                             info_box = layout.row()
-                            info_box.label(text=info_msg,icon='INFO')
+                            info_box.label(text=info_msg, icon='INFO')
                             init_row = layout.row()
                             init_row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
                         else:
                             info_box = layout.row()
-                            info_box.row().label(text=info_msg,icon='INFO')
+                            info_box.row().label(text=info_msg, icon='INFO')
 
                     # PROGRESS BAR
                     if current_state in [STATE_SYNCING, STATE_SRV_SYNC, STATE_WAITING]:
-                        row= layout.row()
+                        row = layout.row()
                         row.label(text=f"Status: {get_state_str(current_state)}")
-                        row= layout.row()
+                        row = layout.row()
                         info_box = row.box()
                         info_box.label(text=printProgressBar(
                             progress['current'],
                             progress['total'],
                             length=16
                         ))
+
 
 class SESSION_PT_host_settings(bpy.types.Panel):
     bl_idname = "MULTIUSER_SETTINGS_HOST_PT_panel"
@@ -248,12 +270,12 @@ class SESSION_PT_host_settings(bpy.types.Panel):
 
     def draw_header(self, context):
         self.layout.label(text="", icon='NETWORK_DRIVE')
-        
+
     def draw(self, context):
         layout = self.layout
         settings = get_preferences()
 
-        #HOST
+        #   HOST
         host_selection = layout.row().box()
         host_selection_row = host_selection.row()
         host_selection_row.label(text="Init the session from:")
@@ -296,18 +318,18 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
 
     def draw_header(self, context):
         self.layout.label(text="", icon='PREFERENCES')
-        
+
     def draw(self, context):
         layout = self.layout
         settings = get_preferences()
 
-        #ADVANCED USER INFO
+        # ADVANCED USER INFO
         uinfo_section = layout.row().box()
         uinfo_section.prop(
             settings,
             "sidebar_advanced_uinfo_expanded",
             text="User Info",
-            icon=get_expanded_icon(settings.sidebar_advanced_uinfo_expanded), 
+            icon=get_expanded_icon(settings.sidebar_advanced_uinfo_expanded),
             emboss=False)
         if settings.sidebar_advanced_uinfo_expanded:
             uinfo_section_row = uinfo_section.row()
@@ -315,13 +337,13 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             uinfo_section_split.prop(settings, "username", text="")
             uinfo_section_split.prop(settings, "client_color", text="")
 
-        #ADVANCED NET
+        # ADVANCED NET
         net_section = layout.row().box()
         net_section.prop(
             settings,
             "sidebar_advanced_net_expanded",
             text="Network",
-            icon=get_expanded_icon(settings.sidebar_advanced_net_expanded), 
+            icon=get_expanded_icon(settings.sidebar_advanced_net_expanded),
             emboss=False)
         if settings.sidebar_advanced_net_expanded:
             net_section_row = net_section.row()
@@ -331,13 +353,13 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             net_section_row.label(text="Server ping (ms):")
             net_section_row.prop(settings, "ping_timeout", text="")
 
-        #ADVANCED REPLICATION
+        # ADVANCED REPLICATION
         replication_section = layout.row().box()
         replication_section.prop(
             settings,
             "sidebar_advanced_rep_expanded",
             text="Replication",
-            icon=get_expanded_icon(settings.sidebar_advanced_rep_expanded), 
+            icon=get_expanded_icon(settings.sidebar_advanced_rep_expanded),
             emboss=False)
         if settings.sidebar_advanced_rep_expanded:
             replication_section_row = replication_section.row()
@@ -353,13 +375,13 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
                 replication_section_row = replication_section.row()
             replication_section_row.prop(settings, "depsgraph_update_rate", text="Apply delay")
 
-        #ADVANCED CACHE
+        # ADVANCED CACHE
         cache_section = layout.row().box()
         cache_section.prop(
             settings,
             "sidebar_advanced_cache_expanded",
             text="Cache",
-            icon=get_expanded_icon(settings.sidebar_advanced_cache_expanded), 
+            icon=get_expanded_icon(settings.sidebar_advanced_cache_expanded),
             emboss=False)
         if settings.sidebar_advanced_cache_expanded:
             cache_section_row = cache_section.row()
@@ -371,14 +393,14 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             cache_section_row.prop(settings, "clear_memory_filecache", text="")
             cache_section_row = cache_section.row()
             cache_section_row.operator('session.clear_cache', text=f"Clear cache ({get_folder_size(settings.cache_directory)})")
-        
-        #ADVANCED LOG
+
+        # ADVANCED LOG
         log_section = layout.row().box()
         log_section.prop(
             settings,
             "sidebar_advanced_log_expanded",
             text="Logging",
-            icon=get_expanded_icon(settings.sidebar_advanced_log_expanded), 
+            icon=get_expanded_icon(settings.sidebar_advanced_log_expanded),
             emboss=False)
         if settings.sidebar_advanced_log_expanded:
             log_section_row = log_section.row()
@@ -408,17 +430,17 @@ class SESSION_PT_user(bpy.types.Panel):
         active_user = online_users[selected_user] if len(
             online_users)-1 >= selected_user else 0
 
-        #USER LIST
+        # USER LIST
         col = layout.column(align=True)
         row = col.row(align=True)
         row = row.split(factor=0.35, align=True)
-        
+
         box = row.box()
         brow = box.row(align=True)
         brow.label(text="user")
 
         row = row.split(factor=0.25, align=True)
-        
+
         box = row.box()
         brow = box.row(align=True)
         brow.label(text="mode")
@@ -436,12 +458,12 @@ class SESSION_PT_user(bpy.types.Panel):
         row.template_list("SESSION_UL_users",  "",  context.window_manager,
                              "online_users", context.window_manager,  "user_index")
 
-        #OPERATOR ON USER
+        # OPERATOR ON USER
         if active_user != 0 and active_user.username != settings.username:
             row = layout.row()
             user_operations = row.split()
             if  session.state == STATE_ACTIVE:
-                
+
                 user_operations.alert = context.window_manager.session.time_snap_running
                 user_operations.operator(
                     "session.snapview",
@@ -463,8 +485,6 @@ class SESSION_PT_user(bpy.types.Panel):
 
 class SESSION_UL_users(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
-        settings = get_preferences()
-        is_local_user = item.username == settings.username
         ping = '-'
         frame_current = '-'
         scene_current = '-'
@@ -476,13 +496,13 @@ class SESSION_UL_users(bpy.types.UIList):
             if user:
                 ping = str(user['latency'])
                 metadata = user.get('metadata')
-                if metadata and 'frame_current' in metadata:
-                    frame_current = str(metadata.get('frame_current','-'))
-                    scene_current = metadata.get('scene_current','-')
-                    mode_current = metadata.get('mode_current','-')
-                    mode_current = metadata.get('mode_current','-')
+                if metadata and "frame_current" in metadata:
+                    frame_current = str(metadata.get("frame_current", "-"))
+                    scene_current = metadata.get("scene_current", "-")
+                    mode_current = metadata.get("mode_current", "-")
+                    mode_current = metadata.get("mode_current", "-")
                     mode_icon = get_mode_icon(mode_current)
-                    user_color = metadata.get('color',[1.0,1.0,1.0,1.0])
+                    user_color = metadata.get("color", [1.0, 1.0, 1.0, 1.0])
                     item.color = user_color
                 if user['admin']:
                     status_icon = 'FAKE_USER_ON'
@@ -497,7 +517,7 @@ class SESSION_UL_users(bpy.types.UIList):
         entry.label(text=item.username)
 
         row = row.split(factor=0.25, align=True)
-        
+
         entry = row.row()
         entry.label(icon=mode_icon)
         entry = row.row()
@@ -507,6 +527,7 @@ class SESSION_UL_users(bpy.types.UIList):
         entry = row.row()
         entry.label(text=ping)
 
+
 def draw_property(context, parent, property_uuid, level=0):
     settings = get_preferences()
     item = session.repository.graph.get(property_uuid)
@@ -514,9 +535,9 @@ def draw_property(context, parent, property_uuid, level=0):
     area_msg = parent.row(align=True)
 
     if item.state == ERROR:
-        area_msg.alert=True
+        area_msg.alert = True
     else:
-        area_msg.alert=False
+        area_msg.alert = False
 
     line = area_msg.box()
 
@@ -528,11 +549,11 @@ def draw_property(context, parent, property_uuid, level=0):
     detail_item_box.label(text=f"{name}")
 
     # Operations
-    have_right_to_modify = (item.owner == settings.username or \
-        item.owner == RP_COMMON) and item.state != ERROR
+    have_right_to_modify = (
+        item.owner == settings.username or item.owner == RP_COMMON
+    ) and item.state != ERROR
 
-    
-    sync_status = icons.icons_col["repository_push"] #TODO: Link all icons to the right sync (push/merge/issue). For issue use "UNLINKED" for icon
+    sync_status = icons.icons_col["repository_push"]  # TODO: Link all icons to the right sync (push/merge/issue). For issue use "UNLINKED" for icon
     # sync_status = icons.icons_col["repository_merge"]
 
     if have_right_to_modify:
@@ -571,6 +592,7 @@ def draw_property(context, parent, property_uuid, level=0):
     else:
         detail_item_box.label(text="", icon="DECORATE_LOCKED")
 
+
 class SESSION_PT_sync(bpy.types.Panel):
     bl_idname = "MULTIUSER_SYNC_PT_panel"
     bl_label = "Synchronize"
@@ -591,11 +613,31 @@ class SESSION_PT_sync(bpy.types.Panel):
         layout = self.layout
         settings = get_preferences()
 
-        row= layout.row()
-        row = row.grid_flow(row_major=True, columns=0, even_columns=True, even_rows=False, align=True)
-        row.prop(settings.sync_flags, "sync_render_settings",text="",icon_only=True, icon='SCENE')
-        row.prop(settings.sync_flags, "sync_during_editmode", text="",icon_only=True, icon='EDITMODE_HLT')
-        row.prop(settings.sync_flags, "sync_active_camera", text="",icon_only=True, icon='VIEW_CAMERA')
+        row = layout.row()
+        row = row.grid_flow(
+            row_major=True, columns=0, even_columns=True, even_rows=False, align=True
+        )
+        row.prop(
+            settings.sync_flags,
+            "sync_render_settings",
+            text="",
+            icon_only=True,
+            icon="SCENE",
+        )
+        row.prop(
+            settings.sync_flags,
+            "sync_during_editmode",
+            text="",
+            icon_only=True,
+            icon="EDITMODE_HLT",
+        )
+        row.prop(
+            settings.sync_flags,
+            "sync_active_camera",
+            text="",
+            icon_only=True,
+            icon="VIEW_CAMERA",
+        )
 
 
 class SESSION_PT_repository(bpy.types.Panel):
@@ -609,12 +651,6 @@ class SESSION_PT_repository(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         settings = get_preferences()
-        admin = False
-
-        if session and hasattr(session,'online_users'):
-            usr = session.online_users.get(settings.username)
-            if usr:
-                admin = usr['admin']
         return hasattr(context.window_manager, 'session') and \
             session and \
             session.state == STATE_ACTIVE and \
@@ -630,16 +666,12 @@ class SESSION_PT_repository(bpy.types.Panel):
         settings = get_preferences()
         runtime_settings = context.window_manager.session
 
-        usr = session.online_users.get(settings.username)
-
         if session.state == STATE_ACTIVE:
             if 'SessionBackupTimer' in registry:
                 row = layout.row()
                 row.alert = True
                 row.operator('session.cancel_autosave', icon="CANCEL")
                 row.alert = False
-            # else:
-            #     row.operator('session.save', icon="FILE_TICK")
 
             box = layout.box()
             row = box.row()
@@ -649,7 +681,11 @@ class SESSION_PT_repository(bpy.types.Panel):
             row = box.row()
 
             # Properties
-            owned_nodes = [k for k, v in  session.repository.graph.items() if v.owner==settings.username]
+            owned_nodes = [
+                k
+                for k, v in session.repository.graph.items()
+                if v.owner == settings.username
+            ]
 
             filtered_node = owned_nodes if runtime_settings.filter_owned else list(session.repository.graph.keys())
 
@@ -680,12 +716,12 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
         settings = context.window_manager.session
         pref = get_preferences()
         layout.active = settings.enable_presence
-        
-        row = layout.row()
-        row.prop(settings, "enable_presence",text="Presence Overlay")
 
         row = layout.row()
-        row.prop(settings, "presence_show_selected",text="Selected Objects")
+        row.prop(settings, "enable_presence", text="Presence Overlay")
+
+        row = layout.row()
+        row.prop(settings, "presence_show_selected", text="Selected Objects")
 
         row = layout.row(align=True)
         row.prop(settings, "presence_show_user", text="Users camera")
@@ -697,10 +733,10 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
             row.prop(pref, "presence_text_distance", expand=True)
 
         row = col.column()
-        row.prop(settings, "presence_show_far_user", text="Users on different scenes")  
+        row.prop(settings, "presence_show_far_user", text="Users on different scenes")
 
         col.prop(settings, "presence_show_session_status")
-        if settings.presence_show_session_status :
+        if settings.presence_show_session_status:
             split = layout.split()
             text_pos = split.column(align=True)
             text_pos.active = settings.presence_show_session_status
@@ -708,16 +744,15 @@ class VIEW3D_PT_overlay_session(bpy.types.Panel):
             text_pos.prop(pref, "presence_hud_vpos", expand=True)
             text_scale = split.column()
             text_scale.active = settings.presence_show_session_status
-            text_scale.prop(pref, "presence_hud_scale", expand=True)   
-        
+            text_scale.prop(pref, "presence_hud_scale", expand=True)
+
 
 class SESSION_UL_network(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
-        settings = get_preferences()
         server_name = '-'
         server_status = 'BLANK1'
         server_private = 'BLANK1'
-        
+
         server_name = item.server_name
 
         split = layout.split(factor=0.7)
@@ -732,6 +767,7 @@ class SESSION_UL_network(bpy.types.UIList):
         if item.is_online:
             server_status = icons.icons_col["server_online"]
         split.label(icon_value=server_status.icon_id)
+
 
 classes = (
     SESSION_UL_users,

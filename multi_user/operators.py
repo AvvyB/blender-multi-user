@@ -16,19 +16,15 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-
 import gzip
 import logging
-
 import os
 import sys
-
 import traceback
-from uuid import uuid4
 from datetime import datetime
-
 from pathlib import Path
 from queue import Queue
+from uuid import uuid4
 
 import bmesh
 
@@ -39,16 +35,16 @@ except ImportError:
 
 import bpy
 import mathutils
-
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from replication import porcelain
-from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE)
+from replication.constants import FETCHED, RP_COMMON, STATE_ACTIVE
 from replication.interface import session
 from replication.repository import Repository
 
-from . import bl_types, environment, shared_data, timers, ui, utils
-from .handlers import on_scene_update, sanitize_deps_graph
-from .presence import SessionStatusWidget, renderer, view3d_find, refresh_sidebar_view, bbox_from_obj
+from . import bl_types, timers, utils
+from .handlers import on_scene_update
+from .presence import (SessionStatusWidget, bbox_from_obj,
+                       refresh_sidebar_view, renderer, view3d_find)
 from .timers import registry
 
 background_execution_queue = Queue()
@@ -57,9 +53,9 @@ stop_modal_executor = False
 
 
 def draw_user(username, metadata, radius=0.01, intensity=10.0):
-    view_corners =  metadata.get('view_corners')
-    color =  metadata.get('color', (1,1,1,0))
-    objects = metadata.get('selected_objects', None)
+    view_corners = metadata.get("view_corners")
+    color = metadata.get("color", (1, 1, 1, 0))
+    objects = metadata.get("selected_objects", None)
 
     user_collection = bpy.data.collections.new(username)
 
@@ -172,7 +168,7 @@ def session_callback(name):
     """ Session callback wrapper
 
     This allow to encapsulate session callbacks to background_execution_queue.
-    By doing this way callback are executed from the main thread. 
+    By doing this way callback are executed from the main thread.
     """
     def func_wrapper(func):
         @session.register(name)
@@ -184,7 +180,7 @@ def session_callback(name):
 
 @session_callback('on_connection')
 def initialize_session():
-    """Session connection init hander 
+    """Session connection init hander
     """
     runtime_settings = bpy.context.window_manager.session
 
@@ -221,16 +217,15 @@ def initialize_session():
 
 @session_callback('on_exit')
 def on_connection_end(reason="none"):
-    """Session connection finished handler 
+    """Session connection finished handler
     """
     global deleyables, stop_modal_executor
-    settings = utils.get_preferences()
 
     # Step 1: Unregister blender timers
     for d in deleyables:
         try:
             d.unregister()
-        except:
+        except Exception:
             continue
     deleyables.clear()
 
@@ -238,7 +233,7 @@ def on_connection_end(reason="none"):
 
     if on_scene_update in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(on_scene_update)
-    
+
     renderer.clear_widgets()
     renderer.add_widget("session_status", SessionStatusWidget())
 
@@ -248,7 +243,8 @@ def on_connection_end(reason="none"):
         if isinstance(handler, logging.FileHandler):
             logger.removeHandler(handler)
     if reason != "user":
-        bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ") #TODO: change op session.notify to add ui + change reason (in replication->interface)
+        bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ")  # TODO: change op session.notify to add ui + change reason (in replication->interface)
+
 
 def setup_logging():
     """ Session setup logging (host/connect)
@@ -277,6 +273,7 @@ def setup_logging():
 
             handler.setFormatter(formatter)
 
+
 def setup_timer():
     """ Session setup timer (host/connect)
     """
@@ -301,6 +298,7 @@ def setup_timer():
     deleyables.append(session_listen)
     deleyables.append(timers.AnnotationUpdates())
 
+
 def get_active_server_preset(context):
     active_index = context.window_manager.server_index
     server_presets = utils.get_preferences().server_preset
@@ -310,6 +308,8 @@ def get_active_server_preset(context):
     return server_presets[active_index]
 
 # OPERATORS
+
+
 class SessionConnectOperator(bpy.types.Operator):
     bl_idname = "session.connect"
     bl_label = "connect"
@@ -343,16 +343,10 @@ class SessionConnectOperator(bpy.types.Operator):
                              regenerate type settings...")
                 settings.generate_supported_types()
 
-
-        if bpy.app.version >= (2,91,0):
-            python_binary_path = sys.executable
-        else:
-            python_binary_path = bpy.app.binary_path_python
-
         repo = Repository(
             rdp=bpy_protocol,
             username=settings.username)
-        
+
         # Join a session
         if not active_server.use_admin_password:
             utils.clean_scene()
@@ -366,7 +360,7 @@ class SessionConnectOperator(bpy.types.Operator):
                 server_password=server_pass,
                 admin_password=admin_pass)
             session.connect(
-                repository= repo,
+                repository=repo,
                 timeout=settings.connection_timeout,
                 server_password=server_pass,
                 admin_password=admin_pass
@@ -394,7 +388,6 @@ class SessionHostOperator(bpy.types.Operator):
         global deleyables
 
         settings = utils.get_preferences()
-        runtime_settings = context.window_manager.session
         users = bpy.data.window_managers['WinMan'].online_users
         admin_pass = settings.host_admin_password if settings.host_use_admin_password else None
         server_pass = settings.host_server_password if settings.host_use_server_password else ''
@@ -414,16 +407,10 @@ class SessionHostOperator(bpy.types.Operator):
                              regenerate type settings...")
                 settings.generate_supported_types()
 
-
-        if bpy.app.version >= (2,91,0):
-            python_binary_path = sys.executable
-        else:
-            python_binary_path = bpy.app.binary_path_python
-
         repo = Repository(
             rdp=bpy_protocol,
             username=settings.username)
-    
+
         # Host a session
         if settings.init_method == 'EMPTY':
             utils.clean_scene()
@@ -441,7 +428,7 @@ class SessionHostOperator(bpy.types.Operator):
                 server_password=server_pass,
                 admin_password=admin_pass)
             session.host(
-                repository= repo,
+                repository=repo,
                 remote='origin',
                 timeout=settings.connection_timeout,
                 server_password=server_pass,
@@ -468,12 +455,14 @@ class SessionInitOperator(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     init_method: bpy.props.EnumProperty(
-        name='init_method',
-        description='Init repo',
+        name="init_method",
+        description="Init repo",
         items={
-            ('EMPTY', 'an empty scene', 'start empty'),
-            ('BLEND', 'current scenes', 'use current scenes')},
-        default='BLEND')
+            ("EMPTY", "an empty scene", "start empty"),
+            ("BLEND", "current scenes", "use current scenes"),
+        },
+        default="BLEND",
+    )  # type:ignore
 
     @classmethod
     def poll(cls, context):
@@ -532,7 +521,7 @@ class SessionKickOperator(bpy.types.Operator):
     bl_description = "Kick the target user"
     bl_options = {"REGISTER"}
 
-    user: bpy.props.StringProperty()
+    user: bpy.props.StringProperty()  # type:ignore
 
     @classmethod
     def poll(cls, context):
@@ -540,7 +529,7 @@ class SessionKickOperator(bpy.types.Operator):
 
     def execute(self, context):
         global deleyables, stop_modal_executor
-        assert(session)
+        assert session
 
         try:
             porcelain.kick(session.repository, self.user)
@@ -620,11 +609,13 @@ class SessionPropertyRightOperator(bpy.types.Operator):
                                  ignore_warnings=True,
                                  affect_dependencies=self.recursive)
             else:
-                porcelain.lock(session.repository,
-                             self.key,
-                             runtime_settings.clients,
-                             ignore_warnings=True,
-                             affect_dependencies=self.recursive)
+                porcelain.lock(
+                    session.repository,
+                    self.key,
+                    runtime_settings.clients,
+                    ignore_warnings=True,
+                    affect_dependencies=self.recursive,
+                )
 
         return {"FINISHED"}
 
@@ -696,7 +687,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
                     if client_vmatrix:
                         rv3d.view_matrix = mathutils.Matrix(client_vmatrix)
                     else:
-                        self.report({'ERROR'}, f"Client viewport not ready.")
+                        self.report({'ERROR'}, "Client viewport not ready.")
                         session_sessings.time_snap_running = False
                         return {"CANCELLED"}
             else:
@@ -846,7 +837,7 @@ class SessionClearCache(bpy.types.Operator):
 
     def draw(self, context):
         row = self.layout
-        row.label(text=f" Do you really want to remove local cache ? ")
+        row.label(text=" Do you really want to remove local cache ? ")
 
 
 class SessionPurgeOperator(bpy.types.Operator):
@@ -871,7 +862,7 @@ class SessionPurgeOperator(bpy.types.Operator):
 
     def draw(self, context):
         row = self.layout
-        row.label(text=f" Do you really want to remove local cache ? ")
+        row.label(text=" Do you really want to remove local cache ? ")
 
 
 class SessionNotifyOperator(bpy.types.Operator):
@@ -990,7 +981,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         from replication.repository import Repository
-    
+
         # init the factory with supported types
         bpy_protocol = bl_types.get_data_translation_protocol()
         repo = Repository(bpy_protocol)
@@ -1009,7 +1000,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
         # Step 2: Load nodes
         for node in nodes:
             porcelain.apply(repo, node.uuid)
-        
+
         if self.draw_users:
             f = gzip.open(self.filepath, "rb")
             db = pickle.load(f)
@@ -1023,7 +1014,7 @@ class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
                     draw_user(username, metadata, radius=self.user_skin_radius, intensity=self.user_color_intensity)
 
         return {'FINISHED'}
-    
+
     @classmethod
     def poll(cls, context):
         return True
@@ -1068,13 +1059,17 @@ class SessionPresetServerAdd(bpy.types.Operator):
     bl_description = "add a server to the server preset list"
     bl_options = {"REGISTER"}
 
-    server_name: bpy.props.StringProperty(default="")
-    ip: bpy.props.StringProperty(default="127.0.0.1")
-    port: bpy.props.IntProperty(default=5555)
-    use_server_password: bpy.props.BoolProperty(default=False)
-    server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
-    use_admin_password: bpy.props.BoolProperty(default=False)
-    admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
+    server_name: bpy.props.StringProperty(default="")  # type:ignore
+    ip: bpy.props.StringProperty(default="127.0.0.1")  # type:ignore
+    port: bpy.props.IntProperty(default=5555)  # type:ignore
+    use_server_password: bpy.props.BoolProperty(default=False)  # type:ignore
+    server_password: bpy.props.StringProperty(
+        default="", subtype="PASSWORD"
+    )  # type:ignore
+    use_admin_password: bpy.props.BoolProperty(default=False)  # type:ignore
+    admin_password: bpy.props.StringProperty(
+        default="", subtype="PASSWORD"
+    )  # type:ignore
 
     @classmethod
     def poll(cls, context):
@@ -1089,15 +1084,15 @@ class SessionPresetServerAdd(bpy.types.Operator):
         self.use_admin_password = False
         self.admin_password = ""
 
-        assert(context)
+        assert context
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         layout = self.layout
 
-        row = layout.row() 
+        row = layout.row()
         row.prop(self, "server_name", text="Server name")
-        row = layout.row(align = True)
+        row = layout.row(align=True)
         row.prop(self, "ip", text="IP+port")
         row.prop(self, "port", text="")
         row = layout.row()
@@ -1112,9 +1107,9 @@ class SessionPresetServerAdd(bpy.types.Operator):
         col = row.column()
         col.enabled = True if self.use_admin_password else False
         col.prop(self, "admin_password", text="")
-        
+
     def execute(self, context):
-        assert(context)
+        assert context
 
         settings = utils.get_preferences()
         existing_preset = settings.get_server_preset(self.server_name)
@@ -1131,9 +1126,9 @@ class SessionPresetServerAdd(bpy.types.Operator):
 
         refresh_sidebar_view()
 
-        if new_server == existing_preset :
+        if new_server == existing_preset:
             self.report({'INFO'}, "Server '" + self.server_name + "' edited")
-        else :
+        else:
             self.report({'INFO'}, "New '" + self.server_name + "' server preset")
 
         return {'FINISHED'}
@@ -1146,24 +1141,24 @@ class SessionPresetServerEdit(bpy.types.Operator): # TODO : use preset, not sett
     bl_description = "Edit a server from the server preset list"
     bl_options = {"REGISTER"}
 
-    target_server_name: bpy.props.StringProperty(default="None")
+    target_server_name: bpy.props.StringProperty(default="None")   # type:ignore
 
     @classmethod
     def poll(cls, context):
         return True
 
     def invoke(self, context, event):
-        assert(context)
+        assert context
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         layout = self.layout
         settings = utils.get_preferences()
         settings_active_server = settings.server_preset.get(self.target_server_name)
-        
+
         row = layout.row()
         row.prop(settings_active_server, "server_name", text="Server name")
-        row = layout.row(align = True)
+        row = layout.row(align=True)
         row.prop(settings_active_server, "ip", text="IP+port")
         row.prop(settings_active_server, "port", text="")
         row = layout.row()
@@ -1178,9 +1173,9 @@ class SessionPresetServerEdit(bpy.types.Operator): # TODO : use preset, not sett
         col = row.column()
         col.enabled = True if settings_active_server.use_admin_password else False
         col.prop(settings_active_server, "admin_password", text="")
-        
+
     def execute(self, context):
-        assert(context)
+        assert context
 
         settings = utils.get_preferences()
         settings_active_server = settings.server_preset.get(self.target_server_name)
@@ -1191,33 +1186,35 @@ class SessionPresetServerEdit(bpy.types.Operator): # TODO : use preset, not sett
 
         return {'FINISHED'}
 
+
 class SessionPresetServerRemove(bpy.types.Operator):
     """Remove a server to the server list preset"""
     bl_idname = "session.preset_server_remove"
     bl_label = "remove server preset"
     bl_description = "remove the current server from the server preset list"
     bl_options = {"REGISTER"}
-    
-    target_server_name: bpy.props.StringProperty(default="None")
+
+    target_server_name: bpy.props.StringProperty(default="None")  # type:ignore
 
     @classmethod
     def poll(cls, context):
         return True
 
     def execute(self, context):
-        assert(context)
+        assert context
 
         settings = utils.get_preferences()
         settings.server_preset.remove(settings.server_preset.find(self.target_server_name))
 
         return {'FINISHED'}
-        
+
+
 class RefreshServerStatus(bpy.types.Operator):
     bl_idname = "session.get_info"
     bl_label = "Get session info"
     bl_description = "Get session info"
 
-    target_server: bpy.props.StringProperty(default="127.0.0.1:5555")
+    target_server: bpy.props.StringProperty(default="127.0.0.1:5555")  # type:ignore
 
     @classmethod
     def poll(cls, context):
@@ -1234,6 +1231,7 @@ class RefreshServerStatus(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class GetDoc(bpy.types.Operator):
     """Get the documentation of the addon"""
     bl_idname = "doc.get"
@@ -1245,10 +1243,11 @@ class GetDoc(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        assert(context)
+        assert context
         bpy.ops.wm.url_open(url="https://slumber.gitlab.io/multi-user/index.html")
 
         return {'FINISHED'}
+
 
 class FirstLaunch(bpy.types.Operator):
     """First time lauching the addon"""
@@ -1261,7 +1260,7 @@ class FirstLaunch(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        assert(context)
+        assert context
         settings = utils.get_preferences()
         settings.is_first_launch = False
         settings.server_preset.clear()
@@ -1269,8 +1268,10 @@ class FirstLaunch(bpy.types.Operator):
         prefs.generate_default_presets()
         return {'FINISHED'}
 
+
 def menu_func_import(self, context):
     self.layout.operator(SessionLoadSaveOperator.bl_idname, text='Multi-user session snapshot (.db)')
+
 
 def menu_func_export(self, context):
     self.layout.operator(SessionSaveBackupOperator.bl_idname, text='Multi-user session snapshot (.db)')
@@ -1289,7 +1290,7 @@ classes = (
     SessionKickOperator,
     SessionInitOperator,
     SessionClearCache,
-    SessionNotifyOperator, 
+    SessionNotifyOperator,
     SessionSaveBackupOperator,
     SessionLoadSaveOperator,
     SESSION_PT_ImportUser,
@@ -1307,7 +1308,7 @@ classes = (
 def register():
     from bpy.utils import register_class
 
-    for cls in classes: 
+    for cls in classes:
         register_class(cls)
 
 

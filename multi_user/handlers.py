@@ -66,10 +66,8 @@ def on_scene_update(scene):
     """Forward blender depsgraph update to replication
     """
     if session and session.state == STATE_ACTIVE:
-        context = bpy.context
         blender_depsgraph = bpy.context.view_layer.depsgraph
         dependency_updates = [u for u in blender_depsgraph.updates]
-        settings = utils.get_preferences()
         incoming_updates = shared_data.session.applied_updates
 
         distant_update = [getattr(u.id, 'uuid', None) for u in dependency_updates if getattr(u.id, 'uuid', None) in incoming_updates]
@@ -107,11 +105,16 @@ def on_scene_update(scene):
                 porcelain.commit(session.repository, scn_uuid)
                 porcelain.push(session.repository, 'origin', scn_uuid)
 
-        scene_graph_changed = [u for u in reversed(dependency_updates) if getattr(u.id, 'uuid', None) and isinstance(u.id,(bpy.types.Scene,bpy.types.Collection))] 
+        scene_graph_changed = [
+            u for u in reversed(dependency_updates)
+            if getattr(u.id, "uuid", None)
+            and isinstance(u.id, (bpy.types.Scene, bpy.types.Collection))
+        ]
         if scene_graph_changed:
             porcelain.purge_orphan_nodes(session.repository)
 
         update_external_dependencies()
+
 
 @persistent
 def resolve_deps_graph(dummy):

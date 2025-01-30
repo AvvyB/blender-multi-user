@@ -1,0 +1,31 @@
+schema_version = "1.0.0"
+# Change the values according to your extension
+id = "multi_user"
+version = "0.6.0"
+name = "Multiuser"
+blender_version_min = "4.3.0"
+tagline = "Enable real-time collaborative workflow inside blender"
+maintainer = "Swann Martinez <swann.martinez@protonmail.com>"
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+type = "add-on"
+website = "https://slumber.gitlab.io/multi-user/index.html"
+wheels = [
+   "./wheels/ordered_set-4.1.0-py3-none-any.whl",
+   "./wheels/deepdiff-7.0.1-py3-none-any.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-win32.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-win_amd64.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-musllinux_1_1_x86_64.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-musllinux_1_1_i686.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-musllinux_1_1_aarch64.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-manylinux_2_28_x86_64.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+   "./wheels/pyzmq-25.1.2-cp311-cp311-macosx_10_15_universal2.whl",
+   "./wheels/replication-0.9.9-py3-none-any.whl",
+]
+
+[permissions]
+network = "Need to sync scene data to server"

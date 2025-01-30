@@ -17,14 +17,18 @@
 
 
 import bpy
-import mathutils
 
 
 from .dump_anything import Loader, Dumper
-from .. import presence, operators, utils
+from .. import utils
 from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_action import (
+    dump_animation_data,
+    load_animation_data,
+    resolve_animation_dependencies,
+)
+
 
 def get_roll(bone: bpy.types.Bone) -> float:
     """ Compute the actuall roll of a pose bone
@@ -34,6 +38,30 @@ def get_roll(bone: bpy.types.Bone) -> float:
         :return: float
     """
     return bone.AxisRollFromMatrix(bone.matrix_local.to_3x3())[1]
+
+
+def get_datablock_users(datablock):
+    users = []
+    supported_types = utils.get_preferences().supported_datablocks
+    if hasattr(datablock, 'users_collection') and datablock.users_collection:
+        users.extend(list(datablock.users_collection))
+    if hasattr(datablock, 'users_scene') and datablock.users_scene:
+        users.extend(list(datablock.users_scene))
+    if hasattr(datablock, 'users_group') and datablock.users_scene:
+        users.extend(list(datablock.users_scene))
+    for datatype in supported_types:
+        if datatype.bl_name != 'users' and hasattr(bpy.data, datatype.bl_name):
+            root = getattr(bpy.data, datatype.bl_name)
+            for item in root:
+                if (
+                    hasattr(item, "data")
+                    and datablock == item.data
+                    or datatype.bl_name != "collections"
+                    and hasattr(item, "children")
+                    and datablock in item.children
+                ):
+                    users.append(item)
+    return users
 
 
 class BlArmature(ReplicatedDatablock):
@@ -63,8 +91,7 @@ class BlArmature(ReplicatedDatablock):
                 data['user_name'], datablock)
             parent_object.uuid = data['user']
 
-        is_object_in_master = (
-            data['user_collection'][0] == "Master Collection")
+        is_object_in_master = data['user_collection'][0] == "Master Collection"
         # TODO: recursive parent collection loading
         # Link parent object to the collection
         if is_object_in_master:
@@ -72,17 +99,23 @@ class BlArmature(ReplicatedDatablock):
                                                 [0]].collection
         elif data['user_collection'][0] not in bpy.data.collections.keys():
             parent_collection = bpy.data.collections.new(
-                data['user_collection'][0])
+                data['user_collection'][0]
+            )
         else:
-            parent_collection = bpy.data.collections[data['user_collection'][0]]
+            parent_collection = bpy.data.collections[
+                data['user_collection'][0]
+            ]
 
         if parent_object.name not in parent_collection.objects:
             parent_collection.objects.link(parent_object)
 
         # Link parent collection to the scene master collection
-        if not is_object_in_master and parent_collection.name not in bpy.data.scenes[data['user_scene'][0]].collection.children:
-            bpy.data.scenes[data['user_scene'][0]
-                            ].collection.  children.link(parent_collection)
+        master_collection = bpy.data.scenes[data['user_scene'][0]].collection
+        if (
+            not is_object_in_master
+            and parent_collection.name not in master_collection.children
+        ):
+            master_collection.children.link(parent_collection)
 
         current_mode = bpy.context.mode
         current_active_object = bpy.context.view_layer.objects.active
@@ -106,8 +139,8 @@ class BlArmature(ReplicatedDatablock):
             new_bone.head = bone_data['head_local']
             new_bone.tail_radius = bone_data['tail_radius']
             new_bone.head_radius = bone_data['head_radius']
-            new_bone.roll =  bone_data['roll']
-            
+            new_bone.roll = bone_data['roll']
+
             if 'parent' in bone_data:
                 new_bone.parent = datablock.edit_bones[data['bones']
                                                     [bone]['parent']]
@@ -148,16 +181,14 @@ class BlArmature(ReplicatedDatablock):
                 data['bones'][bone.name]['parent'] = bone.parent.name
         # get the parent Object
         # TODO: Use id_data instead
-        object_users = utils.get_datablock_users(datablock)[0]
+        object_users = get_datablock_users(datablock)[0]
         data['user'] = object_users.uuid
         data['user_name'] = object_users.name
 
         # get parent collection
-        container_users = utils.get_datablock_users(object_users)
-        data['user_collection'] = [
-            item.name for item in container_users if isinstance(item, bpy.types.Collection)]
-        data['user_scene'] = [
-            item.name for item in container_users if isinstance(item, bpy.types.Scene)]
+        container_users = get_datablock_users(object_users)
+        data['user_collection'] = [item.name for item in container_users if isinstance(item, bpy.types.Collection)]
+        data['user_scene'] = [item.name for item in container_users if isinstance(item, bpy.types.Scene)]
 
         for bone in datablock.bones:
             data['bones'][bone.name]['roll'] = get_roll(bone)
@@ -178,6 +209,7 @@ class BlArmature(ReplicatedDatablock):
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         return resolve_animation_dependencies(datablock)
+
 
 _type = bpy.types.Armature
 _class = BlArmature

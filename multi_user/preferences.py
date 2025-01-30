@@ -15,36 +15,37 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import random
 import logging
-from uuid import uuid4
-import bpy
-import string
-import re
 import os
-
+import random
+import re
+import string
 from pathlib import Path
+from uuid import uuid4
 
-from . import bl_types, environment, addon_updater_ops, presence, ui
-from .utils import get_preferences, get_expanded_icon, get_folder_size
+import bpy
 from replication.constants import RP_COMMON
 from replication.interface import session
+
+from . import bl_types, environment, ui
+from .utils import get_expanded_icon, get_folder_size, get_preferences
 
 # From https://stackoverflow.com/a/106223
 IP_REGEX = re.compile("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
 HOSTNAME_REGEX = re.compile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
-#SERVER PRESETS AT LAUNCH
+# SERVER PRESETS AT LAUNCH
 DEFAULT_PRESETS = {
-    "localhost" : {
+    "localhost": {
         "server_name": "localhost",
         "ip": "localhost",
         "port": 5555,
         "use_admin_password": True,
         "admin_password": "admin",
-        "server_password": ""
+        "server_password": "",
     },
 }
+
 
 def randomColor():
     """Generate a random color """
@@ -105,15 +106,15 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     icon: bpy.props.StringProperty()
 
 class ServerPreset(bpy.types.PropertyGroup):
-    server_name: bpy.props.StringProperty(default="")
-    ip: bpy.props.StringProperty(default="127.0.0.1", update=update_ip)
-    port: bpy.props.IntProperty(default=5555)
-    use_server_password: bpy.props.BoolProperty(default=False)
-    server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
-    use_admin_password: bpy.props.BoolProperty(default=False)
-    admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")
-    is_online: bpy.props.BoolProperty(default=False)
-    is_private: bpy.props.BoolProperty(default=False)
+    server_name: bpy.props.StringProperty(default="")  # type:ignore
+    ip: bpy.props.StringProperty(default="127.0.0.1", update=update_ip)  # type:ignore
+    port: bpy.props.IntProperty(default=5555)  # type:ignore
+    use_server_password: bpy.props.BoolProperty(default=False)  # type:ignore
+    server_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")  # type:ignore
+    use_admin_password: bpy.props.BoolProperty(default=False)  # type:ignore
+    admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")  # type:ignore
+    is_online: bpy.props.BoolProperty(default=False)  # type:ignore
+    is_private: bpy.props.BoolProperty(default=False)  # type:ignore
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
@@ -145,19 +146,19 @@ class ReplicationFlags(bpy.types.PropertyGroup):
         default=False,
         set=set_sync_render_settings,
         get=get_sync_render_settings
-    )
+    )  # type:ignore
     sync_during_editmode: bpy.props.BoolProperty(
         name="Edit mode updates",
         description="Enable objects update in edit mode (! Impact performances !)",
-        default=False
-    )
+        default=False,
+    )  # type:ignore
     sync_active_camera: bpy.props.BoolProperty(
         name="Synchronize active camera",
         description="Synchronize the active camera",
         default=True,
         get=get_sync_active_camera,
-        set=set_sync_active_camera
-    )
+        set=set_sync_active_camera,
+    )  # type:ignore
 
 
 class SessionPrefs(bpy.types.AddonPreferences):
@@ -167,95 +168,96 @@ class SessionPrefs(bpy.types.AddonPreferences):
     username: bpy.props.StringProperty(
         name="Username",
         default=f"user_{random_string_digits()}"
-    )
+    )  # type:ignore
     client_color: bpy.props.FloatVectorProperty(
         name="client_instance_color",
         description='User color',
         subtype='COLOR',
         default=randomColor()
-    )
+    )  # type:ignore
     # Current server settings
     server_name: bpy.props.StringProperty(
         name="server_name",
         description="Custom name of the server",
         default='localhost',
-    )
+    )  # type:ignore
     server_index: bpy.props.IntProperty(
         name="server_index",
         description="index of the server",
-    )
+    )  # type:ignore
     # User host session settings
     host_port: bpy.props.IntProperty(
         name="host_port",
         description='Distant host port',
         default=5555
-    )
+    )  # type:ignore
     host_use_server_password: bpy.props.BoolProperty(
         name="use_server_password",
         description='Use session password',
         default=False
-    )
+    )  # type:ignore
     host_server_password: bpy.props.StringProperty(
         name="server_password",
         description='Session password',
         subtype='PASSWORD'
-    )
+    )  # type:ignore
     host_use_admin_password: bpy.props.BoolProperty(
         name="use_admin_password",
         description='Use admin password',
         default=True
-    )
+    )  # type:ignore
     host_admin_password: bpy.props.StringProperty(
         name="admin_password",
         description='Admin password',
         subtype='PASSWORD',
         default='admin'
-    )
+    )  # type:ignore
     # Other
     is_first_launch: bpy.props.BoolProperty(
         name="is_fnirst_launch",
         description="First time lauching the addon",
         default=True
-    )
+    )  # type:ignore
     sync_flags: bpy.props.PointerProperty(
         type=ReplicationFlags
-    )
+    )  # type:ignore
     supported_datablocks: bpy.props.CollectionProperty(
         type=ReplicatedDatablock,
-    )
+    )  # type:ignore
     init_method: bpy.props.EnumProperty(
         name='init_method',
         description='Init repo',
         items={
             ('EMPTY', 'an empty scene', 'start empty'),
-            ('BLEND', 'current scenes', 'use current scenes')},
-        default='BLEND')
+            ('BLEND', 'current scenes', 'use current scenes')
+        },
+        default='BLEND')  # type:ignore
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
         default=environment.DEFAULT_CACHE_DIR,
-        update=update_directory)
+        update=update_directory)  # type:ignore
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
         description='connection timeout before disconnection',
         default=5000
-    )
+    )  # type:ignore
     ping_timeout: bpy.props.IntProperty(
         name='ping timeout',
         description='check if servers are online',
         default=500
-    )
+    )  # type:ignore
     # Replication update settings
     depsgraph_update_rate: bpy.props.FloatProperty(
         name='depsgraph update rate (s)',
         description='Dependency graph uppdate rate (s)',
         default=1
-    )
+    )  # type:ignore
     clear_memory_filecache: bpy.props.BoolProperty(
         name="Clear memory filecache",
         description="Remove filecache from memory",
         default=False
-    )
+    )  # type:ignore
     # For UI
     category: bpy.props.EnumProperty(
         name="Category",
@@ -263,10 +265,9 @@ class SessionPrefs(bpy.types.AddonPreferences):
         items=[
             ('PREF', "Preferences", "Preferences of this add-on"),
             ('CONFIG', "Configuration", "Configuration of this add-on"),
-            ('UPDATE', "Update", "Update this add-on"),
         ],
         default='CONFIG'
-    )
+    )  # type:ignore
     logging_level: bpy.props.EnumProperty(
         name="Log level",
         description="Log verbosity level",
@@ -279,14 +280,14 @@ class SessionPrefs(bpy.types.AddonPreferences):
         default='INFO',
         set=set_log_level,
         get=get_log_level
-    )
+    )  # type:ignore
     presence_hud_scale: bpy.props.FloatProperty(
         name="Text scale",
         description="Adjust the session widget text scale",
         min=7,
         max=90,
         default=25,
-    )
+    )  # type:ignore
     presence_hud_hpos: bpy.props.FloatProperty(
         name="Horizontal position",
         description="Adjust the session widget horizontal position",
@@ -295,7 +296,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
         default=1,
         step=1,
         subtype='PERCENTAGE',
-    )
+    )  # type:ignore
     presence_hud_vpos: bpy.props.FloatProperty(
         name="Vertical position",
         description="Adjust the session widget vertical position",
@@ -304,117 +305,84 @@ class SessionPrefs(bpy.types.AddonPreferences):
         default=1,
         step=1,
         subtype='PERCENTAGE',
-    )
+    )  # type:ignore
     presence_text_distance: bpy.props.FloatProperty(
         name="Distance text visibilty",
         description="Adjust the distance visibilty of user's mode/name",
         min=0.1,
         max=10000,
         default=100,
-    )
+    )  # type:ignore
     conf_session_identity_expanded: bpy.props.BoolProperty(
         name="Identity",
         description="Identity",
         default=False
-    )
+    )  # type:ignore
     conf_session_net_expanded: bpy.props.BoolProperty(
         name="Net",
         description="net",
         default=False
-    )
+    )  # type:ignore
     conf_session_hosting_expanded: bpy.props.BoolProperty(
         name="Rights",
         description="Rights",
         default=False
-    )
+    )  # type:ignore
     conf_session_rep_expanded: bpy.props.BoolProperty(
         name="Replication",
         description="Replication",
         default=False
-    )
+    )  # type:ignore
     conf_session_cache_expanded: bpy.props.BoolProperty(
         name="Cache",
         description="cache",
         default=False
-    )
+    )  # type:ignore
     conf_session_log_expanded: bpy.props.BoolProperty(
         name="conf_session_log_expanded",
         description="conf_session_log_expanded",
         default=False
-    )
+    )  # type:ignore
     conf_session_ui_expanded: bpy.props.BoolProperty(
         name="Interface",
         description="Interface",
         default=False
-    )
+    )  # type:ignore
     sidebar_repository_shown: bpy.props.BoolProperty(
         name="sidebar_repository_shown",
         description="sidebar_repository_shown",
         default=False
-    )
+    )  # type:ignore
     sidebar_advanced_shown: bpy.props.BoolProperty(
         name="sidebar_advanced_shown",
         description="sidebar_advanced_shown",
         default=False
-    )
+    )  # type:ignore
     sidebar_advanced_rep_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_rep_expanded",
         description="sidebar_advanced_rep_expanded",
         default=False
-    )
+    )  # type:ignore
     sidebar_advanced_log_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_log_expanded",
         description="sidebar_advanced_log_expanded",
         default=False
-    )
+    )  # type:ignore
     sidebar_advanced_uinfo_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_uinfo_expanded",
         description="sidebar_advanced_uinfo_expanded",
         default=False
-    )
+    )  # type:ignore
     sidebar_advanced_net_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_net_expanded",
         description="sidebar_advanced_net_expanded",
         default=False
-    )
+    )  # type:ignore
     sidebar_advanced_cache_expanded: bpy.props.BoolProperty(
         name="sidebar_advanced_cache_expanded",
         description="sidebar_advanced_cache_expanded",
         default=False
-    )
-
-    auto_check_update: bpy.props.BoolProperty(
-        name="Auto-check for Update",
-        description="If enabled, auto-check for updates using an interval",
-        default=False,
-    )
-    updater_intrval_months: bpy.props.IntProperty(
-        name='Months',
-        description="Number of months between checking for updates",
-        default=0,
-        min=0
-    )
-    updater_intrval_days: bpy.props.IntProperty(
-        name='Days',
-        description="Number of days between checking for updates",
-        default=7,
-        min=0,
-        max=31
-    )
-    updater_intrval_hours: bpy.props.IntProperty(
-        name='Hours',
-        description="Number of hours between checking for updates",
-        default=0,
-        min=0,
-        max=23
-    )
-    updater_intrval_minutes: bpy.props.IntProperty(
-        name='Minutes',
-        description="Number of minutes between checking for updates",
-        default=0,
-        min=0,
-        max=59
-    )
+    )  # type:ignore
 
     # Server preset
     def server_list_callback(scene, context):
@@ -427,13 +395,14 @@ class SessionPrefs(bpy.types.AddonPreferences):
     server_preset: bpy.props.CollectionProperty(
         name="server preset",
         type=ServerPreset,
-    )
+    )  # type:ignore
 
     # Custom panel
     panel_category: bpy.props.StringProperty(
         description="Choose a name for the category of the panel",
         default="Multiuser",
-        update=update_panel_category)
+        update=update_panel_category
+    )  # type:ignore
 
     def draw(self, context):
         layout = self.layout
@@ -502,7 +471,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             box = grid.box()
             box.prop(
                 self, "conf_session_rep_expanded", text="Replication",
-                icon=get_expanded_icon(self.conf_session_rep_expanded), 
+                icon=get_expanded_icon(self.conf_session_rep_expanded),
                 emboss=False)
             if self.conf_session_rep_expanded:
                 row = box.row()
@@ -528,7 +497,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 box.row().prop(self, "cache_directory", text="Cache directory")
                 box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
                 box.row().operator('session.clear_cache', text=f"Clear cache ({get_folder_size(self.cache_directory)})")
-        
+
             # LOGGING
             box = grid.box()
             box.prop(
@@ -539,10 +508,6 @@ class SessionPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.label(text="Log level:")
                 row.prop(self, 'logging_level', text="")
-
-        if self.category == 'UPDATE':
-            from . import addon_updater_ops
-            addon_updater_ops.update_settings_ui(self, context)
 
     def generate_supported_types(self):
         self.supported_datablocks.clear()
@@ -563,32 +528,30 @@ class SessionPrefs(bpy.types.AddonPreferences):
     def get_server_preset(self, name):
         existing_preset = None
 
-        for server_preset in self.server_preset : 
-            if server_preset.server_name == name :
+        for server_preset in self.server_preset:
+            if server_preset.server_name == name:
                 existing_preset = server_preset
 
         return existing_preset
 
     # Custom at launch server preset
-    def generate_default_presets(self): 
+    def generate_default_presets(self):
         for preset_name, preset_data in DEFAULT_PRESETS.items():
             existing_preset = self.get_server_preset(preset_name)
-            if existing_preset :
+            if existing_preset:
                 continue
             new_server = self.server_preset.add()
             new_server.name = str(uuid4())
             new_server.server_name = preset_data.get('server_name')
-            new_server.ip = preset_data.get('ip')
-            new_server.port = preset_data.get('port')
-            new_server.use_server_password = preset_data.get('use_server_password',False)
-            new_server.server_password = preset_data.get('server_password',None)
-            new_server.use_admin_password = preset_data.get('use_admin_password',False)
-            new_server.admin_password = preset_data.get('admin_password',None)
+            new_server.ip = preset_data.get("ip")
+            new_server.port = preset_data.get("port")
+            new_server.use_server_password = preset_data.get("use_server_password", False)
+            new_server.server_password = preset_data.get("server_password", None)
+            new_server.use_admin_password = preset_data.get("use_admin_password", False)
+            new_server.admin_password = preset_data.get("admin_password", None)
 
 
 def client_list_callback(scene, context):
-    from . import operators
-
     items = [(RP_COMMON, RP_COMMON, "")]
 
     username = get_preferences().username
@@ -610,13 +573,16 @@ class SessionUser(bpy.types.PropertyGroup):
 
     Blender user information property 
     """
-    username: bpy.props.StringProperty(name="username")
-    current_frame: bpy.props.IntProperty(name="current_frame")
-    color: bpy.props.FloatVectorProperty(name="color", subtype="COLOR",
+    username: bpy.props.StringProperty(name="username")  # type:ignore
+    current_frame: bpy.props.IntProperty(name="current_frame")  # type:ignore
+    color: bpy.props.FloatVectorProperty(
+        name="color",
+        subtype="COLOR",
         min=0.0,
         max=1.0,
         size=4,
-        default=(1.0, 1.0, 1.0, 1.0))
+        default=(1.0, 1.0, 1.0, 1.0),
+    )  # type:ignore
 
 
 class SessionProps(bpy.types.PropertyGroup):
@@ -626,65 +592,67 @@ class SessionProps(bpy.types.PropertyGroup):
         items={
             ('HOST', 'HOST', 'host a session'),
             ('CONNECT', 'JOIN', 'connect to a session')},
-        default='CONNECT')
+        default='CONNECT'
+    )  # type:ignore
     clients: bpy.props.EnumProperty(
         name="clients",
         description="client enum",
-        items=client_list_callback)
+        items=client_list_callback
+    )  # type:ignore
     enable_presence: bpy.props.BoolProperty(
         name="Presence overlay",
         description='Enable overlay drawing module',
         default=True,
-    )
+    )  # type:ignore
     presence_show_selected: bpy.props.BoolProperty(
         name="Show selected objects",
         description='Enable selection overlay ',
         default=True,
-    )
+    )  # type:ignore
     presence_show_user: bpy.props.BoolProperty(
         name="Show users",
         description='Enable user overlay ',
         default=True,
-    )
+    )  # type:ignore
     presence_show_mode: bpy.props.BoolProperty(
         name="Show users current mode",
         description='Enable user mode overlay ',
         default=False,
-    )
+    )  # type:ignore
     presence_show_far_user: bpy.props.BoolProperty(
         name="Show users on different scenes",
         description="Show user on different scenes",
         default=False,
-    )
+    )  # type:ignore
     presence_show_session_status: bpy.props.BoolProperty(
         name="Show session status ",
         description="Show session status on the viewport",
         default=True,
-    )
+    )  # type:ignore
     filter_owned: bpy.props.BoolProperty(
         name="filter_owned",
         description='Show only owned datablocks',
         default=True
-    )
+    )  # type:ignore
     filter_name: bpy.props.StringProperty(
         name="filter_name",
         default="",
         description='Node name filter',
-    )
+    )  # type:ignore
     admin: bpy.props.BoolProperty(
         name="admin",
         description='Connect as admin',
         default=False
-    )
+    )  # type:ignore
     user_snap_running: bpy.props.BoolProperty(
         default=False
-    )
+    )  # type:ignore
     time_snap_running: bpy.props.BoolProperty(
         default=False
-    )
+    )  # type:ignore
     is_host: bpy.props.BoolProperty(
         default=False
-    )
+    )  # type:ignore
 
 
 classes = (
@@ -710,7 +678,6 @@ def register():
     
     # at launch server presets
     prefs.generate_default_presets()
-        
 
 
 def unregister():

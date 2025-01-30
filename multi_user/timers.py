@@ -20,23 +20,23 @@ import sys
 import traceback
 import bpy
 from replication.constants import (FETCHED, RP_COMMON, STATE_ACTIVE,
-                                   STATE_INITIAL, STATE_LOBBY, STATE_QUITTING,
-                                   STATE_SRV_SYNC, STATE_SYNCING, UP)
-from replication.exception import NonAuthorizedOperationError, ContextError
+                                   STATE_LOBBY)
+from replication.exception import NonAuthorizedOperationError
 from replication.interface import session
 from replication import porcelain
 
-from . import operators, utils
+from . import utils
 from .presence import (UserFrustumWidget, UserNameWidget, UserModeWidget, UserSelectionWidget,
                        generate_user_camera, get_view_matrix, refresh_3d_view,
                        refresh_sidebar_view, renderer)
 
-from . import shared_data 
+from . import shared_data
 
 this = sys.modules[__name__]
 
 # Registered timers
 this.registry = dict()
+
 
 def is_annotating(context: bpy.types.Context):
     """ Check if the annotate mode is enabled
@@ -54,14 +54,14 @@ class Timer(object):
     def __init__(self, timeout=10, id=None):
         self._timeout = timeout
         self.is_running = False
-        self.id =  id if id else self.__class__.__name__
+        self.id = id if id else self.__class__.__name__
 
     def register(self):
         """Register the timer into the blender timer system
         """
 
         if not self.is_running:
-            this.registry[self.id] = self 
+            this.registry[self.id] = self
             bpy.app.timers.register(self.main)
             self.is_running = True
             logging.debug(f"Register {self.__class__.__name__}")
@@ -77,7 +77,7 @@ class Timer(object):
             self.unregister()
             traceback.print_exc()
             session.disconnect(reason=f"Error during timer {self.id} execution")
-        else:    
+        else:
             if self.is_running:
                 return self._timeout
 
@@ -96,18 +96,20 @@ class Timer(object):
         del this.registry[self.id]
         self.is_running = False
 
+
 class SessionBackupTimer(Timer):
     def __init__(self, timeout=10, filepath=None):
         self._filepath = filepath
         super().__init__(timeout)
 
-
     def execute(self):
         session.repository.dumps(self._filepath)
+
 
 class SessionListenTimer(Timer):
     def execute(self):
         session.listen()
+
 
 class ApplyTimer(Timer):
     def execute(self):
@@ -119,7 +121,7 @@ class ApplyTimer(Timer):
                     try:
                         shared_data.session.applied_updates.append(node)
                         porcelain.apply(session.repository, node)
-                    except Exception as e:
+                    except Exception:
                         logging.error(f"Fail to apply {node_ref.uuid}")
                         traceback.print_exc()
                     else:
@@ -127,9 +129,11 @@ class ApplyTimer(Timer):
                         if impl.bl_reload_parent:
                             for parent in session.repository.graph.get_parents(node):
                                 logging.debug("Refresh parent {node}")
-                                porcelain.apply(session.repository,
-                                      parent.uuid,
-                                      force=True)
+                                porcelain.apply(
+                                    session.repository,
+                                    parent.uuid,
+                                    force=True
+                                )
                         if hasattr(impl, 'bl_reload_child') and impl.bl_reload_child:
                             for dep in node_ref.dependencies:
                                 porcelain.apply(session.repository,
@@ -161,21 +165,26 @@ class AnnotationUpdates(Timer):
                         self._annotating = True
                         logging.debug(
                             "Getting the right on the annotation GP")
-                        porcelain.lock(session.repository,
-                                        [registered_gp.uuid],
-                                        ignore_warnings=True,
-                                        affect_dependencies=False)
+                        porcelain.lock(
+                            session.repository,
+                            [registered_gp.uuid],
+                            ignore_warnings=True,
+                            affect_dependencies=False
+                        )
 
                     if registered_gp.owner == self._settings.username:
                         porcelain.commit(session.repository, annotation_gp.uuid)
                         porcelain.push(session.repository, 'origin', annotation_gp.uuid)
 
                 elif self._annotating:
-                    porcelain.unlock(session.repository,
-                                    [registered_gp.uuid],
-                                    ignore_warnings=True,
-                                    affect_dependencies=False)
+                    porcelain.unlock(
+                        session.repository,
+                        [registered_gp.uuid],
+                        ignore_warnings=True,
+                        affect_dependencies=False
+                    )
                     self._annotating = False
+
 
 class DynamicRightSelectTimer(Timer):
     def __init__(self, timeout=.1):
@@ -210,27 +219,33 @@ class DynamicRightSelectTimer(Timer):
                                 instances_to_lock.append(node_id)
                     if instances_to_lock:
                         try:
-                            porcelain.lock(session.repository,
-                                            instances_to_lock,
-                                            ignore_warnings=True,
-                                            affect_dependencies=False)
+                            porcelain.lock(
+                                session.repository,
+                                instances_to_lock,
+                                ignore_warnings=True,
+                                affect_dependencies=False,
+                            )
                         except NonAuthorizedOperationError as e:
                             logging.warning(e)
 
                     if to_release:
                         try:
-                            porcelain.unlock(session.repository,
-                                            to_release,
-                                            ignore_warnings=True,
-                                            affect_dependencies=True)
+                            porcelain.unlock(
+                                session.repository,
+                                to_release,
+                                ignore_warnings=True,
+                                affect_dependencies=True,
+                            )
                         except NonAuthorizedOperationError as e:
                             logging.warning(e)
                     if to_lock:
                         try:
-                            porcelain.lock(session.repository,
-                                            to_lock,
-                                            ignore_warnings=True,
-                                            affect_dependencies=True)
+                            porcelain.lock(
+                                session.repository,
+                                to_lock,
+                                ignore_warnings=True,
+                                affect_dependencies=True,
+                            )
                         except NonAuthorizedOperationError as e:
                             logging.warning(e)
 
@@ -244,14 +259,20 @@ class DynamicRightSelectTimer(Timer):
                     logging.debug("Update selection")
 
                     # Fix deselection until right managment refactoring (with Roles concepts)
-                    if len(current_selection) == 0 :
-                        owned_keys = [k for k, v in session.repository.graph.items() if v.owner==settings.username]
+                    if len(current_selection) == 0:
+                        owned_keys = [
+                            k
+                            for k, v in session.repository.graph.items()
+                            if v.owner == settings.username
+                        ]
                         if owned_keys:
                             try:
-                                porcelain.unlock(session.repository,
-                                                owned_keys,
-                                                ignore_warnings=True,
-                                                affect_dependencies=True)
+                                porcelain.unlock(
+                                    session.repository,
+                                    owned_keys,
+                                    ignore_warnings=True,
+                                    affect_dependencies=True,
+                                )
                             except NonAuthorizedOperationError as e:
                                 logging.warning(e)
 

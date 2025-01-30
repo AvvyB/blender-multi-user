@@ -16,61 +16,60 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import json
 import logging
-import os
-import sys
+import math
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from uuid import uuid4
-import math
 
 import bpy
-import mathutils
+from replication.constants import (CONNECTING, STATE_ACTIVE, STATE_AUTH,
+                                   STATE_CONFIG, STATE_INITIAL, STATE_LOBBY,
+                                   STATE_QUITTING, STATE_SRV_SYNC,
+                                   STATE_SYNCING, STATE_WAITING)
 
-from . import environment
 
-from replication.constants import (STATE_ACTIVE, STATE_AUTH,
-                                  STATE_CONFIG, STATE_SYNCING,
-                                  STATE_INITIAL, STATE_SRV_SYNC,
-                                  STATE_WAITING, STATE_QUITTING,
-                                  STATE_LOBBY,
-                                  CONNECTING)
+CLEARED_DATABLOCKS = [
+    "actions",
+    "armatures",
+    "cache_files",
+    "cameras",
+    "collections",
+    "curves",
+    "filepath",
+    "fonts",
+    "grease_pencils",
+    "images",
+    "lattices",
+    "libraries",
+    "lightprobes",
+    "lights",
+    "linestyles",
+    "masks",
+    "materials",
+    "meshes",
+    "metaballs",
+    "movieclips",
+    "node_groups",
+    "objects",
+    "paint_curves",
+    "particles",
+    "scenes",
+    "shape_keys",
+    "sounds",
+    "speakers",
+    "texts",
+    "textures",
+    "volumes",
+    "worlds",
+]
 
-CLEARED_DATABLOCKS = ['actions', 'armatures', 'cache_files', 'cameras',
-                     'collections', 'curves', 'filepath', 'fonts',
-                     'grease_pencils', 'images', 'lattices', 'libraries',
-                     'lightprobes', 'lights', 'linestyles', 'masks',
-                     'materials', 'meshes', 'metaballs', 'movieclips',
-                     'node_groups', 'objects', 'paint_curves', 'particles',
-                     'scenes', 'shape_keys', 'sounds', 'speakers', 'texts',
-                     'textures', 'volumes', 'worlds']
 
 def find_from_attr(attr_name, attr_value, list):
     for item in list:
         if getattr(item, attr_name, None) == attr_value:
             return item
     return None
-
-
-def get_datablock_users(datablock):
-    users = []
-    supported_types = get_preferences().supported_datablocks
-    if hasattr(datablock, 'users_collection') and datablock.users_collection:
-        users.extend(list(datablock.users_collection))
-    if hasattr(datablock, 'users_scene') and datablock.users_scene:
-        users.extend(list(datablock.users_scene))
-    if hasattr(datablock, 'users_group') and datablock.users_scene:
-        users.extend(list(datablock.users_scene))
-    for datatype in supported_types:
-        if datatype.bl_name != 'users' and hasattr(bpy.data, datatype.bl_name):
-            root = getattr(bpy.data, datatype.bl_name)
-            for item in root:
-                if hasattr(item, 'data') and datablock == item.data or \
-                        datatype.bl_name != 'collections' and hasattr(item, 'children') and datablock in item.children:
-                    users.append(item)
-    return users
 
 
 def flush_history():
@@ -121,7 +120,7 @@ def clean_scene():
             try:
                 type_collection.remove(item)
                 logging.info(item.name)
-            except:
+            except Exception:
                 continue
 
     # Clear sequencer
