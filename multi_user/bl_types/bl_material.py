@@ -17,25 +17,37 @@
 
 
 import bpy
-import mathutils
 import logging
 import re
-
-from uuid import uuid4
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
 
 from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
-from bpy.types import (NodeSocketGeometry, NodeSocketShader, 
-                       NodeSocketVirtual, NodeSocketCollection,
-                       NodeSocketObject, NodeSocketMaterial)
+from .bl_action import (
+    dump_animation_data,
+    load_animation_data,
+    resolve_animation_dependencies,
+)
+from bpy.types import (
+    NodeSocketGeometry,
+    NodeSocketShader,
+    NodeSocketVirtual,
+    NodeSocketCollection,
+    NodeSocketObject,
+    NodeSocketMaterial,
+)
 
-NODE_SOCKET_INDEX = re.compile('\[(\d*)\]')
-IGNORED_SOCKETS = ['NodeSocketGeometry', 'NodeSocketShader', 'CUSTOM', 'NodeSocketVirtual']
+NODE_SOCKET_INDEX = re.compile("\[(\d*)\]")
+IGNORED_SOCKETS = [
+    "NodeSocketGeometry",
+    "NodeSocketShader",
+    "CUSTOM",
+    "NodeSocketVirtual",
+]
 IGNORED_SOCKETS_TYPES = (NodeSocketGeometry, NodeSocketShader, NodeSocketVirtual)
 ID_NODE_SOCKETS = (NodeSocketObject, NodeSocketCollection, NodeSocketMaterial)
+
 
 def load_node(node_data: dict, node_tree: bpy.types.ShaderNodeTree):
     """ Load a node into a node_tree from a dict
@@ -196,14 +208,13 @@ def dump_node(node: bpy.types.ShaderNode) -> dict:
         dumped_node['image_uuid'] = node.image.uuid
     if hasattr(node, 'node_tree') and getattr(node, 'node_tree'):
         dumped_node['node_tree_uuid'] = node.node_tree.uuid
-    
+
     if node.bl_idname == 'GeometryNodeRepeatInput':
         dumped_node['paired_output'] = node.paired_output.name
 
     if node.bl_idname == 'GeometryNodeRepeatOutput':
         dumped_node['repeat_items'] = {item.name: item.socket_type for item in node.repeat_items}
     return dumped_node
-
 
 
 def load_links(links_data, node_tree):
@@ -271,7 +282,7 @@ def dump_node_tree_sockets(sockets: bpy.types.Collection) -> dict:
 
         :arg target_node_tree: target node_tree
         :type target_node_tree: bpy.types.NodeTree
-        :arg socket_id: socket identifer 
+        :arg socket_id: socket identifer
         :type socket_id: str
         :return: dict
     """
@@ -282,7 +293,7 @@ def dump_node_tree_sockets(sockets: bpy.types.Collection) -> dict:
             raise ValueError(f"Socket {socket.name} has no type, skipping")
         sockets_data.append(
             (
-                socket.name, 
+                socket.name,
                 socket.socket_type,
                 socket.in_out
             )
@@ -297,16 +308,16 @@ def load_node_tree_sockets(interface: bpy.types.NodeTreeInterface,
 
         :arg target_node_tree: target node_tree
         :type target_node_tree: bpy.types.NodeTree
-        :arg socket_id: socket identifer 
+        :arg socket_id: socket identifer
         :type socket_id: str
         :arg socket_data: dumped socket data
         :type socket_data: dict
     """
     # Remove old sockets
-    interface.clear()    
+    interface.clear()
 
     # Check for new sockets
-    for name, socket_type, in_out  in sockets_data:
+    for name, socket_type, in_out in sockets_data:
         if not socket_type:
             logging.error(f"Socket {name} has no type, skipping")
             continue
@@ -315,7 +326,6 @@ def load_node_tree_sockets(interface: bpy.types.NodeTreeInterface,
             in_out=in_out,
             socket_type=socket_type
         )
-  
 
 
 def load_node_tree(node_tree_data: dict, target_node_tree: bpy.types.ShaderNodeTree) -> dict:
@@ -370,8 +380,9 @@ def get_node_tree_dependencies(node_tree: bpy.types.NodeTree) -> list:
     def has_node_group(node): return (
         hasattr(node, 'node_tree') and node.node_tree)
 
-    def has_texture(node): return (
-        node.type in ['ATTRIBUTE_SAMPLE_TEXTURE','TEXTURE']  and node.texture)
+    def has_texture(node):
+        return node.type in ["ATTRIBUTE_SAMPLE_TEXTURE", "TEXTURE"] and node.texture
+
     deps = []
 
     for node in node_tree.nodes:
@@ -399,7 +410,7 @@ def load_materials_slots(src_materials: list, dst_materials: bpy.types.bpy_prop_
     """ Load material slots
 
         :arg src_materials: dumped material collection (ex: object.materials)
-        :type src_materials: list of tuples (uuid, name) 
+        :type src_materials: list of tuples (uuid, name)
         :arg dst_materials: target material collection pointer
         :type dst_materials: bpy.types.bpy_prop_collection
     """
@@ -528,7 +539,7 @@ class BlMaterial(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.materials)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         if datablock.use_nodes:
@@ -537,6 +548,7 @@ class BlMaterial(ReplicatedDatablock):
         deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
+
 
 _type = bpy.types.Material
 _class = BlMaterial

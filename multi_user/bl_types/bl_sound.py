@@ -15,16 +15,13 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
-import logging
-import os
 from pathlib import Path
 
 import bpy
 
 from .bl_file import get_filepath, ensure_unpacked
 from replication.protocol import ReplicatedDatablock
-from .dump_anything import Dumper, Loader
+from .dump_anything import Loader
 from .bl_datablock import resolve_datablock_from_uuid
 
 
@@ -59,7 +56,7 @@ class BlSound(ReplicatedDatablock):
         }
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
         if datablock.filepath and datablock.filepath != '<builtin>':
             ensure_unpacked(datablock)
@@ -74,8 +71,9 @@ class BlSound(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.sounds)
 
     @staticmethod
-    def needs_update(datablock: object, data:dict)-> bool:
+    def needs_update(datablock: object, data: dict) -> bool:
         return False
+
 
 _type = bpy.types.Sound
 _class = BlSound

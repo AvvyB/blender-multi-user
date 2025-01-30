@@ -15,24 +15,20 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
 import logging
-import re
+
 import bpy
 import mathutils
 from replication.exception import ContextError
-
 from replication.protocol import ReplicatedDatablock
+
+from ..utils import get_preferences
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
 from .bl_material import IGNORED_SOCKETS
-from ..utils import get_preferences
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
-from .dump_anything import (
-    Dumper,
-    Loader,
-    np_load_collection,
-    np_dump_collection)
-
+from .dump_anything import (Dumper, Loader, np_dump_collection,
+                            np_load_collection)
 
 SKIN_DATA = [
     'radius',
@@ -47,23 +43,17 @@ SHAPEKEY_BLOCK_ATTR = [
     'slider_max',
 ]
 
-
-if bpy.app.version >= (2,93,0):
-    SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
-else:
-    SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str)
-    logging.warning("Geometry node Float parameter not supported in \
-                    blender 2.92.")
+SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
 
 
 def get_node_group_properties_identifiers(node_group):
     props_ids = []
-    
+
     for socket in node_group.interface.items_tree:
         if socket.socket_type in IGNORED_SOCKETS:
             continue
-        
-        props_ids.append((f"{socket.identifier}_attribute_name",'NodeSocketString'))
+
+        props_ids.append((f"{socket.identifier}_attribute_name", 'NodeSocketString'))
         if socket.in_out == 'OUTPUT':
             continue
         props_ids.append((socket.identifier, socket.socket_type))
@@ -72,10 +62,10 @@ def get_node_group_properties_identifiers(node_group):
     return props_ids
 
 
-def dump_physics(target: bpy.types.Object)->dict:
-    """ 
-        Dump all physics settings from a given object excluding modifier 
-        related physics settings (such as softbody, cloth, dynapaint and fluid) 
+def dump_physics(target: bpy.types.Object) -> dict:
+    """
+        Dump all physics settings from a given object excluding modifier
+        related physics settings (such as softbody, cloth, dynapaint and fluid)
     """
     dumper = Dumper()
     dumper.depth = 1
@@ -101,8 +91,8 @@ def dump_physics(target: bpy.types.Object)->dict:
 
 
 def load_physics(dumped_settings: dict, target: bpy.types.Object):
-    """  Load all physics settings from a given object excluding modifier 
-        related physics settings (such as softbody, cloth, dynapaint and fluid) 
+    """  Load all physics settings from a given object excluding modifier
+        related physics settings (such as softbody, cloth, dynapaint and fluid)
     """
     loader = Loader()
 
@@ -138,7 +128,7 @@ def dump_modifier_geometry_node_props(modifier: bpy.types.Modifier) -> list:
         :type modifier: bpy.type.Modifier
     """
     dumped_props = []
-    
+
     if not modifier.node_group:
         logging.warning(f"No geometry node group property found for modifier ({modifier.name})")
         return dumped_props
@@ -214,14 +204,8 @@ def find_data_from_name(name=None):
     elif name in bpy.data.speakers.keys():
         instance = bpy.data.speakers[name]
     elif name in bpy.data.lightprobes.keys():
-        # Only supported since 2.83
-        if bpy.app.version >= (2,83,0):
-            instance = bpy.data.lightprobes[name]
-        else:
-            logging.warning(
-                "Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
-    elif bpy.app.version >= (2,91,0) and name in bpy.data.volumes.keys():
-        # Only supported since 2.91
+        instance = bpy.data.lightprobes[name]
+    elif name in bpy.data.volumes.keys():
         instance = bpy.data.volumes[name]
     return instance
 
@@ -238,7 +222,7 @@ def _is_editmode(object: bpy.types.Object) -> bool:
             child_data.is_editmode)
 
 
-def find_textures_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.Texture]:
+def find_textures_dependencies(modifiers: bpy.types.bpy_prop_collection) -> list[bpy.types.Texture]:
     """ Find textures lying in a modifier stack
 
         :arg modifiers: modifiers collection
@@ -256,7 +240,7 @@ def find_textures_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy
     return textures
 
 
-def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -> [bpy.types.NodeTree]:
+def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -> list[bpy.types.NodeTree]:
     """ Find geometry nodes dependencies from a modifier stack
 
         :arg modifiers: modifiers collection
@@ -270,7 +254,7 @@ def find_geometry_nodes_dependencies(modifiers: bpy.types.bpy_prop_collection) -
             for inpt, inpt_type in get_node_group_properties_identifiers(mod.node_group):
                 inpt_value = mod.get(inpt)
                 # Avoid to handle 'COLLECTION', 'OBJECT' to avoid circular dependencies
-                if inpt_type in ['IMAGE', 'TEXTURE', 'MATERIAL'] and inpt_value:  
+                if inpt_type in ['IMAGE', 'TEXTURE', 'MATERIAL'] and inpt_value:
                     dependencies.append(inpt_value)
 
     return dependencies
@@ -321,7 +305,7 @@ def load_vertex_groups(dumped_vertex_groups: dict, target_object: bpy.types.Obje
             vertex_group.add([index], weight, 'REPLACE')
 
 
-def dump_shape_keys(target_key: bpy.types.Key)->dict:
+def dump_shape_keys(target_key: bpy.types.Key) -> dict:
     """ Dump the target shape_keys datablock to a dict using numpy
 
         :param dumped_key: target key datablock
@@ -389,7 +373,7 @@ def load_shape_keys(dumped_shape_keys: dict, target_object: bpy.types.Object):
         load_animation_data(anim_data, target_object.data.shape_keys)
 
 
-def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
+def dump_modifiers(modifiers: bpy.types.bpy_prop_collection) -> dict:
     """ Dump all modifiers of a modifier collection into a dict
 
         :param modifiers: modifiers
@@ -418,12 +402,13 @@ def dump_modifiers(modifiers: bpy.types.bpy_prop_collection)->dict:
         elif modifier.type in ['SOFT_BODY', 'CLOTH']:
             dumped_modifier['settings'] = dumper.dump(modifier.settings)
         elif modifier.type == 'UV_PROJECT':
-            dumped_modifier['projectors'] =[p.object.name for p in modifier.projectors if p and p.object]
+            dumped_modifier['projectors'] = [p.object.name for p in modifier.projectors if p and p.object]
 
         dumped_modifiers.append(dumped_modifier)
     return dumped_modifiers
 
-def dump_constraints(constraints: bpy.types.bpy_prop_collection)->list:
+
+def dump_constraints(constraints: bpy.types.bpy_prop_collection) -> list:
     """Dump all constraints to a list
 
         :param constraints: constraints
@@ -472,7 +457,7 @@ def load_modifiers(dumped_modifiers: list, modifiers: bpy.types.bpy_prop_collect
         if loaded_modifier.type == 'NODES':
             load_modifier_geometry_node_props(dumped_modifier, loaded_modifier)
         elif loaded_modifier.type == 'PARTICLE_SYSTEM':
-            default =  loaded_modifier.particle_system.settings
+            default = loaded_modifier.particle_system.settings
             dumped_particles = dumped_modifier['particle_system']
             loader.load(loaded_modifier.particle_system, dumped_particles)
 
@@ -493,20 +478,6 @@ def load_modifiers(dumped_modifiers: list, modifiers: bpy.types.bpy_prop_collect
                     logging.error("Could't load projector target object {projector_object}")
 
 
-def load_modifiers_custom_data(dumped_modifiers: dict, modifiers: bpy.types.bpy_prop_collection):
-    """ Load modifiers custom data not managed by the dump_anything loader
-
-        :param dumped_modifiers: modifiers to load
-        :type dumped_modifiers: dict
-        :param modifiers: target modifiers collection 
-        :type modifiers: bpy.types.bpy_prop_collection
-    """
-    loader = Loader()
-
-    for modifier in modifiers:
-        dumped_modifier = dumped_modifiers.get(modifier.name)
-        
-            
 class BlObject(ReplicatedDatablock):
     use_delta = True
 
@@ -518,8 +489,6 @@ class BlObject(ReplicatedDatablock):
 
     @staticmethod
     def construct(data: dict) -> object:
-        instance = None
-
         # TODO: refactoring
         object_name = data.get("name")
         data_uuid = data.get("data_uuid")
@@ -782,7 +751,7 @@ class BlObject(ReplicatedDatablock):
         return data
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         # Avoid Empty case
@@ -811,11 +780,11 @@ class BlObject(ReplicatedDatablock):
 
         return deps
 
-
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        return  resolve_datablock_from_uuid(uuid, bpy.data.objects)
+        return resolve_datablock_from_uuid(uuid, bpy.data.objects)
+
 
 _type = bpy.types.Object
 _class = BlObject

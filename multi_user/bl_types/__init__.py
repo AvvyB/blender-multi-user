@@ -41,10 +41,9 @@ __all__ = [
     'bl_node_group',
     'bl_texture',
     "bl_particle",
+    "bl_volume",
 ]  # Order here defines execution order
 
-if bpy.app.version >= (2,91,0):
-    __all__.append('bl_volume')
 
 from . import *
 

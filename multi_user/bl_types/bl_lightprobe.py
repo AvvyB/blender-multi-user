@@ -17,12 +17,11 @@
 
 
 import bpy
-import mathutils
-import logging
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
+
 
 class BlLightprobe(ReplicatedDatablock):
     use_delta = True
@@ -37,10 +36,7 @@ class BlLightprobe(ReplicatedDatablock):
     def construct(data: dict) -> object:
         type = 'CUBE' if data['type'] == 'CUBEMAP' else data['type']
         # See https://developer.blender.org/D6396
-        if bpy.app.version >= (2,83,0):
-            return bpy.data.lightprobes.new(data["name"], type)
-        else:
-            logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
+        return bpy.data.lightprobes.new(data["name"], type)
 
     @staticmethod
     def load(data: dict, datablock: object):
@@ -49,9 +45,6 @@ class BlLightprobe(ReplicatedDatablock):
 
     @staticmethod
     def dump(datablock: object) -> dict:
-        if bpy.app.version < (2,83,0):
-            logging.warning("Lightprobe replication only supported since 2.83. See https://developer.blender.org/D6396")
-
         dumper = Dumper()
         dumper.depth = 1
         dumper.include_filter = [
@@ -83,8 +76,9 @@ class BlLightprobe(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.lightprobes)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         return []
+
 
 _type = bpy.types.LightProbe
 _class = BlLightprobe

@@ -17,19 +17,14 @@
 
 
 import bpy
-import mathutils
-import numpy as np
-
-from .dump_anything import  (Dumper, 
-                                    Loader,
-                                    np_dump_collection,
-                                    np_load_collection)
 from replication.protocol import ReplicatedDatablock
-from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
-from ..utils import get_preferences
+
 from ..timers import is_annotating
-from .bl_material import load_materials_slots, dump_materials_slots
+from ..utils import get_preferences
+from .bl_datablock import resolve_datablock_from_uuid
+from .bl_material import dump_materials_slots, load_materials_slots
+from .dump_anything import (Dumper, Loader, np_dump_collection,
+                            np_load_collection)
 
 STROKE_POINT = [
     'co',
@@ -52,14 +47,10 @@ STROKE = [
     "uv_scale",
     "uv_translation",
     "vertex_color_fill",
+    "use_cyclic",
+    "vertex_color"
 ]
-if bpy.app.version >= (2,91,0):
-    STROKE.append('use_cyclic')
-else:
-    STROKE.append('draw_cyclic')
 
-if bpy.app.version >= (2,83,0):
-    STROKE_POINT.append('vertex_color')
 
 def dump_stroke(stroke):
     """ Dump a grease pencil stroke to a dict
@@ -74,17 +65,17 @@ def dump_stroke(stroke):
 def load_stroke(stroke_data, stroke):
     """ Load a grease pencil stroke from a dict
 
-        :param stroke_data: dumped grease pencil stroke 
+        :param stroke_data: dumped grease pencil stroke
         :type stroke_data: dict
         :param stroke: target grease pencil stroke
         :type stroke: bpy.types.GPencilStroke
     """
-    assert(stroke and stroke_data)
+    assert stroke and stroke_data
 
     stroke.points.add(stroke_data[0])
     np_load_collection(stroke_data[1], stroke.points, STROKE_POINT)
 
-    # HACK: Temporary fix to trigger a BKE_gpencil_stroke_geometry_update to 
+    # HACK: Temporary fix to trigger a BKE_gpencil_stroke_geometry_update to
     # fix fill issues
     stroke.uv_scale = 1.0
 
@@ -97,7 +88,7 @@ def dump_frame(frame):
         :return: dict
     """
 
-    assert(frame)
+    assert frame
 
     dumped_frame = dict()
     dumped_frame['frame_number'] = frame.frame_number
@@ -106,7 +97,7 @@ def dump_frame(frame):
 
     for stroke in frame.strokes:
         dumped_frame['strokes_points'].append(dump_stroke(stroke))
-    
+
     return dumped_frame
 
 
@@ -119,7 +110,7 @@ def load_frame(frame_data, frame):
         :type frame: bpy.types.GPencilFrame
     """
 
-    assert(frame and frame_data)
+    assert frame and frame_data
 
     # Load stroke points
     for stroke_data in frame_data['strokes_points']:
@@ -137,7 +128,7 @@ def dump_layer(layer):
         :type layer: bpy.types.GPencilFrame
     """
 
-    assert(layer)
+    assert layer
 
     dumper = Dumper()
 
@@ -218,6 +209,7 @@ def layer_changed(datablock: object, data: dict) -> bool:
 def frame_changed(data: dict) -> bool:
     return bpy.context.scene.frame_current != data["eval_frame"]
 
+
 class BlGpencil(ReplicatedDatablock):
     bl_id = "grease_pencils"
     bl_class = bpy.types.GreasePencil
@@ -285,7 +277,7 @@ class BlGpencil(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.grease_pencils)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         for material in datablock.materials:
@@ -300,6 +292,7 @@ class BlGpencil(ReplicatedDatablock):
             or frame_changed(data) \
             or get_preferences().sync_flags.sync_during_editmode \
             or is_annotating(bpy.context)
+
 
 _type = bpy.types.GreasePencil
 _class = BlGpencil

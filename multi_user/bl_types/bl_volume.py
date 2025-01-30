@@ -15,16 +15,19 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
 import bpy
-import mathutils
 from pathlib import Path
 
 from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
-from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
+from .bl_datablock import resolve_datablock_from_uuid
 from .bl_material import dump_materials_slots, load_materials_slots
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_action import (
+    dump_animation_data,
+    load_animation_data,
+    resolve_animation_dependencies,
+)
+
 
 class BlVolume(ReplicatedDatablock):
     use_delta = True
@@ -58,7 +61,7 @@ class BlVolume(ReplicatedDatablock):
 
         data['display'] = dumper.dump(datablock.display)
 
-         # Fix material index
+        # Fix material index
         data['materials'] = dump_materials_slots(datablock.materials)
         data['animation_data'] = dump_animation_data(datablock)
         return data
@@ -81,7 +84,7 @@ class BlVolume(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.volumes)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         # TODO: resolve material
         deps = []
 
@@ -96,6 +99,7 @@ class BlVolume(ReplicatedDatablock):
         deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
+
 
 _type = bpy.types.Volume
 _class = BlVolume

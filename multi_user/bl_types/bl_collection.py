@@ -17,14 +17,13 @@
 
 
 import bpy
-import mathutils
-
 from deepdiff import DeepDiff, Delta
+from replication.protocol import ReplicatedDatablock
 
 from .. import utils
-from replication.protocol import ReplicatedDatablock
-from .dump_anything import Loader, Dumper
 from .bl_datablock import resolve_datablock_from_uuid
+from .dump_anything import Dumper, Loader
+
 
 def dump_collection_children(collection):
     collection_children = []
@@ -73,6 +72,7 @@ def load_collection_childrens(dumped_childrens, collection):
         if child_collection.uuid not in dumped_childrens:
             collection.children.unlink(child_collection)
 
+
 def resolve_collection_dependencies(collection):
     deps = []
 
@@ -82,6 +82,7 @@ def resolve_collection_dependencies(collection):
         deps.append(object)
 
     return deps
+
 
 class BlCollection(ReplicatedDatablock):
     bl_id = "collections"
@@ -97,7 +98,6 @@ class BlCollection(ReplicatedDatablock):
         instance = bpy.data.collections.new(data["name"])
         return instance
 
-
     @staticmethod
     def load(data: dict, datablock: object):
         loader = Loader()
@@ -112,7 +112,6 @@ class BlCollection(ReplicatedDatablock):
         # FIXME: Find a better way after the replication big refacotoring
         # Keep other user from deleting collection object by flushing their history
         utils.flush_history()
-
 
     @staticmethod
     def dump(datablock: object) -> dict:
@@ -132,15 +131,13 @@ class BlCollection(ReplicatedDatablock):
 
         return data
 
-
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        return  resolve_datablock_from_uuid(uuid, bpy.data.collections)
-
+        return resolve_datablock_from_uuid(uuid, bpy.data.collections)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         return resolve_collection_dependencies(datablock)
 
     @staticmethod
@@ -159,6 +156,7 @@ class BlCollection(ReplicatedDatablock):
                      cache_size=5000,
                      **diff_params),
             **delta_params)
+
 
 _type = bpy.types.Collection
 _class = BlCollection

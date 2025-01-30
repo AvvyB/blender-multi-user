@@ -17,12 +17,12 @@
 
 
 import bpy
-import mathutils
-
-from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
+
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .dump_anything import Dumper, Loader
 
 
 class BlLight(ReplicatedDatablock):
@@ -86,7 +86,7 @@ class BlLight(ReplicatedDatablock):
         return  resolve_datablock_from_uuid(uuid, bpy.data.lights)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         deps.extend(resolve_animation_dependencies(datablock))

@@ -16,17 +16,15 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
-import mathutils
 import copy
-import numpy as np
-from enum import Enum
+
+import bpy
+from replication.protocol import ReplicatedDatablock
 
 from .. import utils
-from .dump_anything import (
-    Dumper, Loader, np_dump_collection, np_load_collection, remove_items_from_dict)
-from replication.protocol import ReplicatedDatablock
 from .bl_datablock import resolve_datablock_from_uuid
+from .dump_anything import (Dumper, Loader, np_dump_collection,
+                            np_load_collection, remove_items_from_dict)
 
 KEYFRAME = [
     'amplitude',
@@ -40,6 +38,7 @@ KEYFRAME = [
     'type',
     'interpolation',
 ]
+
 
 def has_action(datablock):
     """ Check if the datablock datablock has actions
@@ -326,6 +325,7 @@ class BlAction(ReplicatedDatablock):
     @staticmethod
     def resolve_deps(datablock: object) -> [object]:
         return []
+
 
 _type = bpy.types.Action
 _class = BlAction

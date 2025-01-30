@@ -16,22 +16,26 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import logging
 from pathlib import Path
-from uuid import uuid4
 
 import bpy
-import mathutils
+
 from deepdiff import DeepDiff, Delta
-from replication.constants import DIFF_JSON, MODIFIED
 from replication.protocol import ReplicatedDatablock
 
 from ..utils import flush_history, get_preferences
-from .bl_action import (dump_animation_data, load_animation_data,
-                        resolve_animation_dependencies)
-from .bl_collection import (dump_collection_children, dump_collection_objects,
-                            load_collection_childrens, load_collection_objects,
-                            resolve_collection_dependencies)
+from .bl_action import (
+    dump_animation_data,
+    load_animation_data,
+    resolve_animation_dependencies,
+)
+from .bl_collection import (
+    dump_collection_children,
+    dump_collection_objects,
+    load_collection_childrens,
+    load_collection_objects,
+    resolve_collection_dependencies,
+)
 from .bl_datablock import resolve_datablock_from_uuid
 from .bl_file import get_filepath
 from .dump_anything import Dumper, Loader
@@ -429,7 +433,7 @@ class BlScene(ReplicatedDatablock):
 
         # Sequencer
         sequences = data.get('sequences')
-        
+
         if sequences:
             # Create sequencer data
             datablock.sequence_editor_create()
@@ -532,11 +536,11 @@ class BlScene(ReplicatedDatablock):
 
         if datablock.grease_pencil:
             data['grease_pencil'] = datablock.grease_pencil.uuid
- 
+
         return data
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         # Master Collection
@@ -563,8 +567,8 @@ class BlScene(ReplicatedDatablock):
                 elif sequence.type == 'IMAGE':
                     for elem in sequence.elements:
                         sequence.append(
-                            Path(bpy.path.abspath(sequence.directory),
-                            elem.filename))
+                            Path(bpy.path.abspath(sequence.directory), elem.filename)
+                        )
 
         return deps
 

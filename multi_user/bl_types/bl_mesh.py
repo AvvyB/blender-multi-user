@@ -17,21 +17,17 @@
 
 
 import bpy
-import bmesh
-import mathutils
-import logging
-import numpy as np
-
-from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
-from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
 from replication.protocol import ReplicatedDatablock
 
-from .bl_datablock import get_datablock_from_uuid
-from .bl_material import dump_materials_slots, load_materials_slots
 from ..utils import get_preferences
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_material import dump_materials_slots, load_materials_slots
+from .dump_anything import (Dumper, Loader, np_dump_collection,
+                            np_dump_collection_primitive, np_load_collection,
+                            np_load_collection_primitives)
 
 VERTICE = ['co']
 
@@ -63,6 +59,7 @@ GENERIC_ATTRIBUTES_ENSURE = {
     'crease_vert': 'vertex_crease_ensure',
     'crease_edge': 'edge_crease_ensure'
 }
+
 
 class BlMesh(ReplicatedDatablock):
     use_delta = True
@@ -115,9 +112,9 @@ class BlMesh(ReplicatedDatablock):
 
                     np_load_collection_primitives(
                         datablock.uv_layers[layer].data, 
-                        'uv', 
+                        'uv',
                         data["uv_layers"][layer]['data'])
-            
+
             # Vertex color
             if 'vertex_colors' in data.keys():
                 for color_layer in data['vertex_colors']:
@@ -125,10 +122,10 @@ class BlMesh(ReplicatedDatablock):
                         datablock.vertex_colors.new(name=color_layer)
 
                     np_load_collection_primitives(
-                        datablock.vertex_colors[color_layer].data, 
+                        datablock.vertex_colors[color_layer].data,
                         'color', 
                         data["vertex_colors"][color_layer]['data'])
-            
+
             # Generic attibutes
             for attribute_name, attribute_data_type, attribute_domain, attribute_data in data["attributes"]:
                 if attribute_name not in datablock.attributes:
@@ -137,8 +134,8 @@ class BlMesh(ReplicatedDatablock):
                         attribute_data_type,
                         attribute_domain
                     )
-                np_load_collection(attribute_data, datablock.attributes[attribute_name].data ,['value'])
-                    
+                np_load_collection(attribute_data, datablock.attributes[attribute_name].data, ['value'])
+
             datablock.validate()
             datablock.update()
 
@@ -209,9 +206,9 @@ class BlMesh(ReplicatedDatablock):
         # Materials
         data['materials'] = dump_materials_slots(datablock.materials)
         return data
-    
+
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         for material in datablock.materials:
@@ -231,6 +228,7 @@ class BlMesh(ReplicatedDatablock):
     def needs_update(datablock: object, data: dict) -> bool:
         return ('EDIT' not in bpy.context.mode and bpy.context.mode != 'SCULPT') \
             or get_preferences().sync_flags.sync_during_editmode
+
 
 _type = bpy.types.Mesh
 _class = BlMesh

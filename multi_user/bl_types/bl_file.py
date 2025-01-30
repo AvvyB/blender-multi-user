@@ -17,23 +17,19 @@
 
 
 import logging
-import os
 import sys
 from pathlib import Path, WindowsPath, PosixPath
 
 import bpy
-import mathutils
-from replication.constants import DIFF_BINARY, UP
 from replication.protocol import ReplicatedDatablock
 
 from .. import utils
 from ..utils import get_preferences
-from .dump_anything import Dumper, Loader
 
 
 def get_filepath(filename):
     """
-    Construct the local filepath 
+    Construct the local filepath
     """
     return str(Path(
         utils.get_preferences().cache_directory,
@@ -77,7 +73,7 @@ class BlFile(ReplicatedDatablock):
             file: file content
         }
         """
-        logging.info(f"Extracting file metadata")
+        logging.info("Extracting file metadata")
 
         data = {
             'name': datablock.name,
@@ -106,20 +102,20 @@ class BlFile(ReplicatedDatablock):
         try:
             file = open(datablock, "wb")
             file.write(data['file'])
-            
+
             if get_preferences().clear_memory_filecache:
-                del data['file']
+                del data["file"]
         except IOError:
             logging.warning(f"{datablock} doesn't exist, skipping")
         else:
             file.close()
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         return []
-    
+
     @staticmethod
-    def needs_update(datablock: object, data:dict)-> bool:
+    def needs_update(datablock: object, data: dict) -> bool:
         if get_preferences().clear_memory_filecache:
             return False
         else:
@@ -136,6 +132,7 @@ class BlFile(ReplicatedDatablock):
                 return True
             else:
                 return False
+
 
 _type = [WindowsPath, PosixPath]
 _class = BlFile

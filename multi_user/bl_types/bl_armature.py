@@ -142,8 +142,7 @@ class BlArmature(ReplicatedDatablock):
             new_bone.roll = bone_data['roll']
 
             if 'parent' in bone_data:
-                new_bone.parent = datablock.edit_bones[data['bones']
-                                                    [bone]['parent']]
+                new_bone.parent = datablock.edit_bones[data["bones"][bone]["parent"]]
                 new_bone.use_connect = bone_data['use_connect']
 
             loader = Loader()
@@ -207,7 +206,7 @@ class BlArmature(ReplicatedDatablock):
         return datablock
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         return resolve_animation_dependencies(datablock)
 
 

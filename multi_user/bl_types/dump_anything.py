@@ -36,7 +36,7 @@ NP_COMPATIBLE_TYPES = ['FLOAT', 'INT', 'BOOLEAN', 'ENUM']
 
 def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, attributes: list = None):
     """ Dump a list of attributes from the sane collection
-        to the target dikt. 
+        to the target dikt.
 
         Without attribute given, it try to load all entry from dikt.
 
@@ -69,7 +69,7 @@ def np_dump_collection(collection: bpy.types.CollectionProperty, attributes: lis
     """ Dump a list of attributes from the sane collection
         to the target dikt
 
-        Without attributes given, it try to dump all properties 
+        Without attributes given, it try to dump all properties
         that matches NP_COMPATIBLE_TYPES.
 
         :arg collection: source collection
@@ -121,9 +121,8 @@ def np_dump_collection_primitive(collection: bpy.types.CollectionProperty, attri
 
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
-    assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
+    assert attr_infos.type in ["FLOAT", "INT", "BOOLEAN"]
 
-    
     size = sum(attr_infos.array_dimensions) if attr_infos.is_array else 1
 
     dumped_sequence = np.zeros(
@@ -146,7 +145,7 @@ def np_dump_collection_enum(collection: bpy.types.CollectionProperty, attribute:
     """
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
-    assert(attr_infos.type == 'ENUM')
+    assert attr_infos.type == "ENUM"
 
     enum_items = attr_infos.enum_items
     return [enum_items[getattr(i, attribute)].value for i in collection]
@@ -169,7 +168,7 @@ def np_load_collection_enum(collection: bpy.types.CollectionProperty, attribute:
 
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
-    assert(attr_infos.type == 'ENUM')
+    assert attr_infos.type == "ENUM"
 
     enum_items = attr_infos.enum_items
     enum_idx = [i.value for i in enum_items]
@@ -195,10 +194,10 @@ def np_load_collection_primitives(collection: bpy.types.CollectionProperty, attr
     if len(collection) == 0 or not sequence:
         logging.debug(f"Skipping loading {attribute}")
         return
-    
+
     attr_infos = collection[0].bl_rna.properties.get(attribute)
 
-    assert(attr_infos.type in ['FLOAT', 'INT', 'BOOLEAN'])
+    assert attr_infos.type in ["FLOAT", "INT", "BOOLEAN"]
 
     collection.foreach_set(
         attribute,
@@ -477,8 +476,7 @@ class Loader:
 
     def _load_any(self, any, dump):
         for filter_function, load_function in self.type_subset:
-            if filter_function(any) and \
-                any.sub_element_name not in self.exclure_filter:
+            if filter_function(any) and any.sub_element_name not in self.exclure_filter:
                 load_function(any, dump)
                 return
 
@@ -531,7 +529,7 @@ class Loader:
                 elems_to_remove = len(collection)
 
                 # Color ramp doesn't allow to remove all elements
-                if type(element_type) == T.ColorRampElement:
+                if type(element_type) is T.ColorRampElement:
                     elems_to_remove -= 1
 
                 for i in range(elems_to_remove):
@@ -544,8 +542,9 @@ class Loader:
                 new_element = element.read()[0]
             else:
                 try:
-                    _constructor_parameters = [dumped_element[name]
-                                              for name in _constructor[1]]
+                    _constructor_parameters = [
+                        dumped_element[name] for name in _constructor[1]
+                    ]
                 except KeyError:
                     logging.debug("Collection load error, missing parameters.")
                     continue  # TODO handle error
@@ -573,10 +572,10 @@ class Loader:
                     break
 
             default_point_count = len(dst_curve.points)
-            
+
             for point_idx, point in curve['points'].items():
                 pos = point['location']
-                
+
                 if point_idx < default_point_count:
                     dst_curve.points[int(point_idx)].location = pos
                 else:
@@ -641,7 +640,7 @@ class Loader:
                 continue
             try:
                 self._load_any(default.extend(k), v)
-            except Exception as err:
+            except Exception:
                 logging.debug(f"Skipping {k}")
 
     @property

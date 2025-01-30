@@ -17,15 +17,14 @@
 
 
 import bpy
-import mathutils
 
-from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
 from replication.protocol import ReplicatedDatablock
 from .bl_material import (dump_node_tree,
                           load_node_tree,
                           get_node_tree_dependencies)
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_action import resolve_animation_dependencies
+
 
 class BlNodeGroup(ReplicatedDatablock):
     use_delta = True
@@ -54,11 +53,12 @@ class BlNodeGroup(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.node_groups)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
         deps.extend(get_node_tree_dependencies(datablock))
         deps.extend(resolve_animation_dependencies(datablock))
         return deps
+
 
 _type = [bpy.types.ShaderNodeTree, bpy.types.GeometryNodeTree]
 _class = BlNodeGroup
