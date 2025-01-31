@@ -198,8 +198,8 @@ def frame_changed(data: dict) -> bool:
 
 
 class BlGpencil3(ReplicatedDatablock):
-    bl_id = "grease_pencils"
-    bl_class = bpy.types.GreasePencil
+    bl_id = "grease_pencils_v3"
+    bl_class = bpy.types.GreasePencilv3
     bl_check_common = False
     bl_icon = 'GREASEPENCIL'
     bl_reload_parent = False
