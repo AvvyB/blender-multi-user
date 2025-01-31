@@ -24,6 +24,7 @@ __all__ = [
     'bl_collection',
     'bl_curve',
     'bl_gpencil',
+    'bl_gpencil3',
     'bl_image',
     'bl_light',
     'bl_scene',

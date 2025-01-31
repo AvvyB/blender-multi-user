@@ -103,11 +103,8 @@ def get_mode_icon(mode_name: str) -> str:
     elif mode_name == "PARTICLE":
         mode_icon = "PARTICLES"
     elif (
-        mode_name == "PAINT_GPENCIL"
-        or mode_name == "EDIT_GPENCIL"
-        or mode_name == "SCULPT_GPENCIL"
-        or mode_name == "WEIGHT_GPENCIL"
-        or mode_name == "VERTEX_GPENCIL"
+        "_GREASE_PENCIL" in mode_name
+        or "_GPENCIL" in mode_name,
     ):
         mode_icon = "GREASEPENCIL"
     return mode_icon

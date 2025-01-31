@@ -39,6 +39,7 @@ CLEARED_DATABLOCKS = [
     "filepath",
     "fonts",
     "grease_pencils",
+    "grease_pencils_v3",
     "images",
     "lattices",
     "libraries",
@@ -113,15 +114,18 @@ def clean_scene():
             bpy.data.linestyles.get('LineStyle'),
             bpy.data.materials.get('Dots Stroke')
         ]
-
-        type_collection = getattr(bpy.data, type_name)
-        items_to_remove = [i for i in type_collection if i not in sub_collection_to_avoid]
-        for item in items_to_remove:
-            try:
-                type_collection.remove(item)
-                logging.info(item.name)
-            except Exception:
-                continue
+        try:
+            type_collection = getattr(bpy.data, type_name)
+        except AttributeError:
+            continue
+        else:
+            items_to_remove = [i for i in type_collection if i not in sub_collection_to_avoid]
+            for item in items_to_remove:
+                try:
+                    type_collection.remove(item)
+                    logging.info(item.name)
+                except Exception:
+                    continue
 
     # Clear sequencer
     bpy.context.scene.sequence_editor_clear()

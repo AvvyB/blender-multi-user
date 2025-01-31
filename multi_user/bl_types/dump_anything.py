@@ -34,6 +34,97 @@ PRIMITIVE_TYPES = ['FLOAT', 'INT', 'BOOLEAN']
 NP_COMPATIBLE_TYPES = ['FLOAT', 'INT', 'BOOLEAN', 'ENUM']
 
 
+ATTRIBUTES_NUMPY_TYPES = {
+    'FLOAT_VECTOR': np.float32,
+    'FLOAT': np.float32,
+    'FLOAT2': np.float32,
+    'INT': np.int32,
+    'INT8': np.int8,
+    'BOOLEAN': bool,
+}
+ATTRIBUTES_TYPES_GETTERS = {
+    'FLOAT_VECTOR': 'vector',
+    'FLOAT2': 'vector',
+    'FLOAT': 'value',
+    'INT': 'value',
+    'INT8': 'value',
+    'BOOLEAN': 'value',
+}
+ATTRIBUTE_DIMENSION = {
+    'FLOAT_VECTOR': 3,
+    'FLOAT2': 2,
+    'BOOLEAN': 1,
+    'FLOAT': 1,
+    'INT': 1,
+    'INT8': 1,
+}
+
+
+def np_dump_attributes(attributes_collection: bpy.types.bpy_prop_collection, attributes_names = None) -> dict:
+    """ Dump a list of attributes to the target dikt
+
+        :arg attributes_collection: source collection
+        :type attributes_collection: bpy.types.bpy_prop_collection
+        :arg attributes_names: list of attributes name
+        :type attributes_names: list
+        :retrun: dict
+    """
+    assert type(attributes_collection) is T.bpy_prop_collection
+
+    dumped_attributes = {}
+
+    attributes_names = attributes_names or attributes_collection.keys()
+
+    for attr_name in attributes_names:
+        if attr_name not in attributes_collection.keys():
+            logging.warning(f"Attribute {attr_name} not in collection.")
+            continue
+        attribute = attributes_collection[attr_name]
+        attribute_dimension = ATTRIBUTE_DIMENSION.get(attribute.data_type)
+        array_size = attributes_collection.domain_size(attribute.domain) * attribute_dimension
+        array_type = ATTRIBUTES_NUMPY_TYPES.get(attribute.data_type)
+        numpy_array = np.zeros(
+            array_size,
+            dtype=array_type
+        )
+        attribute.data.foreach_get(
+            ATTRIBUTES_TYPES_GETTERS.get(attribute.data_type),
+            numpy_array
+        )
+        dumped_attributes[attr_name] = {
+            'data_type': attribute.data_type,
+            'domain': attribute.domain,
+            'data': numpy_array.tobytes()
+        }
+
+    return dumped_attributes
+
+
+def np_load_attributes(attributes_collection: bpy.types.bpy_prop_collection, attributes_data: dict):
+    """ Load a list of attributes from a dict to the target collection
+
+        :arg attributes_collection: target collection
+        :type attributes_collection: bpy.types.bpy_prop_collection
+        :arg attributes_data: source data
+        :type attributes_data: dict
+    """
+    assert type(attributes_collection) is T.bpy_prop_collection
+
+    for attr_name, data in attributes_data.items():
+        if attr_name not in attributes_collection.keys():
+            attributes_collection.new(attr_name, type=data['data_type'], domain=data['domain'])
+        attribute = attributes_collection[attr_name]
+        array_type = ATTRIBUTES_NUMPY_TYPES.get(attribute.data_type)
+        numpy_array = np.frombuffer(
+            data['data'],
+            dtype=array_type
+        )
+        attribute.data.foreach_set(
+            ATTRIBUTES_TYPES_GETTERS.get(data['data_type']),
+            numpy_array
+        )
+
+
 def np_load_collection(dikt: dict, collection: bpy.types.CollectionProperty, attributes: list = None):
     """ Dump a list of attributes from the sane collection
         to the target dikt.
