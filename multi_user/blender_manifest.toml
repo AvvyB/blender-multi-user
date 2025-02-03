@@ -30,3 +30,11 @@ wheels = [
 
 [permissions]
 network = "Need to sync scene data to server"
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  ".*",
+  "*.zip",
+  "cache/"
+]
