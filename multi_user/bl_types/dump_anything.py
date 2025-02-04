@@ -376,7 +376,7 @@ class Dumper:
         self._build_match_elements()
         self.type_subset = self.match_subset_all
         self.include_filter = []
-        self.exclude_filter = []
+        self.exclude_filter = ['session_uid']
 
     def dump(self, any):
         return self._dump_any(any, 0)
