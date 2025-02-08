@@ -48,7 +48,8 @@ SUPPORTED_GEOMETRY_NODE_PARAMETERS = (int, str, float)
 
 def get_node_group_properties_identifiers(node_group):
     props_ids = []
-
+    if not node_group:
+        return props_ids
     for socket in node_group.interface.items_tree:
         if socket.socket_type in IGNORED_SOCKETS:
             continue

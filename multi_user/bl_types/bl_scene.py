@@ -410,8 +410,8 @@ class BlScene(ReplicatedDatablock):
         gpencil_uid = data.get('grease_pencil')
         if gpencil_uid:
             datablock.grease_pencil = resolve_datablock_from_uuid(gpencil_uid, bpy.data.grease_pencils)
-
-        if get_preferences().sync_flags.sync_render_settings:
+        prefs = get_preferences()
+        if prefs and prefs.sync_flags.sync_render_settings:
             if 'eevee' in data.keys():
                 loader.load(datablock.eevee, data['eevee'])
 
@@ -479,7 +479,8 @@ class BlScene(ReplicatedDatablock):
             'frame_end',
             'frame_step',
         ]
-        if get_preferences().sync_flags.sync_active_camera:
+        prefs = get_preferences()
+        if prefs and prefs.sync_flags.sync_active_camera:
             scene_dumper.include_filter.append('camera')
 
         data.update(scene_dumper.dump(datablock))
@@ -495,7 +496,7 @@ class BlScene(ReplicatedDatablock):
         scene_dumper.include_filter = None
 
         # Render settings
-        if get_preferences().sync_flags.sync_render_settings:
+        if prefs and prefs.sync_flags.sync_render_settings:
             scene_dumper.include_filter = RENDER_SETTINGS
 
             data['render'] = scene_dumper.dump(datablock.render)

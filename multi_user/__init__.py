@@ -28,9 +28,6 @@ from . import ui
 from . import icons
 from . import preferences
 
-module_error_msg = "Insufficient rights to install the multi-user \
-                dependencies, aunch blender with administrator rights."
-
 
 def register():
     # Setup logging policy

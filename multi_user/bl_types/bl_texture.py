@@ -56,7 +56,8 @@ class BlTexture(ReplicatedDatablock):
             'uuid',
             'is_embedded_data',
             'is_evaluated',
-            'name_full'
+            'name_full',
+            'session_uid',
         ]
 
         data = dumper.dump(datablock)

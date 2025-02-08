@@ -29,6 +29,7 @@ from .bl_action import (
     resolve_animation_dependencies,
 )
 
+from . import get_data_translation_protocol
 
 def get_roll(bone: bpy.types.Bone) -> float:
     """ Compute the actuall roll of a pose bone
@@ -42,7 +43,7 @@ def get_roll(bone: bpy.types.Bone) -> float:
 
 def get_datablock_users(datablock):
     users = []
-    supported_types = utils.get_preferences().supported_datablocks
+    supported_types = get_data_translation_protocol().implementations.values()#utils.get_preferences().supported_datablocks
     if hasattr(datablock, 'users_collection') and datablock.users_collection:
         users.extend(list(datablock.users_collection))
     if hasattr(datablock, 'users_scene') and datablock.users_scene:
@@ -50,13 +51,13 @@ def get_datablock_users(datablock):
     if hasattr(datablock, 'users_group') and datablock.users_scene:
         users.extend(list(datablock.users_scene))
     for datatype in supported_types:
-        if datatype.bl_name != 'users' and hasattr(bpy.data, datatype.bl_name):
-            root = getattr(bpy.data, datatype.bl_name)
+        if datatype.bl_id != 'users' and hasattr(bpy.data, datatype.bl_id):
+            root = getattr(bpy.data, datatype.bl_id)
             for item in root:
                 if (
                     hasattr(item, "data")
                     and datablock == item.data
-                    or datatype.bl_name != "collections"
+                    or datatype.bl_id != "collections"
                     and hasattr(item, "children")
                     and datablock in item.children
                 ):

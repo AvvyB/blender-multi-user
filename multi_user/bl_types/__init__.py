@@ -46,8 +46,8 @@ __all__ = [
 ]  # Order here defines execution order
 
 
-from . import *
-
+# from . import *
+import importlib
 def types_to_register():
     return __all__
 
@@ -58,7 +58,10 @@ def get_data_translation_protocol()-> DataTranslationProtocol:
     """
     bpy_protocol = DataTranslationProtocol()
     for module_name in __all__:
-        impl  = globals().get(module_name)
+        if module_name not in globals():
+            impl = importlib.import_module(f".{module_name}", __package__)
+        else:
+            impl = globals()[module_name]
         if impl and hasattr(impl, "_type") and hasattr(impl, "_type"):
             bpy_protocol.register_implementation(impl._type, impl._class)
     return bpy_protocol

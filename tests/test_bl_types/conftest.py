@@ -3,6 +3,16 @@ import os
 import pytest
 
 import bpy
+from multi_user import register, unregister
+
+
+@pytest.fixture()
+def register_uuid():
+    """ Register the addon
+    """
+    bpy.types.ID.uuid = bpy.props.StringProperty(
+        default="", options={"HIDDEN", "SKIP_SAVE"}
+    )
 
 
 @pytest.fixture

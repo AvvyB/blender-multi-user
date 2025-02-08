@@ -10,7 +10,7 @@ from multi_user.bl_types.bl_texture import BlTexture
 TEXTURE_TYPES = ['NONE', 'BLEND', 'CLOUDS', 'DISTORTED_NOISE', 'IMAGE', 'MAGIC', 'MARBLE', 'MUSGRAVE', 'NOISE', 'STUCCI', 'VORONOI', 'WOOD']
 
 @pytest.mark.parametrize('texture_type', TEXTURE_TYPES)
-def test_texture(clear_blend, texture_type):
+def test_texture(clear_blend, register_uuid, texture_type):
     datablock = bpy.data.textures.new('test', texture_type)
 
     implementation = BlTexture()

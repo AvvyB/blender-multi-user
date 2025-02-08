@@ -8,7 +8,7 @@ from multi_user.bl_types.bl_lightprobe import BlLightprobe
 
 
 @pytest.mark.skipif(bpy.app.version < (2,83,0), reason="requires blender 2.83 or higher")
-@pytest.mark.parametrize('lightprobe_type', ['PLANAR','GRID','CUBEMAP'])
+@pytest.mark.parametrize('lightprobe_type', ['SPHERE','PLANE','VOLUME'])
 def test_lightprobes(clear_blend, lightprobe_type):
     bpy.ops.object.lightprobe_add(type=lightprobe_type)
 

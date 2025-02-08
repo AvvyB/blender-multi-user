@@ -54,7 +54,9 @@ class BlVolume(ReplicatedDatablock):
             'is_embedded_data',
             'is_evaluated',
             'name_full',
-            'use_fake_user'
+            'use_fake_user',
+            'session_uid',
+            'velocity_grid'  # Not correctly initialized by Blender(TODO: check if it's a bug)
         ]
 
         data = dumper.dump(datablock)

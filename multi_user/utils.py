@@ -145,7 +145,10 @@ def resolve_from_id(id, optionnal_type=None):
 
 
 def get_preferences():
-    return bpy.context.preferences.addons[__package__].preferences
+    if __package__ not in bpy.context.preferences.addons:
+        return None
+    else:
+        return bpy.context.preferences.addons[__package__].preferences
 
 
 def current_milli_time():

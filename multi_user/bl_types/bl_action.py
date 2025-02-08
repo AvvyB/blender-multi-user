@@ -305,7 +305,8 @@ class BlAction(ReplicatedDatablock):
             'select_right_handle',
             'select_left_handle',
             'uuid',
-            'users'
+            'users',
+            'session_uid'
         ]
         dumper.depth = 1
         data = dumper.dump(datablock)

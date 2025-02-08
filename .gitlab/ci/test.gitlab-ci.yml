@@ -1,0 +1,11 @@
+image: python:3.11
+
+pytest:
+  stage: test
+  script:
+    - pip install pytest bpy==4.3.0
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:  
+      junit: report.xml
