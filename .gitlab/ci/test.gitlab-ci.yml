@@ -9,7 +9,7 @@ pytest:
     - ls venv/bin
     - ls .
     - ./venv/bin/python -m pip install -r requirements.txt
-    - pytest --junitxml=report.xml
+    - ./venv/bin/pytest --junitxml=report.xml
   artifacts:
     when: always
     reports:  
