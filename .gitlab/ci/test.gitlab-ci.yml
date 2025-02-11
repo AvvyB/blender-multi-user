@@ -4,7 +4,7 @@ pytest:
   stage: test
   script:
     - apt-get update -y
-    - apt-get install -y python3 python3-pip python3-venv libxxf86vm-dev
+    - apt-get install -y python3 python3-pip python3-venv libxxf86vm-dev libxfixes3
     - python3 -m venv venv
     - ls venv/bin
     - ls .
