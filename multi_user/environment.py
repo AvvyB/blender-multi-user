@@ -18,10 +18,12 @@
 import os
 
 import socket
+import bpy
 
-DEFAULT_CACHE_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "cache"
+DEFAULT_CACHE_DIR = bpy.utils.extension_path_user(
+    __package__,
+    path='cache',
+    create=True
 )
 
 rtypes = []

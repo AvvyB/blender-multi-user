@@ -105,6 +105,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
+
 class ServerPreset(bpy.types.PropertyGroup):
     server_name: bpy.props.StringProperty(default="")  # type:ignore
     ip: bpy.props.StringProperty(default="127.0.0.1", update=update_ip)  # type:ignore
@@ -115,6 +116,7 @@ class ServerPreset(bpy.types.PropertyGroup):
     admin_password: bpy.props.StringProperty(default="", subtype = "PASSWORD")  # type:ignore
     is_online: bpy.props.BoolProperty(default=False)  # type:ignore
     is_private: bpy.props.BoolProperty(default=False)  # type:ignore
+
 
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
