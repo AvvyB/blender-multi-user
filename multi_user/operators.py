@@ -243,7 +243,7 @@ def on_connection_end(reason="none"):
         if isinstance(handler, logging.FileHandler):
             logger.removeHandler(handler)
     if reason != "user":
-        bpy.ops.session.notify('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ")  # TODO: change op session.notify to add ui + change reason (in replication->interface)
+        bpy.ops.wm.session_notify_user('INVOKE_DEFAULT', message=f"Disconnected from session. Reason: {reason}. ")  # TODO: change op wm.session_notify_user to add ui + change reason (in replication->interface)
 
 
 def setup_logging():
@@ -310,8 +310,8 @@ def get_active_server_preset(context):
 # OPERATORS
 
 
-class SessionConnectOperator(bpy.types.Operator):
-    bl_idname = "session.connect"
+class SessionJoinOperator(bpy.types.Operator):
+    bl_idname = "wm.session_join"
     bl_label = "connect"
     bl_description = "connect to a net server"
 
@@ -376,7 +376,7 @@ class SessionConnectOperator(bpy.types.Operator):
 
 
 class SessionHostOperator(bpy.types.Operator):
-    bl_idname = "session.host"
+    bl_idname = "wm.session_host"
     bl_label = "host"
     bl_description = "host server"
 
@@ -449,7 +449,7 @@ class SessionHostOperator(bpy.types.Operator):
 
 
 class SessionInitOperator(bpy.types.Operator):
-    bl_idname = "session.init"
+    bl_idname = "wm.session_init"
     bl_label = "Init session repostitory from"
     bl_description = "Init the current session"
     bl_options = {"REGISTER"}
@@ -491,7 +491,7 @@ class SessionInitOperator(bpy.types.Operator):
 
 
 class SessionStopOperator(bpy.types.Operator):
-    bl_idname = "session.stop"
+    bl_idname = "wm.session_quit"
     bl_label = "close"
     bl_description = "Exit current session"
     bl_options = {"REGISTER"}
@@ -516,7 +516,7 @@ class SessionStopOperator(bpy.types.Operator):
 
 
 class SessionKickOperator(bpy.types.Operator):
-    bl_idname = "session.kick"
+    bl_idname = "wm.session_user_kick"
     bl_label = "Kick"
     bl_description = "Kick the target user"
     bl_options = {"REGISTER"}
@@ -547,7 +547,7 @@ class SessionKickOperator(bpy.types.Operator):
 
 
 class SessionPropertyRemoveOperator(bpy.types.Operator):
-    bl_idname = "session.remove_prop"
+    bl_idname = "wm.session_datablock_ignore"
     bl_label = "Delete cache"
     bl_description = "Stop tracking modification on the target datablock." + \
         "The datablock will no longer be updated for others client. "
@@ -572,7 +572,7 @@ class SessionPropertyRemoveOperator(bpy.types.Operator):
 
 
 class SessionPropertyRightOperator(bpy.types.Operator):
-    bl_idname = "session.right"
+    bl_idname = "wm.session_datablock_owner_set"
     bl_label = "Change modification rights"
     bl_description = "Modify the owner of the target datablock"
     bl_options = {"REGISTER"}
@@ -621,7 +621,7 @@ class SessionPropertyRightOperator(bpy.types.Operator):
 
 
 class SessionSnapUserOperator(bpy.types.Operator):
-    bl_idname = "session.snapview"
+    bl_idname = "wm.session_view_snap"
     bl_label = "snap to user"
     bl_description = "Snap 3d view to selected user"
     bl_options = {"REGISTER"}
@@ -697,7 +697,7 @@ class SessionSnapUserOperator(bpy.types.Operator):
 
 
 class SessionSnapTimeOperator(bpy.types.Operator):
-    bl_idname = "session.snaptime"
+    bl_idname = "wm.session_timeline_snap"
     bl_label = "snap to user time"
     bl_description = "Snap time to selected user time's"
     bl_options = {"REGISTER"}
@@ -747,7 +747,7 @@ class SessionSnapTimeOperator(bpy.types.Operator):
 
 
 class SessionApply(bpy.types.Operator):
-    bl_idname = "session.apply"
+    bl_idname = "wm.session_datablock_revert"
     bl_label = "Revert"
     bl_description = "Revert the selected datablock from his cached" + \
         " version."
@@ -790,7 +790,7 @@ class SessionApply(bpy.types.Operator):
 
 
 class SessionCommit(bpy.types.Operator):
-    bl_idname = "session.commit"
+    bl_idname = "wm.session_datablock_commit"
     bl_label = "Force server update"
     bl_description = "Commit and push the target datablock to server"
     bl_options = {"REGISTER"}
@@ -813,7 +813,7 @@ class SessionCommit(bpy.types.Operator):
 
 class SessionClearCache(bpy.types.Operator):
     "Clear local session cache"
-    bl_idname = "session.clear_cache"
+    bl_idname = "wm.session_cache_clear"
     bl_label = "Modal Executor Operator"
 
     @classmethod
@@ -842,7 +842,7 @@ class SessionClearCache(bpy.types.Operator):
 
 class SessionPurgeOperator(bpy.types.Operator):
     "Remove node with lost references"
-    bl_idname = "session.purge"
+    bl_idname = "wm.session_clear_orphan_data"
     bl_label = "Purge session data"
 
     @classmethod
@@ -867,7 +867,7 @@ class SessionPurgeOperator(bpy.types.Operator):
 
 class SessionNotifyOperator(bpy.types.Operator):
     """Dialog only operator"""
-    bl_idname = "session.notify"
+    bl_idname = "wm.session_notify_user"
     bl_label = "Multi-user"
     bl_description = "multiuser notification"
 
@@ -889,7 +889,7 @@ class SessionNotifyOperator(bpy.types.Operator):
 
 
 class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
-    bl_idname = "session.save"
+    bl_idname = "wm.session_save"
     bl_label = "Save session data"
     bl_description = "Save a snapshot of the collaborative session"
 
@@ -931,7 +931,7 @@ class SessionSaveBackupOperator(bpy.types.Operator, ExportHelper):
 
 
 class SessionStopAutoSaveOperator(bpy.types.Operator):
-    bl_idname = "session.cancel_autosave"
+    bl_idname = "wm.session_stop_autosave"
     bl_label = "Cancel auto-save"
     bl_description = "Cancel session auto-save"
 
@@ -946,7 +946,7 @@ class SessionStopAutoSaveOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class SessionLoadSaveOperator(bpy.types.Operator, ImportHelper):
-    bl_idname = "session.load"
+    bl_idname = "wm.session_load"
     bl_label = "Load session save"
     bl_description = "Load a Multi-user session save"
     bl_options = {'REGISTER', 'UNDO'}
@@ -1054,7 +1054,7 @@ class SESSION_PT_ImportUser(bpy.types.Panel):
 
 class SessionPresetServerAdd(bpy.types.Operator):
     """Add a server to the server list preset"""
-    bl_idname = "session.preset_server_add"
+    bl_idname = "wm.session_save_server_preset"
     bl_label = "Add server preset"
     bl_description = "add a server to the server preset list"
     bl_options = {"REGISTER"}
@@ -1136,7 +1136,7 @@ class SessionPresetServerAdd(bpy.types.Operator):
 
 class SessionPresetServerEdit(bpy.types.Operator): # TODO : use preset, not settings
     """Edit a server to the server list preset"""
-    bl_idname = "session.preset_server_edit"
+    bl_idname = "wm.session_server_preset_edit"
     bl_label = "Edit server preset"
     bl_description = "Edit a server from the server preset list"
     bl_options = {"REGISTER"}
@@ -1189,7 +1189,7 @@ class SessionPresetServerEdit(bpy.types.Operator): # TODO : use preset, not sett
 
 class SessionPresetServerRemove(bpy.types.Operator):
     """Remove a server to the server list preset"""
-    bl_idname = "session.preset_server_remove"
+    bl_idname = "wm.session_server_preset_remove"
     bl_label = "remove server preset"
     bl_description = "remove the current server from the server preset list"
     bl_options = {"REGISTER"}
@@ -1210,7 +1210,7 @@ class SessionPresetServerRemove(bpy.types.Operator):
 
 
 class RefreshServerStatus(bpy.types.Operator):
-    bl_idname = "session.get_info"
+    bl_idname = "wm.session_server_status"
     bl_label = "Get session info"
     bl_description = "Get session info"
 
@@ -1234,7 +1234,7 @@ class RefreshServerStatus(bpy.types.Operator):
 
 class GetDoc(bpy.types.Operator):
     """Get the documentation of the addon"""
-    bl_idname = "doc.get"
+    bl_idname = "wm.session_open_documentation"
     bl_label = "Multi-user's doc"
     bl_description = "Go to the doc of the addon"
 
@@ -1251,7 +1251,7 @@ class GetDoc(bpy.types.Operator):
 
 class FirstLaunch(bpy.types.Operator):
     """First time lauching the addon"""
-    bl_idname = "firstlaunch.verify"
+    bl_idname = "wm.session_firstlaunch_verify"
     bl_label = "First launch"
     bl_description = "First time lauching the addon"
 
@@ -1278,7 +1278,7 @@ def menu_func_export(self, context):
 
 
 classes = (
-    SessionConnectOperator,
+    SessionJoinOperator,
     SessionHostOperator,
     SessionStopOperator,
     SessionPropertyRemoveOperator,

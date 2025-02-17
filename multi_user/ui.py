@@ -157,14 +157,14 @@ class SESSION_PT_settings(bpy.types.Panel):
             row = layout.row()
             row.label(text="2. New here ? See the doc:")
             row = layout.row()
-            row.operator("doc.get", text="Documentation", icon="HELP")
+            row.operator("wm.session_open_documentation", text="Documentation", icon="HELP")
 
             # START
             row = layout.row()
             row.label(text="3: Start the Multi-user:")
             row = layout.row()
             row.scale_y = 2
-            row.operator("firstlaunch.verify", text="Continue")
+            row.operator("wm.session_firstlaunch_verify", text="Continue")
 
         if not settings.is_first_launch:
             if hasattr(context.window_manager, 'session'):
@@ -194,7 +194,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                     split.label(text="Online")
 
                     col = row.column(align=True)
-                    col.operator("session.get_info", icon="FILE_REFRESH", text="")
+                    col.operator("wm.session_server_status", icon="FILE_REFRESH", text="")
 
                     row = layout.row()
                     col = row.column(align=True)
@@ -202,21 +202,21 @@ class SESSION_PT_settings(bpy.types.Panel):
                     col.separator()
                     connectOp = col.row()
                     connectOp.enabled = is_server_selected
-                    connectOp.operator("session.connect", text="Connect")
+                    connectOp.operator("wm.session_join", text="Connect")
 
                     col = row.column(align=True)
-                    col.operator("session.preset_server_add", icon="ADD", text="")  # TODO : add conditions (need a name, etc..)
+                    col.operator("wm.session_save_server_preset", icon="ADD", text="")  # TODO : add conditions (need a name, etc..)
                     row_visible = col.row(align=True)
                     col_visible = row_visible.column(align=True)
                     col_visible.enabled = is_server_selected
-                    col_visible.operator("session.preset_server_remove", icon="REMOVE", text="").target_server_name = active_server_name
+                    col_visible.operator("wm.session_server_preset_remove", icon="REMOVE", text="").target_server_name = active_server_name
                     col_visible.separator()
-                    col_visible.operator("session.preset_server_edit", icon="GREASEPENCIL", text="").target_server_name = active_server_name
+                    col_visible.operator("wm.session_server_preset_edit", icon="GREASEPENCIL", text="").target_server_name = active_server_name
 
                 else:
                     exitbutton = layout.row()
                     exitbutton.scale_y = 1.5
-                    exitbutton.operator("session.stop", icon='QUIT', text="Disconnect")
+                    exitbutton.operator("wm.session_quit", icon='QUIT', text="Disconnect")
 
                     progress = session.state_progress
                     current_state = session.state
@@ -231,7 +231,7 @@ class SESSION_PT_settings(bpy.types.Panel):
                             info_box = layout.row()
                             info_box.label(text=info_msg, icon='INFO')
                             init_row = layout.row()
-                            init_row.operator("session.init", icon='TOOL_SETTINGS', text="Init")
+                            init_row.operator("wm.session_init", icon='TOOL_SETTINGS', text="Init")
                         else:
                             info_box = layout.row()
                             info_box.row().label(text=info_msg, icon='INFO')
@@ -294,7 +294,7 @@ class SESSION_PT_host_settings(bpy.types.Panel):
         host_selection_col.prop(settings, "host_admin_password", text="")
 
         host_selection = layout.column()
-        host_selection.operator("session.host", text="Host")
+        host_selection.operator("wm.session_host", text="Host")
 
 
 class SESSION_PT_advanced_settings(bpy.types.Panel):
@@ -389,7 +389,7 @@ class SESSION_PT_advanced_settings(bpy.types.Panel):
             cache_section_row.label(text="Clear memory filecache:")
             cache_section_row.prop(settings, "clear_memory_filecache", text="")
             cache_section_row = cache_section.row()
-            cache_section_row.operator('session.clear_cache', text=f"Clear cache ({get_folder_size(settings.cache_directory)})")
+            cache_section_row.operator('wm.session_cache_clear', text=f"Clear cache ({get_folder_size(settings.cache_directory)})")
 
         # ADVANCED LOG
         log_section = layout.row().box()
@@ -463,19 +463,19 @@ class SESSION_PT_user(bpy.types.Panel):
 
                 user_operations.alert = context.window_manager.session.time_snap_running
                 user_operations.operator(
-                    "session.snapview",
+                    "wm.session_view_snap",
                     text="",
                     icon='VIEW_CAMERA').target_client = active_user.username
 
                 user_operations.alert = context.window_manager.session.user_snap_running
                 user_operations.operator(
-                    "session.snaptime",
+                    "wm.session_timeline_snap",
                     text="",
                     icon='TIME').target_client = active_user.username
 
             if session.online_users[settings.username]['admin']:
                 user_operations.operator(
-                    "session.kick",
+                    "wm.session_user_kick",
                     text="",
                     icon='CANCEL').user = active_user.username
 
@@ -555,21 +555,21 @@ def draw_property(context, parent, property_uuid, level=0):
 
     if have_right_to_modify:
         detail_item_box.operator(
-            "session.commit",
+            "wm.session_datablock_commit",
             text="",
             icon_value=sync_status.icon_id).target = item.uuid
         detail_item_box.separator()
 
     if item.state in [FETCHED, UP]:
         apply = detail_item_box.operator(
-            "session.apply",
+            "wm.session_datablock_revert",
             text="",
             icon=ICONS_PROP_STATES[item.state])
         apply.target = item.uuid
         apply.reset_dependencies = True
     elif item.state in [MODIFIED, ADDED]:
         detail_item_box.operator(
-            "session.commit",
+            "wm.session_datablock_commit",
             text="",
             icon=ICONS_PROP_STATES[item.state]).target = item.uuid
     else:
@@ -581,11 +581,11 @@ def draw_property(context, parent, property_uuid, level=0):
 
     if have_right_to_modify:
         ro = detail_item_box.operator(
-            "session.right", text="", icon=right_icon)
+            "wm.session_datablock_owner_set", text="", icon=right_icon)
         ro.key = property_uuid
 
         detail_item_box.operator(
-            "session.remove_prop", text="", icon="X").property_path = property_uuid
+            "wm.session_datablock_ignore", text="", icon="X").property_path = property_uuid
     else:
         detail_item_box.label(text="", icon="DECORATE_LOCKED")
 
@@ -667,7 +667,7 @@ class SESSION_PT_repository(bpy.types.Panel):
             if 'SessionBackupTimer' in registry:
                 row = layout.row()
                 row.alert = True
-                row.operator('session.cancel_autosave', icon="CANCEL")
+                row.operator('wm.session_stop_autosave', icon="CANCEL")
                 row.alert = False
 
             box = layout.box()
