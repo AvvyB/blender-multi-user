@@ -276,7 +276,7 @@ VIEW_SETTINGS = [
 ]
 
 
-def dump_sequence(sequence: bpy.types.Sequence) -> dict:
+def dump_sequence(sequence) -> dict:
     """ Dump a sequence to a dict
 
         :arg sequence: sequence to dump
