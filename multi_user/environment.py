@@ -20,11 +20,6 @@ import os
 import socket
 import bpy
 
-DEFAULT_CACHE_DIR = bpy.utils.extension_path_user(
-    __package__,
-    path='cache',
-    create=True
-)
 
 rtypes = []
 
@@ -39,16 +34,3 @@ def get_ip():
     ip = s.getsockname()[0]
     s.close()
     return ip
-
-
-def check_dir(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-
-def register():
-    check_dir(DEFAULT_CACHE_DIR)
-
-
-def unregister():
-    pass

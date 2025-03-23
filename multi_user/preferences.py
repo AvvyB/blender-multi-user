@@ -47,6 +47,12 @@ DEFAULT_PRESETS = {
 }
 
 
+DEFAULT_CACHE_DIR = bpy.utils.extension_path_user(
+    __package__,
+    path='cache',
+    create=True
+)
+
 def randomColor():
     """Generate a random color """
     r = random.random()
@@ -84,7 +90,7 @@ def update_directory(self, context):
     new_dir = Path(self.cache_directory)
     if new_dir.exists() and any(Path(self.cache_directory).iterdir()):
         logging.error("The folder is not empty, choose another one.")
-        self['cache_directory'] = environment.DEFAULT_CACHE_DIR
+        self['cache_directory'] = DEFAULT_CACHE_DIR
     elif not new_dir.exists():
         logging.info("Target cache folder doesn't exist, creating it.")
         os.makedirs(self.cache_directory, exist_ok=True)
@@ -237,7 +243,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
     cache_directory: bpy.props.StringProperty(
         name="cache directory",
         subtype="DIR_PATH",
-        default=environment.DEFAULT_CACHE_DIR,
+        default=DEFAULT_CACHE_DIR,
         update=update_directory)  # type:ignore
     connection_timeout: bpy.props.IntProperty(
         name='connection timeout',
