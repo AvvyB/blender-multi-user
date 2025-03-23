@@ -48,7 +48,7 @@ DEFAULT_PRESETS = {
 
 
 DEFAULT_CACHE_DIR = bpy.utils.extension_path_user(
-    __package__,
+    "multi_user",
     path='cache',
     create=True
 )
