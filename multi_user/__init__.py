@@ -20,7 +20,6 @@ import logging
 
 import bpy
 
-from . import environment
 from . import presence
 from . import operators
 from . import handlers
@@ -37,7 +36,6 @@ def register():
         level=logging.INFO,
     )
 
-    environment.register()
     preferences.register()
     presence.register()
     operators.register()
@@ -76,5 +74,3 @@ def unregister():
     del bpy.types.WindowManager.online_users
     del bpy.types.WindowManager.user_index
     del bpy.types.WindowManager.server_index
-
-    environment.unregister()
