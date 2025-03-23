@@ -131,7 +131,7 @@ def resolve_deps_graph(dummy):
 @persistent
 def load_pre_handler(dummy):
     if session and session.state in [STATE_ACTIVE, STATE_SYNCING]:
-        bpy.ops.session.stop()
+        bpy.ops.wm.session_quit()
 
 
 @persistent

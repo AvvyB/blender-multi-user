@@ -105,6 +105,7 @@ class ReplicatedDatablock(bpy.types.PropertyGroup):
     auto_push: bpy.props.BoolProperty(default=True)
     icon: bpy.props.StringProperty()
 
+
 class ServerPreset(bpy.types.PropertyGroup):
     server_name: bpy.props.StringProperty(default="")  # type:ignore
     ip: bpy.props.StringProperty(default="127.0.0.1", update=update_ip)  # type:ignore
@@ -116,10 +117,11 @@ class ServerPreset(bpy.types.PropertyGroup):
     is_online: bpy.props.BoolProperty(default=False)  # type:ignore
     is_private: bpy.props.BoolProperty(default=False)  # type:ignore
 
+
 def set_sync_render_settings(self, value):
     self['sync_render_settings'] = value
     if session and bpy.context.scene.uuid and value:
-        bpy.ops.session.apply('INVOKE_DEFAULT',
+        bpy.ops.wm.session_datablock_revert('INVOKE_DEFAULT',
                               target=bpy.context.scene.uuid,
                               reset_dependencies=False)
 
@@ -128,7 +130,7 @@ def set_sync_active_camera(self, value):
     self['sync_active_camera'] = value
 
     if session and bpy.context.scene.uuid and value:
-        bpy.ops.session.apply('INVOKE_DEFAULT',
+        bpy.ops.wm.session_datablock_revert('INVOKE_DEFAULT',
                               target=bpy.context.scene.uuid,
                               reset_dependencies=False)
 
@@ -496,7 +498,7 @@ class SessionPrefs(bpy.types.AddonPreferences):
             if self.conf_session_cache_expanded:
                 box.row().prop(self, "cache_directory", text="Cache directory")
                 box.row().prop(self, "clear_memory_filecache", text="Clear memory filecache")
-                box.row().operator('session.clear_cache', text=f"Clear cache ({get_folder_size(self.cache_directory)})")
+                box.row().operator('wm.session_cache_clear', text=f"Clear cache ({get_folder_size(self.cache_directory)})")
 
             # LOGGING
             box = grid.box()
