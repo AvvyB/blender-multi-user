@@ -363,7 +363,8 @@ class SessionJoinOperator(bpy.types.Operator):
                 repository=repo,
                 timeout=settings.connection_timeout,
                 server_password=server_pass,
-                admin_password=admin_pass
+                admin_password=admin_pass,
+                subprocess_python_args=bpy.app.python_args,
             )
         except Exception as e:
             self.report({'ERROR'}, str(e))
@@ -436,6 +437,7 @@ class SessionHostOperator(bpy.types.Operator):
                 cache_directory=settings.cache_directory,
                 server_log_level=logging.getLevelName(
                     logging.getLogger().level),
+                subprocess_python_args=bpy.app.python_args,
             )
         except Exception as e:
             self.report({'ERROR'}, repr(e))
