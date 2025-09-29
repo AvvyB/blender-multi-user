@@ -7,7 +7,7 @@ import bpy
 import random
 from multi_user.bl_types.bl_collection import BlCollection
 
-def test_collection(clear_blend):
+def test_collection(clear_blend, register_uuid):
     # Generate a collection with childrens and a cube
     datablock = bpy.data.collections.new("root")
     datablock.uuid = str(uuid4())

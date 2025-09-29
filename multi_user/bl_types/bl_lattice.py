@@ -17,13 +17,14 @@
 
 
 import bpy
-import mathutils
-
-from .dump_anything import Dumper, Loader, np_dump_collection, np_load_collection
-from replication.protocol import ReplicatedDatablock
 from replication.exception import ContextError
+from replication.protocol import ReplicatedDatablock
+
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .dump_anything import (Dumper, Loader, np_dump_collection,
+                            np_load_collection)
 
 POINT = ['co', 'weight_softbody', 'co_deform']
 
@@ -79,11 +80,12 @@ class BlLattice(ReplicatedDatablock):
     @staticmethod
     def resolve(data: dict) -> object:
         uuid = data.get('uuid')
-        return  resolve_datablock_from_uuid(uuid, bpy.data.lattices)
+        return resolve_datablock_from_uuid(uuid, bpy.data.lattices)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         return resolve_animation_dependencies(datablock)
+
 
 _type = bpy.types.Lattice
 _class = BlLattice

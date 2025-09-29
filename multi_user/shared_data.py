@@ -22,7 +22,7 @@ class SessionData():
     """ A structure to share easily the current session data across the addon
         modules.
         This object will completely replace the Singleton lying in replication
-        interface module.  
+        interface module.
     """
 
     def __init__(self):

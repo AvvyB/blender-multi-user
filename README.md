@@ -34,6 +34,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | camera         |   ✔️    |                                                                         |
 | collection     |   ✔️    |                                                                         |
 | gpencil        |   ✔️    |                                                                         |
+| gpencil3        |   ✔️    |                                                                         |
 | image          |   ✔️    |                                                                         |
 | mesh           |   ✔️    |                                                                         |
 | material       |   ✔️    |                                                                         |
@@ -55,8 +56,7 @@ Currently, not all data-block are supported for replication over the wire. The f
 | vse            |   ❗    |                     Mask and Clip not supported yet                     |
 | libraries      |   ❌    |                                                                         |
 | nla            |   ❌    |                                                                         |
-| texts          |   ❌    | [Planned for v0.5.0](https://gitlab.com/slumber/multi-user/-/issues/81) |
-| compositing    |   ❌    | [Planned for v0.5.0](https://gitlab.com/slumber/multi-user/-/issues/46) |
+| compositing    |   ❌    | [Planned for v0.7.0](https://gitlab.com/slumber/multi-user/-/issues/46) |
 
 
 

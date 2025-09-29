@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.8] - 2025-09-29
+
+- Blender 4 compatibility
+
 ## [0.0.2] - 2020-02-28
 
 ### Added

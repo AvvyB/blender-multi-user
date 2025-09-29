@@ -15,20 +15,14 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
-import logging
-import os
 from pathlib import Path
 
 import bpy
-import mathutils
 
-from .. import utils
 from replication.protocol import ReplicatedDatablock
 from .dump_anything import Dumper, Loader
-from .bl_file import get_filepath, ensure_unpacked
+from .bl_file import get_filepath
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 
 
 format_to_ext = {
@@ -105,7 +99,7 @@ class BlImage(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.images)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         if datablock.packed_file:
@@ -132,6 +126,7 @@ class BlImage(ReplicatedDatablock):
             datablock.save()
 
         return True
+
 
 _type = bpy.types.Image
 _class = BlImage

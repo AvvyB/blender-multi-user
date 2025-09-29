@@ -17,12 +17,12 @@
 
 
 import bpy
-import mathutils
-
-from .dump_anything import Loader, Dumper
 from replication.protocol import ReplicatedDatablock
+
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .dump_anything import Dumper, Loader
 
 
 class BlCamera(ReplicatedDatablock):
@@ -34,11 +34,9 @@ class BlCamera(ReplicatedDatablock):
     bl_icon = 'CAMERA_DATA'
     bl_reload_parent = False
 
-
     @staticmethod
     def construct(data: dict) -> object:
         return bpy.data.cameras.new(data["name"])
-
 
     @staticmethod
     def load(data: dict, datablock: object):
@@ -68,7 +66,6 @@ class BlCamera(ReplicatedDatablock):
                     img_user = img_data.get('image_user')
                     if img_user:
                         loader.load(target_img.image_user, img_user)
-
 
     @staticmethod
     def dump(datablock: object) -> dict:
@@ -120,7 +117,7 @@ class BlCamera(ReplicatedDatablock):
             'use_cyclic',
             'use_auto_refresh'
         ]
-        data =  dumper.dump(datablock)
+        data = dumper.dump(datablock)
         data['animation_data'] = dump_animation_data(datablock)
 
         for index, image in enumerate(datablock.background_images):
@@ -134,7 +131,7 @@ class BlCamera(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.cameras)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
         for background in datablock.background_images:
             if background.image:
@@ -143,6 +140,7 @@ class BlCamera(ReplicatedDatablock):
         deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
+
 
 _type = bpy.types.Camera
 _class = BlCamera

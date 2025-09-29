@@ -1,6 +1,5 @@
 build:
   stage: build
-  needs: ["test"]
   image: debian:stable-slim
   script:
     - rm -rf tests .git .gitignore script
@@ -8,5 +7,3 @@ build:
     name: multi_user
     paths: 
      - multi_user
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive

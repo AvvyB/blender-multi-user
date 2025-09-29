@@ -17,28 +17,22 @@
 
 
 import bpy
-import bmesh
-import mathutils
-import logging
-import numpy as np
-
-from .dump_anything import Dumper, Loader, np_load_collection_primitives, np_dump_collection_primitive, np_load_collection, np_dump_collection
-from replication.constants import DIFF_BINARY
 from replication.exception import ContextError
 from replication.protocol import ReplicatedDatablock
 
-from .bl_datablock import get_datablock_from_uuid
-from .bl_material import dump_materials_slots, load_materials_slots
 from ..utils import get_preferences
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_material import dump_materials_slots, load_materials_slots
+from .dump_anything import (Dumper, Loader, np_dump_collection,
+                            np_dump_collection_primitive, np_load_collection,
+                            np_load_collection_primitives)
 
 VERTICE = ['co']
 
 EDGE = [
     'vertices',
-    'crease',
-    'bevel_weight',
     'use_seam',
     'use_edge_sharp',
 ]
@@ -53,6 +47,19 @@ POLYGON = [
     'use_smooth',
     'material_index',
 ]
+
+GENERIC_ATTRIBUTES =[
+    'crease_vert',
+    'crease_edge',
+    'bevel_weight_vert',
+    'bevel_weight_edge'
+]
+
+GENERIC_ATTRIBUTES_ENSURE = {
+    'crease_vert': 'vertex_crease_ensure',
+    'crease_edge': 'edge_crease_ensure'
+}
+
 
 class BlMesh(ReplicatedDatablock):
     use_delta = True
@@ -105,9 +112,9 @@ class BlMesh(ReplicatedDatablock):
 
                     np_load_collection_primitives(
                         datablock.uv_layers[layer].data, 
-                        'uv', 
+                        'uv',
                         data["uv_layers"][layer]['data'])
-            
+
             # Vertex color
             if 'vertex_colors' in data.keys():
                 for color_layer in data['vertex_colors']:
@@ -115,9 +122,19 @@ class BlMesh(ReplicatedDatablock):
                         datablock.vertex_colors.new(name=color_layer)
 
                     np_load_collection_primitives(
-                        datablock.vertex_colors[color_layer].data, 
+                        datablock.vertex_colors[color_layer].data,
                         'color', 
                         data["vertex_colors"][color_layer]['data'])
+
+            # Generic attibutes
+            for attribute_name, attribute_data_type, attribute_domain, attribute_data in data["attributes"]:
+                if attribute_name not in datablock.attributes:
+                    datablock.attributes.new(
+                        attribute_name,
+                        attribute_data_type,
+                        attribute_domain
+                    )
+                np_load_collection(attribute_data, datablock.attributes[attribute_name].data, ['value'])
 
             datablock.validate()
             datablock.update()
@@ -135,7 +152,6 @@ class BlMesh(ReplicatedDatablock):
             'use_auto_smooth',
             'auto_smooth_angle',
             'use_customdata_edge_bevel',
-            'use_customdata_edge_crease'
         ]
 
         data = dumper.dump(mesh)
@@ -150,6 +166,21 @@ class BlMesh(ReplicatedDatablock):
         data["egdes_count"] = len(mesh.edges)
         data["edges"] = np_dump_collection(mesh.edges, EDGE)
 
+        # ATTIBUTES
+        data["attributes"] = []
+        for attribute_name in GENERIC_ATTRIBUTES:
+            if attribute_name in datablock.attributes:
+                attribute_data = datablock.attributes.get(attribute_name)
+                dumped_attr_data = np_dump_collection(attribute_data.data, ['value'])
+
+                data["attributes"].append(
+                    (
+                        attribute_name,
+                        attribute_data.data_type,
+                        attribute_data.domain,
+                        dumped_attr_data
+                    )
+                )
         # POLYGONS
         data["poly_count"] = len(mesh.polygons)
         data["polygons"] = np_dump_collection(mesh.polygons, POLYGON)
@@ -175,9 +206,9 @@ class BlMesh(ReplicatedDatablock):
         # Materials
         data['materials'] = dump_materials_slots(datablock.materials)
         return data
-    
+
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
         for material in datablock.materials:
@@ -197,6 +228,7 @@ class BlMesh(ReplicatedDatablock):
     def needs_update(datablock: object, data: dict) -> bool:
         return ('EDIT' not in bpy.context.mode and bpy.context.mode != 'SCULPT') \
             or get_preferences().sync_flags.sync_during_editmode
+
 
 _type = bpy.types.Mesh
 _class = BlMesh

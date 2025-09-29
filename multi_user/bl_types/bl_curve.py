@@ -15,20 +15,19 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
 import bpy
 import bpy.types as T
-import mathutils
-import logging
 
 from ..utils import get_preferences
 from replication.protocol import ReplicatedDatablock
-from .dump_anything import (Dumper, Loader,
-                            np_load_collection,
-                            np_dump_collection)
+from .dump_anything import Dumper, Loader, np_load_collection, np_dump_collection
 from .bl_material import dump_materials_slots, load_materials_slots
 from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_action import (
+    dump_animation_data,
+    load_animation_data,
+    resolve_animation_dependencies,
+)
 
 
 SPLINE_BEZIER_POINT = [

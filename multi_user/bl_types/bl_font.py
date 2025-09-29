@@ -15,17 +15,14 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
-import logging
-import os
 from pathlib import Path
 
 import bpy
-
 from replication.protocol import ReplicatedDatablock
-from .bl_file import get_filepath, ensure_unpacked
-from .dump_anything import Dumper, Loader
+
 from .bl_datablock import resolve_datablock_from_uuid
+from .bl_file import ensure_unpacked, get_filepath
+
 
 class BlFont(ReplicatedDatablock):
     bl_id = "fonts"
@@ -49,7 +46,7 @@ class BlFont(ReplicatedDatablock):
 
     @staticmethod
     def dump(datablock: object) -> dict:
-        if datablock.filepath  == '<builtin>':
+        if datablock.filepath == '<builtin>':
             filename = '<builtin>'
         else:
             filename = Path(datablock.filepath).name
@@ -68,7 +65,7 @@ class BlFont(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.fonts)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
         if datablock.filepath and datablock.filepath != '<builtin>':
             ensure_unpacked(datablock)
@@ -78,8 +75,9 @@ class BlFont(ReplicatedDatablock):
         return deps
 
     @staticmethod
-    def needs_update(datablock: object, data:dict)-> bool:
+    def needs_update(datablock: object, data: dict) -> bool:
         return False
+
 
 _type = bpy.types.VectorFont
 _class = BlFont

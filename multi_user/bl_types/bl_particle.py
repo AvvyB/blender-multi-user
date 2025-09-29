@@ -1,11 +1,18 @@
 import bpy
-import mathutils
+from replication.protocol import ReplicatedDatablock
 
 from . import dump_anything
-from replication.protocol import ReplicatedDatablock
-from .bl_datablock import get_datablock_from_uuid
-from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
+from .bl_datablock import get_datablock_from_uuid, resolve_datablock_from_uuid
+
+IGNORED_ATTR = [
+    "is_embedded_data",
+    "is_evaluated",
+    "is_fluid",
+    "is_library_indirect",
+    "users"
+]
 
 
 def dump_textures_slots(texture_slots: bpy.types.bpy_prop_collection) -> list:
@@ -32,13 +39,6 @@ def load_texture_slots(dumped_slots: list, target_slots: bpy.types.bpy_prop_coll
             slot_uuid, slot_name
         )
 
-IGNORED_ATTR = [
-    "is_embedded_data",
-    "is_evaluated",
-    "is_fluid",
-    "is_library_indirect",
-    "users"
-]
 
 class BlParticle(ReplicatedDatablock):
     use_delta = True
@@ -97,10 +97,11 @@ class BlParticle(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.particles)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = [t.texture for t in datablock.texture_slots if t and t.texture]
         deps.extend(resolve_animation_dependencies(datablock))
         return deps
+
 
 _type = bpy.types.ParticleSettings
 _class = BlParticle

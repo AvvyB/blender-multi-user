@@ -16,7 +16,7 @@ def test_action(clear_blend):
     datablock = bpy.data.actions.new("sdsad")
     fcurve_sample = datablock.fcurves.new('location')
     fcurve_sample.keyframe_points.add(100)
-    datablock.id_root = 'MESH'
+
 
     for i, point in enumerate(fcurve_sample.keyframe_points):
         point.co[0] = i

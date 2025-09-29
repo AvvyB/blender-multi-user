@@ -4,17 +4,17 @@ import pytest
 from deepdiff import DeepDiff
 
 import bpy
-from multi_user.bl_types.bl_gpencil import BlGpencil
+from multi_user.bl_types.bl_gpencil3 import BlGpencil3
 
 
-def test_gpencil(clear_blend):
-    bpy.ops.object.gpencil_add(type='MONKEY')
+def test_gpencil3(clear_blend, register_uuid):
+    bpy.ops.object.grease_pencil_add(type='MONKEY')
 
-    datablock = bpy.data.grease_pencils[0]
+    datablock = bpy.data.grease_pencils_v3[0]
 
-    implementation = BlGpencil()
+    implementation = BlGpencil3()
     expected = implementation.dump(datablock)
-    bpy.data.grease_pencils.remove(datablock)
+    bpy.data.grease_pencils_v3.remove(datablock)
 
     test = implementation.construct(expected)
     implementation.load(expected, test)

@@ -15,15 +15,15 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
 import bpy
-import mathutils
-
-from .dump_anything import Loader, Dumper
-from replication.protocol import ReplicatedDatablock
-from .bl_datablock import resolve_datablock_from_uuid
-from .bl_action import dump_animation_data, load_animation_data, resolve_animation_dependencies
 import bpy.types as T
+from replication.protocol import ReplicatedDatablock
+
+from .bl_action import (dump_animation_data, load_animation_data,
+                        resolve_animation_dependencies)
+from .bl_datablock import resolve_datablock_from_uuid
+from .dump_anything import Dumper, Loader
+
 
 class BlTexture(ReplicatedDatablock):
     use_delta = True
@@ -56,7 +56,8 @@ class BlTexture(ReplicatedDatablock):
             'uuid',
             'is_embedded_data',
             'is_evaluated',
-            'name_full'
+            'name_full',
+            'session_uid',
         ]
 
         data = dumper.dump(datablock)
@@ -76,10 +77,10 @@ class BlTexture(ReplicatedDatablock):
         return resolve_datablock_from_uuid(uuid, bpy.data.textures)
 
     @staticmethod
-    def resolve_deps(datablock: object) -> [object]:
+    def resolve_deps(datablock: object) -> list[object]:
         deps = []
 
-        image = getattr(datablock,"image", None)
+        image = getattr(datablock, "image", None)
 
         if image:
             deps.append(image)
@@ -87,6 +88,7 @@ class BlTexture(ReplicatedDatablock):
         deps.extend(resolve_animation_dependencies(datablock))
 
         return deps
+
 
 _type = [T.WoodTexture, T.VoronoiTexture,
          T.StucciTexture, T.NoiseTexture,

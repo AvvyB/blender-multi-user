@@ -15,17 +15,10 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-
-import logging
 from collections.abc import Iterable
 
 import bpy
-import mathutils
-from replication.constants import DIFF_BINARY, DIFF_JSON, UP
-from replication.protocol import ReplicatedDatablock
 
-from .. import utils
-from .dump_anything import Dumper, Loader
 
 def get_datablock_from_uuid(uuid, default, ignore=[]):
     if not uuid:
@@ -37,6 +30,7 @@ def get_datablock_from_uuid(uuid, default, ignore=[]):
                 if getattr(item, 'uuid', None) == uuid:
                     return item
     return default
+
 
 def resolve_datablock_from_uuid(uuid, bpy_collection):
     for item in bpy_collection:

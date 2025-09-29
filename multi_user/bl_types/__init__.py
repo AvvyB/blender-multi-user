@@ -24,6 +24,7 @@ __all__ = [
     'bl_collection',
     'bl_curve',
     'bl_gpencil',
+    'bl_gpencil3',
     'bl_image',
     'bl_light',
     'bl_scene',
@@ -41,13 +42,12 @@ __all__ = [
     'bl_node_group',
     'bl_texture',
     "bl_particle",
+    "bl_volume",
 ]  # Order here defines execution order
 
-if bpy.app.version >= (2,91,0):
-    __all__.append('bl_volume')
 
-from . import *
-
+# from . import *
+import importlib
 def types_to_register():
     return __all__
 
@@ -58,7 +58,10 @@ def get_data_translation_protocol()-> DataTranslationProtocol:
     """
     bpy_protocol = DataTranslationProtocol()
     for module_name in __all__:
-        impl  = globals().get(module_name)
+        if module_name not in globals():
+            impl = importlib.import_module(f".{module_name}", __package__)
+        else:
+            impl = globals()[module_name]
         if impl and hasattr(impl, "_type") and hasattr(impl, "_type"):
             bpy_protocol.register_implementation(impl._type, impl._class)
     return bpy_protocol
