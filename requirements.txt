@@ -1,4 +1,3 @@
-deepdiff==8.1.1
 pytest
 bpy==4.3
-replication
+replication==0.9.10
