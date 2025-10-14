@@ -36,7 +36,7 @@ from replication.constants import (
 )
 from replication import __version__
 from replication.interface import session
-from .timers import registry
+from .timers import timers_registry
 from . import icons
 
 ICONS_PROP_STATES = [
@@ -664,7 +664,7 @@ class SESSION_PT_repository(bpy.types.Panel):
         runtime_settings = context.window_manager.session
 
         if session.state == STATE_ACTIVE:
-            if 'SessionBackupTimer' in registry:
+            if 'SessionBackupTimer' in timers_registry:
                 row = layout.row()
                 row.alert = True
                 row.operator('wm.session_stop_autosave', icon="CANCEL")

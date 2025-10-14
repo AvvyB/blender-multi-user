@@ -41,8 +41,8 @@ from replication.repository import Repository
 from . import bl_types, timers, utils
 from .handlers import on_scene_update
 from .presence import (SessionStatusWidget, bbox_from_obj,
-                       refresh_sidebar_view, renderer, view3d_find)
-from .timers import registry
+                       refresh_sidebar_view, presence_viewer, view3d_find)
+from .timers import timers_registry
 
 
 deleyables = []
@@ -216,8 +216,8 @@ def on_connection_end(reason="none"):
     if on_scene_update in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(on_scene_update)
 
-    renderer.clear_widgets()
-    renderer.add_widget("session_status", SessionStatusWidget())
+    presence_viewer.clear_widgets()
+    presence_viewer.add_widget("session_status", SessionStatusWidget())
 
     # Step 3: remove file handled
     logger = logging.getLogger()
@@ -918,10 +918,10 @@ class SessionStopAutoSaveOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return (session.state == STATE_ACTIVE and 'SessionBackupTimer' in registry)
+        return (session.state == STATE_ACTIVE and 'SessionBackupTimer' in timers_registry)
 
     def execute(self, context):
-        autosave_timer = registry.get('SessionBackupTimer')
+        autosave_timer = timers_registry.get('SessionBackupTimer')
         autosave_timer.unregister()
 
         return {'FINISHED'}

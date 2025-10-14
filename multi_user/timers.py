@@ -28,14 +28,13 @@ from replication import porcelain
 from . import utils
 from .presence import (UserFrustumWidget, UserNameWidget, UserModeWidget, UserSelectionWidget,
                        generate_user_camera, get_view_matrix, refresh_3d_view,
-                       refresh_sidebar_view, renderer)
+                       refresh_sidebar_view, presence_viewer)
 
 from . import shared_data
 
-this = sys.modules[__name__]
 
 # Registered timers
-this.registry = dict()
+timers_registry = dict()
 
 
 def is_annotating(context: bpy.types.Context):
@@ -61,7 +60,7 @@ class Timer(object):
         """
 
         if not self.is_running:
-            this.registry[self.id] = self
+            timers_registry[self.id] = self
             bpy.app.timers.register(self.main)
             self.is_running = True
             logging.debug(f"Register {self.__class__.__name__}")
@@ -93,7 +92,7 @@ class Timer(object):
             logging.info(f"Unregistering {self.id}")
             bpy.app.timers.unregister(self.main)
 
-        del this.registry[self.id]
+        del timers_registry[self.id]
         self.is_running = False
 
 
@@ -295,7 +294,7 @@ class ClientUpdate(Timer):
     def execute(self):
         settings = utils.get_preferences()
 
-        if session and renderer:
+        if session and presence_viewer:
             if session.state in [STATE_ACTIVE, STATE_LOBBY]:
                 local_user = session.online_users.get(
                     settings.username)
@@ -367,7 +366,7 @@ class SessionUserSync(Timer):
         self.settings = utils.get_preferences()
 
     def execute(self):
-        if session and renderer:
+        if session and presence_viewer:
             # sync online users
             session_users = session.online_users
             ui_users = bpy.context.window_manager.online_users
@@ -375,10 +374,10 @@ class SessionUserSync(Timer):
             for index, user in enumerate(ui_users):
                 if user.username not in session_users.keys() and \
                         user.username != self.settings.username:
-                    renderer.remove_widget(f"{user.username}_cam")
-                    renderer.remove_widget(f"{user.username}_select")
-                    renderer.remove_widget(f"{user.username}_name")
-                    renderer.remove_widget(f"{user.username}_mode")
+                    presence_viewer.remove_widget(f"{user.username}_cam")
+                    presence_viewer.remove_widget(f"{user.username}_select")
+                    presence_viewer.remove_widget(f"{user.username}_name")
+                    presence_viewer.remove_widget(f"{user.username}_mode")
                     ui_users.remove(index)
                     break
 
@@ -388,11 +387,11 @@ class SessionUserSync(Timer):
                     new_key.name = user
                     new_key.username = user
                     if user != self.settings.username:
-                        renderer.add_widget(
+                        presence_viewer.add_widget(
                             f"{user}_cam", UserFrustumWidget(user))
-                        renderer.add_widget(
+                        presence_viewer.add_widget(
                             f"{user}_select", UserSelectionWidget(user))
-                        renderer.add_widget(
+                        presence_viewer.add_widget(
                             f"{user}_name", UserNameWidget(user))
-                        renderer.add_widget(
+                        presence_viewer.add_widget(
                             f"{user}_mode", UserModeWidget(user))

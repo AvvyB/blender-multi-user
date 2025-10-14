@@ -589,16 +589,16 @@ class DrawFactory(object):
                 f"Post pixel widget Exception: {e} \n {traceback.print_exc()}")
 
 
-this = sys.modules[__name__]
-this.renderer = DrawFactory()
+presence_viewer = DrawFactory()
 
 
 def register():
-    this.renderer.register_handlers()
-    this.renderer.add_widget("session_status", SessionStatusWidget())
+    global presence_viewer
+    presence_viewer.register_handlers()
+    presence_viewer.add_widget("session_status", SessionStatusWidget())
 
 
 def unregister():
-    this.renderer.unregister_handlers()
-
-    this.renderer.clear_widgets()
+    global presence_viewer
+    presence_viewer.unregister_handlers()
+    presence_viewer.clear_widgets()
