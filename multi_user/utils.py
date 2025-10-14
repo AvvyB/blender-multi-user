@@ -16,6 +16,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import importlib
 import logging
 import math
 import time
@@ -149,6 +150,15 @@ def get_preferences():
         return None
     else:
         return bpy.context.preferences.addons[__package__].preferences
+
+
+def get_version():
+    if __package__ not in bpy.context.preferences.addons:
+        return "version unknown"
+    else:
+        addon_module = importlib.import_module(bpy.context.preferences.addons[__package__].module)
+        version = addon_module.bl_info.get('version', "version unknown")
+        return f"{version[0]}.{version[1]}.{version[2]}"
 
 
 def current_milli_time():

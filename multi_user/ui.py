@@ -19,7 +19,7 @@
 import bpy
 import bpy.utils.previews
 
-from .utils import get_preferences, get_expanded_icon, get_folder_size, get_state_str
+from .utils import get_version, get_preferences, get_expanded_icon, get_folder_size, get_state_str
 from replication.constants import (
     ADDED,
     ERROR,
@@ -34,7 +34,6 @@ from replication.constants import (
     STATE_WAITING,
     STATE_LOBBY,
 )
-from replication import __version__
 from replication.interface import session
 from .timers import timers_registry
 from . import icons
@@ -138,7 +137,7 @@ class SESSION_PT_settings(bpy.types.Panel):
 
             layout.label(text=f"{str(settings.server_name)} - {get_state_str(cli_state)}", icon_value=connection_icon.icon_id)
         else:
-            layout.label(text=f"Multi-user - v{__version__}", icon="ANTIALIASED")
+            layout.label(text=f"Multi-user - v{get_version()}", icon="ANTIALIASED")
 
     def draw(self, context):
         layout = self.layout
@@ -162,8 +161,16 @@ class SESSION_PT_settings(bpy.types.Panel):
             # START
             row = layout.row()
             row.label(text="3: Start the Multi-user:")
+            if not bpy.context.preferences.system.use_online_access:
+                row = layout.row()
+                row.alert = True
+                row.label(text="Enable 'Allow Online Access' in Preferences", icon='ERROR')
+                row = layout.row()
+                ops = row.operator("screen.userpref_show", text="Open Preferences")
+                ops.section = 'SYSTEM'
             row = layout.row()
             row.scale_y = 2
+            row.enabled = bpy.context.preferences.system.use_online_access
             row.operator("wm.session_firstlaunch_verify", text="Continue")
 
         if not settings.is_first_launch:
