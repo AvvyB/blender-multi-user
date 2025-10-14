@@ -19,13 +19,10 @@
 import gzip
 import logging
 import os
-import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
-from queue import Queue
 from uuid import uuid4
-
 import bmesh
 
 try:
@@ -47,7 +44,7 @@ from .presence import (SessionStatusWidget, bbox_from_obj,
                        refresh_sidebar_view, renderer, view3d_find)
 from .timers import registry
 
-background_execution_queue = Queue()
+
 deleyables = []
 stop_modal_executor = False
 
@@ -163,22 +160,7 @@ def draw_user(username, metadata, radius=0.01, intensity=10.0):
 
     bpy.context.scene.collection.children.link(user_collection)
 
-
-def session_callback(name):
-    """ Session callback wrapper
-
-    This allow to encapsulate session callbacks to background_execution_queue.
-    By doing this way callback are executed from the main thread.
-    """
-    def func_wrapper(func):
-        @session.register(name)
-        def add_background_task(**kwargs):
-            background_execution_queue.put((func, kwargs))
-        return add_background_task
-    return func_wrapper
-
-
-@session_callback('on_connection')
+@session.register('on_connection')
 def initialize_session():
     """Session connection init hander
     """
@@ -215,7 +197,7 @@ def initialize_session():
     bpy.app.handlers.depsgraph_update_post.append(on_scene_update)
 
 
-@session_callback('on_exit')
+@session.register('on_exit')
 def on_connection_end(reason="none"):
     """Session connection finished handler
     """
@@ -284,15 +266,12 @@ def setup_timer():
 
     session_update = timers.SessionStatusUpdate()
     session_user_sync = timers.SessionUserSync()
-    session_background_executor = timers.MainThreadExecutor(execution_queue=background_execution_queue)
     session_listen = timers.SessionListenTimer(timeout=0.001)
 
     session_listen.register()
     session_update.register()
     session_user_sync.register()
-    session_background_executor.register()
 
-    deleyables.append(session_background_executor)
     deleyables.append(session_update)
     deleyables.append(session_user_sync)
     deleyables.append(session_listen)

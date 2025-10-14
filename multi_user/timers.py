@@ -396,15 +396,3 @@ class SessionUserSync(Timer):
                             f"{user}_name", UserNameWidget(user))
                         renderer.add_widget(
                             f"{user}_mode", UserModeWidget(user))
-
-
-class MainThreadExecutor(Timer):
-    def __init__(self, timeout=1, execution_queue=None):
-        super().__init__(timeout)
-        self.execution_queue = execution_queue
-
-    def execute(self):
-        while not self.execution_queue.empty():
-            function, kwargs = self.execution_queue.get()
-            logging.debug(f"Executing {function.__name__}")
-            function(**kwargs)
