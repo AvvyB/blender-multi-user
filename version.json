@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.1.1",
   "release_date": "2025-01-10",
   "download_url": "https://github.com/AvvyB/blender-multi-user/releases/download/v0.7.0/multi_user-0.7.0.zip",
   "release_notes": "Added multi-scene management and object importing between scenes",
