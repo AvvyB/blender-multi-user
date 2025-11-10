@@ -28,6 +28,9 @@ from . import icons
 from . import preferences
 from . import update_checker
 from . import scene_management
+from . import change_tracking
+from . import task_management
+from . import chat_system
 
 
 def register():
@@ -46,6 +49,9 @@ def register():
     icons.register()
     update_checker.register()
     scene_management.register()
+    change_tracking.register()
+    task_management.register()
+    chat_system.register()
 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps
@@ -66,6 +72,9 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(operators.menu_func_import)
     bpy.types.TOPBAR_MT_file_export.remove(operators.menu_func_export)
 
+    chat_system.unregister()
+    task_management.unregister()
+    change_tracking.unregister()
     scene_management.unregister()
     update_checker.unregister()
     presence.unregister()
