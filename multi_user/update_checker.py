@@ -132,7 +132,7 @@ class MULTIUSER_OT_download_update(bpy.types.Operator):
 
         # Open the releases page in browser
         import webbrowser
-        webbrowser.open("https://github.com/YOUR_USERNAME/multi-user/releases/latest")
+        webbrowser.open("https://github.com/AvvyB/blender-multi-user")
 
         return {'FINISHED'}
 
