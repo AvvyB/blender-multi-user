@@ -24,7 +24,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 # Configuration
-UPDATE_CHECK_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/multi-user/main/version.json"
+UPDATE_CHECK_URL = "https://raw.githubusercontent.com/AvvyB/blender-multi-user/refs/heads/master/version.json"
 CHECK_INTERVAL_DAYS = 1  # Check for updates daily
 
 class UpdateChecker:
