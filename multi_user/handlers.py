@@ -77,6 +77,9 @@ def on_scene_update(scene):
             logging.debug(f"Ignoring distant update of {dependency_updates[0].id.name}")
             return
 
+        # Track updated objects to sync their actions
+        updated_objects = []
+
         # NOTE: maybe we don't need to check each update but only the first
         for update in reversed(dependency_updates):
             update_uuid = getattr(update.id.original, 'uuid', None)
@@ -91,6 +94,11 @@ def on_scene_update(scene):
                             porcelain.commit(session.repository, node.uuid)
                             porcelain.push(session.repository,
                                            'origin', node.uuid)
+
+                            # Track objects for action sync
+                            if isinstance(update.id, bpy.types.Object):
+                                updated_objects.append(update.id)
+
                         except ReferenceError:
                             logging.debug(f"Reference error {node.uuid}")
                         except ContextError as e:
@@ -104,6 +112,20 @@ def on_scene_update(scene):
                 scn_uuid = porcelain.add(session.repository, scene)
                 porcelain.commit(session.repository, scn_uuid)
                 porcelain.push(session.repository, 'origin', scn_uuid)
+
+        # Sync actions for updated objects (keyframes)
+        for obj in updated_objects:
+            if obj.animation_data and obj.animation_data.action:
+                action = obj.animation_data.action
+                if hasattr(action, 'uuid'):
+                    action_node = session.repository.graph.get(action.uuid)
+                    if action_node and action_node.state == UP:
+                        try:
+                            porcelain.commit(session.repository, action.uuid)
+                            porcelain.push(session.repository, 'origin', action.uuid)
+                            logging.debug(f"Synced action {action.name} for object {obj.name}")
+                        except Exception as e:
+                            logging.debug(f"Failed to sync action: {e}")
 
         scene_graph_changed = [
             u for u in reversed(dependency_updates)
