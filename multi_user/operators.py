@@ -275,6 +275,13 @@ def setup_timer():
     deleyables.append(session_update)
     deleyables.append(session_user_sync)
     deleyables.append(session_listen)
+
+    # Only register timeline sync if enabled in preferences
+    if settings.sync_timeline:
+        timeline_sync = timers.TimelineSync()
+        timeline_sync.register()
+        deleyables.append(timeline_sync)
+
     deleyables.append(timers.AnnotationUpdates())
 
 

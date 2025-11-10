@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  blender-collab-server:
+    build: .
+    container_name: blender-multiuser-server
+    ports:
+      - "5555:5555"  # Command channel
+      - "5556:5556"  # Data channel
+      - "5557:5557"  # TTL/Heartbeat channel
+    environment:
+      - PORT=5555
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - SERVER_PASSWORD=${SERVER_PASSWORD:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TIMEOUT=${TIMEOUT:-10000}
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - blender-network
+
+networks:
+  blender-network:
+    driver: bridge

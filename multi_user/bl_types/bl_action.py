@@ -264,7 +264,7 @@ class BlAction(ReplicatedDatablock):
 
     bl_id = "actions"
     bl_class = bpy.types.Action
-    bl_check_common = False
+    bl_check_common = True  # Allow Actions to be synced automatically
     bl_icon = 'ACTION_TWEAK'
     bl_reload_parent = False
 

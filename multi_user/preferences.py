@@ -44,6 +44,14 @@ DEFAULT_PRESETS = {
         "admin_password": "admin",
         "server_password": "",
     },
+    "internet_server_template": {
+        "server_name": "Internet Server (Configure Me)",
+        "ip": "your-server-ip.com",
+        "port": 5555,
+        "use_admin_password": True,
+        "admin_password": "",
+        "server_password": "",
+    },
 }
 
 try:
@@ -262,8 +270,15 @@ class SessionPrefs(bpy.types.AddonPreferences):
     # Replication update settings
     depsgraph_update_rate: bpy.props.FloatProperty(
         name='depsgraph update rate (s)',
-        description='Dependency graph uppdate rate (s)',
-        default=1
+        description='Dependency graph update rate (s). Lower = smoother but more CPU usage',
+        default=0.1,
+        min=0.01,
+        max=5.0
+    )  # type:ignore
+    sync_timeline: bpy.props.BoolProperty(
+        name="Sync Timeline",
+        description="Automatically synchronize timeline playback with other users",
+        default=False
     )  # type:ignore
     clear_memory_filecache: bpy.props.BoolProperty(
         name="Clear memory filecache",
@@ -423,12 +438,26 @@ class SessionPrefs(bpy.types.AddonPreferences):
         if self.category == 'PREF':
             grid = layout.column()
 
+            # UPDATE NOTIFICATION
+            from . import update_checker
+            if update_checker.update_checker.update_available:
+                box = grid.box()
+                box.alert = True
+                col = box.column(align=True)
+                col.label(text=f"Update Available: v{update_checker.update_checker.latest_version}", icon='INFO')
+                row = col.row(align=True)
+                row.operator("multiuser.download_update", text="Download", icon='IMPORT')
+                row.operator("multiuser.dismiss_update", text="Dismiss", icon='X')
+
             box = grid.box()
             row = box.row()
             # USER SETTINGS
             split = row.split(factor=0.7, align=True)
             split.prop(self, "username", text="User")
             split.prop(self, "client_color", text="")
+
+            row = box.row()
+            row.operator("multiuser.check_updates", text="Check for Updates", icon='FILE_REFRESH')
 
             row = box.row()
             row.label(text="Hide settings:")
@@ -497,6 +526,8 @@ class SessionPrefs(bpy.types.AddonPreferences):
                     warning = row.box()
                     warning.label(text="Don't use this with heavy meshes !", icon='ERROR')
                     row = box.row()
+                row.prop(self, "sync_timeline")
+                row = box.row()
                 row.prop(self, "depsgraph_update_rate", text="Apply delay")
 
             # CACHE SETTINGS

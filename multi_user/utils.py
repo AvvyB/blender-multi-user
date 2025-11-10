@@ -153,12 +153,41 @@ def get_preferences():
 
 
 def get_version():
+    # Try to get version from blender_manifest.toml (Blender 4.2+ extension system)
+    manifest_path = Path(__file__).parent / "blender_manifest.toml"
+    if manifest_path.exists():
+        try:
+            # Try using tomllib (Python 3.11+)
+            try:
+                import tomllib
+            except ImportError:
+                # Fallback to simple parsing for older Python
+                with open(manifest_path, "r") as f:
+                    for line in f:
+                        if line.strip().startswith("version"):
+                            # Parse: version = "0.6.9"
+                            return line.split("=")[1].strip().strip('"')
+            else:
+                # Use tomllib if available
+                with open(manifest_path, "rb") as f:
+                    manifest = tomllib.load(f)
+                    return manifest.get('version', 'unknown')
+        except Exception as e:
+            logging.debug(f"Failed to read version from manifest: {e}")
+
+    # Fallback to old bl_info method (Blender < 4.2)
     if __package__ not in bpy.context.preferences.addons:
         return "version unknown"
     else:
-        addon_module = importlib.import_module(bpy.context.preferences.addons[__package__].module)
-        version = addon_module.bl_info.get('version', "version unknown")
-        return f"{version[0]}.{version[1]}.{version[2]}"
+        try:
+            addon_module = importlib.import_module(bpy.context.preferences.addons[__package__].module)
+            if hasattr(addon_module, 'bl_info'):
+                version = addon_module.bl_info.get('version', "version unknown")
+                return f"{version[0]}.{version[1]}.{version[2]}"
+        except Exception as e:
+            logging.debug(f"Failed to read version from bl_info: {e}")
+
+    return "version unknown"
 
 
 def current_milli_time():

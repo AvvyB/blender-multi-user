@@ -286,7 +286,7 @@ class DynamicRightSelectTimer(Timer):
 
 
 class ClientUpdate(Timer):
-    def __init__(self, timeout=.1):
+    def __init__(self, timeout=.05):
         super().__init__(timeout)
         self.handle_quit = False
         self.users_metadata = {}
@@ -395,3 +395,82 @@ class SessionUserSync(Timer):
                             f"{user}_name", UserNameWidget(user))
                         presence_viewer.add_widget(
                             f"{user}_mode", UserModeWidget(user))
+
+
+class TimelineSync(Timer):
+    """Automatically sync timeline playback with other users
+
+    This syncs followers to the leader's timeline. The leader is determined by:
+    - The first user alphabetically (consistent across all clients)
+    - Or explicitly set via preferences
+    """
+    def __init__(self, timeout=0.1):
+        super().__init__(timeout)
+        self.settings = utils.get_preferences()
+        self.last_synced_frame = -1
+        self.sync_cooldown = 0
+        self._updating_timeline = False
+
+    def execute(self):
+        try:
+            # Only sync if enabled in preferences
+            if not self.settings or not self.settings.sync_timeline:
+                return
+
+            if not session or session.state != STATE_ACTIVE:
+                return
+
+            # Prevent re-entrant updates
+            if self._updating_timeline:
+                return
+
+            # Cooldown to prevent rapid back-and-forth
+            if self.sync_cooldown > 0:
+                self.sync_cooldown -= 1
+                return
+
+            current_scene = bpy.context.scene
+            my_username = self.settings.username
+
+            # Get all users sorted alphabetically to determine leader consistently
+            all_users = sorted(session.online_users.keys())
+
+            if len(all_users) <= 1:
+                return  # No one to sync with
+
+            # Leader is first user alphabetically
+            leader_username = all_users[0]
+
+            # If I'm the leader, don't follow others
+            if my_username == leader_username:
+                return
+
+            # Follow the leader's timeline
+            leader_data = session.online_users.get(leader_username)
+            if not leader_data:
+                return
+
+            metadata = leader_data.get('metadata', {})
+            remote_frame = metadata.get('frame_current')
+
+            if remote_frame is None:
+                return
+
+            # Only update if frame differs by more than 1 (avoids micro-adjustments)
+            frame_diff = abs(remote_frame - current_scene.frame_current)
+            if frame_diff > 1 or (frame_diff == 1 and remote_frame != self.last_synced_frame):
+                self._updating_timeline = True
+                shared_data.session.timeline_sync_updating = True
+                try:
+                    current_scene.frame_current = remote_frame
+                    self.last_synced_frame = remote_frame
+                    self.sync_cooldown = 2  # Skip next 2 updates to let things settle
+                finally:
+                    self._updating_timeline = False
+                    shared_data.session.timeline_sync_updating = False
+        except Exception as e:
+            # Silently fail to prevent disconnections
+            logging.debug(f"Timeline sync error: {e}")
+            self._updating_timeline = False
+            if hasattr(shared_data.session, 'timeline_sync_updating'):
+                shared_data.session.timeline_sync_updating = False

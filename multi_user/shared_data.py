@@ -30,6 +30,7 @@ class SessionData():
         self.remote = None  # The active remote
         self.server = None
         self.applied_updates = []
+        self.timeline_sync_updating = False  # Flag to prevent frame update loops
 
     @property
     def state(self):
@@ -43,6 +44,7 @@ class SessionData():
         self.repository = None
         self.server = None
         self.applied_updates = []
+        self.timeline_sync_updating = False
 
 
 session = SessionData()

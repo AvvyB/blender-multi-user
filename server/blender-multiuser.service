@@ -1,0 +1,35 @@
+[Unit]
+Description=Multi-User Blender Collaboration Server
+After=network.target
+
+[Service]
+Type=simple
+User=blender
+WorkingDirectory=/home/blender/multi-user/server
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="PORT=5555"
+Environment="ADMIN_PASSWORD=changeme"
+Environment="SERVER_PASSWORD="
+Environment="LOG_LEVEL=INFO"
+Environment="TIMEOUT=10000"
+
+ExecStart=/usr/bin/python3 -m replication.server --port ${PORT} --admin-password ${ADMIN_PASSWORD} --server-password ${SERVER_PASSWORD} --log-level ${LOG_LEVEL} --timeout ${TIMEOUT}
+
+Restart=always
+RestartSec=10
+
+StandardOutput=append:/var/log/blender-multiuser/server.log
+StandardError=append:/var/log/blender-multiuser/error.log
+
+[Install]
+WantedBy=multi-user.target
+
+# Installation instructions:
+# 1. Copy this file to /etc/systemd/system/blender-multiuser.service
+# 2. Edit the Environment variables with your settings
+# 3. Create log directory: sudo mkdir -p /var/log/blender-multiuser
+# 4. Create blender user: sudo useradd -r -s /bin/false blender
+# 5. Reload systemd: sudo systemctl daemon-reload
+# 6. Enable service: sudo systemctl enable blender-multiuser
+# 7. Start service: sudo systemctl start blender-multiuser
+# 8. Check status: sudo systemctl status blender-multiuser

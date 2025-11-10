@@ -137,6 +137,10 @@ def load_pre_handler(dummy):
 @persistent
 def update_client_frame(scene):
     if session and session.state == STATE_ACTIVE:
+        # Don't send updates if we're receiving a timeline sync
+        if shared_data.session.timeline_sync_updating:
+            return
+
         porcelain.update_user_metadata(session.repository, {
             'frame_current': scene.frame_current
         })

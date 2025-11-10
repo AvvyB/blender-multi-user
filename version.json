@@ -1,0 +1,16 @@
+{
+  "version": "0.6.9",
+  "release_date": "2025-01-09",
+  "download_url": "https://github.com/YOUR_USERNAME/multi-user/releases/download/v0.6.9/multi_user-0.6.9.zip",
+  "release_notes": "Added internet collaboration support, keyframe sync, timeline sync, and Blender 4.4 compatibility",
+  "min_blender_version": "4.3.0",
+  "changelog": [
+    "Internet server deployment support",
+    "Automatic keyframe/animation synchronization",
+    "Optional timeline playback sync",
+    "10x faster update rate (0.1s default)",
+    "Blender 4.4 extension system compatibility",
+    "Fixed version detection for new extension system",
+    "Improved connection stability"
+  ]
+}
