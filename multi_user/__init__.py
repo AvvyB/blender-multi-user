@@ -27,6 +27,7 @@ from . import ui
 from . import icons
 from . import preferences
 from . import update_checker
+from . import scene_management
 
 
 def register():
@@ -44,6 +45,7 @@ def register():
     ui.register()
     icons.register()
     update_checker.register()
+    scene_management.register()
 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps
@@ -64,6 +66,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(operators.menu_func_import)
     bpy.types.TOPBAR_MT_file_export.remove(operators.menu_func_export)
 
+    scene_management.unregister()
     update_checker.unregister()
     presence.unregister()
     ui.unregister()

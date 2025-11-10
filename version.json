@@ -1,16 +1,19 @@
 {
-  "version": "0.6.9",
-  "release_date": "2025-01-09",
-  "download_url": "https://github.com/YOUR_USERNAME/multi-user/releases/download/v0.6.9/multi_user-0.6.9.zip",
-  "release_notes": "Added internet collaboration support, keyframe sync, timeline sync, and Blender 4.4 compatibility",
+  "version": "0.7.0",
+  "release_date": "2025-01-10",
+  "download_url": "https://github.com/AvvyB/blender-multi-user/releases/download/v0.7.0/multi_user-0.7.0.zip",
+  "release_notes": "Added multi-scene management and object importing between scenes",
   "min_blender_version": "4.3.0",
   "changelog": [
+    "Multiple scene support - create and switch between different collaborative scenes",
+    "Object import system - easily import objects from one scene into another",
+    "New 3D View sidebar panel for scene management",
+    "All scenes are synchronized across all users",
     "Internet server deployment support",
     "Automatic keyframe/animation synchronization",
     "Optional timeline playback sync",
     "10x faster update rate (0.1s default)",
-    "Blender 4.4 extension system compatibility",
-    "Fixed version detection for new extension system",
-    "Improved connection stability"
+    "Auto-update notifications",
+    "Blender 4.3+ compatibility"
   ]
 }
