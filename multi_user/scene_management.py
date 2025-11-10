@@ -22,27 +22,17 @@ from replication.constants import STATE_ACTIVE
 from replication.interface import session
 
 
-class MULTIUSER_OT_scene_create(bpy.types.Operator):
-    """Create a new scene in the collaborative session"""
-    bl_idname = "multiuser.scene_create"
-    bl_label = "Create Scene"
-    bl_description = "Create a new scene that all users can access"
+class MULTIUSER_OT_scene_create_blank(bpy.types.Operator):
+    """Create a new blank scene in the collaborative session"""
+    bl_idname = "multiuser.scene_create_blank"
+    bl_label = "Create Blank Scene"
+    bl_description = "Create a new empty scene that all users can access"
     bl_options = {'REGISTER', 'UNDO'}
 
     scene_name: bpy.props.StringProperty(
         name="Scene Name",
         description="Name for the new scene",
-        default="Scene"
-    )
-
-    init_type: bpy.props.EnumProperty(
-        name="Initialize From",
-        description="How to initialize the new scene",
-        items=[
-            ('EMPTY', "Empty", "Create an empty scene"),
-            ('COPY', "Copy Current", "Copy the current scene"),
-        ],
-        default='EMPTY',
+        default="New Scene"
     )
 
     @classmethod
@@ -55,7 +45,6 @@ class MULTIUSER_OT_scene_create(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "scene_name")
-        layout.prop(self, "init_type")
 
     def execute(self, context):
         if not session or session.state != STATE_ACTIVE:
@@ -68,20 +57,79 @@ class MULTIUSER_OT_scene_create(bpy.types.Operator):
             return {'CANCELLED'}
 
         try:
-            # Create the scene
-            if self.init_type == 'EMPTY':
-                new_scene = bpy.data.scenes.new(self.scene_name)
-            else:  # COPY
-                new_scene = context.scene.copy()
-                new_scene.name = self.scene_name
+            # Create the blank scene
+            new_scene = bpy.data.scenes.new(self.scene_name)
 
             # Add the scene to the repository
             scene_uuid = porcelain.add(session.repository, new_scene)
             porcelain.commit(session.repository, scene_uuid)
             porcelain.push(session.repository, 'origin', scene_uuid)
 
-            self.report({'INFO'}, f"Created scene '{self.scene_name}'")
-            logging.info(f"Created collaborative scene: {self.scene_name}")
+            # Switch to the new scene
+            context.window.scene = new_scene
+
+            self.report({'INFO'}, f"Created blank scene '{self.scene_name}'")
+            logging.info(f"Created blank collaborative scene: {self.scene_name}")
+
+            return {'FINISHED'}
+
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to create scene: {str(e)}")
+            logging.error(f"Failed to create scene: {e}")
+            return {'CANCELLED'}
+
+
+class MULTIUSER_OT_scene_create_copy(bpy.types.Operator):
+    """Create a copy of the current scene"""
+    bl_idname = "multiuser.scene_create_copy"
+    bl_label = "Duplicate Current Scene"
+    bl_description = "Create a copy of the current scene that all users can access"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    scene_name: bpy.props.StringProperty(
+        name="Scene Name",
+        description="Name for the new scene",
+        default="Scene Copy"
+    )
+
+    @classmethod
+    def poll(cls, context):
+        return session and session.state == STATE_ACTIVE
+
+    def invoke(self, context, event):
+        # Default name based on current scene
+        self.scene_name = f"{context.scene.name}_Copy"
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "scene_name")
+
+    def execute(self, context):
+        if not session or session.state != STATE_ACTIVE:
+            self.report({'ERROR'}, "Not connected to a session")
+            return {'CANCELLED'}
+
+        # Check if scene name already exists
+        if self.scene_name in bpy.data.scenes:
+            self.report({'ERROR'}, f"Scene '{self.scene_name}' already exists")
+            return {'CANCELLED'}
+
+        try:
+            # Copy the current scene
+            new_scene = context.scene.copy()
+            new_scene.name = self.scene_name
+
+            # Add the scene to the repository
+            scene_uuid = porcelain.add(session.repository, new_scene)
+            porcelain.commit(session.repository, scene_uuid)
+            porcelain.push(session.repository, 'origin', scene_uuid)
+
+            # Switch to the new scene
+            context.window.scene = new_scene
+
+            self.report({'INFO'}, f"Created scene copy '{self.scene_name}'")
+            logging.info(f"Created scene copy: {self.scene_name}")
 
             return {'FINISHED'}
 
@@ -95,7 +143,7 @@ class MULTIUSER_OT_scene_switch(bpy.types.Operator):
     """Switch to a different scene in the session"""
     bl_idname = "multiuser.scene_switch"
     bl_label = "Switch Scene"
-    bl_description = "Switch to a different collaborative scene"
+    bl_description = "Switch to this collaborative scene"
 
     scene_name: bpy.props.StringProperty(
         name="Scene",
@@ -126,52 +174,48 @@ class MULTIUSER_OT_scene_switch(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MULTIUSER_OT_object_import_from_scene(bpy.types.Operator):
-    """Import objects from another scene"""
-    bl_idname = "multiuser.object_import_from_scene"
-    bl_label = "Import Objects"
-    bl_description = "Import selected objects from another scene into the current scene"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    source_scene: bpy.props.StringProperty(
-        name="Source Scene",
-        description="Scene to import objects from"
-    )
+class MULTIUSER_OT_import_objects_popup(bpy.types.Operator):
+    """Show popup to select scene for importing objects"""
+    bl_idname = "multiuser.import_objects_popup"
+    bl_label = "Import Objects from Scene"
+    bl_description = "Import objects from another scene into the current scene"
 
     @classmethod
     def poll(cls, context):
         return session and session.state == STATE_ACTIVE and context.mode == 'OBJECT'
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_popup(self, width=400)
 
     def draw(self, context):
         layout = self.layout
 
-        # Show available scenes
-        layout.label(text="Select Scene to Import From:")
+        layout.label(text="Select Scene to Import From:", icon='SCENE_DATA')
+        layout.separator()
 
         scenes = [s for s in bpy.data.scenes if s.name != context.scene.name]
         if not scenes:
             layout.label(text="No other scenes available", icon='INFO')
+            layout.label(text="Create a new scene first")
         else:
+            box = layout.box()
             for scene in scenes:
-                row = layout.row()
-                props = row.operator("multiuser.object_import_from_scene_execute",
-                                    text=scene.name, icon='SCENE_DATA')
+                row = box.row()
+                row.label(text=scene.name, icon='SCENE_DATA')
+                row.label(text=f"({len(scene.objects)} objects)")
+                props = row.operator("multiuser.import_objects_from_scene",
+                                    text="Select", icon='FORWARD')
                 props.source_scene = scene.name
 
     def execute(self, context):
-        # This is just a UI operator, actual import happens in execute operator
         return {'FINISHED'}
 
 
-class MULTIUSER_OT_object_import_from_scene_execute(bpy.types.Operator):
-    """Execute object import from selected scene"""
-    bl_idname = "multiuser.object_import_from_scene_execute"
-    bl_label = "Import"
-    bl_description = "Import objects from this scene"
-    bl_options = {'REGISTER', 'UNDO'}
+class MULTIUSER_OT_import_objects_from_scene(bpy.types.Operator):
+    """Import objects from selected scene"""
+    bl_idname = "multiuser.import_objects_from_scene"
+    bl_label = "Import Objects"
+    bl_description = "Choose which objects to import from this scene"
 
     source_scene: bpy.props.StringProperty()
 
@@ -184,8 +228,7 @@ class MULTIUSER_OT_object_import_from_scene_execute(bpy.types.Operator):
         if not source:
             return {'CANCELLED'}
 
-        # Show object selection dialog
-        return context.window_manager.invoke_props_dialog(self, width=500)
+        return context.window_manager.invoke_popup(self, width=500)
 
     def draw(self, context):
         layout = self.layout
@@ -195,7 +238,8 @@ class MULTIUSER_OT_object_import_from_scene_execute(bpy.types.Operator):
             layout.label(text="Scene not found", icon='ERROR')
             return
 
-        layout.label(text=f"Objects in '{self.source_scene}':")
+        layout.label(text=f"Import from: {self.source_scene}", icon='SCENE_DATA')
+        layout.separator()
 
         # Get all objects from source scene
         objects = [obj for obj in source.objects]
@@ -203,35 +247,44 @@ class MULTIUSER_OT_object_import_from_scene_execute(bpy.types.Operator):
         if not objects:
             layout.label(text="No objects in this scene", icon='INFO')
         else:
+            # Show "Import All" button prominently
+            box = layout.box()
+            col = box.column(align=True)
+            row = col.row()
+            row.scale_y = 1.5
+            props = row.operator("multiuser.import_all_objects",
+                                text=f"Import All Objects ({len(objects)})",
+                                icon='IMPORT')
+            props.source_scene = self.source_scene
+
+            layout.separator()
+            layout.label(text="Or import individual objects:")
+
+            # List of objects
             box = layout.box()
             col = box.column(align=True)
 
-            for obj in objects[:20]:  # Limit to 20 for UI performance
+            for obj in objects[:15]:  # Limit to 15 for UI performance
                 row = col.row()
                 row.label(text=obj.name, icon='OBJECT_DATA')
-                props = row.operator("multiuser.object_import_single",
+                row.label(text=obj.type)
+                props = row.operator("multiuser.import_single_object",
                                     text="Import", icon='IMPORT')
                 props.source_scene = self.source_scene
                 props.object_name = obj.name
 
-            if len(objects) > 20:
-                col.label(text=f"...and {len(objects) - 20} more objects")
-
-            layout.separator()
-            row = layout.row()
-            row.scale_y = 1.5
-            props = row.operator("multiuser.object_import_all",
-                                text=f"Import All ({len(objects)} objects)",
-                                icon='IMPORT')
-            props.source_scene = self.source_scene
+            if len(objects) > 15:
+                col.separator()
+                col.label(text=f"...and {len(objects) - 15} more objects")
+                col.label(text="Use 'Import All' to get everything")
 
     def execute(self, context):
         return {'FINISHED'}
 
 
-class MULTIUSER_OT_object_import_single(bpy.types.Operator):
+class MULTIUSER_OT_import_single_object(bpy.types.Operator):
     """Import a single object from another scene"""
-    bl_idname = "multiuser.object_import_single"
+    bl_idname = "multiuser.import_single_object"
     bl_label = "Import Object"
     bl_description = "Import this object into the current scene"
     bl_options = {'REGISTER', 'UNDO'}
@@ -271,9 +324,9 @@ class MULTIUSER_OT_object_import_single(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-class MULTIUSER_OT_object_import_all(bpy.types.Operator):
+class MULTIUSER_OT_import_all_objects(bpy.types.Operator):
     """Import all objects from another scene"""
-    bl_idname = "multiuser.object_import_all"
+    bl_idname = "multiuser.import_all_objects"
     bl_label = "Import All Objects"
     bl_description = "Import all objects from the selected scene"
     bl_options = {'REGISTER', 'UNDO'}
@@ -317,14 +370,15 @@ class MULTIUSER_OT_object_import_all(bpy.types.Operator):
             return {'CANCELLED'}
 
 
-# UI Panel for Scene Management
+# UI Panel for Scene Management in 3D View
 class MULTIUSER_PT_scene_management(bpy.types.Panel):
     """Panel for managing collaborative scenes"""
-    bl_label = "Multi-User Scenes"
+    bl_label = "Scenes"
     bl_idname = "MULTIUSER_PT_scene_management"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'Multi-User'
+    bl_order = 1
 
     @classmethod
     def poll(cls, context):
@@ -335,52 +389,74 @@ class MULTIUSER_PT_scene_management(bpy.types.Panel):
 
         # Current scene info
         box = layout.box()
-        col = box.column(align=True)
-        col.label(text="Current Scene:", icon='SCENE_DATA')
-        row = col.row()
+        row = box.row()
+        row.label(text="Current Scene:", icon='SCENE_DATA')
+        row = box.row()
         row.label(text=context.scene.name, icon='DOT')
+        row.scale_y = 0.8
 
         layout.separator()
 
-        # Create new scene
+        # Create scene buttons - prominent
         box = layout.box()
-        box.label(text="Scene Management:", icon='ADD')
+        box.label(text="Create New Scene:", icon='ADD')
         col = box.column(align=True)
-        col.operator("multiuser.scene_create", icon='ADD')
+        col.scale_y = 1.2
+        col.operator("multiuser.scene_create_blank", text="Create Blank Scene", icon='FILE_NEW')
+        col.operator("multiuser.scene_create_copy", text="Duplicate Current Scene", icon='DUPLICATE')
 
-        # Available scenes
+        layout.separator()
+
+        # Available scenes list
         scenes = [s for s in bpy.data.scenes]
         if len(scenes) > 1:
-            col.separator()
-            col.label(text="Switch to Scene:")
+            box = layout.box()
+            box.label(text="Available Scenes:", icon='OUTLINER_COLLECTION')
+            col = box.column(align=True)
+
             for scene in scenes:
                 if scene != context.scene:
-                    row = col.row()
+                    row = col.row(align=True)
+                    row.label(text="", icon='SCENE_DATA')
                     props = row.operator("multiuser.scene_switch",
-                                        text=scene.name, icon='SCENE_DATA')
+                                        text=scene.name)
                     props.scene_name = scene.name
+                    row.label(text=f"{len(scene.objects)} obj")
+        else:
+            box = layout.box()
+            col = box.column()
+            col.label(text="Only one scene exists", icon='INFO')
+            col.label(text="Create more scenes to switch between them")
 
         layout.separator()
 
-        # Import objects
+        # Import objects button - clear and prominent
         box = layout.box()
         box.label(text="Import Objects:", icon='IMPORT')
         col = box.column(align=True)
+        col.scale_y = 1.2
 
         other_scenes = [s for s in bpy.data.scenes if s.name != context.scene.name]
         if other_scenes:
-            col.operator("multiuser.object_import_from_scene", icon='IMPORT')
+            col.operator("multiuser.import_objects_popup",
+                        text=f"Import from Other Scenes ({len(other_scenes)})",
+                        icon='IMPORT')
         else:
-            col.label(text="No other scenes available", icon='INFO')
+            col.enabled = False
+            col.operator("multiuser.import_objects_popup",
+                        text="No Other Scenes Available",
+                        icon='INFO')
+            col.label(text="Create a scene first")
 
 
 classes = (
-    MULTIUSER_OT_scene_create,
+    MULTIUSER_OT_scene_create_blank,
+    MULTIUSER_OT_scene_create_copy,
     MULTIUSER_OT_scene_switch,
-    MULTIUSER_OT_object_import_from_scene,
-    MULTIUSER_OT_object_import_from_scene_execute,
-    MULTIUSER_OT_object_import_single,
-    MULTIUSER_OT_object_import_all,
+    MULTIUSER_OT_import_objects_popup,
+    MULTIUSER_OT_import_objects_from_scene,
+    MULTIUSER_OT_import_single_object,
+    MULTIUSER_OT_import_all_objects,
     MULTIUSER_PT_scene_management,
 )
 
