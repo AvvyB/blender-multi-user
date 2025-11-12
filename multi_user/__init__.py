@@ -31,6 +31,7 @@ from . import scene_management
 from . import change_tracking
 from . import task_management
 from . import chat_system
+from . import diagnostics
 
 
 def register():
@@ -52,6 +53,7 @@ def register():
     change_tracking.register()
     task_management.register()
     chat_system.register()
+    diagnostics.register()
 
     bpy.types.WindowManager.session = bpy.props.PointerProperty(
         type=preferences.SessionProps
@@ -72,6 +74,7 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(operators.menu_func_import)
     bpy.types.TOPBAR_MT_file_export.remove(operators.menu_func_export)
 
+    diagnostics.unregister()
     chat_system.unregister()
     task_management.unregister()
     change_tracking.unregister()

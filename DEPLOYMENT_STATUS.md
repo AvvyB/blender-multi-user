@@ -1,15 +1,21 @@
-# Multi-User v0.8.0 - Complete Deployment Status
+# Multi-User v0.8.1 - Complete Deployment Status
 
 ## 📦 Package Information
 
-- **Version**: 0.8.0
-- **Package**: `multi_user-0.8.0.zip` (8.3 MB)
-- **Release Date**: January 10, 2025
+- **Version**: 0.8.1
+- **Package**: `multi_user-0.8.1.zip` (8.9 MB)
+- **Release Date**: January 12, 2025
 - **Blender Compatibility**: 4.3.0 or later
+
+## 🆕 What's New in v0.8.1
+
+- **Diagnostics Tool** - Shows version info, connection status, and dependency health
+- **Troubleshooting Guide** - Comprehensive guide for fixing common issues
+- **Improved Error Handling** - Better handling of network issues and version mismatches
 
 ## ✅ Server Status: READY
 
-All server files are **up to date** and **fully compatible** with v0.8.0:
+All server files are **up to date** and **fully compatible** with v0.8.1:
 
 ### Server Files ✅
 - `standalone_server.py` - Working

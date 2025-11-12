@@ -225,6 +225,10 @@ class SESSION_PT_settings(bpy.types.Panel):
                     exitbutton.scale_y = 1.5
                     exitbutton.operator("wm.session_quit", icon='QUIT', text="Disconnect")
 
+                    # Diagnostics button
+                    diagbutton = layout.row()
+                    diagbutton.operator("multiuser.show_diagnostics", icon='INFO', text="Diagnostics")
+
                     progress = session.state_progress
                     current_state = session.state
                     info_msg = None

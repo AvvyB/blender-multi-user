@@ -1,20 +1,13 @@
 {
-  "version": "0.8.0",
-  "release_date": "2025-01-10",
-  "download_url": "https://github.com/AvvyB/blender-multi-user/releases/download/v0.8.0/multi_user-0.8.0.zip",
-  "release_notes": "Major update with collaboration tools: change tracking, task management, and team chat",
+  "version": "0.8.1",
+  "release_date": "2025-01-12",
+  "download_url": "https://github.com/AvvyB/blender-multi-user/releases/download/v0.8.1/multi_user-0.8.1.zip",
+  "release_notes": "Bug fix release with diagnostics tool for troubleshooting connection issues",
   "min_blender_version": "4.3.0",
   "changelog": [
-    "Change tracking system - see who made which changes (git blame-like)",
-    "Collaborative undo/redo system - team-wide undo operations",
-    "Task management - create, assign, and track tasks for team members",
-    "Team chat - text chat with link and code snippet support",
-    "Chat history saved with session",
-    "Multiple scene support - create and switch between scenes",
-    "Object import system - import objects between scenes",
-    "Enhanced keyframe synchronization",
-    "10x faster update rate (0.1s default)",
-    "Auto-update notifications",
-    "Blender 4.3+ compatibility"
+    "Added diagnostics tool - shows version info and dependency status",
+    "Helps troubleshoot connection and version mismatch issues",
+    "Improved error handling for network issues",
+    "All v0.8.0 features included (change tracking, tasks, chat, etc.)"
   ]
 }
