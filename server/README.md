@@ -294,16 +294,49 @@ For issues with the Multi-User addon:
 - Visit: https://github.com/GPLv3/multi-user (or the original repo)
 - Check Blender's System Console for error messages
 
+## New Features (v0.8.0+)
+
+The server now supports advanced collaboration features automatically:
+
+### Team Collaboration Tools
+- **Change Tracking** - See who made which changes (git blame-like)
+- **Collaborative Undo/Redo** - Team-wide undo operations
+- **Task Management** - Create, assign, and track tasks
+- **Team Chat** - Built-in text chat with code snippets and links
+
+These features work automatically through the existing metadata system. No server configuration changes needed!
+
+### Metadata Synchronization
+The server synchronizes:
+- User metadata (frame position, viewport, etc.)
+- Task data (to-do lists and assignments)
+- Chat messages (team communication)
+- Change history (who modified what)
+
+**Storage Impact**: Minimal - approximately 2-5KB per user for all collaboration features combined.
+
+### Performance Notes
+- Chat messages: Last 10 messages per user synced
+- Tasks: All tasks synced (typically < 100)
+- Change history: Stored locally on clients, not on server
+- No additional server load for new features
+
 ## Architecture
 
 ```
 Internet
     │
     ├─── Client A (Home) ──┐
-    │                      │
-    ├─── Client B (Office) ├──► Cloud Server ──► ZMQ Server
-    │                      │    (Ports 5555-5557)
-    └─── Client C (Remote) ┘
+    │                      │     ┌─ Scene Data
+    ├─── Client B (Office) ├──►  │─ Keyframes
+    │                      │     │─ Metadata
+    └─── Client C (Remote) ┘     │─ Tasks
+                                 │─ Chat Messages
+                         Cloud Server
+                      (Ports 5555-5557)
+                            │
+                        ZMQ Server
+                  (Real-time Sync Hub)
 ```
 
 The server acts as a central hub, routing all updates between clients in real-time using ZeroMQ message passing and delta-based synchronization.
