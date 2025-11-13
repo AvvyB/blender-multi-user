@@ -68,11 +68,21 @@ class PersistentSessionManager:
             return
 
         try:
+            # Import STATE_ACTIVE constant
+            try:
+                from replication.constants import STATE_ACTIVE
+            except ImportError:
+                STATE_ACTIVE = 'ACTIVE'
+
+            # Check if repository is initialized (has active state)
+            is_initialized = hasattr(self.repository, 'state') and self.repository.state == STATE_ACTIVE
+
             # Create snapshot data
             snapshot_data = {
                 'timestamp': time.time(),
                 'datetime': datetime.now().isoformat(),
                 'reason': reason,
+                'initialized': is_initialized,
                 'graph': self.repository.graph,
                 'users': getattr(self.repository, 'online_users', {}),
                 'metadata': getattr(self.repository, 'metadata', {}),
@@ -87,6 +97,7 @@ class PersistentSessionManager:
                 'timestamp': snapshot_data['timestamp'],
                 'datetime': snapshot_data['datetime'],
                 'reason': reason,
+                'initialized': is_initialized,
                 'user_count': len(snapshot_data['users']),
                 'node_count': len(snapshot_data['graph'].nodes) if hasattr(snapshot_data['graph'], 'nodes') else 0,
             }
@@ -122,9 +133,12 @@ class PersistentSessionManager:
             with open(SNAPSHOT_FILE, 'rb') as f:
                 snapshot_data = pickle.load(f)
 
+            was_initialized = snapshot_data.get('initialized', False)
+
             logging.info("Session restored from disk")
             logging.info(f"  Timestamp: {snapshot_data['datetime']}")
             logging.info(f"  Reason: {snapshot_data['reason']}")
+            logging.info(f"  Initialized: {was_initialized}")
             logging.info(f"  Users: {len(snapshot_data['users'])}")
 
             return snapshot_data
@@ -195,6 +209,13 @@ def setup_signal_handlers():
 def wrap_replication_server():
     """Wrap the replication server with persistence layer"""
     from replication import server as replication_server
+    try:
+        from replication.constants import STATE_ACTIVE, STATE_LOBBY
+    except ImportError:
+        # Fallback if constants not available
+        STATE_ACTIVE = 'ACTIVE'
+        STATE_LOBBY = 'LOBBY'
+        logging.warning("Could not import replication constants, using fallback values")
 
     # Monkey-patch the server to add persistence hooks
     original_server_class = None
@@ -235,6 +256,14 @@ def wrap_replication_server():
                     if hasattr(self.repository, 'metadata') and snapshot.get('metadata'):
                         self.repository.metadata = snapshot['metadata']
                         logging.info("Repository metadata restored")
+
+                    # If session was previously initialized, automatically set to ACTIVE state
+                    was_initialized = snapshot.get('initialized', False)
+                    if was_initialized:
+                        if hasattr(self.repository, 'state'):
+                            self.repository.state = STATE_ACTIVE
+                            logging.info(f"Repository automatically initialized to ACTIVE state ({STATE_ACTIVE})")
+                            logging.info("Users can connect immediately without re-initialization")
 
                 except Exception as e:
                     logging.error(f"Error restoring session data: {e}")

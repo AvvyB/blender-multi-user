@@ -136,12 +136,21 @@ Session saved to disk (reason: auto-save)
      Timestamp: 2025-01-12T14:32:25
      Users: 3
      Nodes: 47
+     Initialized: True
      Reason: user_disconnect:Alice
 
    Session will be automatically restored on first connection
    ```
-3. **Users reconnect**
-4. **All previous work is restored** - objects, tasks, chat, etc.
+3. **Server auto-initializes** (if previously initialized):
+   ```
+   Repository graph restored
+   Repository metadata restored
+   Repository automatically initialized to ACTIVE state
+   Users can connect immediately without re-initialization
+   ```
+4. **Users reconnect**
+5. **All previous work is restored** - objects, tasks, chat, etc.
+6. **No "Init" button needed** - users connect directly to active session!
 
 ### Viewing Session Info
 
@@ -157,6 +166,7 @@ Example output:
   "timestamp": 1736695945.123,
   "datetime": "2025-01-12T14:32:25",
   "reason": "user_disconnect:Alice",
+  "initialized": true,
   "user_count": 3,
   "node_count": 47
 }

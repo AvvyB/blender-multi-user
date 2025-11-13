@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir replication-0.9.10-py3-none-any.whl
 # Copy server scripts
 COPY standalone_server.py .
 COPY persistent_server.py .
+COPY persistent_server_v2.py .
 
 # Expose ports (command: 5555, data: 5556, ttl: 5557)
 EXPOSE 5555 5556 5557
@@ -35,8 +36,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Create data directory
 RUN mkdir -p /app/data
 
-# Run the persistent server (with auto-save)
-CMD python persistent_server.py \
+# Run the persistent server v2 (with robust auto-save)
+CMD python persistent_server_v2.py \
     --port ${PORT} \
     --admin-password ${ADMIN_PASSWORD} \
     --server-password ${SERVER_PASSWORD} \

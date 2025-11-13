@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   blender-collab-server:
     build: .
