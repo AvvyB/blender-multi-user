@@ -20,21 +20,28 @@ import json
 import logging
 import threading
 import urllib.request
+import tempfile
+import shutil
+import os
 from pathlib import Path
 from datetime import datetime, timedelta
 
 # Configuration
 UPDATE_CHECK_URL = "https://raw.githubusercontent.com/AvvyB/blender-multi-user/refs/heads/master/version.json"
 CHECK_INTERVAL_DAYS = 1  # Check for updates daily
+GITHUB_RELEASES_API = "https://api.github.com/repos/AvvyB/blender-multi-user/releases/latest"
 
 class UpdateChecker:
     """Checks for extension updates from a remote source"""
 
     def __init__(self):
         self.latest_version = None
+        self.download_url = None
         self.update_available = False
         self.last_check_time = None
         self.checking = False
+        self.downloading = False
+        self.download_progress = 0.0
 
     def get_installed_version(self):
         """Get the currently installed version"""
@@ -72,15 +79,32 @@ class UpdateChecker:
         thread.start()
 
     def check_for_updates(self):
-        """Check if a newer version is available"""
+        """Check if a newer version is available on GitHub"""
         try:
-            # Fetch version info from remote
-            with urllib.request.urlopen(UPDATE_CHECK_URL, timeout=5) as response:
-                data = json.loads(response.read().decode())
+            # Fetch latest release info from GitHub API
+            req = urllib.request.Request(GITHUB_RELEASES_API)
+            req.add_header('Accept', 'application/vnd.github.v3+json')
 
-            # Parse remote version
-            remote_version_str = data.get('version', '0.0.0')
+            with urllib.request.urlopen(req, timeout=10) as response:
+                release_data = json.loads(response.read().decode())
+
+            # Parse remote version from tag (e.g., "v0.8.1" or "0.8.1")
+            tag_name = release_data.get('tag_name', '0.0.0')
+            remote_version_str = tag_name.lstrip('v')
             remote_version = tuple(map(int, remote_version_str.split('.')))
+
+            # Find the .zip asset in the release
+            assets = release_data.get('assets', [])
+            self.download_url = None
+
+            for asset in assets:
+                if asset['name'].endswith('.zip') and 'multi_user' in asset['name'].lower():
+                    self.download_url = asset['browser_download_url']
+                    break
+
+            # If no asset found, try to construct URL from tag
+            if not self.download_url and tag_name:
+                self.download_url = f"https://github.com/AvvyB/blender-multi-user/releases/download/{tag_name}/multi_user-{remote_version_str}.zip"
 
             # Compare versions
             installed_version = self.get_installed_version()
@@ -90,11 +114,13 @@ class UpdateChecker:
             self.last_check_time = datetime.now()
 
             logging.info(f"Update check: Installed={installed_version}, Latest={remote_version}, Available={self.update_available}")
+            if self.download_url:
+                logging.info(f"Download URL: {self.download_url}")
 
             return self.update_available
 
         except Exception as e:
-            logging.debug(f"Update check failed: {e}")
+            logging.error(f"Update check failed: {e}")
             return False
 
 
@@ -122,19 +148,132 @@ class MULTIUSER_OT_check_updates(bpy.types.Operator):
 
 
 class MULTIUSER_OT_download_update(bpy.types.Operator):
-    """Download and install the latest Multi-User update"""
+    """Download and install the latest Multi-User update automatically"""
     bl_idname = "multiuser.download_update"
-    bl_label = "Download Update"
-    bl_description = "Download and install the latest version"
+    bl_label = "Install Update"
+    bl_description = "Automatically download and install the latest version"
+
+    _timer = None
+    _thread = None
+
+    def modal(self, context, event):
+        if event.type == 'TIMER':
+            # Check if download/install is complete
+            if not update_checker.downloading:
+                self.cancel(context)
+                return {'FINISHED'}
+
+            # Force redraw to show progress
+            context.area.tag_redraw() if context.area else None
+
+        return {'PASS_THROUGH'}
 
     def execute(self, context):
-        self.report({'INFO'}, "Opening download page in browser...")
+        if not update_checker.download_url:
+            self.report({'ERROR'}, "No download URL available. Please check for updates first.")
+            return {'CANCELLED'}
 
-        # Open the releases page in browser
-        import webbrowser
-        webbrowser.open("https://github.com/AvvyB/blender-multi-user")
+        if update_checker.downloading:
+            self.report({'WARNING'}, "Update already in progress")
+            return {'CANCELLED'}
 
-        return {'FINISHED'}
+        # Start download and install in background
+        def download_and_install():
+            try:
+                update_checker.downloading = True
+                update_checker.download_progress = 0.0
+
+                logging.info(f"Downloading update from: {update_checker.download_url}")
+
+                # Create temp directory for download
+                temp_dir = Path(tempfile.mkdtemp(prefix="multiuser_update_"))
+                zip_path = temp_dir / f"multi_user-{update_checker.latest_version}.zip"
+
+                # Download with progress tracking
+                def download_progress(block_num, block_size, total_size):
+                    if total_size > 0:
+                        update_checker.download_progress = (block_num * block_size) / total_size
+                        logging.debug(f"Download progress: {update_checker.download_progress * 100:.1f}%")
+
+                urllib.request.urlretrieve(
+                    update_checker.download_url,
+                    zip_path,
+                    reporthook=download_progress
+                )
+
+                logging.info(f"Download complete: {zip_path}")
+                update_checker.download_progress = 1.0
+
+                # Install the extension using Blender's extension system
+                # Note: This requires Blender 4.3+ extension system
+                try:
+                    # Use bpy.ops to install extension
+                    # This will be called from main thread via timer
+                    def install_extension():
+                        try:
+                            # Remove old version first
+                            logging.info("Removing old version...")
+                            bpy.ops.preferences.extension_remove(module='multi_user')
+
+                            # Install new version
+                            logging.info(f"Installing new version from {zip_path}")
+                            bpy.ops.preferences.extension_install(filepath=str(zip_path))
+
+                            # Clean up temp files
+                            shutil.rmtree(temp_dir, ignore_errors=True)
+
+                            logging.info("Update installed successfully!")
+                            update_checker.update_available = False
+
+                            # Schedule Blender restart prompt
+                            def show_restart_prompt():
+                                bpy.ops.multiuser.restart_prompt('INVOKE_DEFAULT')
+                                return None
+
+                            bpy.app.timers.register(show_restart_prompt, first_interval=0.5)
+
+                        except Exception as e:
+                            logging.error(f"Installation failed: {e}")
+                            # Clean up on error
+                            shutil.rmtree(temp_dir, ignore_errors=True)
+
+                        finally:
+                            update_checker.downloading = False
+
+                    # Schedule installation on main thread
+                    bpy.app.timers.register(install_extension, first_interval=0.1)
+
+                except Exception as e:
+                    logging.error(f"Failed to schedule installation: {e}")
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    update_checker.downloading = False
+
+            except Exception as e:
+                logging.error(f"Download failed: {e}")
+                update_checker.downloading = False
+                # Show error to user
+                def show_error():
+                    bpy.ops.multiuser.update_error('INVOKE_DEFAULT', message=str(e))
+                    return None
+                bpy.app.timers.register(show_error, first_interval=0.1)
+
+        # Start download thread
+        self._thread = threading.Thread(target=download_and_install, daemon=True)
+        self._thread.start()
+
+        self.report({'INFO'}, "Downloading update...")
+
+        # Register modal timer for progress updates
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        if self._timer:
+            context.window_manager.event_timer_remove(self._timer)
+            self._timer = None
 
 
 class MULTIUSER_PT_update_notification(bpy.types.Panel):
@@ -147,8 +286,8 @@ class MULTIUSER_PT_update_notification(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # Only show if update is available
-        return update_checker.update_available
+        # Show if update is available or currently downloading
+        return update_checker.update_available or update_checker.downloading
 
     def draw(self, context):
         layout = self.layout
@@ -156,13 +295,29 @@ class MULTIUSER_PT_update_notification(bpy.types.Panel):
         box = layout.box()
         col = box.column(align=True)
 
-        col.label(text="Multi-User Update Available!", icon='INFO')
-        col.label(text=f"New version: {update_checker.latest_version}")
-        col.separator()
+        if update_checker.downloading:
+            # Show download progress
+            col.label(text="Downloading Update...", icon='IMPORT')
+            col.label(text=f"Version: {update_checker.latest_version}")
+            col.separator()
 
-        row = col.row(align=True)
-        row.operator("multiuser.download_update", text="Download Update", icon='IMPORT')
-        row.operator("multiuser.dismiss_update", text="Dismiss", icon='X')
+            # Progress bar
+            progress = update_checker.download_progress
+            row = col.row()
+            row.scale_y = 1.5
+            row.prop(context.window_manager, "dummy_prop", text=f"{int(progress * 100)}%", slider=True, emboss=False)
+
+            col.label(text="Installing after download completes...")
+
+        else:
+            # Show update notification
+            col.label(text="Multi-User Update Available!", icon='INFO')
+            col.label(text=f"New version: {update_checker.latest_version}")
+            col.separator()
+
+            row = col.row(align=True)
+            row.operator("multiuser.download_update", text="Install Update", icon='IMPORT')
+            row.operator("multiuser.dismiss_update", text="Dismiss", icon='X')
 
 
 class MULTIUSER_OT_dismiss_update(bpy.types.Operator):
@@ -175,6 +330,63 @@ class MULTIUSER_OT_dismiss_update(bpy.types.Operator):
         update_checker.update_available = False
         self.report({'INFO'}, "Update notification dismissed")
         return {'FINISHED'}
+
+
+class MULTIUSER_OT_restart_prompt(bpy.types.Operator):
+    """Prompt user to restart Blender after update"""
+    bl_idname = "multiuser.restart_prompt"
+    bl_label = "Update Installed - Restart Required"
+    bl_description = "Update installed successfully, restart Blender to use new version"
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Multi-User has been updated successfully!", icon='CHECKMARK')
+        layout.separator()
+        layout.label(text="Please restart Blender to use the new version.")
+        layout.label(text=f"New version: {update_checker.latest_version}")
+
+
+class MULTIUSER_OT_update_error(bpy.types.Operator):
+    """Show update error message"""
+    bl_idname = "multiuser.update_error"
+    bl_label = "Update Failed"
+    bl_description = "Update installation failed"
+
+    message: bpy.props.StringProperty(default="Unknown error")
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Failed to install update", icon='ERROR')
+        layout.separator()
+        layout.label(text="Error:")
+
+        # Split long error messages
+        words = self.message.split()
+        line = ""
+        for word in words:
+            if len(line) + len(word) + 1 > 60:
+                layout.label(text=line)
+                line = word
+            else:
+                line = line + " " + word if line else word
+        if line:
+            layout.label(text=line)
+
+        layout.separator()
+        layout.label(text="Please download manually from GitHub:")
+        layout.operator("wm.url_open", text="Open GitHub Releases", icon='URL').url = "https://github.com/AvvyB/blender-multi-user/releases/latest"
 
 
 # Startup handler to check for updates
@@ -197,6 +409,8 @@ classes = (
     MULTIUSER_OT_check_updates,
     MULTIUSER_OT_download_update,
     MULTIUSER_OT_dismiss_update,
+    MULTIUSER_OT_restart_prompt,
+    MULTIUSER_OT_update_error,
     MULTIUSER_PT_update_notification,
 )
 
