@@ -2,6 +2,16 @@
 
 Deploy this server to enable real-time Blender collaboration over the internet.
 
+## 🆕 Persistent Storage (v0.8.1+)
+
+The server now **automatically saves session data** to disk:
+- ✅ Auto-save every 2 minutes
+- ✅ Saves when users disconnect
+- ✅ Automatic recovery after restart
+- ✅ **Zero data loss on server restarts**
+
+See [PERSISTENT_STORAGE.md](PERSISTENT_STORAGE.md) for full documentation.
+
 ## Quick Start
 
 ### Option 1: Docker Deployment (Recommended)
@@ -94,6 +104,8 @@ Edit [.env](.env.example) to configure:
 | `PORT` | Base port number | `5555` | No |
 | `LOG_LEVEL` | Logging verbosity (DEBUG/INFO/WARNING/ERROR) | `INFO` | No |
 | `TIMEOUT` | Connection timeout in milliseconds | `10000` | No |
+| `SAVE_INTERVAL` | Auto-save interval in seconds | `120` | No |
+| `MAX_BACKUPS` | Number of backup snapshots to keep | `10` | No |
 
 ### Security Best Practices
 

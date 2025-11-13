@@ -14,9 +14,13 @@ services:
       - SERVER_PASSWORD=${SERVER_PASSWORD:-}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TIMEOUT=${TIMEOUT:-10000}
+      - DATA_DIR=/app/data
+      - SAVE_INTERVAL=${SAVE_INTERVAL:-120}
+      - MAX_BACKUPS=${MAX_BACKUPS:-10}
     restart: unless-stopped
     volumes:
       - ./logs:/app/logs
+      - ./data:/app/data  # Persistent session storage
     networks:
       - blender-network
 
